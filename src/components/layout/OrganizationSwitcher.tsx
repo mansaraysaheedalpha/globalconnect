@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { ChevronsUpDown, AlertTriangle } from 'lucide-react'; // Import an icon for errors
+import { useRouter } from 'next/navigation';
 
 // ... (GraphQL queries remain the same)
 const GET_MY_ORGS_QUERY = gql`
@@ -42,14 +43,15 @@ export function OrganizationSwitcher() {
   const { data, loading, error } = useQuery(GET_MY_ORGS_QUERY);
   const { orgId, setAuth } = useAuthStore();
 
+  const router = useRouter(); 
   const [switchOrg, { loading: switching }] = useMutation(SWITCH_ORG_MUTATION, {
     onCompleted: (data) => {
       const { token, user } = data.switchOrganization;
       if (token && user) {
         setAuth(token, user);
-        window.location.reload();
+        router.push("/dashboard"); // <-- Smoothly navigate
       }
-    }
+    },
   });
 
   const handleSwitch = (newOrgId: string) => {

@@ -2,25 +2,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, gql } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-const LOGIN_2FA_MUTATION = gql`
-  mutation Login2FA($input: Login2FAInput!) {
-    login2FA(input: $input) {
-      token
-      user {
-        id
-        email
-        first_name
-      }
-    }
-  }
-`;
+import { LOGIN_2FA_MUTATION } from './auth.graphql';
 
 interface TwoFactorFormProps {
   userId: string;

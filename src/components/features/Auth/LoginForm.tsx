@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, gql } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
@@ -12,21 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TwoFactorForm } from './TwoFactorForm';
 import { toast } from 'sonner'; 
-
-const LOGIN_USER_MUTATION = gql`
-  mutation Login($input: LoginInput!) {
-    login(input: $input) {
-      token
-      user {
-        id
-        email
-        first_name
-      }
-      requires2FA
-      userIdFor2FA
-    }
-  }
-`;
+import { Loader } from "@/components/ui/loader";
+import { LOGIN_USER_MUTATION } from './auth.graphql';
 
 export function LoginForm() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -74,20 +61,37 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link href="/auth/forgot-password" className="text-sm text-muted-foreground hover:text-primary hover:underline">
-                Forgot Password?
-            </Link>
+          <Label htmlFor="password">Password</Label>
+          <Link
+            href="/auth/forgot-password"
+            className="text-sm text-muted-foreground hover:text-primary hover:underline"
+          >
+            Forgot Password?
+          </Link>
         </div>
-        <PasswordInput id="password" name="password" value={formData.password} onChange={handleChange} required />
+        <PasswordInput
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
       </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Signing In...' : 'Sign In'}
+        {loading ? <Loader className="mr-2" /> : null}
+        {loading ? "Signing In..." : "Sign In"}
       </Button>
     </form>
   );

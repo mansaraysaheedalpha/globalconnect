@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, gql } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
@@ -10,19 +10,9 @@ import { PasswordInput } from '@/components/ui/password-input'; // Use our passw
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner'; // Import the toast function
+import { Loader } from "@/components/ui/loader";
+import { REGISTER_USER_MUTATION } from './auth.graphql';
 
-const REGISTER_USER_MUTATION = gql`
-  mutation RegisterUser($input: RegisterUserInput!) {
-    registerUser(input: $input) {
-      token
-      user {
-        id
-        email
-        first_name
-      }
-    }
-  }
-`;
 
 export function RegistrationForm() {
   const [formData, setFormData] = useState({
@@ -86,6 +76,7 @@ export function RegistrationForm() {
       </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? <Loader className="mr-2" /> : null}
         {loading ? 'Creating Account...' : 'Create Account'}
       </Button>
     </form>

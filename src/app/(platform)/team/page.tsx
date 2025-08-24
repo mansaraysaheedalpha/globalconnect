@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, gql } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,70 +59,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Loader } from "@/components/ui/loader";
+import {
+  CREATE_INVITATION_MUTATION,
+  UPDATE_MEMBER_ROLE_MUTATION,
+  TEAM_DATA_QUERY,
+  REMOVE_MEMBER_MUTATION,
+} from "@/components/features/Auth/auth.graphql";
+import { OrganizationMember } from "@/types";
 
-const CREATE_INVITATION_MUTATION = gql`
-  mutation CreateInvitation($input: CreateInvitationInput!) {
-    createInvitation(input: $input)
-  }
-`;
-
-const TEAM_DATA_QUERY = gql`
-  query GetTeamData {
-    organizationMembers {
-      user {
-        id
-        first_name
-        last_name
-        email
-      }
-      role {
-        id
-        name
-      }
-    }
-    listRolesForOrg {
-      id
-      name
-    }
-  }
-`;
-
-const UPDATE_MEMBER_ROLE_MUTATION = gql`
-  mutation UpdateMemberRole($input: UpdateMemberRoleInput!) {
-    updateMemberRole(input: $input) {
-      user {
-        id
-      }
-      role {
-        name
-      }
-    }
-  }
-`;
-
-const REMOVE_MEMBER_MUTATION = gql`
-  mutation RemoveMember($memberId: ID!) {
-    removeMember(memberId: $memberId) {
-      user {
-        id
-      }
-    }
-  }
-`;
-
-// Define a type for our member data for better type safety
-type Member = {
-  user: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  role: {
-    id: string;
-    name: string;
-  };
-};
 
 export default function TeamPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -290,88 +235,96 @@ export default function TeamPage() {
             <TableBody>
               {loadingMembers || !isClient ? (
                 <TableRow>
-                  <TableCell colSpan={4}>Loading...</TableCell>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    <div className="flex justify-center items-center">
+                      <Loader className="h-6 w-6" />
+                    </div>
+                  </TableCell>
                 </TableRow>
               ) : (
-                data?.organizationMembers.map(({ user, role }: Member) => {
-                  const isOwner = role.name === "OWNER";
-                  return (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        {user.first_name} {user.last_name}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{role.name}</TableCell>
-                      <TableCell className="text-right">
-                        {isOwner ? (
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>The organization owner cannot be modified.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuPortal>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuSub>
-                                  <DropdownMenuSubTrigger>
-                                    Change Role
-                                  </DropdownMenuSubTrigger>
-                                  <DropdownMenuPortal>
-                                    <DropdownMenuSubContent>
-                                      {data?.listRolesForOrg.map(
-                                        (orgRole: {
-                                          id: string;
-                                          name: string;
-                                        }) => (
-                                          <DropdownMenuItem
-                                            key={orgRole.id}
-                                            disabled={orgRole.id === role.id}
-                                            onSelect={() =>
-                                              handleRoleChange(
-                                                user.id,
-                                                orgRole.id
-                                              )
-                                            }
-                                          >
-                                            {orgRole.name}
-                                          </DropdownMenuItem>
-                                        )
-                                      )}
-                                    </DropdownMenuSubContent>
-                                  </DropdownMenuPortal>
-                                </DropdownMenuSub>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    setMemberToRemove({
-                                      id: user.id,
-                                      name: `${user.first_name} ${user.last_name}`,
-                                    });
-                                    setIsRemoveDialogOpen(true);
-                                  }}
-                                  className="text-destructive"
-                                >
-                                  Remove Member
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenuPortal>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                data?.organizationMembers.map(
+                  ({ user, role }: OrganizationMember) => {
+                    const isOwner = role.name === "OWNER";
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          {user.first_name} {user.last_name}
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{role.name}</TableCell>
+                        <TableCell className="text-right">
+                          {isOwner ? (
+                            <Tooltip delayDuration={0}>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>
+                                  The organization owner cannot be modified.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuPortal>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                      Change Role
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                      <DropdownMenuSubContent>
+                                        {data?.listRolesForOrg.map(
+                                          (orgRole: {
+                                            id: string;
+                                            name: string;
+                                          }) => (
+                                            <DropdownMenuItem
+                                              key={orgRole.id}
+                                              disabled={orgRole.id === role.id}
+                                              onSelect={() =>
+                                                handleRoleChange(
+                                                  user.id,
+                                                  orgRole.id
+                                                )
+                                              }
+                                            >
+                                              {orgRole.name}
+                                            </DropdownMenuItem>
+                                          )
+                                        )}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                  </DropdownMenuSub>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      setMemberToRemove({
+                                        id: user.id,
+                                        name: `${user.first_name} ${user.last_name}`,
+                                      });
+                                      setIsRemoveDialogOpen(true);
+                                    }}
+                                    className="text-destructive"
+                                  >
+                                    Remove Member
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenuPortal>
+                            </DropdownMenu>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                )
               )}
             </TableBody>
           </Table>

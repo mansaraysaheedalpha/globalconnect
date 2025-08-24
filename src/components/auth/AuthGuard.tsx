@@ -1,14 +1,15 @@
 // src/components/auth/AuthGuard.tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/auth.store';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/auth.store";
+import { useRouter } from "next/navigation";
+import { Loader, Spinner } from "@/components/ui/loader";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((state) => state.token);
   const router = useRouter();
-  
+
   // This new state tracks if we are on the client and the store has had a chance to rehydrate.
   const [isClient, setIsClient] = useState(false);
 
@@ -20,7 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // We wait until we're on the client before checking for the token.
     if (isClient && !token) {
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
   }, [isClient, token, router]);
 
@@ -28,8 +29,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // This prevents a flash of the real content before the redirect can happen.
   if (!isClient || !token) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <p>Loading...</p>
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader className="h-8 w-8 text-primary" />
       </div>
     );
   }
