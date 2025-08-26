@@ -101,11 +101,16 @@ const httpLink = createHttpLink({
 });
 
 const authLink = setContext((_, { headers }) => {
-  const token = useAuthStore.getState().token;
+  // Get both tokens from the store
+  const { token, onboardingToken } = useAuthStore.getState();
+
+  // Prioritize the main token, but fall back to the onboarding token
+  const tokenToUse = token || onboardingToken;
+
   return {
     headers: {
       ...headers,
-      authorization: token ? `Bearer ${token}` : "",
+      authorization: tokenToUse ? `Bearer ${tokenToUse}` : "",
     },
   };
 });
