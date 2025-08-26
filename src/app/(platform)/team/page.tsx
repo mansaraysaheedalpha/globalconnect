@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MoreHorizontal } from "lucide-react";
+import { ChevronsUpDown, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +67,6 @@ import {
   REMOVE_MEMBER_MUTATION,
 } from "@/components/features/Auth/auth.graphql";
 import { OrganizationMember } from "@/types";
-
 
 export default function TeamPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -193,20 +192,32 @@ export default function TeamPage() {
                   <Label htmlFor="role" className="text-right">
                     Role
                   </Label>
-                  <Select onValueChange={setRole} value={role}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {data?.listRolesForOrg.map(
-                        (orgRole: { id: string; name: string }) => (
-                          <SelectItem key={orgRole.id} value={orgRole.name}>
-                            {orgRole.name}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="col-span-3 justify-between"
+                      >
+                        {role || "Select a role"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                      sideOffset={5}
+                      className="min-w-[200px] rounded-md border bg-white p-1 shadow-md dark:bg-neutral-900"
+                    >
+                      {data?.listRolesForOrg.map((orgRole) => (
+                        <DropdownMenuItem
+                          key={orgRole.id}
+                          onSelect={() => setRole(orgRole.name)}
+                          className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-800"
+                        >
+                          {orgRole.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
               <DialogFooter>

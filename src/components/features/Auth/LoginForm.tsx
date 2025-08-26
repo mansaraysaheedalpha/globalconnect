@@ -24,21 +24,29 @@ export function LoginForm() {
 
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const setOnboardingToken = useAuthStore((state) => state.setOnboardingToken); 
 
   const [login, { loading }] = useMutation(LOGIN_USER_MUTATION, {
     onCompleted: (data) => {
-      const { token, user, requires2FA, userIdFor2FA } = data.login;
+      const { token, user, requires2FA, userIdFor2FA, onboardingToken } =
+        data.login;
+
+      if (onboardingToken) {
+        // User is valid but has no orgs. Store the temp token and redirect.
+        setOnboardingToken(onboardingToken);
+        router.push("/onboarding/create-organization");
+        return;
+      }
+
       if (requires2FA) {
         setLoginState({ requires2FA: true, userIdFor2FA });
       } else if (token && user) {
-        toast.success('Login Successful!');
+        toast.success("Login Successful!");
         setAuth(token, user);
-        router.push('/dashboard');
+        router.push("/dashboard");
       }
     },
-    
     onError: (error) => {
-      // We display the clean error message from GraphQL in a toast
       toast.error(error.message);
     },
   });
