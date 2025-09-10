@@ -164,7 +164,11 @@ const errorLink = onError(
 
         const hasRetried = operation.getContext().hasRetried;
 
-        if (err.extensions?.code === "UNAUTHORIZED" && !hasRetried) {
+        if (
+          err.extensions?.code === "UNAUTHORIZED" &&
+          operation.operationName !== "Login" &&
+          !hasRetried
+        ) {
           return new Observable((observer) => {
             getNewToken()
               .then((newAccessToken) => {

@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
-import { Loader, Spinner } from "@/components/ui/loader";
+import { Loader} from "@/components/ui/loader";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((state) => state.token);
@@ -18,9 +18,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
+   console.log(
+     `%c[AuthGuard] Component rendered. isClient: ${isClient}, Token: ${token}`,
+     "color: orange;"
+   );
+
   useEffect(() => {
     // We wait until we're on the client before checking for the token.
     if (isClient && !token) {
+       console.log(
+         "%c[AuthGuard] No token found, redirecting to /auth/login...",
+         "color: red; font-weight: bold;"
+       );
       router.push("/auth/login");
     }
   }, [isClient, token, router]);

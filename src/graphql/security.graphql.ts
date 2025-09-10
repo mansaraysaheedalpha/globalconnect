@@ -1,3 +1,4 @@
+// src/graphql/security.graphql.ts
 import { gql } from "@apollo/client";
 
 export const GET_MY_PROFILE_2FA_STATUS = gql`
