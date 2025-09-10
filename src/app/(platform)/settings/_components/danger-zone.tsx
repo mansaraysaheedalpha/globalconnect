@@ -29,21 +29,11 @@ import { Loader } from "@/components/ui/loader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GET_MY_ORGS_QUERY } from "@/graphql/queries";
+import { SWITCH_ORG_MUTATION } from "@/graphql/organization.graphql";
 
 interface DangerZoneProps {
   orgName: string;
 }
-
-const SWITCH_ORG_MUTATION = gql`
-  mutation SwitchOrg($organizationId: ID!) {
-    switchOrganization(organizationId: $organizationId) {
-      token
-      user {
-        id
-      }
-    }
-  }
-`;
 
 export function DangerZone({ orgName }: DangerZoneProps) {
   const { orgId, logout, setAuth } = useAuthStore();

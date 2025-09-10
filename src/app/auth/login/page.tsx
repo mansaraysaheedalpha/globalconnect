@@ -1,4 +1,4 @@
-// src/app/auth/login/page.tsx (Simplified)
+// src/app/(platform)/auth/login/page.tsx (Simplified)
 import { LoginForm } from "@/components/features/Auth/LoginForm";
 import Link from "next/link";
 

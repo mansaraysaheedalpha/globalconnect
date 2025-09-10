@@ -1,3 +1,4 @@
+//src/app/(platform)/onboarding/create-organization/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -18,20 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-
-const CREATE_ORGANIZATION_MUTATION = gql`
-  mutation OnboardingCreateOrganization($input: OnboardingCreateOrganizationInput!) {
-    onboardingCreateOrganization(input: $input) { 
-      token
-      user {
-        id
-        first_name
-        last_name
-        email
-      }
-    }
-  }
-`;
+import { ONBOARDING_CREATE_ORGANIZATION_MUTATION } from "@/graphql/organization.graphql";
 
 export default function CreateOrganizationPage() {
   const [name, setName] = useState("");
@@ -39,7 +27,7 @@ export default function CreateOrganizationPage() {
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const [createOrganization, { loading }] = useMutation(
-    CREATE_ORGANIZATION_MUTATION,
+    ONBOARDING_CREATE_ORGANIZATION_MUTATION,
     {
       onCompleted: (data) => {
         toast.success("Organization created successfully!");

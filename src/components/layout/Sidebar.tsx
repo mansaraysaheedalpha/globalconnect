@@ -1,3 +1,4 @@
+// src/components/layout/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -5,7 +6,13 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { LayoutDashboard, Users, Settings, PlusCircle } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  PlusCircle,
+  Calendar,
+} from "lucide-react";
 
 // The Sidebar now receives a prop to open the modal
 export function Sidebar({
@@ -20,6 +27,11 @@ export function Sidebar({
       href: "/dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
+    },
+    {
+      href: "/events", // <-- ADD THIS OBJECT
+      label: "Events",
+      icon: Calendar,
     },
     {
       href: "/team",

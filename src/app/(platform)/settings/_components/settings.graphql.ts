@@ -40,12 +40,3 @@ export const RESTORE_ORGANIZATION_MUTATION = gql`
     }
   }
 `;
-
-export const CREATE_ORGANIZATION_MUTATION = gql`
-  mutation OnboardingCreateOrganization($input: OnboardingCreateOrganizationInput!) {
-    createOrganization(input: $input) {
-      id
-      name
-    }
-  }
-`;

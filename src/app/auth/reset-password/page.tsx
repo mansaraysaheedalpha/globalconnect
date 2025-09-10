@@ -1,4 +1,4 @@
-// src/app/auth/reset-password/page.tsx
+// src/app/(platform)/auth/reset-password/page.tsx
 "use client";
 
 import { useState, useEffect, Suspense } from "react";

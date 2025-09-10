@@ -1,3 +1,4 @@
+// src/app/(platform)/auth/login/page.tsx
 import { RegistrationForm } from "@/components/features/Auth/RegistrationForm";
 import Link from "next/link";
 

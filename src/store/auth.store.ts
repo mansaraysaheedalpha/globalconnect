@@ -20,7 +20,7 @@ interface AuthState {
   onboardingToken: string | null; // <-- ADD THIS
   user: User | null;
   orgId: string | null;
-  
+
   setAuth: (token: string, user: User) => void;
   setOnboardingToken: (token: string | null) => void;
   logout: () => void;

@@ -1,3 +1,4 @@
+// src/components/layout/OrganizationSwitcher
 "use client";
 
 import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
@@ -16,19 +17,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CreateOrgModal } from "./CreateOrgModal"; // <-- Import the modal
 import { GET_MY_ORGS_QUERY } from "@/graphql/queries";
-
-const SWITCH_ORG_MUTATION = gql`
-  mutation SwitchOrg($organizationId: ID!) {
-    switchOrganization(organizationId: $organizationId) {
-      token
-      user {
-        id
-        email
-        first_name
-      }
-    }
-  }
-`;
+import { SWITCH_ORG_MUTATION } from "@/graphql/organization.graphql";
 
 export function OrganizationSwitcher() {
   const [isModalOpen, setIsModalOpen] = useState(false);
