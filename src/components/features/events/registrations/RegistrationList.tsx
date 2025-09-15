@@ -1,5 +1,5 @@
 //src / components / features / events / registrations / RegistrationList.tsx;
-("use client");
+"use client";
 
 import { useQuery } from "@apollo/client";
 import { GET_REGISTRATIONS_BY_EVENT_QUERY } from "@/graphql/events.graphql";

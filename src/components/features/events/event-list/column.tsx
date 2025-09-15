@@ -16,12 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// ✅ IMPORT the auto-generated type from GraphQL Code Generator.
-// Note: The actual name might be Events_By_OrganizationQuery depending on your setup.
 import { Events_By_OrganizationQuery } from "@/gql/graphql";
 
-// ✅ This is our single, authoritative type for an event in the list.
-// We use `[number]` to extract the type of a single item from the array.
 export type Event = Events_By_OrganizationQuery["eventsByOrganization"][number];
 
 export const columns: ColumnDef<Event>[] = [
@@ -39,7 +35,6 @@ export const columns: ColumnDef<Event>[] = [
     cell: ({ row }) => {
       const event = row.original;
       return (
-        // ✅ Make the event name a clickable link to its detail page.
         <Link
           href={`/events/${event.id}`}
           className="font-medium text-primary hover:underline"
@@ -69,7 +64,8 @@ export const columns: ColumnDef<Event>[] = [
     },
   },
   {
-    accessorKey: "start_date",
+    // ✅ THE FIX: Use camelCase to match the GraphQL schema
+    accessorKey: "startDate",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -80,22 +76,22 @@ export const columns: ColumnDef<Event>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      // ✅ Use date-fns for consistent and professional date formatting.
-      const date = new Date(row.getValue("start_date"));
-      return <div>{format(date, "PPP")}</div>; // e.g., "Sep 3, 2025"
+      // ✅ THE FIX: Get the value using the correct camelCase key
+      const date = new Date(row.getValue("startDate"));
+      return <div>{format(date, "PPP")}</div>;
     },
   },
   {
-    accessorKey: "is_public",
+    // ✅ THE FIX: Use camelCase here as well for consistency
+    accessorKey: "isPublic",
     header: "Visibility",
-    cell: ({ row }) => (row.getValue("is_public") ? "Public" : "Private"),
+    cell: ({ row }) => (row.getValue("isPublic") ? "Public" : "Private"),
   },
   {
     id: "actions",
     cell: ({ row }) => {
       const event = row.original;
       return (
-        // ✅ Add a standard actions menu for future functionality.
         <div className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
