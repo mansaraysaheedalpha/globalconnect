@@ -1,5 +1,5 @@
 //src / components / features / events / registrations / registration - columns.tsx;
-("use client");
+"use client";
 
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";

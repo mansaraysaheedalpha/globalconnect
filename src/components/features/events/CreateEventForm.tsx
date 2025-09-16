@@ -1,14 +1,18 @@
-// src/components/features/events/sessions/CreateSessionForm.tsx
+// src/components/features/events/CreateEventForm.tsx
+
 "use client";
 
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@apollo/client";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CREATE_SESSION_MUTATION } from "@/graphql/events.graphql";
+import { CREATE_EVENT_MUTATION } from "@/graphql/events.graphql";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Form,
   FormControl,
@@ -18,63 +22,54 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader } from "@/components/ui/loader";
-import { SpeakerCombobox } from "./SpeakerCombobox"; // ✅ Import the new component
 
-const sessionFormSchema = z.object({
-  title: z.string().min(3, "Session title is required."),
-  startTime: z.string().min(1, "Start time is required."),
-  endTime: z.string().min(1, "End time is required."),
-  // ✅ Add speakerIds to our validation schema
-  speakerIds: z.array(z.string()).optional(),
-});
-
-type SessionFormValues = z.infer<typeof sessionFormSchema>;
-
-interface CreateSessionFormProps {
-  eventId: string;
-  eventStartDate: Date;
-  onFinished: () => void;
-}
-
-export function CreateSessionForm({
-  eventId,
-  eventStartDate,
-  onFinished,
-}: CreateSessionFormProps) {
-  const form = useForm<SessionFormValues>({
-    resolver: zodResolver(sessionFormSchema),
-    defaultValues: {
-      speakerIds: [], // Default to an empty array
-    },
+const eventFormSchema = z
+  .object({
+    name: z.string().min(3, "Event name must be at least 3 characters."),
+    description: z.string().optional(),
+    startDate: z.date({
+      required_error: "A start date is required.",
+    }),
+    endDate: z.date({
+      required_error: "An end date is required.",
+    }),
+  })
+  .refine((data) => data.endDate > data.startDate, {
+    message: "End date must be after the start date.",
+    path: ["endDate"],
   });
 
-  const [createSession, { loading }] = useMutation(CREATE_SESSION_MUTATION, {
-    onCompleted: () => {
-      toast.success("Session created successfully!");
-      onFinished();
-    },
-    onError: (error) => toast.error(error.message),
-    refetchQueries: ["GetSessionsByEvent"],
+type EventFormValues = z.infer<typeof eventFormSchema>;
+
+export function CreateEventForm() {
+  const router = useRouter();
+  const form = useForm<EventFormValues>({
+    resolver: zodResolver(eventFormSchema),
   });
 
-  const onSubmit = (values: SessionFormValues) => {
-    const startDateTime = new Date(eventStartDate);
-    const [startHours, startMinutes] = values.startTime.split(":").map(Number);
-    startDateTime.setHours(startHours, startMinutes, 0, 0);
+  const [createEvent, { loading }] = useMutation(CREATE_EVENT_MUTATION, {
+    onCompleted: (data) => {
+      toast.success("Event created successfully!");
+      router.push(`/events/${data.createEvent.id}`);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+    refetchQueries: ["GetEventsByOrganization"],
+  });
 
-    const endDateTime = new Date(eventStartDate);
-    const [endHours, endMinutes] = values.endTime.split(":").map(Number);
-    endDateTime.setHours(endHours, endMinutes, 0, 0);
-
-    createSession({
+  const onSubmit = (values: EventFormValues) => {
+    createEvent({
       variables: {
+        // ✅ THE DEFINITIVE FIX:
+        // The GraphQL schema expects camelCase variables.
+        // We are now sending the correct format.
         input: {
-          eventId: eventId,
-          title: values.title,
-          startTime: startDateTime.toISOString(),
-          endTime: endDateTime.toISOString(),
-          // ✅ Pass the speakerIds from the form
-          speakerIds: values.speakerIds || [],
+          name: values.name,
+          description: values.description,
+          startDate: values.startDate.toISOString(),
+          endDate: values.endDate.toISOString(),
+          venueId: null, // Still optional, but now correctly named
         },
       },
     });
@@ -82,29 +77,42 @@ export function CreateSessionForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="title"
+          name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Session Title</FormLabel>
+              <FormLabel>Event Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Opening Keynote" {...field} />
+                <Input placeholder="e.g., Annual Tech Summit" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description (Optional)</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Describe your event..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="startTime"
+            name="startDate"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start Time</FormLabel>
+              <FormItem className="flex flex-col">
+                <FormLabel>Start Date</FormLabel>
                 <FormControl>
-                  <Input type="time" {...field} />
+                  <DatePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -112,40 +120,21 @@ export function CreateSessionForm({
           />
           <FormField
             control={form.control}
-            name="endTime"
+            name="endDate"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Time</FormLabel>
+              <FormItem className="flex flex-col">
+                <FormLabel>End Date</FormLabel>
                 <FormControl>
-                  <Input type="time" {...field} />
+                  <DatePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        {/* ✅ Integrate the SpeakerCombobox into our form */}
-        <FormField
-          control={form.control}
-          name="speakerIds"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Speakers (Optional)</FormLabel>
-              <FormControl>
-                <SpeakerCombobox
-                  value={field.value || []}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <Button type="submit" disabled={loading} className="w-full">
           {loading && <Loader className="mr-2" />}
-          Create Session
+          {loading ? "Creating..." : "Create Event"}
         </Button>
       </form>
     </Form>

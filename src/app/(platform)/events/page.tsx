@@ -2,16 +2,18 @@
 "use client";
 
 import { useQuery } from "@apollo/client";
+import Link from "next/link";
+import { PlusCircle, AlertTriangle } from "lucide-react";
 import { GET_EVENTS_QUERY } from "@/graphql/events.graphql";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import { AlertTriangle, PlusCircle } from "lucide-react";
-import { columns } from "@/components/features/events/event-list/column";
-import { DataTable } from "@/components/features/events/event-list/data-table";
-import Link from "next/link";
+import { EventCard } from "@/components/features/events/EventCard";
+import { EventEmptyState } from "@/components/features/events/EventEmptyState";
 
 export default function EventsPage() {
   const { data, loading, error } = useQuery(GET_EVENTS_QUERY);
+
+  const events = data?.eventsByOrganization || [];
 
   const renderContent = () => {
     if (loading) {
@@ -32,16 +34,23 @@ export default function EventsPage() {
       );
     }
 
-    // Pass the columns and data to our new DataTable component
+    if (events.length === 0) {
+      return <EventEmptyState />;
+    }
+
     return (
-      <DataTable columns={columns} data={data?.eventsByOrganization || []} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {events.map((event) => (
+          <EventCard key={event.id} event={event} />
+        ))}
+      </div>
     );
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Events</h1>
+        <h1 className="text-3xl font-bold">Events Dashboard</h1>
         <Button asChild>
           <Link href="/events/new">
             <PlusCircle className="mr-2 h-4 w-4" />
