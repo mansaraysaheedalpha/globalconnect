@@ -11,6 +11,7 @@ import { PlusCircle, UserPlus } from "lucide-react";
 import { CreateSessionModal } from "./sessions/CreateSessionModal";
 import { RegistrationList } from "./registrations/RegistrationList";
 import { CreateRegistrationModal } from "./registrations/CreateRegistrationModal"; // ✅ Import the new modal
+import { EventSettingsGeneral } from "./settings/EventSettingsGeneral";
 
 interface EventTabsProps {
   event: NonNullable<GetEventByIdQuery["event"]>;
@@ -18,12 +19,10 @@ interface EventTabsProps {
 
 export function EventTabs({ event }: EventTabsProps) {
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
-  // ✅ State for the new registration modal
   const [isRegModalOpen, setIsRegModalOpen] = useState(false);
 
   return (
     <>
-      {/* Session Creation Modal */}
       <CreateSessionModal
         isOpen={isSessionModalOpen}
         onOpenChange={setIsSessionModalOpen}
@@ -31,8 +30,6 @@ export function EventTabs({ event }: EventTabsProps) {
         eventStartDate={new Date(event.startDate)}
         eventEndDate={new Date(event.endDate)}
       />
-
-      {/* ✅ Registration Creation Modal */}
       <CreateRegistrationModal
         isOpen={isRegModalOpen}
         onOpenChange={setIsRegModalOpen}
@@ -44,9 +41,7 @@ export function EventTabs({ event }: EventTabsProps) {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
           <TabsTrigger value="registrations">Registrations</TabsTrigger>
-          <TabsTrigger value="settings" disabled>
-            Settings (Soon)
-          </TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -54,6 +49,7 @@ export function EventTabs({ event }: EventTabsProps) {
         </TabsContent>
 
         <TabsContent value="sessions" className="space-y-4">
+          {/* ... session content is unchanged ... */}
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Schedule</h2>
             <Button onClick={() => setIsSessionModalOpen(true)}>
@@ -65,15 +61,20 @@ export function EventTabs({ event }: EventTabsProps) {
         </TabsContent>
 
         <TabsContent value="registrations" className="space-y-4">
+          {/* ... registration content is unchanged ... */}
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Attendees</h2>
-            {/* ✅ Enable the button and wire it up to the state */}
             <Button onClick={() => setIsRegModalOpen(true)}>
               <UserPlus className="mr-2 h-4 w-4" />
               Register Attendee
             </Button>
           </div>
           <RegistrationList eventId={event.id} />
+        </TabsContent>
+
+        {/* ✅ NEW SETTINGS TAB */}
+        <TabsContent value="settings">
+          <EventSettingsGeneral event={event} />
         </TabsContent>
       </Tabs>
     </>
