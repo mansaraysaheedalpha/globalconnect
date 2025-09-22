@@ -31,13 +31,12 @@ type Documents = {
     "\n  mutation TurnOn2FA($input: TurnOn2FAInput!) {\n    turnOn2FA(input: $input)\n  }\n": typeof types.TurnOn2FaDocument,
     "\n  mutation PerformPasswordReset($input: PerformResetInput!) {\n    performPasswordReset(input: $input)\n  }\n": typeof types.PerformPasswordResetDocument,
     "\n  mutation CreateAdditionalOrganization(\n    $input: OnboardingCreateOrganizationInput!\n  ) {\n    createAdditionalOrganization(input: $input) {\n      token\n      user {\n        id\n        first_name\n        last_name\n        email\n      }\n    }\n  }\n": typeof types.CreateAdditionalOrganizationDocument,
-    "\n  query GetEventsByOrganization {\n    eventsByOrganization {\n      id\n      name\n      status\n      startDate # ✅ Changed start_date to startDate\n      endDate # ✅ Changed end_date to endDate\n      isPublic\n    }\n  }\n": typeof types.GetEventsByOrganizationDocument,
-    "\n  mutation CreateEvent($input: EventCreateInput!) {\n    createEvent(eventIn: $input) {\n      id\n      name\n    }\n  }\n": typeof types.CreateEventDocument,
     "\n  query GetMyOrgs {\n    myOrganizations {\n      id\n      name\n    }\n  }\n": typeof types.GetMyOrgsDocument,
     "\n  mutation SwitchOrg($organizationId: ID!) {\n    switchOrganization(organizationId: $organizationId) {\n      token\n      user {\n        id\n        email\n        first_name\n      }\n    }\n  }\n": typeof types.SwitchOrgDocument,
     "\n  mutation OnboardingCreateOrganization(\n    $input: OnboardingCreateOrganizationInput!\n  ) {\n    onboardingCreateOrganization(input: $input) {\n      token\n      user {\n        id\n        first_name\n        last_name\n        email\n      }\n    }\n  }\n": typeof types.OnboardingCreateOrganizationDocument,
     "\n  query GetMyProfile2FA {\n    getMyProfile {\n      id\n      isTwoFactorEnabled\n    }\n  }\n": typeof types.GetMyProfile2FaDocument,
     "\n  mutation TurnOff2FA {\n    turnOff2FA\n  }\n": typeof types.TurnOff2FaDocument,
+    "\n  query GetSpeakersByOrg {\n    # This query name must match a query defined in your backend resolvers\n    # I'm assuming one will be created that returns all speakers for the user's org\n    organizationSpeakers {\n      id\n      name\n    }\n  }\n": typeof types.GetSpeakersByOrgDocument,
     "\n  query GetMyProfile {\n    getMyProfile {\n      id\n      first_name\n      last_name\n      email\n    }\n  }\n": typeof types.GetMyProfileDocument,
     "\n  mutation UpdateMyProfile($input: UpdateMyProfileInput!) {\n    updateMyProfile(input: $input) {\n      id\n      first_name\n      last_name\n    }\n  }\n": typeof types.UpdateMyProfileDocument,
     "\n  mutation ChangePassword($input: ChangePasswordInput!) {\n    changePassword(input: $input)\n  }\n": typeof types.ChangePasswordDocument,
@@ -60,13 +59,12 @@ const documents: Documents = {
     "\n  mutation TurnOn2FA($input: TurnOn2FAInput!) {\n    turnOn2FA(input: $input)\n  }\n": types.TurnOn2FaDocument,
     "\n  mutation PerformPasswordReset($input: PerformResetInput!) {\n    performPasswordReset(input: $input)\n  }\n": types.PerformPasswordResetDocument,
     "\n  mutation CreateAdditionalOrganization(\n    $input: OnboardingCreateOrganizationInput!\n  ) {\n    createAdditionalOrganization(input: $input) {\n      token\n      user {\n        id\n        first_name\n        last_name\n        email\n      }\n    }\n  }\n": types.CreateAdditionalOrganizationDocument,
-    "\n  query GetEventsByOrganization {\n    eventsByOrganization {\n      id\n      name\n      status\n      startDate # ✅ Changed start_date to startDate\n      endDate # ✅ Changed end_date to endDate\n      isPublic\n    }\n  }\n": types.GetEventsByOrganizationDocument,
-    "\n  mutation CreateEvent($input: EventCreateInput!) {\n    createEvent(eventIn: $input) {\n      id\n      name\n    }\n  }\n": types.CreateEventDocument,
     "\n  query GetMyOrgs {\n    myOrganizations {\n      id\n      name\n    }\n  }\n": types.GetMyOrgsDocument,
     "\n  mutation SwitchOrg($organizationId: ID!) {\n    switchOrganization(organizationId: $organizationId) {\n      token\n      user {\n        id\n        email\n        first_name\n      }\n    }\n  }\n": types.SwitchOrgDocument,
     "\n  mutation OnboardingCreateOrganization(\n    $input: OnboardingCreateOrganizationInput!\n  ) {\n    onboardingCreateOrganization(input: $input) {\n      token\n      user {\n        id\n        first_name\n        last_name\n        email\n      }\n    }\n  }\n": types.OnboardingCreateOrganizationDocument,
     "\n  query GetMyProfile2FA {\n    getMyProfile {\n      id\n      isTwoFactorEnabled\n    }\n  }\n": types.GetMyProfile2FaDocument,
     "\n  mutation TurnOff2FA {\n    turnOff2FA\n  }\n": types.TurnOff2FaDocument,
+    "\n  query GetSpeakersByOrg {\n    # This query name must match a query defined in your backend resolvers\n    # I'm assuming one will be created that returns all speakers for the user's org\n    organizationSpeakers {\n      id\n      name\n    }\n  }\n": types.GetSpeakersByOrgDocument,
     "\n  query GetMyProfile {\n    getMyProfile {\n      id\n      first_name\n      last_name\n      email\n    }\n  }\n": types.GetMyProfileDocument,
     "\n  mutation UpdateMyProfile($input: UpdateMyProfileInput!) {\n    updateMyProfile(input: $input) {\n      id\n      first_name\n      last_name\n    }\n  }\n": types.UpdateMyProfileDocument,
     "\n  mutation ChangePassword($input: ChangePasswordInput!) {\n    changePassword(input: $input)\n  }\n": types.ChangePasswordDocument,
@@ -157,14 +155,6 @@ export function gql(source: "\n  mutation CreateAdditionalOrganization(\n    $in
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n  query GetEventsByOrganization {\n    eventsByOrganization {\n      id\n      name\n      status\n      startDate # ✅ Changed start_date to startDate\n      endDate # ✅ Changed end_date to endDate\n      isPublic\n    }\n  }\n"): (typeof documents)["\n  query GetEventsByOrganization {\n    eventsByOrganization {\n      id\n      name\n      status\n      startDate # ✅ Changed start_date to startDate\n      endDate # ✅ Changed end_date to endDate\n      isPublic\n    }\n  }\n"];
-/**
- * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function gql(source: "\n  mutation CreateEvent($input: EventCreateInput!) {\n    createEvent(eventIn: $input) {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  mutation CreateEvent($input: EventCreateInput!) {\n    createEvent(eventIn: $input) {\n      id\n      name\n    }\n  }\n"];
-/**
- * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
 export function gql(source: "\n  query GetMyOrgs {\n    myOrganizations {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  query GetMyOrgs {\n    myOrganizations {\n      id\n      name\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -182,6 +172,10 @@ export function gql(source: "\n  query GetMyProfile2FA {\n    getMyProfile {\n  
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  mutation TurnOff2FA {\n    turnOff2FA\n  }\n"): (typeof documents)["\n  mutation TurnOff2FA {\n    turnOff2FA\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query GetSpeakersByOrg {\n    # This query name must match a query defined in your backend resolvers\n    # I'm assuming one will be created that returns all speakers for the user's org\n    organizationSpeakers {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  query GetSpeakersByOrg {\n    # This query name must match a query defined in your backend resolvers\n    # I'm assuming one will be created that returns all speakers for the user's org\n    organizationSpeakers {\n      id\n      name\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

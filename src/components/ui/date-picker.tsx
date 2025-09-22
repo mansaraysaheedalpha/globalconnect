@@ -1,9 +1,9 @@
-// src/components/ui/date-picker.tsx
 "use client";
 
 import * as React from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,12 +14,19 @@ import {
 } from "@/components/ui/popover";
 
 interface DatePickerProps {
-  value?: Date;
-  onChange: (date?: Date) => void;
-  disabled?: boolean;
+  date: Date | undefined;
+  setDate: (date: Date | undefined) => void;
+  // --- ADD THESE NEW PROPS ---
+  fromDate?: Date;
+  toDate?: Date;
 }
 
-export function DatePicker({ value, onChange, disabled }: DatePickerProps) {
+export function DatePicker({
+  date,
+  setDate,
+  fromDate,
+  toDate,
+}: DatePickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -27,20 +34,25 @@ export function DatePicker({ value, onChange, disabled }: DatePickerProps) {
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground"
+            !date && "text-muted-foreground"
           )}
-          disabled={disabled}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>Pick a date</span>}
+          {date ? format(date, "PPP") : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Calendar
           mode="single"
-          selected={value}
-          onSelect={onChange}
+          selected={date}
+          onSelect={setDate}
           initialFocus
+          // --- USE THE NEW PROPS ---
+          fromDate={fromDate}
+          toDate={toDate}
+          disabled={(date) =>
+            (fromDate && date < fromDate) || (toDate && date > toDate)
+          }
         />
       </PopoverContent>
     </Popover>

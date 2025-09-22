@@ -1,4 +1,4 @@
-// src/graphql/queries.ts
+// src/graphql/user.graphql.ts
 import { gql } from "@apollo/client";
 
 export const GET_MY_PROFILE_QUERY = gql`

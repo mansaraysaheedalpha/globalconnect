@@ -9,3 +9,29 @@ export const GET_MY_ORGS_QUERY = gql`
     }
   }
 `;
+
+// Corrected query: Added variables for sorting.
+export const GET_EVENTS_BY_ORGANIZATION_QUERY = gql`
+  query GetEventsByOrganization(
+    $limit: Int
+    $offset: Int
+    $sortBy: String
+    $sortDirection: String
+  ) {
+    eventsByOrganization(
+      limit: $limit
+      offset: $offset
+      sortBy: $sortBy
+      sortDirection: $sortDirection
+    ) {
+      totalCount
+      events {
+        id
+        name
+        status
+        startDate
+        registrationsCount
+      }
+    }
+  }
+`;

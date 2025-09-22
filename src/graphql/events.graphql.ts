@@ -1,44 +1,72 @@
 import { gql } from "@apollo/client";
 
-// --- Queries & Mutations for Events ---
-
-export const GET_EVENTS_QUERY = gql`
-  query GetEventsByOrganization {
-    eventsByOrganization {
+export const CREATE_EVENT_MUTATION = gql`
+  mutation CreateEvent($eventIn: EventCreateInput!) {
+    createEvent(eventIn: $eventIn) {
       id
       name
       status
       startDate
-      endDate
-      isPublic
     }
   }
 `;
 
-export const CREATE_EVENT_MUTATION = gql`
-  mutation CreateEvent($input: EventCreateInput!) {
-    createEvent(eventIn: $input) {
-      id
-      name
-    }
-  }
-`;
-
-export const GET_EVENT_DETAILS_QUERY = gql`
+export const GET_EVENT_BY_ID_QUERY = gql`
   query GetEventById($id: ID!) {
     event(id: $id) {
       id
+      ownerId
       name
       description
       status
       startDate
       endDate
       isPublic
+      imageUrl
+      registrationsCount
+      venueId
     }
   }
 `;
 
-// --- Queries & Mutations for Sessions ---
+export const ARCHIVE_EVENT_MUTATION = gql`
+  mutation ArchiveEvent($id: String!) {
+    archiveEvent(id: $id) {
+      id
+      isArchived
+    }
+  }
+`;
+
+export const UPDATE_EVENT_MUTATION = gql`
+  mutation UpdateEvent($id: String!, $eventIn: EventUpdateInput!) {
+    updateEvent(id: $id, eventIn: $eventIn) {
+      id
+      name
+      description
+      startDate
+      endDate
+    }
+  }
+`;
+
+// --- ADD THIS NEW MUTATION ---
+export const RESTORE_EVENT_MUTATION = gql`
+  mutation RestoreEvent($id: String!) {
+    restoreEvent(id: $id) {
+      id
+      isArchived
+    }
+  }
+`;
+
+export const GET_ARCHIVED_EVENTS_COUNT_QUERY = gql`
+  query GetArchivedEventsCount($status: String) {
+    eventsByOrganization(status: $status) {
+      totalCount
+    }
+  }
+`;
 
 export const GET_SESSIONS_BY_EVENT_QUERY = gql`
   query GetSessionsByEvent($eventId: ID!) {
@@ -56,45 +84,16 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
 `;
 
 export const CREATE_SESSION_MUTATION = gql`
-  mutation CreateSession($input: SessionCreateInput!) {
-    createSession(sessionIn: $input) {
+  mutation CreateSession($sessionIn: SessionCreateInput!) {
+    createSession(sessionIn: $sessionIn) {
       id
       title
-    }
-  }
-`;
-
-export const GET_REGISTRATIONS_BY_EVENT_QUERY = gql`
-  query GetRegistrationsByEvent($eventId: ID!) {
-    registrationsByEvent(eventId: $eventId) {
-      id
-      status
-      ticketCode
-      checkedInAt
-      # Include details for both registered users and guests
-      user {
+      startTime
+      endTime
+      speakers {
         id
-        firstName
-        lastName
-        email
+        name
       }
-      guestEmail
-      guestName
-    }
-  }
-`;
-
-
-export const CREATE_REGISTRATION_MUTATION = gql`
-  mutation CreateRegistration($input: RegistrationCreateInput!) {
-    createRegistration(registrationIn: $input) {
-      id
-      status
-      user {
-        id
-        email
-      }
-      guestEmail
     }
   }
 `;

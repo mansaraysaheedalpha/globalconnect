@@ -1,20 +1,40 @@
-// src/components/ui/description-list.tsx
+import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// A simple component for clean key-value pair displays
-export function DescriptionList({
-  title,
-  description,
-  className,
-}: {
-  title: React.ReactNode;
-  description: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("grid gap-1.5", className)}>
-      <dt className="text-sm font-medium text-muted-foreground">{title}</dt>
-      <dd className="text-base font-semibold">{description}</dd>
-    </div>
-  );
-}
+const DescriptionList = React.forwardRef<
+  HTMLDListElement,
+  React.HTMLAttributes<HTMLDListElement>
+>(({ className, ...props }, ref) => (
+  <dl
+    ref={ref}
+    className={cn("grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-3", className)}
+    {...props}
+  />
+));
+DescriptionList.displayName = "DescriptionList";
+
+const DescriptionTerm = React.forwardRef<
+  HTMLElement,
+  React.HTMLAttributes<HTMLElement>
+>(({ className, ...props }, ref) => (
+  <dt
+    ref={ref}
+    className={cn("font-medium text-gray-900", className)}
+    {...props}
+  />
+));
+DescriptionTerm.displayName = "DescriptionTerm";
+
+const DescriptionDetails = React.forwardRef<
+  HTMLElement,
+  React.HTMLAttributes<HTMLElement>
+>(({ className, ...props }, ref) => (
+  <dd
+    ref={ref}
+    className={cn("sm:col-span-2 text-gray-700", className)}
+    {...props}
+  />
+));
+DescriptionDetails.displayName = "DescriptionDetails";
+
+export { DescriptionList, DescriptionTerm, DescriptionDetails };
