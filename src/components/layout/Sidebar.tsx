@@ -1,4 +1,3 @@
-// src/components/layout/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -12,9 +11,9 @@ import {
   Settings,
   PlusCircle,
   Calendar,
+  Mic, // <-- ADD THIS IMPORT
 } from "lucide-react";
 
-// The Sidebar now receives a prop to open the modal
 export function Sidebar({
   onOpenCreateOrgModal,
 }: {
@@ -29,9 +28,15 @@ export function Sidebar({
       icon: LayoutDashboard,
     },
     {
-      href: "/events", // <-- ADD THIS OBJECT
+      href: "/events",
       label: "Events",
       icon: Calendar,
+    },
+    {
+      // <-- ADD THIS OBJECT
+      href: "/speakers",
+      label: "Speakers",
+      icon: Mic,
     },
     {
       href: "/team",
@@ -62,7 +67,7 @@ export function Sidebar({
       <nav className="flex flex-col gap-2">
         {navLinks.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.href;
+          const isActive = pathname.startsWith(link.href); // Use startsWith for nested routes
 
           return (
             <Link

@@ -97,3 +97,26 @@ export const CREATE_SESSION_MUTATION = gql`
     }
   }
 `;
+
+export const UPDATE_SESSION_MUTATION = gql`
+  mutation UpdateSession($id: String!, $sessionIn: SessionUpdateInput!) {
+    updateSession(id: $id, sessionIn: $sessionIn) {
+      id
+      title
+      startTime
+      endTime
+      speakers {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const ARCHIVE_SESSION_MUTATION = gql`
+  mutation ArchiveSession($id: String!) {
+    archiveSession(id: $id) {
+      id
+    }
+  }
+`;

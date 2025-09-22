@@ -1,12 +1,23 @@
 import { gql } from "@apollo/client";
 
-export const GET_SPEAKERS_BY_ORG_QUERY = gql`
-  query GetSpeakersByOrg {
-    # This query name must match a query defined in your backend resolvers
-    # I'm assuming one will be created that returns all speakers for the user's org
+export const GET_ORGANIZATION_SPEAKERS_QUERY = gql`
+  query GetOrganizationSpeakers {
     organizationSpeakers {
       id
       name
+      bio
+      expertise
+    }
+  }
+`;
+
+export const CREATE_SPEAKER_MUTATION = gql`
+  mutation CreateSpeaker($speakerIn: SpeakerCreateInput!) {
+    createSpeaker(speakerIn: $speakerIn) {
+      id
+      name
+      bio
+      expertise
     }
   }
 `;

@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { useMutation } from "@apollo/client";
+import { toast } from "sonner";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,10 +12,37 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PlusCircle, Clock, Mic } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  PlusCircle,
+  Clock,
+  Mic,
+  MoreVertical,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AddSessionModal } from "./add-session-modal";
+import { EditSessionModal } from "./edit-session-modal";
+import {
+  ARCHIVE_SESSION_MUTATION,
+  GET_SESSIONS_BY_EVENT_QUERY,
+} from "@/graphql/events.graphql";
 
-// Define the types for our data
 type Speaker = {
   id: string;
   name: string;
@@ -33,48 +63,65 @@ interface SessionListProps {
   eventEndDate: string;
 }
 
-// A small component to render a single session
-const SessionItem = ({ session }: { session: Session }) => {
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+export const SessionList = ({
+  sessions,
+  eventId,
+  eventStartDate,
+  eventEndDate,
+}: SessionListProps) => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+
+  const [archiveSession] = useMutation(ARCHIVE_SESSION_MUTATION, {
+    onCompleted: () => toast.success("Session deleted."),
+    onError: (error) =>
+      toast.error("Failed to delete session", { description: error.message }),
+    update(cache, { data: { archiveSession } }) {
+      const data = cache.readQuery<{ sessionsByEvent: Session[] }>({
+        query: GET_SESSIONS_BY_EVENT_QUERY,
+        variables: { eventId },
+      });
+      if (data) {
+        cache.writeQuery({
+          query: GET_SESSIONS_BY_EVENT_QUERY,
+          variables: { eventId },
+          data: {
+            sessionsByEvent: data.sessionsByEvent.filter(
+              (s) => s.id !== archiveSession.id
+            ),
+          },
+        });
+      }
+    },
+  });
+
+  const handleDelete = () => {
+    if (sessionToDelete) {
+      archiveSession({ variables: { id: sessionToDelete.id } });
+      setSessionToDelete(null);
+    }
   };
 
   return (
-    <div className="p-4 border rounded-lg">
-      <h3 className="font-semibold">{session.title}</h3>
-      <div className="text-sm text-muted-foreground mt-2 space-y-2">
-        <div className="flex items-center">
-          <Clock className="h-4 w-4 mr-2" />
-          <span>
-            {formatTime(session.startTime)} - {formatTime(session.endTime)}
-          </span>
-        </div>
-        {session.speakers.length > 0 && (
-          <div className="flex items-center">
-            <Mic className="h-4 w-4 mr-2" />
-            <span>{session.speakers.map((s) => s.name).join(", ")}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export const SessionList = ({ sessions, eventId, eventStartDate, eventEndDate }: SessionListProps) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-  return (
     <>
       <AddSessionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
         eventId={eventId}
         eventStartDate={eventStartDate}
         eventEndDate={eventEndDate}
       />
+      {sessionToEdit && (
+        <EditSessionModal
+          isOpen={!!sessionToEdit}
+          onClose={() => setSessionToEdit(null)}
+          session={sessionToEdit}
+          eventStartDate={eventStartDate}
+          eventEndDate={eventEndDate}
+        />
+      )}
+
       <Card className="mt-8">
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -84,8 +131,7 @@ export const SessionList = ({ sessions, eventId, eventStartDate, eventEndDate }:
                 The schedule of talks and workshops for this event.
               </CardDescription>
             </div>
-            <Button onClick={() => setIsModalOpen(true)}>
-              {" "}
+            <Button onClick={() => setIsAddModalOpen(true)}>
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Session
             </Button>
@@ -95,7 +141,53 @@ export const SessionList = ({ sessions, eventId, eventStartDate, eventEndDate }:
           {sessions.length > 0 ? (
             <div className="space-y-4">
               {sessions.map((session) => (
-                <SessionItem key={session.id} session={session} />
+                <div
+                  key={session.id}
+                  className="p-4 border rounded-lg flex justify-between items-center"
+                >
+                  <div>
+                    <h3 className="font-semibold">{session.title}</h3>
+                    <div className="text-sm text-muted-foreground mt-2 space-y-2">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2" />
+                        <span>
+                          {format(new Date(session.startTime), "p")} -{" "}
+                          {format(new Date(session.endTime), "p")}
+                        </span>
+                      </div>
+                      {session.speakers.length > 0 && (
+                        <div className="flex items-center">
+                          <Mic className="h-4 w-4 mr-2" />
+                          <span>
+                            {session.speakers.map((s) => s.name).join(", ")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        onSelect={() => setSessionToEdit(session)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => setSessionToDelete(session)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ))}
             </div>
           ) : (
@@ -106,6 +198,30 @@ export const SessionList = ({ sessions, eventId, eventStartDate, eventEndDate }:
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!sessionToDelete}
+        onOpenChange={(open) => !open && setSessionToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the session "{sessionToDelete?.title}
+              ". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

@@ -1,14 +1,15 @@
+//src / app / platform / events / _components / edit - session - modal.tsx;
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useMutation } from "@apollo/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
-  CREATE_SESSION_MUTATION,
+  UPDATE_SESSION_MUTATION,
   GET_SESSIONS_BY_EVENT_QUERY,
 } from "@/graphql/events.graphql";
 import { Button } from "@/components/ui/button";
@@ -30,129 +31,111 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Loader } from "lucide-react";
 import { SpeakerMultiSelect } from "@/components/ui/speaker-multi-select";
+import { Loader } from "lucide-react";
 
-interface AddSessionModalProps {
+type SessionData = {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  speakers: { id: string }[];
+};
+
+interface EditSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  eventId: string;
+  session: SessionData;
   eventStartDate: string;
   eventEndDate: string;
 }
 
-// Define the shape of a Session for cache updates
-type Session = {
-  id: string;
-  __typename?: "SessionType";
-  [key: string]: any;
-};
-
-// Define the shape of the query data in the cache
-type SessionsQueryData = {
-  sessionsByEvent: Session[];
-};
-
-// --- CORRECTED ZOD SCHEMA ---
 const formSchema = z
   .object({
     title: z.string().min(3, "Session title must be at least 3 characters."),
-    sessionDate: z.date({
-      required_error: "Please select a date for the session.",
-    }),
+    sessionDate: z.date({ required_error: "Please select a date." }),
     startTime: z
       .string()
-      .regex(
-        /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-        "Please use a valid HH:MM format."
-      ),
+      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please use HH:MM format."),
     endTime: z
       .string()
-      .regex(
-        /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-        "Please use a valid HH:MM format."
-      ),
-    speakerIds: z.array(z.string()).optional(), // <-- Add speakerIds field
+      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please use HH:MM format."),
+    speakerIds: z.array(z.string()).optional(),
   })
   .refine((data) => data.endTime > data.startTime, {
-    message: "End time must be after the start time.",
+    message: "End time must be after start time.",
     path: ["endTime"],
   });
 
-// Infer the type from the schema
 type SessionFormValues = z.infer<typeof formSchema>;
 
-export const AddSessionModal = ({
+export const EditSessionModal = ({
   isOpen,
   onClose,
-  eventId,
+  session,
   eventStartDate,
   eventEndDate,
-}: AddSessionModalProps) => {
+}: EditSessionModalProps) => {
   const form = useForm<SessionFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      sessionDate: new Date(eventStartDate),
-      startTime: "09:00",
-      endTime: "10:00",
-      speakerIds: [], // <-- Set default value
-    },
   });
 
-  const [createSession, { loading }] = useMutation(CREATE_SESSION_MUTATION, {
-    onCompleted: () => {
-      toast.success("Session added successfully!");
-      onClose();
-      form.reset();
-    },
-    onError: (error) => {
-      toast.error("Failed to add session", { description: error.message });
-    },
-    update(cache, { data: { createSession } }) {
-      const queryOptions = {
-        query: GET_SESSIONS_BY_EVENT_QUERY,
-        variables: { eventId },
-      };
-
-      const data = cache.readQuery<SessionsQueryData>(queryOptions);
-      if (!data) return;
-
-      cache.writeQuery<SessionsQueryData>({
-        ...queryOptions,
-        data: {
-          sessionsByEvent: [...data.sessionsByEvent, createSession],
-        },
+  useEffect(() => {
+    if (session) {
+      form.reset({
+        title: session.title,
+        sessionDate: parseISO(session.startTime),
+        startTime: format(parseISO(session.startTime), "HH:mm"),
+        endTime: format(parseISO(session.endTime), "HH:mm"),
+        speakerIds: session.speakers.map((s) => s.id),
       });
+    }
+  }, [session, form]);
+
+  const [updateSession, { loading }] = useMutation(UPDATE_SESSION_MUTATION, {
+    onCompleted: () => {
+      toast.success("Session updated successfully!");
+      onClose();
     },
+    onError: (error) =>
+      toast.error("Failed to update session", { description: error.message }),
+    refetchQueries: [
+      {
+        query: GET_SESSIONS_BY_EVENT_QUERY,
+        variables: { eventId: session?.id ? session.id.split("_")[0] : "" },
+      },
+    ],
   });
 
   const onSubmit = (values: SessionFormValues) => {
-    createSession({
+    const combinedStartTime = new Date(values.sessionDate);
+    const [startHours, startMinutes] = values.startTime.split(":").map(Number);
+    combinedStartTime.setHours(startHours, startMinutes);
+
+    const combinedEndTime = new Date(values.sessionDate);
+    const [endHours, endMinutes] = values.endTime.split(":").map(Number);
+    combinedEndTime.setHours(endHours, endMinutes);
+
+    updateSession({
       variables: {
+        id: session.id,
         sessionIn: {
-          eventId: eventId,
           title: values.title,
-          sessionDate: format(values.sessionDate, "yyyy-MM-dd"),
-          startTime: values.startTime,
-          endTime: values.endTime,
-          speakerIds: values.speakerIds, // <-- Pass the speaker IDs
+          startTime: combinedStartTime.toISOString(),
+          endTime: combinedEndTime.toISOString(),
+          speakerIds: values.speakerIds,
         },
       },
     });
   };
 
-  const fromDate = new Date(eventStartDate);
-  const toDate = new Date(eventEndDate);
-  fromDate.setHours(0, 0, 0, 0);
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Session</DialogTitle>
+          <DialogTitle>Edit Session</DialogTitle>
           <DialogDescription>
-            The session date must be within the event's date range.
+            Make changes to "{session?.title}".
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -167,7 +150,7 @@ export const AddSessionModal = ({
                 <FormItem>
                   <FormLabel>Session Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Keynote Address" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,8 +165,8 @@ export const AddSessionModal = ({
                   <DatePicker
                     date={field.value}
                     setDate={field.onChange}
-                    fromDate={fromDate}
-                    toDate={toDate}
+                    fromDate={new Date(eventStartDate)}
+                    toDate={new Date(eventEndDate)}
                   />
                   <FormMessage />
                 </FormItem>
@@ -222,7 +205,7 @@ export const AddSessionModal = ({
               name="speakerIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Speakers (Optional)</FormLabel>
+                  <FormLabel>Speakers</FormLabel>
                   <SpeakerMultiSelect
                     selectedSpeakerIds={field.value || []}
                     onChange={field.onChange}
@@ -231,7 +214,6 @@ export const AddSessionModal = ({
                 </FormItem>
               )}
             />
-
             <DialogFooter>
               <Button
                 type="button"
@@ -243,7 +225,7 @@ export const AddSessionModal = ({
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                Add Session
+                Save Changes
               </Button>
             </DialogFooter>
           </form>
