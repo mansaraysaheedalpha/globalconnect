@@ -182,7 +182,7 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
   return isArchivedView ? (
     <div>{cardContent}</div>
   ) : (
-    <Link href={`/events/${event.id}`} className="no-underline h-full">
+    <Link href={`/dashboard/events/${event.id}`} className="no-underline h-full">
       {cardContent}
     </Link>
   );

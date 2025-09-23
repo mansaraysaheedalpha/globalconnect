@@ -120,3 +120,13 @@ export const ARCHIVE_SESSION_MUTATION = gql`
     }
   }
 `;
+
+export const PUBLISH_EVENT_MUTATION = gql`
+  mutation PublishEvent($id: String!) {
+    publishEvent(id: $id) {
+      id
+      status
+      isPublic
+    }
+  }
+`;

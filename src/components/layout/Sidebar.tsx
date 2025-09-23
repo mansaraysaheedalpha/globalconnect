@@ -11,7 +11,7 @@ import {
   Settings,
   PlusCircle,
   Calendar,
-  Mic, // <-- ADD THIS IMPORT
+  Mic,
 } from "lucide-react";
 
 export function Sidebar({
@@ -28,12 +28,11 @@ export function Sidebar({
       icon: LayoutDashboard,
     },
     {
-      href: "/events",
+      href: "/dashboard/events",
       label: "Events",
       icon: Calendar,
     },
     {
-      // <-- ADD THIS OBJECT
       href: "/speakers",
       label: "Speakers",
       icon: Mic,
@@ -67,7 +66,14 @@ export function Sidebar({
       <nav className="flex flex-col gap-2">
         {navLinks.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname.startsWith(link.href); // Use startsWith for nested routes
+
+          // --- THIS IS THE FIX ---
+          // Use an exact match for the dashboard, but startsWith for everything else.
+          const isActive =
+            link.href === "/dashboard"
+              ? pathname === link.href
+              : pathname.startsWith(link.href);
+          // ---------------------
 
           return (
             <Link
