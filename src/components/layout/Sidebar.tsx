@@ -11,6 +11,7 @@ import {
   Settings,
   PlusCircle,
   Calendar,
+  MapPin,
   Mic,
 } from "lucide-react";
 
@@ -36,6 +37,11 @@ export function Sidebar({
       href: "/speakers",
       label: "Speakers",
       icon: Mic,
+    },
+    {
+      href: "/venues",
+      label: "Venues",
+      icon: MapPin,
     },
     {
       href: "/team",
