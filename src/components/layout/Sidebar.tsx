@@ -1,4 +1,3 @@
-// src/components/layout/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -12,9 +11,9 @@ import {
   Settings,
   PlusCircle,
   Calendar,
+  Mic,
 } from "lucide-react";
 
-// The Sidebar now receives a prop to open the modal
 export function Sidebar({
   onOpenCreateOrgModal,
 }: {
@@ -29,9 +28,14 @@ export function Sidebar({
       icon: LayoutDashboard,
     },
     {
-      href: "/events", // <-- ADD THIS OBJECT
+      href: "/dashboard/events",
       label: "Events",
       icon: Calendar,
+    },
+    {
+      href: "/speakers",
+      label: "Speakers",
+      icon: Mic,
     },
     {
       href: "/team",
@@ -62,7 +66,14 @@ export function Sidebar({
       <nav className="flex flex-col gap-2">
         {navLinks.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.href;
+
+          // --- THIS IS THE FIX ---
+          // Use an exact match for the dashboard, but startsWith for everything else.
+          const isActive =
+            link.href === "/dashboard"
+              ? pathname === link.href
+              : pathname.startsWith(link.href);
+          // ---------------------
 
           return (
             <Link

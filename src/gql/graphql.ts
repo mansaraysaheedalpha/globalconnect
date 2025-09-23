@@ -53,16 +53,25 @@ export type EventCreateInput = {
   venueId?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type EventStatsType = {
+  __typename?: 'EventStatsType';
+  totalEvents: Scalars['Int']['output'];
+  upcomingEvents: Scalars['Int']['output'];
+  upcomingRegistrations: Scalars['Int']['output'];
+};
+
 export type EventType = {
   __typename?: 'EventType';
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   endDate: Scalars['DateTime']['output'];
   id: Scalars['String']['output'];
+  imageUrl?: Maybe<Scalars['String']['output']>;
   isArchived: Scalars['Boolean']['output'];
   isPublic: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   organizationId: Scalars['String']['output'];
+  registrationsCount: Scalars['Int']['output'];
   startDate: Scalars['DateTime']['output'];
   status: Scalars['String']['output'];
   updatedAt: Scalars['DateTime']['output'];
@@ -77,6 +86,12 @@ export type EventUpdateInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['String']['input']>;
   venueId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type EventsPayload = {
+  __typename?: 'EventsPayload';
+  events: Array<EventType>;
+  totalCount: Scalars['Int']['output'];
 };
 
 export type Login2FaInput = {
@@ -105,6 +120,8 @@ export type Mutation = {
   createAdditionalOrganization: AuthPayload;
   createEvent: EventType;
   createInvitation: Scalars['String']['output'];
+  createRegistration: RegistrationType;
+  createSession: SessionType;
   deleteOrganization: DeleteOrganizationPayload;
   generate2FA: TwoFactorSetupPayload;
   login: LoginPayload;
@@ -149,6 +166,17 @@ export type MutationCreateEventArgs = {
 
 export type MutationCreateInvitationArgs = {
   input: CreateInvitationInput;
+};
+
+
+export type MutationCreateRegistrationArgs = {
+  eventId: Scalars['String']['input'];
+  registrationIn: RegistrationCreateInput;
+};
+
+
+export type MutationCreateSessionArgs = {
+  sessionIn: SessionCreateInput;
 };
 
 
@@ -258,19 +286,34 @@ export type PerformResetInput = {
 export type Query = {
   __typename?: 'Query';
   event: EventType;
-  eventsByOrganization: Array<EventType>;
+  eventStats: EventStatsType;
+  eventsByOrganization: EventsPayload;
   getMyProfile: User;
   listRolesForOrg: Array<Role>;
   myOrganizations: Array<Organization>;
   organization: Organization;
   organizationMembers: Array<OrganizationMember>;
+  organizationSpeakers: Array<SpeakerType>;
+  registrationsByEvent: Array<RegistrationType>;
   sayHello: Scalars['String']['output'];
   sentiment: SentimentType;
+  sessionsByEvent: Array<SessionType>;
+  user: User;
 };
 
 
 export type QueryEventArgs = {
-  id: Scalars['String']['input'];
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryEventsByOrganizationArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  sortBy?: InputMaybe<Scalars['String']['input']>;
+  sortDirection?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -279,8 +322,23 @@ export type QueryOrganizationArgs = {
 };
 
 
+export type QueryRegistrationsByEventArgs = {
+  eventId: Scalars['ID']['input'];
+};
+
+
 export type QuerySentimentArgs = {
   text: Scalars['String']['input'];
+};
+
+
+export type QuerySessionsByEventArgs = {
+  eventId: Scalars['ID']['input'];
+};
+
+
+export type QueryUserArgs = {
+  id: Scalars['String']['input'];
 };
 
 export type RegisterUserInput = {
@@ -289,6 +347,24 @@ export type RegisterUserInput = {
   last_name: Scalars['String']['input'];
   organization_name: Scalars['String']['input'];
   password: Scalars['String']['input'];
+};
+
+export type RegistrationCreateInput = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  firstName?: InputMaybe<Scalars['String']['input']>;
+  lastName?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type RegistrationType = {
+  __typename?: 'RegistrationType';
+  checkedInAt?: Maybe<Scalars['DateTime']['output']>;
+  guestEmail?: Maybe<Scalars['String']['output']>;
+  guestName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  ticketCode: Scalars['String']['output'];
+  user?: Maybe<User>;
 };
 
 export type RequestResetInput = {
@@ -305,6 +381,35 @@ export type SentimentType = {
   __typename?: 'SentimentType';
   label: Scalars['String']['output'];
   score: Scalars['Float']['output'];
+};
+
+export type SessionCreateInput = {
+  endTime: Scalars['String']['input'];
+  eventId: Scalars['String']['input'];
+  speakerIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  startTime: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+};
+
+export type SessionType = {
+  __typename?: 'SessionType';
+  endTime: Scalars['DateTime']['output'];
+  eventId: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  isArchived: Scalars['Boolean']['output'];
+  speakers: Array<SpeakerType>;
+  startTime: Scalars['DateTime']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type SpeakerType = {
+  __typename?: 'SpeakerType';
+  bio?: Maybe<Scalars['String']['output']>;
+  expertise?: Maybe<Array<Scalars['String']['output']>>;
+  id: Scalars['String']['output'];
+  isArchived: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['String']['output'];
 };
 
 export type TurnOn2FaInput = {
@@ -454,18 +559,6 @@ export type CreateAdditionalOrganizationMutationVariables = Exact<{
 
 export type CreateAdditionalOrganizationMutation = { __typename?: 'Mutation', createAdditionalOrganization: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, first_name: string, last_name: string, email: string } } };
 
-export type GetEventsByOrganizationQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetEventsByOrganizationQuery = { __typename?: 'Query', eventsByOrganization: Array<{ __typename?: 'EventType', id: string, name: string, status: string, startDate: any, endDate: any, isPublic: boolean }> };
-
-export type CreateEventMutationVariables = Exact<{
-  input: EventCreateInput;
-}>;
-
-
-export type CreateEventMutation = { __typename?: 'Mutation', createEvent: { __typename?: 'EventType', id: string, name: string } };
-
 export type GetMyOrgsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -494,6 +587,11 @@ export type TurnOff2FaMutationVariables = Exact<{ [key: string]: never; }>;
 
 
 export type TurnOff2FaMutation = { __typename?: 'Mutation', turnOff2FA: string };
+
+export type GetSpeakersByOrgQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetSpeakersByOrgQuery = { __typename?: 'Query', organizationSpeakers: Array<{ __typename?: 'SpeakerType', id: string, name: string }> };
 
 export type GetMyProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -532,13 +630,12 @@ export const Generate2FaDocument = {"kind":"Document","definitions":[{"kind":"Op
 export const TurnOn2FaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"TurnOn2FA"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TurnOn2FAInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"turnOn2FA"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}]}]}}]} as unknown as DocumentNode<TurnOn2FaMutation, TurnOn2FaMutationVariables>;
 export const PerformPasswordResetDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"PerformPasswordReset"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PerformResetInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"performPasswordReset"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}]}]}}]} as unknown as DocumentNode<PerformPasswordResetMutation, PerformPasswordResetMutationVariables>;
 export const CreateAdditionalOrganizationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateAdditionalOrganization"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OnboardingCreateOrganizationInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createAdditionalOrganization"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"token"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]}}]} as unknown as DocumentNode<CreateAdditionalOrganizationMutation, CreateAdditionalOrganizationMutationVariables>;
-export const GetEventsByOrganizationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetEventsByOrganization"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"eventsByOrganization"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"isPublic"}}]}}]}}]} as unknown as DocumentNode<GetEventsByOrganizationQuery, GetEventsByOrganizationQueryVariables>;
-export const CreateEventDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateEvent"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"EventCreateInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createEvent"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"eventIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<CreateEventMutation, CreateEventMutationVariables>;
 export const GetMyOrgsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetMyOrgs"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"myOrganizations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<GetMyOrgsQuery, GetMyOrgsQueryVariables>;
 export const SwitchOrgDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SwitchOrg"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"organizationId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"switchOrganization"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"organizationId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"organizationId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"token"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}}]}}]}}]}}]} as unknown as DocumentNode<SwitchOrgMutation, SwitchOrgMutationVariables>;
 export const OnboardingCreateOrganizationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"OnboardingCreateOrganization"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"OnboardingCreateOrganizationInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"onboardingCreateOrganization"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"token"}},{"kind":"Field","name":{"kind":"Name","value":"user"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]}}]} as unknown as DocumentNode<OnboardingCreateOrganizationMutation, OnboardingCreateOrganizationMutationVariables>;
 export const GetMyProfile2FaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetMyProfile2FA"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getMyProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isTwoFactorEnabled"}}]}}]}}]} as unknown as DocumentNode<GetMyProfile2FaQuery, GetMyProfile2FaQueryVariables>;
 export const TurnOff2FaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"TurnOff2FA"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"turnOff2FA"}}]}}]} as unknown as DocumentNode<TurnOff2FaMutation, TurnOff2FaMutationVariables>;
+export const GetSpeakersByOrgDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSpeakersByOrg"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"organizationSpeakers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<GetSpeakersByOrgQuery, GetSpeakersByOrgQueryVariables>;
 export const GetMyProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetMyProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getMyProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]} as unknown as DocumentNode<GetMyProfileQuery, GetMyProfileQueryVariables>;
 export const UpdateMyProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateMyProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateMyProfileInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateMyProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}}]}}]}}]} as unknown as DocumentNode<UpdateMyProfileMutation, UpdateMyProfileMutationVariables>;
 export const ChangePasswordDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangePassword"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ChangePasswordInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changePassword"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}]}]}}]} as unknown as DocumentNode<ChangePasswordMutation, ChangePasswordMutationVariables>;
