@@ -21,3 +21,22 @@ export const CREATE_SPEAKER_MUTATION = gql`
     }
   }
 `;
+
+export const UPDATE_SPEAKER_MUTATION = gql`
+  mutation UpdateSpeaker($id: String!, $speakerIn: SpeakerUpdateInput!) {
+    updateSpeaker(id: $id, speakerIn: $speakerIn) {
+      id
+      name
+      bio
+      expertise
+    }
+  }
+`;
+
+export const ARCHIVE_SPEAKER_MUTATION = gql`
+  mutation ArchiveSpeaker($id: String!) {
+    archiveSpeaker(id: $id) {
+      id
+    }
+  }
+`;
