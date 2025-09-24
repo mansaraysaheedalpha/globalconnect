@@ -24,7 +24,11 @@ export const GET_EVENT_BY_ID_QUERY = gql`
       isPublic
       imageUrl
       registrationsCount
-      venueId
+      venue {
+        id
+        name
+        address
+      }
     }
   }
 `;

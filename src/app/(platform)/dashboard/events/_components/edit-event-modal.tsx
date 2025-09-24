@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,7 +10,7 @@ import {
   GET_EVENT_BY_ID_QUERY,
   UPDATE_EVENT_MUTATION,
 } from "@/graphql/events.graphql";
-
+import { GET_ORGANIZATION_VENUES_QUERY } from "@/graphql/venues.graphql";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +31,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader } from "lucide-react";
 
 // Define the type for the event data passed as a prop
@@ -40,6 +47,7 @@ interface EventData {
   description?: string | null;
   startDate: string;
   endDate: string;
+  venueId?: string | null;
 }
 
 interface EditEventModalProps {
@@ -54,6 +62,7 @@ const formSchema = z
     description: z.string().optional(),
     startDate: z.date({ required_error: "A start date is required." }),
     endDate: z.date({ required_error: "An end date is required." }),
+    venueId: z.string().optional(),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "End date cannot be before the start date.",
@@ -71,6 +80,11 @@ export const EditEventModal = ({
     resolver: zodResolver(formSchema),
   });
 
+    const { data: venuesData, loading: venuesLoading } = useQuery(
+      GET_ORGANIZATION_VENUES_QUERY
+    );
+    const venues = venuesData?.organizationVenues || [];
+
   // Pre-fill the form with event data when the modal opens
   useEffect(() => {
     if (event) {
@@ -79,6 +93,7 @@ export const EditEventModal = ({
         description: event.description || "",
         startDate: new Date(event.startDate),
         endDate: new Date(event.endDate),
+        venueId: event.venueId || undefined,
       });
     }
   }, [event, form]);
@@ -174,6 +189,35 @@ export const EditEventModal = ({
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="venueId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Venue (Optional)</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={venuesLoading}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a venue" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {venues.map((venue: any) => (
+                        <SelectItem key={venue.id} value={venue.id}>
+                          {venue.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
               <Button
                 type="button"

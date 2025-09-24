@@ -2,14 +2,11 @@
 
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { toast } from "sonner";
 
 import {
   GET_ORGANIZATION_VENUES_QUERY,
-  CREATE_VENUE_MUTATION,
+  ARCHIVE_VENUE_MUTATION,
 } from "@/graphql/venues.graphql";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,23 +17,25 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, PlusCircle, Loader } from "lucide-react";
+import { MapPin, PlusCircle, Loader, MoreVertical, Edit, Trash2 } from "lucide-react";
+import {AddVenueModal} from "./_components/add-venue-modal";
+import { EditVenueModal } from "./_components/edit-venue-modal";
 
 // --- Type Definitions ---
 type Venue = {
@@ -50,123 +49,45 @@ type VenuesQueryData = {
   organizationVenues: Venue[];
 };
 
-// --- Add Venue Modal ---
-const formSchema = z.object({
-  name: z.string().min(2, "Venue name must be at least 2 characters."),
-  address: z.string().optional(),
-});
 
-type VenueFormValues = z.infer<typeof formSchema>;
-
-const AddVenueModal = ({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) => {
-  const form = useForm<VenueFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { name: "", address: "" },
-  });
-
-  const [createVenue, { loading }] = useMutation(CREATE_VENUE_MUTATION, {
-    onCompleted: () => {
-      toast.success("Venue added successfully!");
-      onClose();
-      form.reset();
-    },
-    onError: (error) =>
-      toast.error("Failed to add venue", { description: error.message }),
-    update(cache, { data: { createVenue } }) {
-      const data = cache.readQuery<VenuesQueryData>({
-        query: GET_ORGANIZATION_VENUES_QUERY,
-      });
-      if (data) {
-        cache.writeQuery({
-          query: GET_ORGANIZATION_VENUES_QUERY,
-          data: {
-            organizationVenues: [...data.organizationVenues, createVenue],
-          },
-        });
-      }
-    },
-  });
-
-  const onSubmit = (values: VenueFormValues) => {
-    createVenue({ variables: { venueIn: values } });
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Venue</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
-          >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Venue Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Grand Convention Center"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., 123 Innovation Drive, Tech City"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}Add
-                Venue
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 // --- Main Venues Page ---
 const VenuesPage = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+   const [venueToEdit, setVenueToEdit] = useState<Venue | null>(null);
+   const [venueToDelete, setVenueToDelete] = useState<Venue | null>(null);
+
   const { data, loading, error } = useQuery<VenuesQueryData>(
     GET_ORGANIZATION_VENUES_QUERY
   );
+
+    const [archiveVenue] = useMutation(ARCHIVE_VENUE_MUTATION, {
+      onCompleted: () => toast.success("Venue deleted."),
+      onError: (err) =>
+        toast.error("Failed to delete venue", { description: err.message }),
+      update(cache, { data: { archiveVenue } }) {
+        const existingData = cache.readQuery<VenuesQueryData>({
+          query: GET_ORGANIZATION_VENUES_QUERY,
+        });
+        if (existingData) {
+          cache.writeQuery({
+            query: GET_ORGANIZATION_VENUES_QUERY,
+            data: {
+              organizationVenues: existingData.organizationVenues.filter(
+                (v) => v.id !== archiveVenue.id
+              ),
+            },
+          });
+        }
+      },
+    });
+
+    const handleDelete = () => {
+      if (venueToDelete) {
+        archiveVenue({ variables: { id: venueToDelete.id } });
+        setVenueToDelete(null);
+      }
+    };
 
   if (loading) {
     return (
@@ -196,13 +117,21 @@ const VenuesPage = () => {
   return (
     <>
       <AddVenueModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
       />
+      {venueToEdit && (
+        <EditVenueModal
+          isOpen={!!venueToEdit}
+          onClose={() => setVenueToEdit(null)}
+          venue={venueToEdit}
+        />
+      )}
+
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Venues</h1>
-          <Button onClick={() => setIsModalOpen(true)}>
+          <Button onClick={() => setIsAddModalOpen(true)}>
             <PlusCircle className="h-4 w-4 mr-2" />
             Add Venue
           </Button>
@@ -212,8 +141,28 @@ const VenuesPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {venues.map((venue) => (
               <Card key={venue.id}>
-                <CardHeader>
+                <CardHeader className="flex-row items-start justify-between">
                   <CardTitle>{venue.name}</CardTitle>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onSelect={() => setVenueToEdit(venue)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => setVenueToDelete(venue)}
+                        className="text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </CardHeader>
                 <CardContent>
                   {venue.address && (
@@ -233,6 +182,30 @@ const VenuesPage = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!venueToDelete}
+        onOpenChange={(open) => !open && setVenueToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete the venue "{venueToDelete?.name}". This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

@@ -13,6 +13,7 @@ import {
   Calendar,
   MapPin,
   Mic,
+  BookCopy
 } from "lucide-react";
 
 export function Sidebar({
@@ -43,6 +44,11 @@ export function Sidebar({
       label: "Venues",
       icon: MapPin,
     },
+     { 
+      href: "/dashboard/blueprints",
+      label: "Blueprints",
+      icon: BookCopy,
+     },
     {
       href: "/team",
       label: "Team",
