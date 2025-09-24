@@ -19,6 +19,12 @@ import { useAuthStore } from "@/store/auth.store";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,7 +35,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EditEventModal } from "./edit-event-modal";
-import { Copy, ExternalLink, Globe, Edit, Trash2, Loader } from "lucide-react";
+import {
+  Copy,
+  ExternalLink,
+  Globe,
+  Edit,
+  Trash2,
+  Loader,
+  MoreVertical,
+  BookCopy,
+} from "lucide-react";
+import { SaveAsBlueprintModal } from "./save-as-blueprint-modal";
 
 // --- TYPE DEFINITIONS - Now self-contained within this component ---
 type Event = {
@@ -74,6 +90,7 @@ export const EventDetailHeader = ({
   const { user } = useAuthStore();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBlueprintModalOpen, setIsBlueprintModalOpen] = useState(false);
 
   const [publishEvent, { loading: isPublishing }] = useMutation(
     PUBLISH_EVENT_MUTATION,
@@ -189,6 +206,12 @@ export const EventDetailHeader = ({
         onClose={() => setIsEditDialogOpen(false)}
         event={event}
       />
+      <SaveAsBlueprintModal
+        isOpen={isBlueprintModalOpen}
+        onClose={() => setIsBlueprintModalOpen(false)}
+        eventId={event.id}
+        eventName={event.name}
+      />
 
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -203,18 +226,29 @@ export const EventDetailHeader = ({
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <Loader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-              Delete
-            </Button>
+            {/* --- Actions are now in a Dropdown Menu --- */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => setIsBlueprintModalOpen(true)}
+                >
+                  <BookCopy className="h-4 w-4 mr-2" />
+                  Save as Blueprint
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => setIsDeleteDialogOpen(true)}
+                  className="text-red-500"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Event
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
