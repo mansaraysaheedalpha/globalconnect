@@ -14,23 +14,23 @@ import { AttendeeList } from "../_components/attendee-list";
 import { EventDetailHeader } from "../_components/event-detail-header";
 import { EventDetailsCard } from "../_components/event-details-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Wifi } from "lucide-react";
+import { LiveDashboard } from "./_components/live-dashboard";
 
 const EventDetailPage = () => {
   const params = useParams();
   const eventId = params.eventId as string;
 
-  // --- Query for event details ---
   const {
     data: eventData,
     loading: eventLoading,
     error: eventError,
+    refetch: refetchEvent,
   } = useQuery(GET_EVENT_BY_ID_QUERY, {
     variables: { id: eventId },
     skip: !eventId,
   });
 
-  // --- Query for sessions ---
   const { data: sessionsData, loading: sessionsLoading } = useQuery(
     GET_SESSIONS_BY_EVENT_QUERY,
     {
@@ -39,13 +39,12 @@ const EventDetailPage = () => {
     }
   );
 
-  // --- Query for registrations/attendees ---
   const { data: registrationsData, loading: registrationsLoading } = useQuery(
     GET_REGISTRATIONS_BY_EVENT_QUERY,
     {
       variables: { eventId },
       skip: !eventId,
-      fetchPolicy: "cache-and-network", // Ensure we always get the latest list
+      fetchPolicy: "cache-and-network",
     }
   );
 
@@ -75,14 +74,20 @@ const EventDetailPage = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <EventDetailHeader event={event} />
+      <EventDetailHeader event={event} refetch={refetchEvent} />
 
       <Tabs defaultValue="details">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
+          {" "}
+          {/* <-- Corrected grid columns */}
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="attendees">
             Attendees ({attendees.length})
+          </TabsTrigger>
+          <TabsTrigger value="live" className="flex items-center gap-2">
+            <Wifi className="h-4 w-4 text-red-500 animate-pulse" />
+            Live View
           </TabsTrigger>
         </TabsList>
 
@@ -109,6 +114,10 @@ const EventDetailPage = () => {
           ) : (
             <AttendeeList attendees={attendees} />
           )}
+        </TabsContent>
+
+        <TabsContent value="live">
+          <LiveDashboard eventId={eventId} />
         </TabsContent>
       </Tabs>
     </div>
