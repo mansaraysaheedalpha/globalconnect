@@ -1,3 +1,4 @@
+//src/app/(platform)/events/_components/attendee-list.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";

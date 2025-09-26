@@ -1,3 +1,4 @@
+// src/app/(platform)/dashboard/events/_components/edit-event-modal.tsx
 "use client";
 
 import React, { useEffect } from "react";
@@ -39,8 +40,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader } from "lucide-react";
+import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 
-// Define the type for the event data passed as a prop
 interface EventData {
   id: string;
   name: string;
@@ -48,6 +49,7 @@ interface EventData {
   startDate: string;
   endDate: string;
   venueId?: string | null;
+  imageUrl?: string | null;
 }
 
 interface EditEventModalProps {
@@ -62,7 +64,14 @@ const formSchema = z
     description: z.string().optional(),
     startDate: z.date({ required_error: "A start date is required." }),
     endDate: z.date({ required_error: "An end date is required." }),
+    // --- VENUE ID IS NOW CORRECTLY INCLUDED ---
     venueId: z.string().optional(),
+    // --- IMAGE URL IS NOW CORRECTLY INCLUDED ---
+    imageUrl: z
+      .string()
+      .url({ message: "Please enter a valid URL." })
+      .optional()
+      .or(z.literal("")),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "End date cannot be before the start date.",
@@ -70,6 +79,7 @@ const formSchema = z
   });
 
 type EventFormValues = z.infer<typeof formSchema>;
+type Venue = { id: string; name: string };
 
 export const EditEventModal = ({
   isOpen,
@@ -80,12 +90,11 @@ export const EditEventModal = ({
     resolver: zodResolver(formSchema),
   });
 
-    const { data: venuesData, loading: venuesLoading } = useQuery(
-      GET_ORGANIZATION_VENUES_QUERY
-    );
-    const venues = venuesData?.organizationVenues || [];
+  const { data: venuesData, loading: venuesLoading } = useQuery(
+    GET_ORGANIZATION_VENUES_QUERY
+  );
+  const venues = venuesData?.organizationVenues || [];
 
-  // Pre-fill the form with event data when the modal opens
   useEffect(() => {
     if (event) {
       form.reset({
@@ -94,6 +103,7 @@ export const EditEventModal = ({
         startDate: new Date(event.startDate),
         endDate: new Date(event.endDate),
         venueId: event.venueId || undefined,
+        imageUrl: event.imageUrl || "",
       });
     }
   }, [event, form]);
@@ -101,14 +111,14 @@ export const EditEventModal = ({
   const [updateEvent, { loading }] = useMutation(UPDATE_EVENT_MUTATION, {
     refetchQueries: [
       { query: GET_EVENT_BY_ID_QUERY, variables: { id: event.id } },
+      { query: GET_EVENTS_BY_ORGANIZATION_QUERY, variables: { status: null } },
     ],
     onCompleted: () => {
       toast.success("Event updated successfully!");
       onClose();
     },
-    onError: (error) => {
-      toast.error("Failed to update event", { description: error.message });
-    },
+    onError: (error) =>
+      toast.error("Failed to update event", { description: error.message }),
   });
 
   const onSubmit = (values: EventFormValues) => {
@@ -120,6 +130,8 @@ export const EditEventModal = ({
           description: values.description,
           startDate: values.startDate.toISOString(),
           endDate: values.endDate.toISOString(),
+          venueId: values.venueId,
+          imageUrl: values.imageUrl,
         },
       },
     });
@@ -127,7 +139,7 @@ export const EditEventModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Event</DialogTitle>
           <DialogDescription>
@@ -137,7 +149,7 @@ export const EditEventModal = ({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
+            className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4"
           >
             <FormField
               control={form.control}
@@ -147,6 +159,19 @@ export const EditEventModal = ({
                   <FormLabel>Event Name</FormLabel>
                   <FormControl>
                     <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -206,7 +231,7 @@ export const EditEventModal = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {venues.map((venue: any) => (
+                      {venues.map((venue: Venue) => (
                         <SelectItem key={venue.id} value={venue.id}>
                           {venue.name}
                         </SelectItem>
@@ -217,8 +242,7 @@ export const EditEventModal = ({
                 </FormItem>
               )}
             />
-
-            <DialogFooter>
+            <DialogFooter className="pt-4">
               <Button
                 type="button"
                 variant="outline"

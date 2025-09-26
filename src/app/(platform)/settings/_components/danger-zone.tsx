@@ -1,3 +1,4 @@
+//src / app / (platform) / settings / _components /danger-zone.tsx
 "use client";
 
 import { useState } from "react";

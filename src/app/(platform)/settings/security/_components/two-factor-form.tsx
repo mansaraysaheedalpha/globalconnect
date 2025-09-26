@@ -1,3 +1,4 @@
+// src/app/(platform)/settings/security/_components/two-factor-form.tsx
 "use client";
 
 import { useQuery, useMutation, gql } from "@apollo/client";
@@ -20,7 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { GENERATE_2FA_MUTATION, GET_MY_PROFILE_2FA_STATUS, TURN_OFF_2FA_MUTATION, TURN_ON_2FA_MUTATION } from "@/graphql/security.graphql";
+import {
+  GENERATE_2FA_MUTATION,
+  GET_MY_PROFILE_2FA_STATUS,
+  TURN_OFF_2FA_MUTATION,
+  TURN_ON_2FA_MUTATION,
+} from "@/graphql/security.graphql";
 
 export function TwoFactorAuthForm() {
   const [qrCode, setQrCode] = useState<string | null>(null);

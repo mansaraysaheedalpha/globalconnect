@@ -16,14 +16,14 @@ export default function PlatformLayout({
 
   return (
     <AuthGuard>
-      {/* The modal can now be opened from anywhere inside the layout */}
       <CreateOrgModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
       <div className="flex h-screen w-full">
-        <Sidebar onOpenCreateOrgModal={() => setIsModalOpen(true)} />{" "}
-        {/* Pass down the function */}
-        <div className="flex flex-1 flex-col">
+        <Sidebar onOpenCreateOrgModal={() => setIsModalOpen(true)} />
+        {/* --- CHANGE 1: Add `overflow-hidden` to this container --- */}
+        <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 p-6">{children}</main>
+          {/* --- CHANGE 2: Add `overflow-y-auto` to the main element --- */}
+          <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
     </AuthGuard>

@@ -1,6 +1,7 @@
+// src/app/(platform)/dashboard/blueprints/page.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@apollo/client";
 import { GET_ORGANIZATION_BLUEPRINTS_QUERY } from "@/graphql/blueprints.graphql";
 import {
@@ -8,9 +9,17 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookCopy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+// --- CHANGE: Swapping to Heroicons ---
+import {
+  DocumentDuplicateIcon,
+} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { CreateEventModal } from "../events/_components/create-event-modal";
+
 
 type Blueprint = {
   id: string;
@@ -27,18 +36,21 @@ const BlueprintsPage = () => {
     GET_ORGANIZATION_BLUEPRINTS_QUERY
   );
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <Skeleton className="h-9 w-48 mb-6" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-32 rounded-lg" />
-          <Skeleton className="h-32 rounded-lg" />
-          <Skeleton className="h-32 rounded-lg" />
-        </div>
-      </div>
-    );
-  }
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [selectedBlueprintId, setSelectedBlueprintId] = useState<
+     string | null
+   >(null);
+
+  const handleUseBlueprint = (blueprintId: string) => {
+    setSelectedBlueprintId(blueprintId);
+    setIsCreateEventModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateEventModalOpen(false);
+    setSelectedBlueprintId(null); // Reset the selected ID when closing
+  };
+
 
   if (error) {
     return (
@@ -51,40 +63,79 @@ const BlueprintsPage = () => {
   const blueprints = data?.organizationBlueprints || [];
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Event Blueprints</h1>
-      </div>
+    <>
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={handleCloseModal}
+        preselectedBlueprintId={selectedBlueprintId}
+      />
 
-      {blueprints.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {blueprints.map((blueprint) => (
-            <Card key={blueprint.id}>
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <BookCopy className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle>{blueprint.name}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {blueprint.description}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-          <h3 className="text-xl font-semibold">No Blueprints Found</h3>
-          <p className="mt-2">
-            You can save an event as a blueprint from its details page.
+      <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Event Blueprints
+          </h1>
+          <p className="text-muted-foreground">
+            Reusable templates to launch new events instantly.
           </p>
         </div>
-      )}
-    </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Skeleton className="h-48 rounded-lg" />
+            <Skeleton className="h-48 rounded-lg" />
+            <Skeleton className="h-48 rounded-lg" />
+          </div>
+        ) : blueprints.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {blueprints.map((blueprint) => (
+              // --- CHANGE: Redesigned Card Component ---
+              <Card
+                key={blueprint.id}
+                className="flex flex-col justify-between hover:shadow-lg transition-shadow"
+              >
+                <CardHeader>
+                  <div className="flex items-start gap-4">
+                    <div className="bg-primary/10 p-3 rounded-lg flex-shrink-0">
+                      <DocumentDuplicateIcon className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle>{blueprint.name}</CardTitle>
+                      <CardDescription className="mt-1 line-clamp-3">
+                        {blueprint.description || "No description provided."}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter>
+                  {/* --- CHANGE: Connect the button's onClick event --- */}
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => handleUseBlueprint(blueprint.id)}
+                  >
+                    Use Blueprint
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          // --- CHANGE: Redesigned Empty State ---
+          <div className="text-center p-16 border-2 border-dashed rounded-lg">
+            <DocumentDuplicateIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-semibold">No Blueprints Found</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You can save a completed event as a blueprint from its details
+              page.
+            </p>
+            <Button variant="outline" className="mt-6" asChild>
+              <Link href="/dashboard/events">Go to Events</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-//src / app / platform / settings / _components / settings - nav.tsx;
+//src / app / (platform) / settings / _components / settings - nav.tsx;
 "use client";
 
 import Link from "next/link";

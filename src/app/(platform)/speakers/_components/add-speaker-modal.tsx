@@ -1,3 +1,4 @@
+// src/app/(platform)/dashboard/speakers/_components/add-speaker-modal.tsx
 "use client";
 
 import React from "react";
@@ -6,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-
 import {
   GET_ORGANIZATION_SPEAKERS_QUERY,
   CREATE_SPEAKER_MUTATION,
@@ -104,7 +104,8 @@ export const AddSpeakerModal = ({ isOpen, onClose }: AddSpeakerModalProps) => {
         <DialogHeader>
           <DialogTitle>Add New Speaker</DialogTitle>
           <DialogDescription>
-            Fill in the details for a new speaker in your organization.
+            Add a new speaker to your organization's directory. This makes them
+            available to be assigned to sessions.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -171,8 +172,8 @@ export const AddSpeakerModal = ({ isOpen, onClose }: AddSpeakerModalProps) => {
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}Add
-                Speaker
+                {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                Add Speaker
               </Button>
             </DialogFooter>
           </form>

@@ -1,3 +1,4 @@
+// src/app/(platform)/venues/_components/add-venue-modal.tsx
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,10 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { GET_ORGANIZATION_VENUES_QUERY, CREATE_VENUE_MUTATION } from "@/graphql/venues.graphql";
+import {
+  GET_ORGANIZATION_VENUES_QUERY,
+  CREATE_VENUE_MUTATION,
+} from "@/graphql/venues.graphql";
 import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,7 +37,6 @@ type Venue = {
 type VenuesQueryData = {
   organizationVenues: Venue[];
 };
-
 
 // --- Add Venue Modal ---
 const formSchema = z.object({
