@@ -277,7 +277,10 @@ export const EventDetailHeader = ({
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Link
                 </Button>
-                <Link href={publicUrl} target="_blank">
+                <Link
+                  href={publicUrl}
+                  rel="noopener noreferrer"
+                >
                   <Button size="sm">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     View Public Page

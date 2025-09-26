@@ -2,20 +2,19 @@
 "use client";
 
 import React from "react";
-import {
-  useLiveDashboard
-} from "@/hooks/use-live-dashboard";
+import { useLiveDashboard } from "@/hooks/use-live-dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  MessageSquare,
-  Vote,
-  HelpCircle,
-  ThumbsUp,
-  Smile,
-  UserCheck,
-} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader } from "@/components/ui/loader";
+// --- CHANGE: Swapped icons to Heroicons ---
+import {
+  ChatBubbleBottomCenterTextIcon,
+  ChartBarIcon,
+  QuestionMarkCircleIcon,
+  HandThumbUpIcon,
+  FaceSmileIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface LiveDashboardProps {
   eventId: string;
@@ -33,7 +32,8 @@ const StatCard = ({
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      {/* --- CHANGE: Made icon gold and slightly larger for emphasis --- */}
+      <Icon className="h-5 w-5 text-primary" />
     </CardHeader>
     <CardContent>
       <div className="text-2xl font-bold">{value}</div>
@@ -81,20 +81,24 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
         <StatCard
           title="Total Messages"
           value={totalMessages}
-          icon={MessageSquare}
+          icon={ChatBubbleBottomCenterTextIcon}
         />
-        <StatCard title="Poll Votes" value={totalVotes} icon={Vote} />
+        <StatCard title="Poll Votes" value={totalVotes} icon={ChartBarIcon} />
         <StatCard
           title="Questions Asked"
           value={totalQuestions}
-          icon={HelpCircle}
+          icon={QuestionMarkCircleIcon}
         />
         <StatCard
           title="Question Upvotes"
           value={totalUpvotes}
-          icon={ThumbsUp}
+          icon={HandThumbUpIcon}
         />
-        <StatCard title="Emoji Reactions" value={totalReactions} icon={Smile} />
+        <StatCard
+          title="Emoji Reactions"
+          value={totalReactions}
+          icon={FaceSmileIcon}
+        />
       </div>
 
       <Card>
@@ -102,7 +106,7 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
           <CardTitle>Live Check-in Feed</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-96 overflow-y-auto">
             {liveCheckInFeed.length > 0 ? (
               <AnimatePresence>
                 {liveCheckInFeed.map((checkIn, index) => (
@@ -115,7 +119,7 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     className="flex items-center"
                   >
-                    <UserCheck className="h-5 w-5 text-green-500" />
+                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
                     <p className="ml-4 text-sm font-medium">
                       {checkIn.name} has checked in.
                     </p>
@@ -123,7 +127,9 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
                 ))}
               </AnimatePresence>
             ) : (
-              <p className="text-sm text-muted-foreground">No check-ins yet.</p>
+              <p className="text-sm text-muted-foreground py-12 text-center">
+                No check-ins yet.
+              </p>
             )}
           </div>
         </CardContent>

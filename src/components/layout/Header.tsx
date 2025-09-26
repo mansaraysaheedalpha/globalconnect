@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "../ui/user-avatar";
 import Link from "next/link";
+import { GlobeAltIcon } from "@heroicons/react/24/outline";
 
 export function Header() {
   const { user, orgId, logout } = useAuthStore();
@@ -37,7 +38,8 @@ export function Header() {
   });
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-secondary/30 px-6">
+    // --- CHANGE: Updated background to match the new design system ---
+    <header className="flex h-16 items-center justify-between border-b bg-background px-6">
       <div className="flex items-center gap-4">
         <div className="font-semibold text-lg">
           {loading ? "..." : currentOrg?.name || "Organization"}
@@ -68,10 +70,15 @@ export function Header() {
             <Link href="/settings/profile">
               <DropdownMenuItem>Profile</DropdownMenuItem>
             </Link>
+            <Link href="/" target="_blank" rel="noopener noreferrer">
+              <DropdownMenuItem>
+                <GlobeAltIcon className="h-4 w-4 mr-2" />
+                View Public Site
+              </DropdownMenuItem>
+            </Link>
             <Link href="/settings/security">
               <DropdownMenuItem>Security</DropdownMenuItem>
             </Link>
-            {/* You can add more links like Billing here later */}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logoutUser()}>
               Log out

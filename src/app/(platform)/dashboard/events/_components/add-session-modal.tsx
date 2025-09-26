@@ -1,3 +1,4 @@
+//src/app/(platform)/events/_components/add-session-modal.tsx
 "use client";
 
 import React from "react";

@@ -1,18 +1,18 @@
-// src/app/(platform)/auth/login/page.tsx
+// src/app/(platform)/auth/register/page.tsx
 import { RegistrationForm } from "@/components/features/Auth/RegistrationForm";
 import Link from "next/link";
 
 export default function RegisterPage() {
   return (
     <>
-      <h1 className="text-3xl font-bold text-center mb-2">
-        Create Your Account
-      </h1>
-      <p className="text-center text-gray-400 mb-6">
-        Join GlobalConnect and redefine events.
-      </p>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold">Create Your Account</h1>
+        <p className="text-muted-foreground">
+          Join GlobalConnect and redefine events.
+        </p>
+      </div>
       <RegistrationForm />
-      <p className="text-center text-sm text-gray-400 mt-6">
+      <p className="text-center text-sm text-muted-foreground mt-6">
         Already have an account?{" "}
         <Link
           href="/auth/login"

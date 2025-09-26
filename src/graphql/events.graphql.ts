@@ -15,6 +15,7 @@ export const GET_EVENT_BY_ID_QUERY = gql`
   query GetEventById($id: ID!) {
     event(id: $id) {
       id
+      organizationId
       ownerId
       name
       description
@@ -131,6 +132,37 @@ export const PUBLISH_EVENT_MUTATION = gql`
       id
       status
       isPublic
+    }
+  }
+`;
+
+export const GET_ATTENDEES_BY_EVENT_QUERY = gql`
+  query GetAttendeesByEvent($eventId: ID!) {
+    registrationsByEvent(eventId: $eventId) {
+      id
+      status
+      ticketCode
+      checkedInAt
+      guestEmail
+      guestName
+      user {
+        id
+        first_name
+        last_name
+        email
+      }
+    }
+  }
+`;
+
+export const GET_EVENT_HISTORY_QUERY = gql`
+  query GetEventHistory($eventId: ID!) {
+    eventHistory(eventId: $eventId) {
+      id
+      eventType
+      timestamp
+      userId
+      data
     }
   }
 `;

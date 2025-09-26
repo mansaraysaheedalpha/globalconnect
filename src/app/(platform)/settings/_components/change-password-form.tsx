@@ -1,3 +1,4 @@
+//src / app / (platform) / settings / _components /change-password-form.tsx
 "use client";
 
 import { useMutation } from "@apollo/client";

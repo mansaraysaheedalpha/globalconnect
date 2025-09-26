@@ -1,3 +1,4 @@
+//src / app / (platform) / settings / _components /org-profile.tsx
 "use client";
 
 import { useAuthStore } from "@/store/auth.store";

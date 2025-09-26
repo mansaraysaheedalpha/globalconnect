@@ -1,3 +1,4 @@
+//src / app / (platform) / settings / _components /profile-form.tsx
 "use client";
 
 import { useQuery, useMutation, gql } from "@apollo/client";
@@ -15,9 +16,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import { GET_MY_PROFILE_QUERY, UPDATE_MY_PROFILE_MUTATION } from "@/graphql/user.graphql";
+import {
+  GET_MY_PROFILE_QUERY,
+  UPDATE_MY_PROFILE_MUTATION,
+} from "@/graphql/user.graphql";
 import { useAuthStore } from "@/store/auth.store";
-
 
 export function ProfileForm() {
   const [formData, setFormData] = useState({ first_name: "", last_name: "" });
@@ -25,7 +28,7 @@ export function ProfileForm() {
     first_name: "",
     last_name: "",
   });
-   const updateUserInStore = useAuthStore((state) => state.updateUser);
+  const updateUserInStore = useAuthStore((state) => state.updateUser);
 
   const { data, loading: queryLoading } = useQuery(GET_MY_PROFILE_QUERY, {
     onCompleted: (data) => {

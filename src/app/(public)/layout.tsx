@@ -1,15 +1,18 @@
-import React from "react";
 
-// A simple layout for public-facing pages without the admin dashboard UI.
+// src/app/(public)/layout.tsx
+import { Footer } from "@/components/layout/footer";
+import { PublicHeader } from "@/components/layout/public-header";
+
 export default function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* You could add a simple public header or footer here later */}
-      <main>{children}</main>
+    <div className="flex min-h-screen flex-col">
+      <PublicHeader />
+      <main className="flex-1">{children}</main>
+      <Footer />
     </div>
   );
 }

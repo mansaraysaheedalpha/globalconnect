@@ -1,14 +1,16 @@
+// src/app/(public)/events/[eventId]/page.tsx
 "use client";
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
-import { format } from "date-fns";
 import { GET_PUBLIC_EVENT_DETAILS_QUERY } from "@/graphql/public.graphql";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Mic, Ticket } from "lucide-react";
 import { RegistrationModal } from "./_components/registration-model";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangleIcon } from "lucide-react";
+import { EventHero } from "./_components/event-hero";
+import { StickyRegistrationCard } from "./_components/sticky-registration-card";
+import { SessionTimeline } from "./_components/session-timeline";
 
 const PublicEventPage = () => {
   const params = useParams();
@@ -22,19 +24,36 @@ const PublicEventPage = () => {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <Skeleton className="h-[600px] w-full" />
+      <div className="container mx-auto max-w-6xl p-8 space-y-8">
+        <Skeleton className="h-96 w-full rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-4">
+            <Skeleton className="h-8 w-1/3" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-8 w-1/4 mt-8" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+          <div className="lg:col-span-1">
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
+
   if (error || !data?.event) {
     return (
-      <div className="text-center py-20">Event not found or is not public.</div>
+      <div className="container mx-auto text-center py-20 flex flex-col items-center">
+        <AlertTriangleIcon className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-2xl font-bold">Event Not Found</h2>
+        <p className="text-muted-foreground">
+          This event may not exist or is no longer public.
+        </p>
+      </div>
     );
   }
 
   const { event, publicSessionsByEvent: sessions } = data;
-  const formattedDate = format(new Date(event.startDate), "MMMM d, yyyy");
 
   return (
     <>
@@ -43,93 +62,39 @@ const PublicEventPage = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
-      <div className="max-w-4xl mx-auto">
-        <header className="relative">
-          <img
-            src={
-              event.imageUrl ||
-              `https://placehold.co/1200x600/6366f1/white?text=${event.name}`
-            }
-            alt={event.name}
-            className="w-full h-64 md:h-80 object-cover"
-          />
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="absolute bottom-0 left-0 p-8 text-white">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-              {event.name}
-            </h1>
-            <div className="flex items-center mt-2 text-lg">
-              <Calendar className="h-5 w-5 mr-2" />
-              <span>{formattedDate}</span>
-            </div>
-          </div>
-        </header>
+      <div className="bg-background">
+        <EventHero name={event.name} imageUrl={event.imageUrl} />
+        <div className="container mx-auto max-w-6xl py-12 md:py-16">
+          <main className="grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-10">
+            {/* --- Main Content (Left Column) --- */}
+            <div className="lg:col-span-2">
+              <section>
+                <h2 className="text-2xl font-bold border-b pb-3 mb-6">
+                  About This Event
+                </h2>
+                <div className="prose dark:prose-invert max-w-none text-muted-foreground">
+                  <p>{event.description || "No description provided."}</p>
+                </div>
+              </section>
 
-        <main className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              <h2 className="text-2xl font-bold border-b pb-2 mb-4">
-                About This Event
-              </h2>
-              <p className="text-gray-700 leading-relaxed">
-                {event.description}
-              </p>
-
-              <h2 className="text-2xl font-bold border-b pb-2 mt-12 mb-4">
-                Agenda
-              </h2>
-              <div className="space-y-6">
-                {sessions.length > 0 ? (
-                  sessions.map((session: any) => (
-                    <div key={session.id}>
-                      <div className="flex items-center text-gray-500">
-                        <Clock className="h-4 w-4 mr-2" />
-                        <span>
-                          {format(new Date(session.startTime), "p")} -{" "}
-                          {format(new Date(session.endTime), "p")}
-                        </span>
-                      </div>
-                      <h3 className="text-xl font-semibold mt-1">
-                        {session.title}
-                      </h3>
-                      {session.speakers.length > 0 && (
-                        <div className="flex items-center text-gray-600 mt-1">
-                          <Mic className="h-4 w-4 mr-2" />
-                          <span>
-                            {session.speakers
-                              .map((s: any) => s.name)
-                              .join(", ")}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground">
-                    The agenda has not been published yet.
-                  </p>
-                )}
-              </div>
+              <section className="mt-12">
+                <h2 className="text-2xl font-bold border-b pb-3 mb-6">
+                  Agenda
+                </h2>
+                <SessionTimeline sessions={sessions} />
+              </section>
             </div>
 
-            <aside>
-              <div className="sticky top-8 p-6 bg-white border rounded-lg shadow-sm">
-                <h3 className="text-xl font-bold">Register for this Event</h3>
-                <p className="text-muted-foreground mt-2 text-sm">
-                  Sign up now to secure your spot!
-                </p>
-                <Button
-                  className="w-full mt-4"
-                  size="lg"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  <Ticket className="h-5 w-5 mr-2" />
-                  Register Now
-                </Button>
-              </div>
-            </aside>
-          </div>
-        </main>
+            {/* --- Sidebar (Right Column) --- */}
+            <div className="lg:col-span-1">
+              <StickyRegistrationCard
+                startDate={event.startDate}
+                venueName={event.venue?.name}
+                onRegisterClick={() => setIsModalOpen(true)}
+              />
+            </div>
+          </main>
+        </div>
       </div>
     </>
   );

@@ -1,20 +1,16 @@
+// src/app/(platform)/dashboard/speakers/page.tsx
 "use client";
 
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@apollo/client";
-import { ARCHIVE_SPEAKER_MUTATION, GET_ORGANIZATION_SPEAKERS_QUERY } from "@/graphql/speakers.graphql";
-
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  ARCHIVE_SPEAKER_MUTATION,
+  GET_ORGANIZATION_SPEAKERS_QUERY,
+} from "@/graphql/speakers.graphql";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, MoreVertical, Trash2, UserPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,9 +27,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { toast } from "sonner";
+import {
+  UserPlusIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  TrashIcon,
+  MicrophoneIcon,
+} from "@heroicons/react/24/outline";
 import { AddSpeakerModal } from "./_components/add-speaker-modal";
 import { EditSpeakerModal } from "./_components/edit-speaker-modal";
-import { toast } from "sonner";
 
 type Speaker = {
   id: string;
@@ -49,57 +60,39 @@ type SpeakersQueryData = {
 const SpeakersPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [speakerToEdit, setSpeakerToEdit] = useState<Speaker | null>(null);
-  const [speakerToDelete, setSpeakerToDelete] = useState<Speaker | null>(
-      null
-    );
+  const [speakerToDelete, setSpeakerToDelete] = useState<Speaker | null>(null);
 
   const { data, loading, error } = useQuery<SpeakersQueryData>(
     GET_ORGANIZATION_SPEAKERS_QUERY
   );
 
-   const [archiveSpeaker] = useMutation(ARCHIVE_SPEAKER_MUTATION, {
-     onCompleted: () => toast.success("Speaker deleted."),
-     onError: (err) =>
-       toast.error("Failed to delete speaker", { description: err.message }),
-     update(cache, { data: { archiveSpeaker } }) {
-       const existingData = cache.readQuery<SpeakersQueryData>({
-         query: GET_ORGANIZATION_SPEAKERS_QUERY,
-       });
-       if (existingData) {
-         cache.writeQuery({
-           query: GET_ORGANIZATION_SPEAKERS_QUERY,
-           data: {
-             organizationSpeakers: existingData.organizationSpeakers.filter(
-               (s) => s.id !== archiveSpeaker.id
-             ),
-           },
-         });
-       }
-     },
-   });
+  const [archiveSpeaker] = useMutation(ARCHIVE_SPEAKER_MUTATION, {
+    onCompleted: () => toast.success("Speaker deleted."),
+    onError: (err) =>
+      toast.error("Failed to delete speaker", { description: err.message }),
+    update(cache, { data: { archiveSpeaker } }) {
+      const existingData = cache.readQuery<SpeakersQueryData>({
+        query: GET_ORGANIZATION_SPEAKERS_QUERY,
+      });
+      if (existingData) {
+        cache.writeQuery({
+          query: GET_ORGANIZATION_SPEAKERS_QUERY,
+          data: {
+            organizationSpeakers: existingData.organizationSpeakers.filter(
+              (s) => s.id !== archiveSpeaker.id
+            ),
+          },
+        });
+      }
+    },
+  });
 
-   const handleDelete = () => {
-     if (speakerToDelete) {
-       archiveSpeaker({ variables: { id: speakerToDelete.id } });
-       setSpeakerToDelete(null);
-     }
-   };
-
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-9 w-32" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-40 rounded-lg" />
-          <Skeleton className="h-40 rounded-lg" />
-          <Skeleton className="h-40 rounded-lg" />
-        </div>
-      </div>
-    );
-  }
+  const handleDelete = () => {
+    if (speakerToDelete) {
+      archiveSpeaker({ variables: { id: speakerToDelete.id } });
+      setSpeakerToDelete(null);
+    }
+  };
 
   if (error) {
     return (
@@ -125,67 +118,100 @@ const SpeakersPage = () => {
         />
       )}
 
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Speakers</h1>
+      <div className="p-6 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Speakers</h1>
+            <p className="text-muted-foreground">
+              Manage your organization's speaker directory.
+            </p>
+          </div>
           <Button onClick={() => setIsAddModalOpen(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlusIcon className="h-5 w-5 mr-2" />
             Add Speaker
           </Button>
         </div>
 
-        {speakers.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {speakers.map((speaker) => (
-              <Card key={speaker.id} className="flex flex-col">
-                <CardHeader className="flex-row items-start justify-between">
-                  <div>
-                    <CardTitle>{speaker.name}</CardTitle>
-                    <CardDescription>{speaker.bio}</CardDescription>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        onSelect={() => setSpeakerToEdit(speaker)}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => setSpeakerToDelete(speaker)}
-                        className="text-red-500"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  {speaker.expertise && speaker.expertise.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {speaker.expertise.map((tag) => (
-                        <Badge key={tag} variant="secondary">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-            <h3 className="text-xl font-semibold">No Speakers Found</h3>
-            <p className="mt-2">Get started by adding your first speaker.</p>
-          </div>
-        )}
+        <Card>
+          {loading ? (
+            <div className="p-6">
+              <Skeleton className="h-8 w-full mb-4" />
+              <Skeleton className="h-8 w-full mb-4" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          ) : speakers.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {/* --- CHANGE: Added a new column for Title/Bio and adjusted widths --- */}
+                  <TableHead className="w-[25%]">Speaker</TableHead>
+                  <TableHead className="w-[35%]">Title / Bio</TableHead>
+                  <TableHead>Expertise</TableHead>
+                  <TableHead className="text-right w-[10%]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {speakers.map((speaker) => (
+                  <TableRow key={speaker.id}>
+                    {/* --- CHANGE: This cell now only contains the name --- */}
+                    <TableCell className="font-medium">
+                      {speaker.name}
+                    </TableCell>
+                    {/* --- CHANGE: New cell specifically for the bio --- */}
+                    <TableCell className="text-sm text-muted-foreground">
+                      {speaker.bio}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {(speaker.expertise || []).map((tag) => (
+                          <Badge key={tag} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <EllipsisVerticalIcon className="h-5 w-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={() => setSpeakerToEdit(speaker)}
+                          >
+                            <PencilIcon className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => setSpeakerToDelete(speaker)}
+                            className="text-destructive"
+                          >
+                            <TrashIcon className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center p-16">
+              <MicrophoneIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-semibold">No Speakers Found</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Get started by adding your first speaker.
+              </p>
+              <Button className="mt-6" onClick={() => setIsAddModalOpen(true)}>
+                <UserPlusIcon className="h-5 w-5 mr-2" />
+                Add Speaker
+              </Button>
+            </div>
+          )}
+        </Card>
       </div>
 
       <AlertDialog

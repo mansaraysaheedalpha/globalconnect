@@ -1,7 +1,7 @@
 // src/app/(platform)/events/_components/create-event-modal.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,11 +44,12 @@ import {
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Loader } from "lucide-react";
-import { Label } from "@/components/ui/label"; // <-- Added missing import
+import { Label } from "@/components/ui/label";
 
 interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
+  preselectedBlueprintId?: string | null;
 }
 
 const formSchema = z
@@ -58,6 +59,11 @@ const formSchema = z
     startDate: z.date({ required_error: "A start date is required." }),
     endDate: z.date({ required_error: "An end date is required." }),
     venueId: z.string().optional(),
+    imageUrl: z
+      .string()
+      .url({ message: "Please enter a valid URL." })
+      .optional()
+      .or(z.literal("")),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "End date cannot be before the start date.",
@@ -71,17 +77,19 @@ type Blueprint = {
   description: string;
   template: string;
 };
-type Venue = { id: string; name: string }; // <-- Added Venue type
+type Venue = { id: string; name: string };
 
 export const CreateEventModal = ({
   isOpen,
   onClose,
+  preselectedBlueprintId,
 }: CreateEventModalProps) => {
   const form = useForm<EventFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       description: "",
+      imageUrl: "",
     },
   });
 
@@ -92,8 +100,7 @@ export const CreateEventModal = ({
   const { data: blueprintsData, loading: blueprintsLoading } = useQuery(
     GET_ORGANIZATION_BLUEPRINTS_QUERY
   );
-  // --- FIX: Renamed duplicate 'venuesLoading' variable ---
-  const { data: venuesData, loading: areVenuesLoading } = useQuery(
+  const { data: venuesData, loading: venuesLoading } = useQuery(
     GET_ORGANIZATION_VENUES_QUERY
   );
 
@@ -103,22 +110,31 @@ export const CreateEventModal = ({
   const [createEvent, { loading: isCreating }] = useMutation(
     CREATE_EVENT_MUTATION,
     {
-      refetchQueries: [{ query: GET_EVENTS_BY_ORGANIZATION_QUERY }],
+      refetchQueries: [
+        {
+          query: GET_EVENTS_BY_ORGANIZATION_QUERY,
+          variables: { status: null },
+        },
+      ],
       onCompleted: () => {
         toast.success("Event created successfully!");
         onClose();
         form.reset();
       },
-      onError: (error) => {
-        toast.error("Failed to create event", { description: error.message });
-      },
+      onError: (error) =>
+        toast.error("Failed to create event", { description: error.message }),
     }
   );
 
   const [instantiateBlueprint, { loading: isInstantiating }] = useMutation(
     INSTANTIATE_BLUEPRINT_MUTATION,
     {
-      refetchQueries: [{ query: GET_EVENTS_BY_ORGANIZATION_QUERY }],
+      refetchQueries: [
+        {
+          query: GET_EVENTS_BY_ORGANIZATION_QUERY,
+          variables: { status: null },
+        },
+      ],
       onCompleted: (data) => {
         toast.success(
           `Event "${data.instantiateBlueprint.name}" created from blueprint!`
@@ -134,6 +150,36 @@ export const CreateEventModal = ({
   );
 
   const loading = isCreating || isInstantiating;
+
+  const handleBlueprintSelect = (blueprintId: string) => {
+    setSelectedBlueprintId(blueprintId);
+    const selectedBlueprint = blueprints.find(
+      (bp: Blueprint) => bp.id === blueprintId
+    );
+    if (!selectedBlueprint) return;
+    const template = JSON.parse(selectedBlueprint.template);
+    form.setValue(
+      "name",
+      `${selectedBlueprint.name} ${new Date().getFullYear()}`
+    );
+    form.setValue("description", template.description || "");
+    if (template.venue_id) {
+      form.setValue("venueId", template.venue_id);
+    }
+  };
+
+  useEffect(() => {
+    // When the modal opens with a preselected ID
+    if (isOpen && preselectedBlueprintId && blueprints.length > 0) {
+      // Find the blueprint and pre-fill the form
+      handleBlueprintSelect(preselectedBlueprintId);
+    }
+    // Reset form when modal closes
+    if (!isOpen) {
+      form.reset({ name: "", description: "", imageUrl: "" });
+      setSelectedBlueprintId(null);
+    }
+  }, [isOpen, preselectedBlueprintId, blueprints, form]);
 
   const onSubmit = (values: EventFormValues) => {
     if (selectedBlueprintId) {
@@ -156,40 +202,16 @@ export const CreateEventModal = ({
             startDate: values.startDate.toISOString(),
             endDate: values.endDate.toISOString(),
             venueId: values.venueId,
+            imageUrl: values.imageUrl,
           },
         },
       });
     }
   };
 
-  // --- THIS IS THE NEW LOGIC ---
-  const handleBlueprintSelect = (blueprintId: string) => {
-    setSelectedBlueprintId(blueprintId);
-
-    // Find the full blueprint object from the selected ID
-    const selectedBlueprint = blueprints.find(
-      (bp: Blueprint) => bp.id === blueprintId
-    );
-    if (!selectedBlueprint) return;
-
-    // Parse the template data
-    const template = JSON.parse(selectedBlueprint.template);
-
-    // Pre-fill the form with the blueprint's data
-    form.setValue(
-      "name",
-      `${selectedBlueprint.name} ${new Date().getFullYear()}`
-    );
-    form.setValue("description", template.description || "");
-    if (template.venue_id) {
-      form.setValue("venueId", template.venue_id);
-    }
-  };
-  // ---------------------------
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create New Event</DialogTitle>
           <DialogDescription>
@@ -200,7 +222,7 @@ export const CreateEventModal = ({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
+            className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4"
           >
             {blueprints.length > 0 && (
               <>
@@ -227,7 +249,6 @@ export const CreateEventModal = ({
                 <Separator className="my-4" />
               </>
             )}
-
             <FormField
               control={form.control}
               name="name"
@@ -239,6 +260,19 @@ export const CreateEventModal = ({
                       placeholder="e.g., Annual Tech Conference"
                       {...field}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -294,7 +328,7 @@ export const CreateEventModal = ({
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    disabled={areVenuesLoading}
+                    disabled={venuesLoading}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -313,7 +347,7 @@ export const CreateEventModal = ({
                 </FormItem>
               )}
             />
-            <DialogFooter>
+            <DialogFooter className="pt-4">
               <Button
                 type="button"
                 variant="outline"

@@ -1,3 +1,4 @@
+// src/app/(platform)/dashboard/speakers/_components/edit-speaker-modal.tsx
 "use client";
 
 import React, { useEffect } from "react";

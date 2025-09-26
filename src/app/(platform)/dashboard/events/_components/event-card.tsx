@@ -1,34 +1,28 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useMutation, ApolloCache } from "@apollo/client";
 import { toast } from "sonner";
 import {
   RESTORE_EVENT_MUTATION,
   GET_ARCHIVED_EVENTS_COUNT_QUERY,
 } from "@/graphql/events.graphql";
-import {
-  GET_EVENTS_BY_ORGANIZATION_QUERY,
- 
-} from "@/graphql/queries";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, ArchiveRestore, Loader } from "lucide-react";
+import { CalendarDaysIcon, UsersIcon } from "@heroicons/react/24/outline";
+import { ArchiveRestore, Loader } from "lucide-react";
+import { EventCardPlaceholder } from "./event-card-placeholder";
 
+// Type definitions for cache updates
 type Event = {
   id: string;
   name: string;
   status: "draft" | "published" | "archived";
   startDate: string;
   registrationsCount: number;
+  imageUrl?: string | null;
   __typename?: string;
 };
 
@@ -54,23 +48,23 @@ interface EventCardProps {
 
 export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
   const [restoreEvent, { loading }] = useMutation(RESTORE_EVENT_MUTATION, {
-    onCompleted: () => {
-      toast.success(`Event "${event.name}" has been restored.`);
-    },
-    onError: (error) => {
-      toast.error("Failed to restore event", { description: error.message });
-    },
-    update(cache) {
-      // Use the full 'event' prop passed to this component
-      const fullEventObject = event;
+    onCompleted: () =>
+      toast.success(`Event "${event.name}" has been restored.`),
+    onError: (error) =>
+      toast.error("Failed to restore event", { description: error.message }),
 
-      // --- Part 1: Remove from the Archived Events List ---
+    // --- CHANGE: Replaced `refetchQueries` with a manual cache update for instant UI changes ---
+    update(cache: ApolloCache<any>, { data: { restoreEvent } }) {
+      if (!restoreEvent) return;
+
+      // Part 1: Remove from the Archived Events List
       const archivedQueryOptions = {
         query: GET_EVENTS_BY_ORGANIZATION_QUERY,
         variables: { status: "archived" },
       };
       const archivedData =
         cache.readQuery<EventsQueryData>(archivedQueryOptions);
+
       if (archivedData) {
         cache.writeQuery<EventsQueryData>({
           ...archivedQueryOptions,
@@ -78,14 +72,35 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
             eventsByOrganization: {
               ...archivedData.eventsByOrganization,
               events: archivedData.eventsByOrganization.events.filter(
-                (e) => e.id !== fullEventObject.id
+                (e) => e.id !== restoreEvent.id
               ),
+              totalCount: archivedData.eventsByOrganization.totalCount - 1,
             },
           },
         });
       }
 
-      // --- Part 2: Add to the Active Events List (if it's in the cache) ---
+      // Part 2: Manually decrement the Archived Count query
+      const countQueryOptions = {
+        query: GET_ARCHIVED_EVENTS_COUNT_QUERY,
+        variables: { status: "archived" },
+      };
+      const countData =
+        cache.readQuery<EventsCountQueryData>(countQueryOptions);
+
+      if (countData) {
+        cache.writeQuery<EventsCountQueryData>({
+          ...countQueryOptions,
+          data: {
+            eventsByOrganization: {
+              ...countData.eventsByOrganization,
+              totalCount: countData.eventsByOrganization.totalCount - 1,
+            },
+          },
+        });
+      }
+
+      // Part 3: Add to the Active Events List cache (optional but good practice)
       const activeQueryOptions = {
         query: GET_EVENTS_BY_ORGANIZATION_QUERY,
         variables: { status: null },
@@ -97,29 +112,8 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
           data: {
             eventsByOrganization: {
               ...activeData.eventsByOrganization,
-              events: [
-                fullEventObject,
-                ...activeData.eventsByOrganization.events,
-              ],
-            },
-          },
-        });
-      }
-
-      // --- Part 3: Update the Archived Count ---
-      const countQueryOptions = {
-        query: GET_ARCHIVED_EVENTS_COUNT_QUERY,
-        variables: { status: "archived" },
-      };
-      const countData =
-        cache.readQuery<EventsCountQueryData>(countQueryOptions);
-      if (countData) {
-        cache.writeQuery<EventsCountQueryData>({
-          ...countQueryOptions,
-          data: {
-            eventsByOrganization: {
-              ...countData.eventsByOrganization,
-              totalCount: countData.eventsByOrganization.totalCount - 1,
+              events: [restoreEvent, ...activeData.eventsByOrganization.events],
+              totalCount: activeData.eventsByOrganization.totalCount + 1,
             },
           },
         });
@@ -132,35 +126,52 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
   };
 
   const formattedDate = new Date(event.startDate).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
+    year: "numeric",
   });
 
   const cardContent = (
-    <Card className="hover:shadow-md transition-shadow duration-200 flex flex-col justify-between h-full">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-semibold pr-2">
-            {event.name}
-          </CardTitle>
-          <Badge variant="outline" className="capitalize flex-shrink-0">
-            {isArchivedView ? "Archived" : event.status}
-          </Badge>
+    <div className="relative group overflow-hidden rounded-xl shadow-md h-full flex flex-col justify-between bg-card">
+      {event.imageUrl ? (
+        <Image
+          src={event.imageUrl}
+          alt={event.name}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
+        />
+      ) : (
+        <EventCardPlaceholder />
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+
+      <div className="relative p-4 w-full flex justify-between items-start">
+        <Badge
+          variant={event.status === "published" ? "default" : "secondary"}
+          className="capitalize"
+        >
+          {isArchivedView ? "Archived" : event.status}
+        </Badge>
+      </div>
+
+      <div className="relative p-4 w-full text-white">
+        <h3 className="text-lg font-bold leading-tight">{event.name}</h3>
+        <div className="mt-2 space-y-2 text-sm text-neutral-300">
+          <div className="flex items-center">
+            <CalendarDaysIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span>{formattedDate}</span>
+          </div>
+          <div className="flex items-center">
+            <UsersIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span>{event.registrationsCount} Registrations</span>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>{formattedDate}</span>
-        </div>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>{event.registrationsCount} Registrations</span>
-        </div>
-      </CardContent>
+      </div>
+
       {isArchivedView && (
-        <CardFooter>
+        <div className="relative p-4 border-t border-white/10">
           <Button
             variant="secondary"
             className="w-full"
@@ -174,15 +185,18 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
             )}
             Restore Event
           </Button>
-        </CardFooter>
+        </div>
       )}
-    </Card>
+    </div>
   );
 
   return isArchivedView ? (
-    <div>{cardContent}</div>
+    <div className="h-80">{cardContent}</div>
   ) : (
-    <Link href={`/dashboard/events/${event.id}`} className="no-underline h-full">
+    <Link
+      href={`/dashboard/events/${event.id}`}
+      className="block no-underline h-80"
+    >
       {cardContent}
     </Link>
   );

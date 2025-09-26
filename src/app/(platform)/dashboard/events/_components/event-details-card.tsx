@@ -1,7 +1,7 @@
+// src/app/(platform)/dashboard/events/_components/event-details-card.tsx
 "use client";
 
 import React from "react";
-import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,7 +9,7 @@ import {
   DescriptionTerm,
   DescriptionDetails,
 } from "@/components/ui/description-list";
-import { Globe, Lock, Users, MapPin } from "lucide-react";
+import { Globe, Lock, Users, MapPin, CalendarDays, Ticket } from "lucide-react";
 
 type Event = {
   id: string;
@@ -19,7 +19,6 @@ type Event = {
   endDate: string;
   registrationsCount: number;
   venue?: {
-    // Venue is now an optional object
     id: string;
     name: string;
     address?: string | null;
@@ -32,57 +31,71 @@ interface EventDetailsCardProps {
 
 export const EventDetailsCard = ({ event }: EventDetailsCardProps) => {
   const formattedStartDate = new Date(event.startDate).toLocaleString("en-US", {
-    dateStyle: "long",
+    dateStyle: "medium",
     timeStyle: "short",
   });
-  const formattedEndDate = new Date(event.endDate).toLocaleString("en-US", {
-    dateStyle: "long",
-    timeStyle: "short",
-  });
+
+  const getStatusVariant = () => {
+    if (event.status === "published") return "default";
+    if (event.status === "archived") return "destructive";
+    return "secondary";
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Event Details</CardTitle>
+        <CardTitle>Status & Stats</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-2 gap-4 mb-6 text-center">
+          <div className="p-3 bg-secondary rounded-lg">
+            <p className="text-sm text-muted-foreground">Registrations</p>
+            <p className="text-2xl font-bold">{event.registrationsCount}</p>
+          </div>
+          <div className="p-3 bg-secondary rounded-lg">
+            <p className="text-sm text-muted-foreground">Tickets Sold</p>
+            <p className="text-2xl font-bold">0</p>
+          </div>
+        </div>
+
+        {/* Details List */}
         <DescriptionList>
           <DescriptionTerm>Status</DescriptionTerm>
           <DescriptionDetails>
-            <Badge className="capitalize">{event.status}</Badge>
+            <Badge variant={getStatusVariant()} className="capitalize">
+              {event.status}
+            </Badge>
           </DescriptionDetails>
+
           <DescriptionTerm>Visibility</DescriptionTerm>
-          <DescriptionDetails className="flex items-center">
+          <DescriptionDetails className="flex items-center gap-2">
             {event.isPublic ? (
-              <Globe className="h-4 w-4 mr-2 text-green-600" />
+              <Globe className="h-4 w-4 text-green-500" />
             ) : (
-              <Lock className="h-4 w-4 mr-2 text-red-600" />
+              <Lock className="h-4 w-4 text-red-500" />
             )}
-            {event.isPublic ? "Public" : "Private"}
+            <span>{event.isPublic ? "Public" : "Private"}</span>
           </DescriptionDetails>
-          <DescriptionTerm>Starts</DescriptionTerm>
-          <DescriptionDetails>{formattedStartDate}</DescriptionDetails>
-          <DescriptionTerm>Ends</DescriptionTerm>
-          <DescriptionDetails>{formattedEndDate}</DescriptionDetails>
-          <DescriptionTerm>Registrations</DescriptionTerm>
-          <DescriptionDetails className="flex items-center">
-            <Users className="h-4 w-4 mr-2" />
-            {event.registrationsCount}
+
+          <DescriptionTerm>Date</DescriptionTerm>
+          <DescriptionDetails className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <span>{formattedStartDate}</span>
           </DescriptionDetails>
+
           {event.venue && (
             <>
               <DescriptionTerm>Venue</DescriptionTerm>
-              <DescriptionDetails>
-                <div className="flex items-start">
-                  <MapPin className="h-4 w-4 mr-2 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">{event.venue.name}</p>
-                    {event.venue.address && (
-                      <p className="text-sm text-muted-foreground">
-                        {event.venue.address}
-                      </p>
-                    )}
-                  </div>
+              <DescriptionDetails className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 mt-1 flex-shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{event.venue.name}</p>
+                  {event.venue.address && (
+                    <p className="text-sm text-muted-foreground">
+                      {event.venue.address}
+                    </p>
+                  )}
                 </div>
               </DescriptionDetails>
             </>

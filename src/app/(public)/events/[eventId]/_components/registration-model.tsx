@@ -1,3 +1,4 @@
+//src/app/(public)/events/[eventId]/_components/registration-modal.tsx
 "use client";
 
 import React, { useState } from "react";
