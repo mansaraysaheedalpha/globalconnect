@@ -24,7 +24,9 @@ export const useLiveDashboard = (eventId: string) => {
     if (!eventId || !token) return;
 
     // Connect to the WebSocket server, passing the eventId and auth token
-    const newSocket = io("http://localhost:3002/events", {
+    const realtimeUrl =
+      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+    const newSocket = io(realtimeUrl, {
       query: { eventId },
       auth: { token },
     });

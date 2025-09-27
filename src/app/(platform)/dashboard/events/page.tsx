@@ -25,8 +25,6 @@ const EventsPage = () => {
       sortDirection: "desc",
       status: isArchivedView ? "archived" : null,
     },
-    // --- THIS IS THE FIX ---
-    // Change the fetch policy to ensure we always get the latest data from the server for this view.
     fetchPolicy: "network-only",
   });
 
