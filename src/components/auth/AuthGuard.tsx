@@ -3,40 +3,59 @@
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
-import { useRouter } from "next/navigation";
-import { Loader} from "@/components/ui/loader";
+import { useRouter, usePathname } from "next/navigation";
+import { Loader } from "@/components/ui/loader";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const token = useAuthStore((state) => state.token);
+  const { token, onboardingToken, orgId } = useAuthStore((state) => ({
+    token: state.token,
+    onboardingToken: state.onboardingToken,
+    orgId: state.orgId,
+  }));
   const router = useRouter();
-
-  // This new state tracks if we are on the client and the store has had a chance to rehydrate.
+  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
-  // When the component mounts, we know we are on the client.
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-   console.log(
-     `%c[AuthGuard] Component rendered. isClient: ${isClient}, Token: ${token}`,
-     "color: orange;"
-   );
-
   useEffect(() => {
-    // We wait until we're on the client before checking for the token.
-    if (isClient && !token) {
-       console.log(
-         "%c[AuthGuard] No token found, redirecting to /auth/login...",
-         "color: red; font-weight: bold;"
-       );
-      router.push("/auth/login");
-    }
-  }, [isClient, token, router]);
+    if (!isClient) return;
 
-  // If we are not on the client yet OR there's no token, show a loading state.
-  // This prevents a flash of the real content before the redirect can happen.
-  if (!isClient || !token) {
+    // --- MAIN GUARD LOGIC ---
+    // Rule 1: If the user has an onboarding token, they MUST be on the onboarding path.
+    if (onboardingToken && !pathname.startsWith("/onboarding")) {
+      console.log(
+        "[AuthGuard] Onboarding token detected. Redirecting to onboarding."
+      );
+      router.push("/onboarding/create-organization");
+      return;
+    }
+
+    // Rule 2: If there's no main token AND no onboarding token, redirect to login.
+    if (!token && !onboardingToken) {
+      console.log("[AuthGuard] No token found. Redirecting to login.");
+      router.push("/auth/login");
+      return;
+    }
+
+    // Rule 3: If there IS a main token but the user has no organization,
+    // they should be creating one. This is an edge case recovery.
+    if (token && !orgId && !pathname.startsWith("/onboarding")) {
+      console.log(
+        "[AuthGuard] Token exists but no Org ID. Redirecting to create one."
+      );
+      router.push("/onboarding/create-organization");
+      return;
+    }
+  }, [isClient, token, onboardingToken, orgId, router, pathname]);
+
+  // The loading state should cover all checks before rendering the children.
+  // It should wait for the client, and for one of the tokens to be definitively present.
+  const isLoading = !isClient || (!token && !onboardingToken);
+
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader className="h-8 w-8 text-primary" />
@@ -44,6 +63,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If we are on the client AND a token exists, the user is authenticated. Render the page.
+  // If all checks pass, render the protected content.
   return <>{children}</>;
 }

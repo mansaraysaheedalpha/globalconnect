@@ -17,12 +17,14 @@ export const GET_EVENTS_BY_ORGANIZATION_QUERY = gql`
     $offset: Int
     $sortBy: String
     $sortDirection: String
+    $status: String
   ) {
     eventsByOrganization(
       limit: $limit
       offset: $offset
       sortBy: $sortBy
       sortDirection: $sortDirection
+      status: $status
     ) {
       totalCount
       events {
