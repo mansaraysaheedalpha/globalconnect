@@ -46,6 +46,13 @@ export const UploadPresentationModal = ({
   };
 
   const handleUpload = async () => {
+    if (!token) {
+      toast.error("Authentication error", {
+        description: "No auth token found. Please log in again.",
+      });
+      return;
+    }
+
     if (!file) {
       toast.error("Please select a file to upload.");
       return;
