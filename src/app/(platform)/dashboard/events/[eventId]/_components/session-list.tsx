@@ -4,7 +4,6 @@
 import React, { useState } from "react";
 import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,25 +22,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { AddSessionModal } from "../../_components/add-session-modal";
 import { EditSessionModal } from "../../_components/edit-session-modal";
 import { UploadPresentationModal } from "./upload-presentation-modal";
+import { PresentationViewer } from "./presentation-viewer";
+import { SessionItem } from "./session-item";
 import {
   ARCHIVE_SESSION_MUTATION,
   GET_SESSIONS_BY_EVENT_QUERY,
 } from "@/graphql/events.graphql";
-import {
-  DocumentArrowUpIcon,
-  ClockIcon,
-  MicrophoneIcon,
-} from "@heroicons/react/24/outline";
-import { PlusCircle, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 
 type Speaker = { id: string; name: string };
 type Session = {
@@ -71,11 +61,14 @@ export const SessionList = ({
 }: SessionListProps) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+
   const [sessionToEdit, setSessionToEdit] = useState<Session | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   const [sessionForUpload, setSessionForUpload] = useState<Session | null>(
     null
   );
+  const [sessionToView, setSessionToView] = useState<Session | null>(null);
 
   const [archiveSession] = useMutation(ARCHIVE_SESSION_MUTATION, {
     refetchQueries: [
@@ -93,9 +86,14 @@ export const SessionList = ({
     }
   };
 
-  const openUploadModal = (session: Session) => {
+  const handleOpenUploadModal = (session: Session) => {
     setSessionForUpload(session);
     setIsUploadModalOpen(true);
+  };
+
+  const handleOpenViewer = (session: Session) => {
+    setSessionToView(session);
+    setIsViewerOpen(true);
   };
 
   return (
@@ -120,9 +118,22 @@ export const SessionList = ({
         <UploadPresentationModal
           isOpen={isUploadModalOpen}
           onClose={() => setIsUploadModalOpen(false)}
-          onUploadComplete={refetchSessions}
+          onUploadComplete={() => {
+            // The SessionItem will handle its own state update.
+            // We can close the modal and optionally refetch all sessions
+            // if we want other data to be updated, but for now it's not strictly needed.
+            setIsUploadModalOpen(false);
+          }}
           event={event}
           session={sessionForUpload}
+        />
+      )}
+      {sessionToView && event && (
+        <PresentationViewer
+          isOpen={isViewerOpen}
+          onClose={() => setIsViewerOpen(false)}
+          event={event}
+          session={sessionToView}
         />
       )}
 
@@ -145,65 +156,15 @@ export const SessionList = ({
           {sessions.length > 0 ? (
             <div className="space-y-4">
               {sessions.map((session) => (
-                <div
+                <SessionItem
                   key={session.id}
-                  className="p-4 border rounded-lg flex justify-between items-center"
-                >
-                  <div>
-                    <h3 className="font-semibold text-foreground">
-                      {session.title}
-                    </h3>
-                    <div className="text-sm text-muted-foreground mt-2 space-y-2">
-                      <div className="flex items-center">
-                        <ClockIcon className="h-4 w-4 mr-2" />
-                        <span>
-                          {format(new Date(session.startTime), "p")} -{" "}
-                          {format(new Date(session.endTime), "p")}
-                        </span>
-                      </div>
-                      {session.speakers.length > 0 && (
-                        <div className="flex items-center">
-                          <MicrophoneIcon className="h-4 w-4 mr-2" />
-                          <span>
-                            {session.speakers.map((s) => s.name).join(", ")}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openUploadModal(session)}
-                    >
-                      <DocumentArrowUpIcon className="h-4 w-4 mr-2" />
-                      Presentation
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem
-                          onSelect={() => setSessionToEdit(session)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => setSessionToDelete(session)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                  session={session}
+                  event={event}
+                  onEdit={() => setSessionToEdit(session)}
+                  onDelete={() => setSessionToDelete(session)}
+                  onUpload={handleOpenUploadModal}
+                  onView={handleOpenViewer}
+                />
               ))}
             </div>
           ) : (

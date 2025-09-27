@@ -11,13 +11,14 @@ interface User {
   imageUrl?: string | null;
 }
 
+// This now correctly expects orgId (camelCase)
 interface JwtPayload {
   orgId: string;
 }
 
 interface AuthState {
   token: string | null;
-  onboardingToken: string | null; // <-- ADD THIS
+  onboardingToken: string | null;
   user: User | null;
   orgId: string | null;
 
@@ -31,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       token: null,
-      onboardingToken: null, // <-- Initialize
+      onboardingToken: null,
       user: null,
       orgId: null,
 
@@ -43,12 +44,11 @@ export const useAuthStore = create<AuthState>()(
       },
       setAuth: (token, user) => {
         const decodedPayload = jwtDecode<JwtPayload>(token);
+        // This now correctly reads orgId (camelCase)
         const orgId = decodedPayload.orgId;
-        // When a full login happens, clear any temporary tokens
         set({ token, user, orgId, onboardingToken: null });
       },
 
-      // Method to specifically handle the temporary token
       setOnboardingToken: (token) => set({ onboardingToken: token }),
 
       logout: () =>
@@ -57,7 +57,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
-      // Only persist the main token and user, not the temporary one
       partialize: (state) => ({
         token: state.token,
         user: state.user,
