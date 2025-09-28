@@ -1,7 +1,7 @@
 // src/app/(platform)/events/_components/create-event-modal.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useMutation, useQuery } from "@apollo/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -92,6 +92,7 @@ export const CreateEventModal = ({
       imageUrl: "",
     },
   });
+  const { reset, setValue } = form;
 
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(
     null
@@ -151,35 +152,38 @@ export const CreateEventModal = ({
 
   const loading = isCreating || isInstantiating;
 
-  const handleBlueprintSelect = (blueprintId: string) => {
-    setSelectedBlueprintId(blueprintId);
-    const selectedBlueprint = blueprints.find(
-      (bp: Blueprint) => bp.id === blueprintId
-    );
-    if (!selectedBlueprint) return;
-    const template = JSON.parse(selectedBlueprint.template);
-    form.setValue(
-      "name",
-      `${selectedBlueprint.name} ${new Date().getFullYear()}`
-    );
-    form.setValue("description", template.description || "");
-    if (template.venue_id) {
-      form.setValue("venueId", template.venue_id);
-    }
-  };
+  const handleBlueprintSelect = useCallback(
+    (blueprintId: string) => {
+      setSelectedBlueprintId(blueprintId);
+      const selectedBlueprint = blueprints.find(
+        (bp: Blueprint) => bp.id === blueprintId
+      );
+      if (!selectedBlueprint) return;
+      const template = JSON.parse(selectedBlueprint.template);
+      setValue("name", `${selectedBlueprint.name} ${new Date().getFullYear()}`);
+      setValue("description", template.description || "");
+      if (template.venue_id) {
+        setValue("venueId", template.venue_id);
+      }
+    },
+    [blueprints, setValue]
+  );
 
   useEffect(() => {
-    // When the modal opens with a preselected ID
     if (isOpen && preselectedBlueprintId && blueprints.length > 0) {
-      // Find the blueprint and pre-fill the form
       handleBlueprintSelect(preselectedBlueprintId);
     }
-    // Reset form when modal closes
     if (!isOpen) {
-      form.reset({ name: "", description: "", imageUrl: "" });
+      reset({ name: "", description: "", imageUrl: "" });
       setSelectedBlueprintId(null);
     }
-  }, [isOpen, preselectedBlueprintId, blueprints, form]);
+  }, [
+    isOpen,
+    preselectedBlueprintId,
+    blueprints,
+    reset,
+    handleBlueprintSelect,
+  ]);
 
   const onSubmit = (values: EventFormValues) => {
     if (selectedBlueprintId) {

@@ -1,6 +1,10 @@
 // src/app/(public)/events/[eventId]/_components/session-timeline.tsx
 import { format } from "date-fns";
-import { ClockIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
+import {
+  ClockIcon,
+  MicrophoneIcon,
+  ArrowDownTrayIcon,
+} from "@heroicons/react/24/outline";
 
 type Speaker = { name: string };
 type Session = {
@@ -9,6 +13,7 @@ type Session = {
   startTime: string;
   endTime: string;
   speakers: Speaker[];
+  presentation: string;
 };
 
 interface SessionTimelineProps {
@@ -48,6 +53,19 @@ export const SessionTimeline = ({ sessions }: SessionTimelineProps) => {
                 <span className="text-sm">
                   {session.speakers.map((s) => s.name).join(", ")}
                 </span>
+              </div>
+            )}
+            {session.presentation && (
+              <div className="mt-4">
+                <a
+                  href={session.presentation}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-x-2 text-sm font-medium text-primary hover:underline"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4" />
+                  View Presentation
+                </a>
               </div>
             )}
           </div>

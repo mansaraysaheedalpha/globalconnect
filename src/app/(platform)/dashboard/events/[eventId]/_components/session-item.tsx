@@ -57,50 +57,23 @@ export const SessionItem = ({
       });
       if (response.ok) {
         setPresentationState("ready");
-        return "ready";
+        return;
       }
-      // *** THIS IS THE FIX ***
-      // A 404 means the presentation is not ready yet.
-      // We return "processing" to allow the polling to continue,
-      // instead of incorrectly setting the state to "absent".
       if (response.status === 404) {
-        return "processing";
+        setPresentationState("absent");
+        return;
       }
       throw new Error("Failed to fetch presentation status");
     } catch (error) {
       console.error("Failed to check presentation status:", error);
-      setPresentationState("failed"); // Default to failed on other errors
-      return "failed";
+      setPresentationState("failed");
     }
   }, [event, session, token]);
 
   useEffect(() => {
-    let pollIntervalId: NodeJS.Timeout;
-    let timeoutId: NodeJS.Timeout;
-
-    if (presentationState === "processing") {
-      // Start polling
-      pollIntervalId = setInterval(async () => {
-        const status = await checkPresentationStatus();
-        if (status === "ready" || status === "failed") {
-          clearInterval(pollIntervalId);
-          clearTimeout(timeoutId);
-        }
-      }, 5000);
-
-      // Set a timeout for the polling
-      timeoutId = setTimeout(() => {
-        clearInterval(pollIntervalId);
-        setPresentationState("failed");
-      }, 120000); // 2-minute timeout
-    } else if (presentationState === "loading") {
+    if (presentationState === "loading") {
       checkPresentationStatus();
     }
-
-    return () => {
-      clearInterval(pollIntervalId);
-      clearTimeout(timeoutId);
-    };
   }, [presentationState, checkPresentationStatus]);
 
   const handleUpload = () => {
