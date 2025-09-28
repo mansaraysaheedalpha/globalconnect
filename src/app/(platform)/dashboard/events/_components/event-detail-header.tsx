@@ -9,10 +9,8 @@ import {
   PUBLISH_EVENT_MUTATION,
   ARCHIVE_EVENT_MUTATION,
 } from "@/graphql/events.graphql";
-import {
-  GET_EVENTS_BY_ORGANIZATION_QUERY,
- 
-} from "@/graphql/queries";
+import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
+import { GET_PUBLIC_EVENT_DETAILS_QUERY } from "@/graphql/public.graphql";
 import { GET_ARCHIVED_EVENTS_COUNT_QUERY } from "@/graphql/events.graphql";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -95,6 +93,12 @@ export const EventDetailHeader = ({
   const [publishEvent, { loading: isPublishing }] = useMutation(
     PUBLISH_EVENT_MUTATION,
     {
+      refetchQueries: [
+        {
+          query: GET_PUBLIC_EVENT_DETAILS_QUERY,
+          variables: { eventId: event.id },
+        },
+      ],
       onCompleted: () => {
         toast.success("Event has been published!");
         refetch(); // Refetch the event data to update the UI
@@ -277,10 +281,7 @@ export const EventDetailHeader = ({
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Link
                 </Button>
-                <Link
-                  href={publicUrl}
-                  rel="noopener noreferrer"
-                >
+                <Link href={publicUrl} rel="noopener noreferrer">
                   <Button size="sm">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     View Public Page
