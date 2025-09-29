@@ -28,7 +28,6 @@ export const GET_PUBLIC_EVENT_DETAILS_QUERY = gql`
       title
       startTime
       endTime
-      presentation
       speakers {
         id
         name

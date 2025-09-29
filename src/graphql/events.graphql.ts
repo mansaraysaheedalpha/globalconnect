@@ -51,6 +51,8 @@ export const UPDATE_EVENT_MUTATION = gql`
       description
       startDate
       endDate
+      status
+      isPublic
     }
   }
 `;

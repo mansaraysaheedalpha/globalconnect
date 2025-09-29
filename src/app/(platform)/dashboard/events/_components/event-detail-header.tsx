@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import {
   PUBLISH_EVENT_MUTATION,
   ARCHIVE_EVENT_MUTATION,
+  UPDATE_EVENT_MUTATION,
 } from "@/graphql/events.graphql";
 import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 import { GET_PUBLIC_EVENT_DETAILS_QUERY } from "@/graphql/public.graphql";
@@ -90,6 +91,7 @@ export const EventDetailHeader = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBlueprintModalOpen, setIsBlueprintModalOpen] = useState(false);
 
+  const [updateEvent] = useMutation(UPDATE_EVENT_MUTATION);
   const [publishEvent, { loading: isPublishing }] = useMutation(
     PUBLISH_EVENT_MUTATION,
     {
@@ -100,6 +102,12 @@ export const EventDetailHeader = ({
         },
       ],
       onCompleted: () => {
+        updateEvent({
+          variables: {
+            id: event.id,
+            eventIn: { status: "published" },
+          },
+        });
         toast.success("Event has been published!");
         refetch(); // Refetch the event data to update the UI
       },
