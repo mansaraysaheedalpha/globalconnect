@@ -57,24 +57,72 @@ export const SessionItem = ({
       });
       if (response.ok) {
         setPresentationState("ready");
-        return;
+        return "ready";
       }
       if (response.status === 404) {
         setPresentationState("absent");
-        return;
+        return "absent";
       }
       throw new Error("Failed to fetch presentation status");
     } catch (error) {
       console.error("Failed to check presentation status:", error);
       setPresentationState("failed");
+      return "failed";
     }
-  }, [event, session, token]);
+  }, [event.id, event.organizationId, session.id, token]);
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      intervalId = setInterval(async () => {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
+        try {
+          const response = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) {
+            setPresentationState("ready");
+            if (intervalId) clearInterval(intervalId);
+            if (timeoutId) clearTimeout(timeoutId);
+          }
+          // If 404, we're still processing, so we do nothing and wait for the next interval.
+        } catch (error) {
+          console.error("Polling for presentation status failed:", error);
+          setPresentationState("failed");
+          if (intervalId) clearInterval(intervalId);
+          if (timeoutId) clearTimeout(timeoutId);
+        }
+      }, 5000); // Poll every 5 seconds
+
+      timeoutId = setTimeout(() => {
+        if (intervalId) clearInterval(intervalId);
+        // If we're still processing after the timeout, mark as failed.
+        setPresentationState((current) =>
+          current === "processing" ? "failed" : current
+        );
+      }, 120000); // 2-minute timeout
+    };
+
     if (presentationState === "loading") {
       checkPresentationStatus();
+    } else if (presentationState === "processing") {
+      startPolling();
     }
-  }, [presentationState, checkPresentationStatus]);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [
+    presentationState,
+    checkPresentationStatus,
+    event.id,
+    event.organizationId,
+    session.id,
+    token,
+  ]);
 
   const handleUpload = () => {
     onUpload(session);
