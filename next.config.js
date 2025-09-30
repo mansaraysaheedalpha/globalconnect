@@ -11,6 +11,12 @@ const nextConfig = {
         port: "",
         pathname:  '/random/**',
       },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+        pathname: "/globalconnect-dev/**",
+      },
     ],
   },
 };
