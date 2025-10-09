@@ -1,3 +1,4 @@
+//src/graphql/venues.graphql.ts
 import { gql } from "@apollo/client";
 
 export const GET_ORGANIZATION_VENUES_QUERY = gql`

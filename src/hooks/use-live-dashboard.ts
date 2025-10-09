@@ -23,11 +23,20 @@ export const useLiveDashboard = (eventId: string) => {
   const { token } = useAuthStore();
 
   useEffect(() => {
-    if (!eventId || !token) return;
+    if (!eventId || !token) {
+      console.log("❌ Missing eventId or token", {
+        eventId,
+        hasToken: !!token,
+      });
+      return;
+    }
+
+    console.log("🔌 Initializing socket connection for event:", eventId);
 
     // Connect to the WebSocket server, passing the eventId and auth token
     const realtimeUrl =
       process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+
     const newSocket = io(realtimeUrl, {
       query: { eventId },
       auth: { token },
@@ -36,17 +45,18 @@ export const useLiveDashboard = (eventId: string) => {
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
-      console.log("Socket connected:", newSocket.id);
+      console.log("✅ Socket connected:", newSocket.id);
       setIsConnected(true);
+
       // Once connected, tell the server we want to join the dashboard room
       newSocket.emit(
         "dashboard.join",
         (response: { success: boolean; error?: string }) => {
           if (!response.success) {
-            console.error("Failed to join dashboard room:", response.error);
+            console.error("❌ Failed to join dashboard room:", response.error);
           } else {
             console.log(
-              "Successfully joined dashboard room for event:",
+              "✅ Successfully joined dashboard room for event:",
               eventId
             );
           }
@@ -55,23 +65,37 @@ export const useLiveDashboard = (eventId: string) => {
     });
 
     newSocket.on("disconnect", () => {
-      console.log("Socket disconnected");
+      console.log("🔌 Socket disconnected");
       setIsConnected(false);
     });
 
-    // This is the listener for our real-time data updates
+    // ✅ THIS IS THE CRITICAL LISTENER
     newSocket.on("dashboard.update", (data: LiveDashboardData) => {
+      console.log("📊 Dashboard update received:", data);
       setDashboardData(data);
+    });
+
+    // ✅ ADD ERROR LISTENER
+    newSocket.on("systemError", (error: any) => {
+      console.error("❌ System error:", error);
+    });
+
+    // ✅ ADD CONNECTION ERROR LISTENER
+    newSocket.on("connect_error", (error: any) => {
+      console.error("❌ Connection error:", error);
     });
 
     // Cleanup on component unmount
     return () => {
+      console.log("🧹 Cleaning up socket connection");
       newSocket.off("connect");
       newSocket.off("disconnect");
       newSocket.off("dashboard.update");
+      newSocket.off("systemError");
+      newSocket.off("connect_error");
       newSocket.disconnect();
     };
   }, [eventId, token]);
 
-  return { isConnected, dashboardData };
+  return { isConnected, dashboardData, socket };
 };

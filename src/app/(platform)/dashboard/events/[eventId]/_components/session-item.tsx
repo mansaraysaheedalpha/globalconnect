@@ -56,14 +56,15 @@ export const SessionItem = ({
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
-        setPresentationState("ready");
-        return "ready";
+        const data = await response.json();
+        setPresentationState(data.status);
+        return data.status;
       }
       if (response.status === 404) {
         setPresentationState("absent");
         return "absent";
       }
-      throw new Error("Failed to fetch presentation status");
+      throw new Error(`Server responded with status: ${response.status}`);
     } catch (error) {
       console.error("Failed to check presentation status:", error);
       setPresentationState("failed");

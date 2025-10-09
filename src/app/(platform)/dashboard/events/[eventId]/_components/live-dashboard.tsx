@@ -1,12 +1,11 @@
 // src/app/(platform)/dashboard/events/[eventId]/_components/live-dashboard.tsx
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useLiveDashboard } from "@/hooks/use-live-dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader } from "@/components/ui/loader";
-// --- CHANGE: Swapped icons to Heroicons ---
 import {
   ChatBubbleBottomCenterTextIcon,
   ChartBarIcon,
@@ -32,7 +31,6 @@ const StatCard = ({
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      {/* --- CHANGE: Made icon gold and slightly larger for emphasis --- */}
       <Icon className="h-5 w-5 text-primary" />
     </CardHeader>
     <CardContent>
@@ -42,7 +40,31 @@ const StatCard = ({
 );
 
 export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
-  const { isConnected, dashboardData } = useLiveDashboard(eventId);
+  const { isConnected, dashboardData, socket } = useLiveDashboard(eventId);
+
+  // ✅ DEBUG: Log state changes
+  useEffect(() => {
+    console.log("🔍 LiveDashboard render state:", {
+      isConnected,
+      hasDashboardData: !!dashboardData,
+      dashboardData,
+    });
+  }, [isConnected, dashboardData]);
+
+  // ✅ DEBUG: Manually test socket listener
+  useEffect(() => {
+    if (socket) {
+      console.log("🧪 Setting up manual test listener on socket");
+      const testListener = (data: any) => {
+        console.log("🧪 MANUAL TEST: dashboard.update received!", data);
+      };
+      socket.on("dashboard.update", testListener);
+
+      return () => {
+        socket.off("dashboard.update", testListener);
+      };
+    }
+  }, [socket]);
 
   if (!isConnected || !dashboardData) {
     return (
@@ -51,9 +73,17 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
           <CardTitle>Live Dashboard</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-4">
             {isConnected ? (
-              <p>Waiting for first data broadcast...</p>
+              <>
+                <p>Waiting for first data broadcast...</p>
+                {/* ✅ DEBUG INFO */}
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p>✅ Socket connected</p>
+                  <p>⏳ Waiting for dashboard.update event</p>
+                  <p className="font-mono">Event ID: {eventId}</p>
+                </div>
+              </>
             ) : (
               <div className="flex items-center">
                 <Loader className="h-5 w-5 mr-2 animate-spin" />

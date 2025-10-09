@@ -51,7 +51,17 @@ export const PresentationViewer = ({
         const data = await response.json();
         setPresentation(data);
         setError(null);
-        return true; // Indicates success
+        if (data.status === "failed") {
+          setError(
+            "The presentation failed to process. Please try uploading again."
+          );
+          return true; // Stop polling
+        }
+        if (data.status === "ready") {
+          return true; // Stop polling, it's ready
+        }
+        // If status is 'processing', we continue polling
+        return false;
       }
       if (response.status === 404) {
         return false; // Indicates still processing
@@ -74,42 +84,30 @@ export const PresentationViewer = ({
     setPresentation(null);
     setCurrentSlide(0);
 
-    const poll = async () => {
+    let isCancelled = false;
+
+    const pollForPresentation = async () => {
+      if (isCancelled) return;
+
       const isReady = await fetchPresentation();
+
+      if (isCancelled) return;
+
       if (isReady) {
         setIsLoading(false);
+      } else {
+        // If not ready, wait and try again
+        setTimeout(pollForPresentation, 5000);
       }
     };
 
-    poll(); // Initial fetch
+    pollForPresentation();
 
-    const intervalId = setInterval(async () => {
-      if (presentation || error) {
-        clearInterval(intervalId);
-        return;
-      }
-      const isReady = await fetchPresentation();
-      if (isReady) {
-        setIsLoading(false);
-        clearInterval(intervalId);
-      }
-    }, 5000); // Poll every 5 seconds
-
-    const timeoutId = setTimeout(() => {
-      clearInterval(intervalId);
-      if (!presentation && !error) {
-        setError(
-          "Polling timed out. The presentation may have failed to process."
-        );
-        setIsLoading(false);
-      }
-    }, 120000); // 2-minute timeout
-
+    // Cleanup function
     return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
+      isCancelled = true;
     };
-  }, [isOpen, fetchPresentation, presentation, error]);
+  }, [isOpen, fetchPresentation]);
 
   const goToNextSlide = () => {
     if (presentation) {
@@ -150,8 +148,9 @@ export const PresentationViewer = ({
             <Image
               src={presentation.slide_urls[currentSlide]}
               alt={`Slide ${currentSlide + 1}`}
-              layout="fill"
-              objectFit="contain"
+              fill
+              style={{ objectFit: "contain" }}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           </div>
           <div className="flex justify-between items-center">
