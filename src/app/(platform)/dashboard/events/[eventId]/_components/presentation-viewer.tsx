@@ -1,7 +1,7 @@
 // src/app/(platform)/dashboard/events/[eventId]/_components/presentation-viewer.tsx
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,21 @@ import {
 } from "@/components/ui/dialog";
 import { Loader, AlertTriangle } from "lucide-react";
 import Image from "next/image";
+import { FullScreenViewer } from "./full-screen-view";
+import { useSocket } from "@/hooks/use-socket";
+import { v4 as uuidv4 } from "uuid";
 
 type Presentation = {
   id: string;
   session_id: string;
   slide_urls: string[];
+  status: "processing" | "ready" | "failed";
+};
+
+type PresentationStatus = {
+  isActive: boolean;
+  currentSlide: number;
+  totalSlides: number;
 };
 
 interface PresentationViewerProps {
@@ -39,86 +49,118 @@ export const PresentationViewer = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [presentationStatus, setPresentationStatus] =
+    useState<PresentationStatus | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const { token } = useAuthStore();
-
-  const fetchPresentation = useCallback(async () => {
-    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
-    try {
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPresentation(data);
-        setError(null);
-        if (data.status === "failed") {
-          setError(
-            "The presentation failed to process. Please try uploading again."
-          );
-          return true; // Stop polling
-        }
-        if (data.status === "ready") {
-          return true; // Stop polling, it's ready
-        }
-        // If status is 'processing', we continue polling
-        return false;
-      }
-      if (response.status === 404) {
-        return false; // Indicates still processing
-      }
-      throw new Error(
-        `Failed to fetch presentation. Status: ${response.status}`
-      );
-    } catch (err: any) {
-      setError(err.message);
-      toast.error("Error", { description: err.message });
-      return true; // Stop polling on error
-    }
-  }, [event, session, token]);
+  const socket = useSocket();
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!socket || !isOpen) return;
 
-    setIsLoading(true);
-    setError(null);
-    setPresentation(null);
-    setCurrentSlide(0);
+    const handleSlideUpdate = (data: { currentSlide: number }) => {
+      setCurrentSlide(data.currentSlide);
+    };
 
-    let isCancelled = false;
+    socket.emit("session.join", { sessionId: session.id });
+    socket.emit(
+      "content.request_state",
+      { sessionId: session.id },
+      (response: { success: boolean; state: PresentationStatus }) => {
+        if (response.success && response.state) {
+          setPresentationStatus(response.state);
+          setCurrentSlide(response.state.currentSlide);
+        }
+      }
+    );
 
-    const pollForPresentation = async () => {
-      if (isCancelled) return;
+    socket.on("slide.update", handleSlideUpdate);
 
-      const isReady = await fetchPresentation();
+    return () => {
+      socket.emit("session.leave", { sessionId: session.id });
+      socket.off("slide.update", handleSlideUpdate);
+    };
+  }, [socket, isOpen, session.id]);
 
-      if (isCancelled) return;
+  useEffect(() => {
+    if (!isOpen || !token) return;
 
-      if (isReady) {
+    const fetchPresentationData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === "ready") {
+            setPresentation(data);
+          } else {
+            setError(`Presentation is not ready. Status: ${data.status}`);
+          }
+        } else {
+          setError("Could not load presentation data.");
+        }
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
         setIsLoading(false);
-      } else {
-        // If not ready, wait and try again
-        setTimeout(pollForPresentation, 5000);
       }
     };
 
-    pollForPresentation();
+    fetchPresentationData();
+  }, [isOpen, event.id, event.organizationId, session.id, token]);
 
-    // Cleanup function
-    return () => {
-      isCancelled = true;
-    };
-  }, [isOpen, fetchPresentation]);
-
-  const goToNextSlide = () => {
-    if (presentation) {
-      setCurrentSlide((prev) =>
-        Math.min(prev + 1, presentation.slide_urls.length - 1)
+  const handleStartPresentation = () => {
+    if (socket) {
+      socket.emit(
+        "content.control",
+        {
+          action: "START",
+          sessionId: session.id,
+          idempotencyKey: uuidv4(),
+        },
+        (response: {
+          success: boolean;
+          error?: string;
+          newState?: PresentationStatus;
+        }) => {
+          if (response.success && response.newState) {
+            setPresentationStatus(response.newState);
+            setCurrentSlide(response.newState.currentSlide);
+            toast.success("Presentation started!");
+          } else {
+            toast.error("Failed to start presentation.", {
+              description: response.error,
+            });
+          }
+        }
       );
     }
   };
 
-  const goToPrevSlide = () => {
-    setCurrentSlide((prev) => Math.max(prev - 1, 0));
+  const handleSlideControl = (action: "NEXT_SLIDE" | "PREV_SLIDE") => {
+    if (socket) {
+      const payload = {
+        action,
+        sessionId: session.id,
+        idempotencyKey: uuidv4(),
+      };
+      socket.emit(
+        "content.control",
+        payload,
+        (response: { success: boolean; error?: string }) => {
+          if (!response.success) {
+            toast.error("Failed to change slide", {
+              description: response.error,
+            });
+          }
+        }
+      );
+    }
   };
 
   const renderContent = () => {
@@ -141,22 +183,40 @@ export const PresentationViewer = ({
       );
     }
 
-    if (presentation && presentation.slide_urls.length > 0) {
+    if (presentation && !presentationStatus?.isActive) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64">
+          <p className="text-lg font-medium mb-4">
+            The presentation is ready to begin.
+          </p>
+          <Button onClick={handleStartPresentation}>Start Presentation</Button>
+          <p className="text-sm text-muted-foreground mt-2">
+            (This will synchronize the view for all attendees)
+          </p>
+        </div>
+      );
+    }
+
+    if (presentation && presentationStatus?.isActive) {
       return (
         <div className="space-y-4">
-          <div className="relative w-full aspect-video bg-secondary rounded-lg overflow-hidden">
+          <div
+            className="relative w-full aspect-video bg-secondary rounded-lg overflow-hidden cursor-zoom-in"
+            onClick={() => setIsFullScreen(true)}
+          >
             <Image
               src={presentation.slide_urls[currentSlide]}
               alt={`Slide ${currentSlide + 1}`}
               fill
               style={{ objectFit: "contain" }}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              priority
             />
           </div>
           <div className="flex justify-between items-center">
             <Button
               variant="outline"
-              onClick={goToPrevSlide}
+              onClick={() => handleSlideControl("PREV_SLIDE")}
               disabled={currentSlide === 0}
             >
               Previous
@@ -166,7 +226,7 @@ export const PresentationViewer = ({
             </span>
             <Button
               variant="outline"
-              onClick={goToNextSlide}
+              onClick={() => handleSlideControl("NEXT_SLIDE")}
               disabled={currentSlide === presentation.slide_urls.length - 1}
             >
               Next
@@ -176,17 +236,11 @@ export const PresentationViewer = ({
       );
     }
 
-    if (presentation && presentation.slide_urls.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center h-64">
-          <p className="mt-4 text-muted-foreground">
-            The presentation has no slides.
-          </p>
-        </div>
-      );
-    }
-
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-muted-foreground">No presentation loaded.</p>
+      </div>
+    );
   };
 
   return (
@@ -202,6 +256,13 @@ export const PresentationViewer = ({
             Close
           </Button>
         </DialogFooter>
+        {presentation && (
+          <FullScreenViewer
+            isOpen={isFullScreen}
+            onClose={() => setIsFullScreen(false)}
+            src={presentation.slide_urls[currentSlide]}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

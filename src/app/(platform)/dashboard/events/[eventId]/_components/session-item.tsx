@@ -1,7 +1,7 @@
 // src/app/(platform)/dashboard/events/[eventId]/_components/session-item.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 import { PresentationStatus, PresentationState } from "./presentation-status";
 import { ClockIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
 import { MoreVertical, Edit, Trash2 } from "lucide-react";
+import { useSocket } from "@/hooks/use-socket";
 import { useAuthStore } from "@/store/auth.store";
 
 type Speaker = { id: string; name: string };
@@ -47,87 +48,55 @@ export const SessionItem = ({
 }: SessionItemProps) => {
   const [presentationState, setPresentationState] =
     useState<PresentationState>("loading");
-  const { token } = useAuthStore();
 
-  const checkPresentationStatus = useCallback(async () => {
-    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
-    try {
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPresentationState(data.status);
-        return data.status;
-      }
-      if (response.status === 404) {
-        setPresentationState("absent");
-        return "absent";
-      }
-      throw new Error(`Server responded with status: ${response.status}`);
-    } catch (error) {
-      console.error("Failed to check presentation status:", error);
-      setPresentationState("failed");
-      return "failed";
-    }
-  }, [event.id, event.organizationId, session.id, token]);
+  // Connect to the WebSocket server
+  const socket = useSocket("/events");
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    let timeoutId: NodeJS.Timeout | null = null;
+    if (!socket) return;
 
-    const startPolling = () => {
-      intervalId = setInterval(async () => {
+    // Listener for real-time status updates
+    const onStatusUpdate = (data: {
+      sessionId: string;
+      status: PresentationState;
+    }) => {
+      if (data.sessionId === session.id) {
+        setPresentationState(data.status);
+      }
+    };
+
+    socket.on("presentation.status.update", onStatusUpdate);
+
+    // Initial status check (in case the page is loaded after processing is complete)
+    const checkInitialStatus = async () => {
+      try {
         const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
-        try {
-          const response = await fetch(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (response.ok) {
-            setPresentationState("ready");
-            if (intervalId) clearInterval(intervalId);
-            if (timeoutId) clearTimeout(timeoutId);
-          }
-          // If 404, we're still processing, so we do nothing and wait for the next interval.
-        } catch (error) {
-          console.error("Polling for presentation status failed:", error);
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${useAuthStore.getState().token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPresentationState(data.status);
+        } else if (response.status === 404) {
+          setPresentationState("absent");
+        } else {
           setPresentationState("failed");
-          if (intervalId) clearInterval(intervalId);
-          if (timeoutId) clearTimeout(timeoutId);
         }
-      }, 5000); // Poll every 5 seconds
-
-      timeoutId = setTimeout(() => {
-        if (intervalId) clearInterval(intervalId);
-        // If we're still processing after the timeout, mark as failed.
-        setPresentationState((current) =>
-          current === "processing" ? "failed" : current
-        );
-      }, 120000); // 2-minute timeout
+      } catch {
+        setPresentationState("failed");
+      }
     };
 
-    if (presentationState === "loading") {
-      checkPresentationStatus();
-    } else if (presentationState === "processing") {
-      startPolling();
-    }
+    checkInitialStatus();
 
+    // Cleanup listener on component unmount
     return () => {
-      if (intervalId) clearInterval(intervalId);
-      if (timeoutId) clearTimeout(timeoutId);
+      socket.off("presentation.status.update", onStatusUpdate);
     };
-  }, [
-    presentationState,
-    checkPresentationStatus,
-    event.id,
-    event.organizationId,
-    session.id,
-    token,
-  ]);
+  }, [socket, session.id, event.organizationId, event.id]);
 
   const handleUpload = () => {
     onUpload(session);
-    // Optimistically update the UI to show processing
     setPresentationState("processing");
   };
 
