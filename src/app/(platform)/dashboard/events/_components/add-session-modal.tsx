@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Loader } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader, MessageSquare, HelpCircle, BarChart3 } from "lucide-react";
 import { SpeakerMultiSelect } from "@/components/ui/speaker-multi-select";
 
 interface AddSessionModalProps {
@@ -59,7 +60,7 @@ const formSchema = z
   .object({
     title: z.string().min(3, "Session title must be at least 3 characters."),
     sessionDate: z.date({
-      required_error: "Please select a date for the session.",
+      message: "Please select a date for the session.",
     }),
     startTime: z
       .string()
@@ -73,7 +74,10 @@ const formSchema = z
         /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
         "Please use a valid HH:MM format."
       ),
-    speakerIds: z.array(z.string()).optional(), // <-- Add speakerIds field
+    speakerIds: z.array(z.string()).optional(),
+    chatEnabled: z.boolean().default(true),
+    qaEnabled: z.boolean().default(true),
+    pollsEnabled: z.boolean().default(true),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: "End time must be after the start time.",
@@ -97,7 +101,10 @@ export const AddSessionModal = ({
       sessionDate: new Date(eventStartDate),
       startTime: "09:00",
       endTime: "10:00",
-      speakerIds: [], // <-- Set default value
+      speakerIds: [],
+      chatEnabled: true,
+      qaEnabled: true,
+      pollsEnabled: true,
     },
   });
 
@@ -137,7 +144,10 @@ export const AddSessionModal = ({
           sessionDate: format(values.sessionDate, "yyyy-MM-dd"),
           startTime: values.startTime,
           endTime: values.endTime,
-          speakerIds: values.speakerIds, // <-- Pass the speaker IDs
+          speakerIds: values.speakerIds,
+          chatEnabled: values.chatEnabled,
+          qaEnabled: values.qaEnabled,
+          pollsEnabled: values.pollsEnabled,
         },
       },
     });
@@ -232,6 +242,65 @@ export const AddSessionModal = ({
                 </FormItem>
               )}
             />
+
+            {/* Interactive Features */}
+            <div className="space-y-3 pt-2 border-t">
+              <p className="text-sm font-medium text-muted-foreground">Interactive Features</p>
+              <FormField
+                control={form.control}
+                name="chatEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <FormLabel className="font-normal cursor-pointer">Enable Chat</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="qaEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      <FormLabel className="font-normal cursor-pointer">Enable Q&A</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pollsEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                      <FormLabel className="font-normal cursor-pointer">Enable Polls</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <DialogFooter>
               <Button

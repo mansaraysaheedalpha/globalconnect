@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm add:*)",
+      "Bash(ls:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(git add:*)",
+      "Bash(src/hooks/use-session-polls.ts )",
+      "Bash(src/app/\\(platform\\)/dashboard/events/[eventId]/_components/session-polls.tsx )",
+      "Bash(src/graphql/events.graphql.ts )",
+      "Bash(src/graphql/attendee.graphql.ts )",
+      "Bash(src/app/\\(platform\\)/dashboard/events/[eventId]/_components/session-item.tsx )",
+      "Bash(src/app/\\(attendee\\)/attendee/events/[eventId]/page.tsx )",
+      "Bash(src/app/\\(platform\\)/dashboard/events/_components/add-session-modal.tsx )",
+      "Bash(src/app/\\(platform\\)/dashboard/events/_components/edit-session-modal.tsx )",
+      "Bash(src/components/ui/collapsible.tsx )",
+      "Bash(.github/workflows/ci.yml )",
+      "Bash(POLLS_IMPLEMENTATION_PLAN.md )",
+      "Bash(POLLS_BACKEND.md)"
+    ]
+  }
+}

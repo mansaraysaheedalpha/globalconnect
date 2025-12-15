@@ -27,7 +27,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader, PartyPopper } from "lucide-react";
+import { Loader, PartyPopper, ExternalLink, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ export const RegistrationModal = ({
   onClose,
   eventId,
 }: RegistrationModalProps) => {
+  const router = useRouter();
   const { user, token } = useAuthStore();
   const [isSuccess, setIsSuccess] = useState(false);
   const [ticketCode, setTicketCode] = useState("");
@@ -75,8 +78,8 @@ export const RegistrationModal = ({
       variables: {
         eventId,
         registrationIn: {
-          first_name: values.first_name,
-          last_name: values.last_name,
+          firstName: values.first_name,
+          lastName: values.last_name,
           email: values.email,
         },
       },
@@ -84,13 +87,16 @@ export const RegistrationModal = ({
   };
 
   const handleAuthenticatedSubmit = () => {
+    console.log("[Registration] Token being used:", token ? "Present" : "Missing");
     createRegistration({
       variables: {
         eventId,
-        // --- THIS IS THE FIX ---
-        // Changed 'user_id' to 'userId' to match the GraphQL API schema
-        registrationIn: { userId: user?.id },
-        // ---------------------
+        registrationIn: {},
+      },
+      context: {
+        headers: {
+          authorization: token ? `Bearer ${token}` : "",
+        },
       },
     });
   };
@@ -104,8 +110,15 @@ export const RegistrationModal = ({
     }, 300);
   };
 
+  const handleGoToEvent = () => {
+    handleClose();
+    router.push(`/attendee/events/${eventId}`);
+  };
+
   const renderContent = () => {
     if (isSuccess) {
+      const isGuestRegistration = !token && !user;
+
       return (
         <div className="text-center py-8">
           <PartyPopper className="h-16 w-16 mx-auto text-green-500" />
@@ -117,8 +130,30 @@ export const RegistrationModal = ({
           <p className="mt-4 text-sm">
             A confirmation has been sent to your email.
           </p>
-          <DialogFooter className="mt-6">
-            <Button onClick={handleClose}>Close</Button>
+
+          {isGuestRegistration && (
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium">Want to manage all your events in one place?</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a free account to track your registrations, get reminders, and more.
+              </p>
+              <Link href="/auth/register">
+                <Button variant="secondary" className="mt-3 gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Create Free Account
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          <DialogFooter className="mt-6 flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={handleClose}>Close</Button>
+            {token && user && (
+              <Button onClick={handleGoToEvent} className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Go to My Event
+              </Button>
+            )}
           </DialogFooter>
         </div>
       );

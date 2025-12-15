@@ -102,12 +102,6 @@ export const EventDetailHeader = ({
         },
       ],
       onCompleted: () => {
-        updateEvent({
-          variables: {
-            id: event.id,
-            eventIn: { status: "published" },
-          },
-        });
         toast.success("Event has been published!");
         refetch(); // Refetch the event data to update the UI
       },
@@ -127,8 +121,6 @@ export const EventDetailHeader = ({
       onError: (error) =>
         toast.error("Failed to delete event", { description: error.message }),
       update(cache) {
-        // --- THIS IS THE FIX ---
-        // Use the 'event' prop which is guaranteed to be available
         const fullEventObject = event;
 
         // --- Part 1: Remove from the Active Events List ---

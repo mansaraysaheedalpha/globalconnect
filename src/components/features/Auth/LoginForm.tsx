@@ -5,15 +5,20 @@ import { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { jwtDecode } from 'jwt-decode';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TwoFactorForm } from './TwoFactorForm';
-import { toast } from 'sonner'; 
+import { toast } from 'sonner';
 import { Loader } from "@/components/ui/loader";
 import { LOGIN_USER_MUTATION } from './auth.graphql';
+
+interface JwtPayload {
+  orgId?: string | null;
+}
 
 export function LoginForm() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -43,7 +48,21 @@ export function LoginForm() {
       } else if (token && user) {
         toast.success("Login Successful!");
         setAuth(token, user);
-        router.push("/dashboard");
+
+        // Redirect based on user type (organizer vs attendee)
+        try {
+          const decoded = jwtDecode<JwtPayload>(token);
+          if (decoded.orgId) {
+            // User is an organizer - redirect to organizer dashboard
+            router.push("/dashboard");
+          } else {
+            // User is an attendee - redirect to attendee dashboard
+            router.push("/attendee");
+          }
+        } catch {
+          // Fallback to dashboard if decoding fails
+          router.push("/dashboard");
+        }
       }
     },
     onError: (error) => {

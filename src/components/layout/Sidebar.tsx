@@ -6,19 +6,16 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-// --- CHANGE: Importing Heroicons instead of Lucide ---
 import {
-  Squares2X2Icon,
-  UsersIcon,
-  Cog6ToothIcon,
-  PlusCircleIcon,
-  CalendarDaysIcon,
-  MapPinIcon,
-  MicrophoneIcon,
-  BookOpenIcon,
-  ArrowLeftOnRectangleIcon,
-  GlobeAltIcon,
-} from "@heroicons/react/24/outline";
+  LayoutGrid,
+  Users,
+  Settings,
+  PlusCircle,
+  CalendarDays,
+  MapPin,
+  Mic2,
+  BookOpen,
+} from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 
 export function Sidebar({
@@ -35,47 +32,45 @@ export function Sidebar({
     router.push("/auth/login");
   };
 
-  // --- CHANGE: Swapped icons to Heroicons ---
   const navLinks = [
     {
       href: "/dashboard",
       label: "Dashboard",
-      icon: Squares2X2Icon,
+      icon: LayoutGrid,
     },
     {
       href: "/dashboard/events",
       label: "Events",
-      icon: CalendarDaysIcon,
+      icon: CalendarDays,
     },
     {
       href: "/speakers",
       label: "Speakers",
-      icon: MicrophoneIcon,
+      icon: Mic2,
     },
     {
       href: "/venues",
       label: "Venues",
-      icon: MapPinIcon,
+      icon: MapPin,
     },
     {
       href: "/dashboard/blueprints",
       label: "Blueprints",
-      icon: BookOpenIcon,
+      icon: BookOpen,
     },
     {
       href: "/team",
       label: "Team",
-      icon: UsersIcon,
+      icon: Users,
     },
     {
       href: "/settings",
       label: "Settings",
-      icon: Cog6ToothIcon,
+      icon: Settings,
     },
   ];
 
   return (
-    // --- CHANGE: Added `dark` class to force the navy background and light text ---
     <aside className="dark w-64 flex-shrink-0 bg-background text-foreground border-r border-border/50 p-4 flex flex-col">
       <div className="mb-8 p-2">
         <Link href="/dashboard" className="flex items-center gap-3">
@@ -104,7 +99,6 @@ export function Sidebar({
               key={link.href}
               href={link.href}
               className={cn(
-                // --- CHANGE: Adjusted text colors for better contrast on the dark background ---
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:text-foreground hover:bg-white/5",
                 isActive &&
                   "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
@@ -123,7 +117,7 @@ export function Sidebar({
           variant="secondary"
           onClick={onOpenCreateOrgModal}
         >
-          <PlusCircleIcon className="h-5 w-5" />
+          <PlusCircle className="h-5 w-5" />
           Create Organization
         </Button>
       </div>

@@ -4,18 +4,31 @@ const nextConfig = {
    // ✅ THE FIX: This section tells Next.js to trust images from placehold.co
    images: {
     remotePatterns: [
-      // ✅ ADD THIS NEW BLOCK
       {
         protocol: "https",
-        hostname: 'source.unsplash.com',
-        port: "",
-        pathname:  '/random/**',
+        hostname: "source.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "plus.unsplash.com",
       },
       {
         protocol: "http",
         hostname: "localhost",
         port: "9000",
         pathname: "/globalconnect-dev/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.amazonaws.com",
       },
     ],
   },

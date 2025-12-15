@@ -1,7 +1,7 @@
 // src/components/ui/image-upload.tsx
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { UploadCloud, X } from "lucide-react";
 import Image from "next/image";
@@ -9,45 +9,55 @@ import Image from "next/image";
 interface ImageUploadProps {
   value: string | null; // Current image URL
   onChange: (file: File) => void; // Callback when a new file is selected
+  onClear?: () => void; // Callback when image is cleared
   isUploading: boolean;
+  disabled?: boolean;
 }
 
 export function ImageUpload({
   value,
   onChange,
+  onClear,
   isUploading,
+  disabled = false,
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(value);
 
+  // Sync preview with external value changes
+  useEffect(() => {
+    setPreview(value);
+  }, [value]);
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      if (acceptedFiles[0]) {
+      if (acceptedFiles[0] && !disabled) {
         const file = acceptedFiles[0];
         setPreview(URL.createObjectURL(file));
         onChange(file);
       }
     },
-    [onChange]
+    [onChange, disabled]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "image/*": [".jpeg", ".jpg", ".png", ".webp"] },
     maxFiles: 1,
+    disabled: disabled || isUploading,
   });
 
   const removePreview = (e: React.MouseEvent) => {
     e.stopPropagation();
     setPreview(null);
-    // You might want a callback here to remove the image from the backend too
+    onClear?.();
   };
 
   return (
     <div
       {...getRootProps()}
-      className={`relative w-full aspect-video border-2 border-dashed rounded-lg flex items-center justify-center text-center cursor-pointer transition-all ${
-        isDragActive ? "border-primary bg-primary/10" : "border-border"
-      }`}
+      className={`relative w-full aspect-video border-2 border-dashed rounded-lg flex items-center justify-center text-center transition-all ${
+        disabled || isUploading ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+      } ${isDragActive ? "border-primary bg-primary/10" : "border-border"}`}
     >
       <input {...getInputProps()} />
       {preview ? (

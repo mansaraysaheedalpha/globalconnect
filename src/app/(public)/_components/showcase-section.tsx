@@ -61,10 +61,7 @@ export function VisualShowcaseSection() {
                   className="transition-transform duration-500 ease-in-out group-hover:scale-105"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70 group-hover:opacity-80 transition-opacity duration-300"></div>
-                <div className="absolute bottom-6 left-6 right-6 text-white">
-                  <h3 className="text-2xl font-bold mb-2">{item.title}</h3>
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-70 transition-opacity duration-300"></div>
               </div>
               <div className="w-full lg:w-1/2">
                 <h3 className="text-3xl font-bold mb-4">{item.title}</h3>

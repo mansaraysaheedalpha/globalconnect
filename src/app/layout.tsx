@@ -5,7 +5,10 @@ import './globals.css';
 import { ApolloProvider } from '@/lib/apollo-provider'; // Import the provider
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'GlobalConnect',
@@ -19,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <ApolloProvider>{children}</ApolloProvider> {/* Wrap children with the provider */}
          <Toaster /> {/* Add the Toaster component here */}
       </body>

@@ -35,14 +35,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-// --- CHANGE: Swapping to Heroicons ---
 import {
-  MapPinIcon,
-  PlusCircleIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+  MapPin,
+  PlusCircle,
+  MoreVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { AddVenueModal } from "./_components/add-venue-modal";
 import { EditVenueModal } from "./_components/edit-venue-modal";
 
@@ -119,7 +118,6 @@ const VenuesPage = () => {
       )}
 
       <div className="p-6 space-y-6">
-        {/* --- CHANGE: New Page Header --- */}
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Venues</h1>
@@ -128,12 +126,11 @@ const VenuesPage = () => {
             </p>
           </div>
           <Button onClick={() => setIsAddModalOpen(true)}>
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
+            <PlusCircle className="h-5 w-5 mr-2" />
             Add Venue
           </Button>
         </div>
 
-        {/* --- CHANGE: Main content is now a Card containing a Table or Empty State --- */}
         <Card>
           {loading ? (
             <div className="p-6">
@@ -161,21 +158,21 @@ const VenuesPage = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            <EllipsisVerticalIcon className="h-5 w-5" />
+                            <MoreVertical className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onSelect={() => setVenueToEdit(venue)}
                           >
-                            <PencilIcon className="h-4 w-4 mr-2" />
+                            <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onSelect={() => setVenueToDelete(venue)}
                             className="text-destructive"
                           >
-                            <TrashIcon className="h-4 w-4 mr-2" />
+                            <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -187,13 +184,13 @@ const VenuesPage = () => {
             </Table>
           ) : (
             <div className="text-center p-16">
-              <MapPinIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+              <MapPin className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-4 text-lg font-semibold">No Venues Found</h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 Get started by adding your first venue.
               </p>
               <Button className="mt-6" onClick={() => setIsAddModalOpen(true)}>
-                <PlusCircleIcon className="h-5 w-5 mr-2" />
+                <PlusCircle className="h-5 w-5 mr-2" />
                 Add Venue
               </Button>
             </div>

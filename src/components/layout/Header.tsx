@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { useMutation, useQuery } from "@apollo/client";
 import { GET_MY_ORGS_QUERY } from "@/graphql/queries";
-import { LOGOUT_MUTATION } from "../features/Auth/auth.graphql";
+import { LOGOUT_MUTATION, TEAM_DATA_QUERY } from "../features/Auth/auth.graphql";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,13 +18,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "../ui/user-avatar";
 import Link from "next/link";
-import { GlobeAltIcon } from "@heroicons/react/24/outline";
+import { Globe } from "lucide-react";
 
 export function Header() {
   const { user, orgId, logout } = useAuthStore();
   const router = useRouter();
   const { data, loading } = useQuery(GET_MY_ORGS_QUERY);
+  const { data: teamData } = useQuery(TEAM_DATA_QUERY);
   const currentOrg = data?.myOrganizations.find((org: any) => org.id === orgId);
+
+  const currentUserRole = teamData?.organizationMembers?.find(
+    (member: any) => member.user.id === user?.id
+  )?.role?.name;
 
   const [logoutUser] = useMutation(LOGOUT_MUTATION, {
     onCompleted: () => {
@@ -38,7 +43,6 @@ export function Header() {
   });
 
   return (
-    // --- CHANGE: Updated background to match the new design system ---
     <header className="flex h-16 items-center justify-between border-b bg-background px-6">
       <div className="flex items-center gap-4">
         <div className="font-semibold text-lg">
@@ -60,7 +64,7 @@ export function Header() {
                 <p className="text-sm font-medium">
                   {[user.first_name, user.last_name].filter(Boolean).join(" ")}
                 </p>
-                <p className="text-xs text-muted-foreground">Organizer</p>
+                <p className="text-xs text-muted-foreground">{currentUserRole || "Member"}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -72,7 +76,7 @@ export function Header() {
             </Link>
             <Link href="/" target="_blank" rel="noopener noreferrer">
               <DropdownMenuItem>
-                <GlobeAltIcon className="h-4 w-4 mr-2" />
+                <Globe className="h-4 w-4 mr-2" />
                 View Public Site
               </DropdownMenuItem>
             </Link>

@@ -1,28 +1,24 @@
 // src/app/(public)/_components/benefits-section.tsx
-import {
-  SparklesIcon,
-  ShieldCheckIcon,
-  GlobeAltIcon,
-} from "@heroicons/react/24/outline";
+import { Sparkles, ShieldCheck, Globe } from "lucide-react";
 
 const benefits = [
   {
     name: "Unparalleled Simplicity",
     description:
       "Our powerful, intuitive interface lets you create stunning events in minutes, not days. No coding or complex training required.",
-    icon: SparklesIcon,
+    icon: Sparkles,
   },
   {
     name: "Enterprise-Grade Power",
     description:
       "From global-scale analytics to robust security and integrations, get the professional tools you need to run events with confidence.",
-    icon: ShieldCheckIcon,
+    icon: ShieldCheck,
   },
   {
     name: "A Futuristic Experience",
     description:
       "Delight your attendees with a seamless, beautiful, and engaging journey from registration to post-event follow-up.",
-    icon: GlobeAltIcon,
+    icon: Globe,
   },
 ];
 

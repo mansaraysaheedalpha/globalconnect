@@ -3,13 +3,12 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  DocumentArrowUpIcon,
-  EyeIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
-import { Loader } from "lucide-react";
-
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+  Loader,
+  Upload as DocumentArrowUpIcon,
+  Eye as EyeIcon,
+  RefreshCw as ArrowPathIcon,
+  AlertTriangle as ExclamationTriangleIcon
+} from "lucide-react";
 export type PresentationState =
   | "loading"
   | "absent"

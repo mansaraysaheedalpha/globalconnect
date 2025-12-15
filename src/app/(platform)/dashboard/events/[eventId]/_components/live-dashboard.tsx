@@ -1,19 +1,19 @@
 // src/app/(platform)/dashboard/events/[eventId]/_components/live-dashboard.tsx
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { useLiveDashboard } from "@/hooks/use-live-dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader } from "@/components/ui/loader";
 import {
-  ChatBubbleBottomCenterTextIcon,
-  ChartBarIcon,
-  QuestionMarkCircleIcon,
-  HandThumbUpIcon,
-  FaceSmileIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+  MessageSquare,
+  BarChart3,
+  HelpCircle,
+  ThumbsUp,
+  Smile,
+  CheckCircle2,
+} from "lucide-react";
 
 interface LiveDashboardProps {
   eventId: string;
@@ -40,54 +40,26 @@ const StatCard = ({
 );
 
 export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
-  const { isConnected, dashboardData, socket } = useLiveDashboard(eventId);
+  const { isConnected, isJoined, dashboardData } = useLiveDashboard(eventId);
 
-  // ✅ DEBUG: Log state changes
-  useEffect(() => {
-    console.log("🔍 LiveDashboard render state:", {
-      isConnected,
-      hasDashboardData: !!dashboardData,
-      dashboardData,
-    });
-  }, [isConnected, dashboardData]);
-
-  // ✅ DEBUG: Manually test socket listener
-  useEffect(() => {
-    if (socket) {
-      console.log("🧪 Setting up manual test listener on socket");
-      const testListener = (data: any) => {
-        console.log("🧪 MANUAL TEST: dashboard.update received!", data);
-      };
-      socket.on("dashboard.update", testListener);
-
-      return () => {
-        socket.off("dashboard.update", testListener);
-      };
-    }
-  }, [socket]);
-
-  if (!isConnected || !dashboardData) {
+  // Show loading state only when not connected or not joined
+  if (!isConnected || !isJoined) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Live Dashboard</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-4">
-            {isConnected ? (
-              <>
-                <p>Waiting for first data broadcast...</p>
-                {/* ✅ DEBUG INFO */}
-                <div className="text-xs text-gray-500 space-y-1">
-                  <p>✅ Socket connected</p>
-                  <p>⏳ Waiting for dashboard.update event</p>
-                  <p className="font-mono">Event ID: {eventId}</p>
-                </div>
-              </>
-            ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            {!isConnected ? (
               <div className="flex items-center">
                 <Loader className="h-5 w-5 mr-2 animate-spin" />
                 Connecting to real-time service...
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <Loader className="h-5 w-5 mr-2 animate-spin" />
+                Joining dashboard room...
               </div>
             )}
           </div>
@@ -96,14 +68,15 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
     );
   }
 
+  // Use default values if no data yet
   const {
-    totalMessages,
-    totalVotes,
-    totalQuestions,
-    totalUpvotes,
-    totalReactions,
-    liveCheckInFeed,
-  } = dashboardData;
+    totalMessages = 0,
+    totalVotes = 0,
+    totalQuestions = 0,
+    totalUpvotes = 0,
+    totalReactions = 0,
+    liveCheckInFeed = [],
+  } = dashboardData || {};
 
   return (
     <div className="space-y-6">
@@ -111,23 +84,23 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
         <StatCard
           title="Total Messages"
           value={totalMessages}
-          icon={ChatBubbleBottomCenterTextIcon}
+          icon={MessageSquare}
         />
-        <StatCard title="Poll Votes" value={totalVotes} icon={ChartBarIcon} />
+        <StatCard title="Poll Votes" value={totalVotes} icon={BarChart3} />
         <StatCard
           title="Questions Asked"
           value={totalQuestions}
-          icon={QuestionMarkCircleIcon}
+          icon={HelpCircle}
         />
         <StatCard
           title="Question Upvotes"
           value={totalUpvotes}
-          icon={HandThumbUpIcon}
+          icon={ThumbsUp}
         />
         <StatCard
           title="Emoji Reactions"
           value={totalReactions}
-          icon={FaceSmileIcon}
+          icon={Smile}
         />
       </div>
 
@@ -149,7 +122,7 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     className="flex items-center"
                   >
-                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
                     <p className="ml-4 text-sm font-medium">
                       {checkIn.name} has checked in.
                     </p>

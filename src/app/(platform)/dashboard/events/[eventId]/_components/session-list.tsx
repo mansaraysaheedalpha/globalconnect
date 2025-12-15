@@ -39,6 +39,8 @@ type Session = {
   title: string;
   startTime: string;
   endTime: string;
+  chatEnabled?: boolean;
+  qaEnabled?: boolean;
   speakers: Speaker[];
 };
 type Event = {
@@ -110,6 +112,7 @@ export const SessionList = ({
           isOpen={!!sessionToEdit}
           onClose={() => setSessionToEdit(null)}
           session={sessionToEdit}
+          eventId={event.id}
           eventStartDate={event.startDate}
           eventEndDate={event.endDate}
         />

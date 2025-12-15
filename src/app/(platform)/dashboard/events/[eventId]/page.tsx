@@ -23,6 +23,9 @@ export default function EventDetailPage() {
   const params = useParams();
   const eventId = params.eventId as string;
 
+  // Debug: Log URL param vs event.id
+  console.log("[EventDetailPage] URL eventId from params:", eventId);
+
   const {
     data: eventData,
     loading: eventLoading,
@@ -70,6 +73,13 @@ export default function EventDetailPage() {
   const event = eventData.event;
   const sessions = sessionsData?.sessionsByEvent || [];
   const attendees = attendeesData?.registrationsByEvent || [];
+
+  // Debug: Compare URL eventId vs GraphQL event.id
+  console.log("[EventDetailPage] Comparing IDs:", {
+    urlEventId: eventId,
+    graphqlEventId: event.id,
+    match: eventId === event.id,
+  });
 
   return (
     <div className="p-6">

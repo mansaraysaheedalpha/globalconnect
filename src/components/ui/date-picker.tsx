@@ -16,7 +16,6 @@ import {
 interface DatePickerProps {
   date: Date | undefined;
   setDate: (date: Date | undefined) => void;
-  // --- ADD THESE NEW PROPS ---
   fromDate?: Date;
   toDate?: Date;
 }
@@ -47,7 +46,6 @@ export function DatePicker({
           selected={date}
           onSelect={setDate}
           initialFocus
-          // --- USE THE NEW PROPS ---
           fromDate={fromDate}
           toDate={toDate}
           disabled={(date) =>

@@ -5,10 +5,12 @@ export const LOGIN_USER_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
       token
+      onboardingToken
       user {
         id
         email
         first_name
+        last_name
       }
       requires2FA
       userIdFor2FA
@@ -25,6 +27,21 @@ export const REGISTER_USER_MUTATION = gql`
         id
         email
         first_name
+      }
+    }
+  }
+`;
+
+// Attendee registration (no organization required)
+export const REGISTER_ATTENDEE_MUTATION = gql`
+  mutation RegisterAttendee($input: RegisterAttendeeInput!) {
+    registerAttendee(input: $input) {
+      token
+      user {
+        id
+        email
+        first_name
+        last_name
       }
     }
   }

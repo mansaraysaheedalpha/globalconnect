@@ -7,6 +7,8 @@ export const CREATE_EVENT_MUTATION = gql`
       name
       status
       startDate
+      registrationsCount
+      imageUrl
     }
   }
 `;
@@ -57,7 +59,6 @@ export const UPDATE_EVENT_MUTATION = gql`
   }
 `;
 
-// --- ADD THIS NEW MUTATION ---
 export const RESTORE_EVENT_MUTATION = gql`
   mutation RestoreEvent($id: String!) {
     restoreEvent(id: $id) {
@@ -82,6 +83,12 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       title
       startTime
       endTime
+      chatEnabled
+      qaEnabled
+      pollsEnabled
+      chatOpen
+      qaOpen
+      pollsOpen
       speakers {
         id
         name
@@ -97,6 +104,9 @@ export const CREATE_SESSION_MUTATION = gql`
       title
       startTime
       endTime
+      chatEnabled
+      qaEnabled
+      pollsEnabled
       speakers {
         id
         name
@@ -112,6 +122,9 @@ export const UPDATE_SESSION_MUTATION = gql`
       title
       startTime
       endTime
+      chatEnabled
+      qaEnabled
+      pollsEnabled
       speakers {
         id
         name
@@ -165,6 +178,37 @@ export const GET_EVENT_HISTORY_QUERY = gql`
       timestamp
       userId
       data
+    }
+  }
+`;
+
+// Toggle session chat open/close (runtime control)
+export const TOGGLE_SESSION_CHAT_MUTATION = gql`
+  mutation ToggleSessionChat($id: String!, $open: Boolean!) {
+    toggleSessionChat(id: $id, open: $open) {
+      id
+      chatOpen
+    }
+  }
+`;
+
+// Toggle session Q&A open/close (runtime control)
+export const TOGGLE_SESSION_QA_MUTATION = gql`
+  mutation ToggleSessionQA($id: String!, $open: Boolean!) {
+    toggleSessionQA(id: $id, open: $open) {
+      id
+      qaOpen
+    }
+  }
+`;
+
+// Toggle session Polls open/close (runtime control)
+export const TOGGLE_SESSION_POLLS_MUTATION = gql`
+  mutation ToggleSessionPolls($id: String!, $open: Boolean!) {
+    toggleSessionPolls(id: $id, open: $open) {
+      id
+      pollsOpen
+      pollsEnabled
     }
   }
 `;

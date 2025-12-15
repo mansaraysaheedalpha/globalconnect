@@ -43,7 +43,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Loader } from "lucide-react";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { useTempImageUpload } from "@/hooks/use-temp-image-upload";
+import { Loader, Link as LinkIcon, Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface CreateEventModalProps {
@@ -56,12 +58,12 @@ const formSchema = z
   .object({
     name: z.string().min(3, "Event name must be at least 3 characters long."),
     description: z.string().optional(),
-    startDate: z.date({ required_error: "A start date is required." }),
-    endDate: z.date({ required_error: "An end date is required." }),
+    startDate: z.date({ error: "A start date is required." }),
+    endDate: z.date({ error: "An end date is required." }),
     venueId: z.string().optional(),
     imageUrl: z
       .string()
-      .url({ message: "Please enter a valid URL." })
+      .url("Please enter a valid URL.")
       .optional()
       .or(z.literal("")),
   })
@@ -78,6 +80,8 @@ type Blueprint = {
   template: string;
 };
 type Venue = { id: string; name: string };
+
+type ImageInputMode = "url" | "upload";
 
 export const CreateEventModal = ({
   isOpen,
@@ -97,6 +101,8 @@ export const CreateEventModal = ({
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(
     null
   );
+  const [imageInputMode, setImageInputMode] = useState<ImageInputMode>("upload");
+  const { uploadImage, isUploading } = useTempImageUpload();
 
   const { data: blueprintsData, loading: blueprintsLoading } = useQuery(
     GET_ORGANIZATION_BLUEPRINTS_QUERY
@@ -114,7 +120,13 @@ export const CreateEventModal = ({
       refetchQueries: [
         {
           query: GET_EVENTS_BY_ORGANIZATION_QUERY,
-          variables: { status: null },
+          variables: {
+            limit: 10,
+            offset: 0,
+            sortBy: "startDate",
+            sortDirection: "desc",
+            status: null,
+          },
         },
       ],
       onCompleted: () => {
@@ -133,7 +145,13 @@ export const CreateEventModal = ({
       refetchQueries: [
         {
           query: GET_EVENTS_BY_ORGANIZATION_QUERY,
-          variables: { status: null },
+          variables: {
+            limit: 10,
+            offset: 0,
+            sortBy: "startDate",
+            sortDirection: "desc",
+            status: null,
+          },
         },
       ],
       onCompleted: (data) => {
@@ -150,7 +168,7 @@ export const CreateEventModal = ({
     }
   );
 
-  const loading = isCreating || isInstantiating;
+  const loading = isCreating || isInstantiating || isUploading;
 
   const handleBlueprintSelect = useCallback(
     (blueprintId: string) => {
@@ -173,17 +191,24 @@ export const CreateEventModal = ({
     if (isOpen && preselectedBlueprintId && blueprints.length > 0) {
       handleBlueprintSelect(preselectedBlueprintId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, preselectedBlueprintId, blueprints.length]);
+
+  useEffect(() => {
     if (!isOpen) {
       reset({ name: "", description: "", imageUrl: "" });
       setSelectedBlueprintId(null);
+      setImageInputMode("upload");
     }
-  }, [
-    isOpen,
-    preselectedBlueprintId,
-    blueprints,
-    reset,
-    handleBlueprintSelect,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const handleImageUpload = async (file: File) => {
+    const result = await uploadImage(file);
+    if (result) {
+      setValue("imageUrl", result.publicUrl);
+    }
+  };
 
   const onSubmit = (values: EventFormValues) => {
     if (selectedBlueprintId) {
@@ -274,10 +299,52 @@ export const CreateEventModal = ({
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
+                  <FormLabel>Event Image (Optional)</FormLabel>
+                  <div className="space-y-3">
+                    {/* Toggle between URL and Upload */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={imageInputMode === "upload" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setImageInputMode("upload")}
+                        disabled={loading}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={imageInputMode === "url" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setImageInputMode("url")}
+                        disabled={loading}
+                      >
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        URL
+                      </Button>
+                    </div>
+
+                    {imageInputMode === "upload" ? (
+                      <FormControl>
+                        <ImageUpload
+                          value={field.value || null}
+                          onChange={handleImageUpload}
+                          onClear={() => field.onChange("")}
+                          isUploading={isUploading}
+                          disabled={loading && !isUploading}
+                        />
+                      </FormControl>
+                    ) : (
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com/image.jpg"
+                          {...field}
+                          disabled={loading}
+                        />
+                      </FormControl>
+                    )}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

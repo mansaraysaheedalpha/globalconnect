@@ -15,8 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader } from "lucide-react";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { Loader, CheckCircle2 as CheckCircleIcon } from "lucide-react";
 
 interface UploadPresentationModalProps {
   isOpen: boolean;

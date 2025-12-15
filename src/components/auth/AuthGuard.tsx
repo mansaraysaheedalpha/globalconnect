@@ -23,6 +23,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isClient) return;
 
+    const isAttendeePath = pathname.startsWith("/attendee");
+    const isOrganizerPath = pathname.startsWith("/dashboard") ||
+                            pathname.startsWith("/speakers") ||
+                            pathname.startsWith("/venues");
+
     // --- MAIN GUARD LOGIC ---
     // Rule 1: If the user has an onboarding token, they MUST be on the onboarding path.
     if (onboardingToken && !pathname.startsWith("/onboarding")) {
@@ -40,15 +45,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Rule 3: If there IS a main token but the user has no organization,
-    // they should be creating one. This is an edge case recovery.
+    // Rule 3: Handle users without an organization (attendees)
     if (token && !orgId && !pathname.startsWith("/onboarding")) {
-      console.log(
-        "[AuthGuard] Token exists but no Org ID. Redirecting to create one."
-      );
-      router.push("/onboarding/create-organization");
-      return;
+      // Attendees can access attendee paths - no redirect needed
+      if (isAttendeePath) {
+        return;
+      }
+
+      // Attendees trying to access organizer paths should be redirected to attendee dashboard
+      if (isOrganizerPath) {
+        console.log(
+          "[AuthGuard] Attendee trying to access organizer area. Redirecting to attendee dashboard."
+        );
+        router.push("/attendee");
+        return;
+      }
     }
+
+    // Rule 4: Organizers with orgId can access any protected path
+    // (No action needed, they pass through)
   }, [isClient, token, onboardingToken, orgId, router, pathname]);
 
   // The loading state should cover all checks before rendering the children.

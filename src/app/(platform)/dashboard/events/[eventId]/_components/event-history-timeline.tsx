@@ -4,8 +4,7 @@
 import { useQuery } from "@apollo/client";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader } from "lucide-react";
-import { ClockIcon } from "@heroicons/react/24/outline";
+import { Loader, Clock as ClockIcon } from "lucide-react";
 import { GET_EVENT_HISTORY_QUERY } from "@/graphql/events.graphql";
 
 interface DomainEvent {

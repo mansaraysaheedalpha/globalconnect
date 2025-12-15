@@ -13,6 +13,26 @@ export const CREATE_REGISTRATION_MUTATION = gql`
   }
 `;
 
+export const GET_PUBLIC_EVENTS_QUERY = gql`
+  query GetPublicEvents($limit: Int, $offset: Int, $includePast: Boolean) {
+    publicEvents(limit: $limit, offset: $offset, includePast: $includePast) {
+      totalCount
+      events {
+        id
+        name
+        description
+        startDate
+        endDate
+        imageUrl
+        venue {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+
 export const GET_PUBLIC_EVENT_DETAILS_QUERY = gql`
   query GetPublicEventDetails($eventId: ID!) {
     event(id: $eventId) {
@@ -22,6 +42,10 @@ export const GET_PUBLIC_EVENT_DETAILS_QUERY = gql`
       startDate
       endDate
       imageUrl
+      venue {
+        id
+        name
+      }
     }
     publicSessionsByEvent(eventId: $eventId) {
       id

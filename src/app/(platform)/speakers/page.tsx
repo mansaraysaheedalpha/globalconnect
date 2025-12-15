@@ -37,12 +37,12 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import {
-  UserPlusIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
-  TrashIcon,
-  MicrophoneIcon,
-} from "@heroicons/react/24/outline";
+  UserPlus,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Mic2,
+} from "lucide-react";
 import { AddSpeakerModal } from "./_components/add-speaker-modal";
 import { EditSpeakerModal } from "./_components/edit-speaker-modal";
 
@@ -127,7 +127,7 @@ const SpeakersPage = () => {
             </p>
           </div>
           <Button onClick={() => setIsAddModalOpen(true)}>
-            <UserPlusIcon className="h-5 w-5 mr-2" />
+            <UserPlus className="h-5 w-5 mr-2" />
             Add Speaker
           </Button>
         </div>
@@ -174,21 +174,21 @@ const SpeakersPage = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            <EllipsisVerticalIcon className="h-5 w-5" />
+                            <MoreVertical className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onSelect={() => setSpeakerToEdit(speaker)}
                           >
-                            <PencilIcon className="h-4 w-4 mr-2" />
+                            <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onSelect={() => setSpeakerToDelete(speaker)}
                             className="text-destructive"
                           >
-                            <TrashIcon className="h-4 w-4 mr-2" />
+                            <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -200,13 +200,13 @@ const SpeakersPage = () => {
             </Table>
           ) : (
             <div className="text-center p-16">
-              <MicrophoneIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+              <Mic2 className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-4 text-lg font-semibold">No Speakers Found</h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 Get started by adding your first speaker.
               </p>
               <Button className="mt-6" onClick={() => setIsAddModalOpen(true)}>
-                <UserPlusIcon className="h-5 w-5 mr-2" />
+                <UserPlus className="h-5 w-5 mr-2" />
                 Add Speaker
               </Button>
             </div>

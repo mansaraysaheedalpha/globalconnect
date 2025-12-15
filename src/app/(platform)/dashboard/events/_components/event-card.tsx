@@ -11,8 +11,7 @@ import {
 import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDaysIcon, UsersIcon } from "@heroicons/react/24/outline";
-import { ArchiveRestore, Loader } from "lucide-react";
+import { CalendarDays, Users, ArchiveRestore, Loader, ArrowRight } from "lucide-react";
 import { EventCardPlaceholder } from "./event-card-placeholder";
 
 // Type definitions for cache updates
@@ -53,7 +52,6 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
     onError: (error) =>
       toast.error("Failed to restore event", { description: error.message }),
 
-    // --- CHANGE: Replaced `refetchQueries` with a manual cache update for instant UI changes ---
     update(cache: ApolloCache<any>, { data: { restoreEvent } }) {
       if (!restoreEvent) return;
 
@@ -132,42 +130,50 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
   });
 
   const cardContent = (
-    <div className="relative group overflow-hidden rounded-xl shadow-md h-full flex flex-col justify-between bg-card">
+    <div className="relative group overflow-hidden rounded-xl shadow-md hover:shadow-2xl h-full flex flex-col justify-between bg-card transition-all duration-300 ease-out hover:-translate-y-1">
       {event.imageUrl ? (
         <Image
           src={event.imageUrl}
           alt={event.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
+          className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
         />
       ) : (
         <EventCardPlaceholder />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/10 group-hover:from-black/95 group-hover:via-black/60 transition-all duration-300" />
 
       <div className="relative p-4 w-full flex justify-between items-start">
         <Badge
           variant={event.status === "published" ? "default" : "secondary"}
-          className="capitalize"
+          className="capitalize shadow-lg"
         >
           {isArchivedView ? "Archived" : event.status}
         </Badge>
       </div>
 
       <div className="relative p-4 w-full text-white">
-        <h3 className="text-lg font-bold leading-tight">{event.name}</h3>
-        <div className="mt-2 space-y-2 text-sm text-neutral-300">
+        <h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors duration-300">{event.name}</h3>
+        <div className="mt-3 space-y-2 text-sm text-neutral-300">
           <div className="flex items-center">
-            <CalendarDaysIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+            <CalendarDays className="h-4 w-4 mr-2 flex-shrink-0" />
             <span>{formattedDate}</span>
           </div>
           <div className="flex items-center">
-            <UsersIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+            <Users className="h-4 w-4 mr-2 flex-shrink-0" />
             <span>{event.registrationsCount} Registrations</span>
           </div>
         </div>
+
+        {/* View Event indicator - appears on hover */}
+        {!isArchivedView && (
+          <div className="mt-4 flex items-center text-primary font-medium opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+            <span>View Event</span>
+            <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+          </div>
+        )}
       </div>
 
       {isArchivedView && (

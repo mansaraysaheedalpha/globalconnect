@@ -107,6 +107,9 @@ const authLink = setContext((_, { headers }) => {
   // Prioritize the main token, but fall back to the onboarding token
   const tokenToUse = token || onboardingToken;
 
+  // Debug logging
+  console.log("[Apollo Auth] Token from store:", tokenToUse ? "Present" : "Missing");
+
   return {
     headers: {
       ...headers,

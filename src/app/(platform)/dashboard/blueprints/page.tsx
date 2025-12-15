@@ -13,10 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-// --- CHANGE: Swapping to Heroicons ---
-import {
-  DocumentDuplicateIcon,
-} from "@heroicons/react/24/outline";
+import { Copy } from "lucide-react";
 import Link from "next/link";
 import { CreateEventModal } from "../events/_components/create-event-modal";
 
@@ -89,7 +86,6 @@ const BlueprintsPage = () => {
         ) : blueprints.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {blueprints.map((blueprint) => (
-              // --- CHANGE: Redesigned Card Component ---
               <Card
                 key={blueprint.id}
                 className="flex flex-col justify-between hover:shadow-lg transition-shadow"
@@ -97,7 +93,7 @@ const BlueprintsPage = () => {
                 <CardHeader>
                   <div className="flex items-start gap-4">
                     <div className="bg-primary/10 p-3 rounded-lg flex-shrink-0">
-                      <DocumentDuplicateIcon className="h-6 w-6 text-primary" />
+                      <Copy className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <CardTitle>{blueprint.name}</CardTitle>
@@ -108,7 +104,6 @@ const BlueprintsPage = () => {
                   </div>
                 </CardHeader>
                 <CardFooter>
-                  {/* --- CHANGE: Connect the button's onClick event --- */}
                   <Button
                     variant="secondary"
                     className="w-full"
@@ -121,9 +116,8 @@ const BlueprintsPage = () => {
             ))}
           </div>
         ) : (
-          // --- CHANGE: Redesigned Empty State ---
           <div className="text-center p-16 border-2 border-dashed rounded-lg">
-            <DocumentDuplicateIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+            <Copy className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">No Blueprints Found</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               You can save a completed event as a blueprint from its details
