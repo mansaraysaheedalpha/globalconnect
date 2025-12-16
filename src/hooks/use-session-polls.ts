@@ -46,6 +46,10 @@ export interface Poll {
   options: PollOption[];
   totalVotes?: number;
   creator?: PollCreator;
+  // Quiz mode fields
+  isQuiz?: boolean;
+  correctOptionId?: string; // The correct answer for quiz polls
+  giveawayEnabled?: boolean;
 }
 
 export interface PollResultEnvelope {
@@ -53,14 +57,71 @@ export interface PollResultEnvelope {
   userVotedForOptionId: string | null;
 }
 
+// Prize types
+export type PrizeType = "physical" | "virtual" | "voucher";
+
+// Enhanced prize configuration
+export interface PrizeConfig {
+  title: string;
+  description?: string;
+  type: PrizeType;
+  value?: number;
+  claimInstructions?: string;
+  claimLocation?: string; // For physical prizes
+  claimDeadlineHours?: number;
+}
+
+// Enhanced giveaway winner details
+export interface GiveawayWinner {
+  id: string;
+  name?: string; // Computed name from backend (firstName + lastName or email prefix)
+  firstName: string | null;
+  lastName: string | null;
+  email?: string; // Only sent to organizers, not in public broadcast
+  optionText?: string;
+}
+
+// Enhanced giveaway result
 export interface GiveawayResult {
   pollId: string;
-  winner: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-  } | null;
-  prize: string;
+  winner: GiveawayWinner | null;
+  prize: string; // Backward compatible - simple prize string
+  prizeDetails?: PrizeConfig; // Enhanced prize info from backend
+  totalEligibleVoters?: number;
+  emailSent?: boolean;
+}
+
+// Quiz score result for multi-poll giveaways
+export interface QuizScoreResult {
+  rank: number;
+  userId?: string;
+  attendeeId?: string;
+  name: string;
+  email?: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  isWinner: boolean;
+}
+
+// Quiz giveaway result
+export interface QuizGiveawayResult {
+  sessionId: string;
+  stats: {
+    totalPolls: number;
+    passingScore: number;
+    totalWinners: number;
+    totalParticipants: number;
+    scoreDistribution: Record<number, number>;
+  };
+  currentUserResult?: {
+    isWinner: boolean;
+    score: number;
+    totalQuestions: number;
+    rank: number;
+    prize?: PrizeConfig;
+  };
+  winners?: QuizScoreResult[];
 }
 
 // Response types
@@ -91,6 +152,7 @@ interface SessionPollsState {
   accessDenied: boolean;
   pollsOpen: boolean;
   latestGiveaway: GiveawayResult | null;
+  latestQuizGiveaway: QuizGiveawayResult | null;
 }
 
 export const useSessionPolls = (
@@ -108,6 +170,7 @@ export const useSessionPolls = (
     accessDenied: false,
     pollsOpen: initialPollsOpen,
     latestGiveaway: null,
+    latestQuizGiveaway: null,
   });
   const [isCreating, setIsCreating] = useState(false);
   const [isVoting, setIsVoting] = useState<string | null>(null); // pollId being voted on
@@ -274,6 +337,12 @@ export const useSessionPolls = (
       setState((prev) => ({ ...prev, latestGiveaway: result }));
     });
 
+    // Quiz giveaway results announced
+    newSocket.on("quiz.giveaway.results", (result: QuizGiveawayResult) => {
+      console.log("[Polls] Quiz giveaway results:", result);
+      setState((prev) => ({ ...prev, latestQuizGiveaway: result }));
+    });
+
     // Polls status changed (open/close by organizer)
     newSocket.on("polls.status.changed", (data: PollsStatusPayload) => {
       console.log("[Polls] Status changed:", data);
@@ -308,6 +377,7 @@ export const useSessionPolls = (
       newSocket.off("poll.results.updated");
       newSocket.off("poll.closed");
       newSocket.off("poll.giveaway.winner");
+      newSocket.off("quiz.giveaway.results");
       newSocket.off("polls.status.changed");
       newSocket.off("systemError");
       newSocket.off("connect_error");
@@ -316,8 +386,14 @@ export const useSessionPolls = (
   }, [sessionId, eventId, token, initialPollsOpen]);
 
   // Create a new poll (organizer/speaker)
+  // Supports quiz mode with correct answer marking
   const createPoll = useCallback(
-    async (question: string, options: string[]): Promise<boolean> => {
+    async (
+      question: string,
+      options: string[],
+      isQuiz: boolean = false,
+      correctOptionIndex?: number
+    ): Promise<boolean> => {
       if (!socket || !state.isJoined) {
         console.error("[Polls] Cannot create poll - not connected");
         return false;
@@ -352,14 +428,30 @@ export const useSessionPolls = (
         return false;
       }
 
+      // Validate quiz mode settings
+      if (isQuiz && (correctOptionIndex === undefined || correctOptionIndex < 0 || correctOptionIndex >= validOptions.length)) {
+        setState((prev) => ({
+          ...prev,
+          error: "Quiz mode requires a valid correct answer selection",
+        }));
+        return false;
+      }
+
       setIsCreating(true);
 
       return new Promise((resolve) => {
         const payload = {
           question: trimmedQuestion,
-          options: validOptions.map((text) => ({ text })),
+          options: validOptions.map((text, index) => ({
+            text,
+            isCorrect: isQuiz && index === correctOptionIndex,
+          })),
+          isQuiz,
+          correctOptionIndex: isQuiz ? correctOptionIndex : undefined,
           idempotencyKey: generateUUID(),
         };
+
+        console.log("[Polls] Creating poll with payload:", payload);
 
         socket.emit("poll.create", payload, (response: SocketResponse) => {
           setIsCreating(false);
@@ -482,13 +574,23 @@ export const useSessionPolls = (
   // Close a poll (organizer)
   const closePoll = useCallback(
     async (pollId: string): Promise<boolean> => {
+      console.log("[Polls] ═══════════════════════════════════════════════════════════");
+      console.log("[Polls] CLOSE POLL CALLED");
+      console.log("[Polls] Poll ID:", pollId);
+      console.log("[Polls] Socket exists:", !!socket);
+      console.log("[Polls] Is joined:", state.isJoined);
+
       if (!socket || !state.isJoined) {
         console.error("[Polls] Cannot close poll - not connected");
         return false;
       }
 
       const poll = state.polls.get(pollId);
+      console.log("[Polls] Found poll:", poll ? "yes" : "no");
+      console.log("[Polls] Poll isActive:", poll?.isActive);
+
       if (!poll || !poll.isActive) {
+        console.error("[Polls] Poll is already closed or does not exist");
         setState((prev) => ({
           ...prev,
           error: "Poll is already closed or does not exist",
@@ -515,18 +617,38 @@ export const useSessionPolls = (
           idempotencyKey: generateUUID(),
         };
 
+        console.log("[Polls] Emitting poll.manage with payload:", JSON.stringify(payload, null, 2));
+
+        // Set a timeout in case backend doesn't respond
+        let callbackCalled = false;
+        const timeoutId = setTimeout(() => {
+          if (!callbackCalled) {
+            console.warn("[Polls] ⚠️ TIMEOUT - Backend didn't respond to poll.manage in 5 seconds");
+            setIsClosing(null);
+            // Keep optimistic update since we don't know if it succeeded
+            resolve(true);
+          }
+        }, 5000);
+
         socket.emit("poll.manage", payload, (response: SocketResponse) => {
+          callbackCalled = true;
+          clearTimeout(timeoutId);
           setIsClosing(null);
 
+          console.log("[Polls] ═══════════════════════════════════════════════════════════");
+          console.log("[Polls] poll.manage CALLBACK RECEIVED");
+          console.log("[Polls] Response:", JSON.stringify(response, null, 2));
+          console.log("[Polls] ═══════════════════════════════════════════════════════════");
+
           if (response?.success) {
-            console.log("[Polls] Poll closed, status:", response.finalStatus);
+            console.log("[Polls] ✅ Poll closed successfully, status:", response.finalStatus);
             resolve(true);
           } else {
             const errorMsg =
               typeof response?.error === "string"
                 ? response.error
                 : response?.error?.message || "Failed to close poll";
-            console.error("[Polls] Failed to close poll:", errorMsg);
+            console.error("[Polls] ❌ Failed to close poll:", errorMsg);
 
             // Rollback optimistic update
             setState((prev) => {
@@ -550,8 +672,9 @@ export const useSessionPolls = (
     async (
       pollId: string,
       winningOptionId: string,
-      prize: string
-    ): Promise<GiveawayResult["winner"]> => {
+      prize: string | PrizeConfig,
+      sendEmail: boolean = true
+    ): Promise<GiveawayWinner | null> => {
       if (!socket || !state.isJoined) {
         console.error("[Polls] Cannot start giveaway - not connected");
         return null;
@@ -574,11 +697,16 @@ export const useSessionPolls = (
         return null;
       }
 
-      const trimmedPrize = prize.trim();
-      if (!trimmedPrize || trimmedPrize.length > 255) {
+      // Support both simple string prize and enhanced PrizeConfig
+      const prizeConfig: PrizeConfig =
+        typeof prize === "string"
+          ? { title: prize.trim(), type: "virtual" }
+          : prize;
+
+      if (!prizeConfig.title || prizeConfig.title.length > 255) {
         setState((prev) => ({
           ...prev,
-          error: "Prize must be between 1 and 255 characters",
+          error: "Prize title must be between 1 and 255 characters",
         }));
         return null;
       }
@@ -587,14 +715,17 @@ export const useSessionPolls = (
         const payload = {
           pollId,
           winningOptionId,
-          prize: trimmedPrize,
+          prize: prizeConfig,
+          sendEmail,
           idempotencyKey: generateUUID(),
         };
+
+        console.log("[Polls] Starting giveaway with payload:", payload);
 
         socket.emit(
           "poll.giveaway.start",
           payload,
-          (response: SocketResponse<GiveawayResult["winner"]>) => {
+          (response: SocketResponse<GiveawayWinner>) => {
             if (response?.success) {
               console.log("[Polls] Giveaway winner:", response.winner);
               resolve(response.winner || null);
@@ -622,6 +753,11 @@ export const useSessionPolls = (
   // Clear giveaway result
   const clearGiveaway = useCallback(() => {
     setState((prev) => ({ ...prev, latestGiveaway: null }));
+  }, []);
+
+  // Clear quiz giveaway result
+  const clearQuizGiveaway = useCallback(() => {
+    setState((prev) => ({ ...prev, latestQuizGiveaway: null }));
   }, []);
 
   // Check if user has voted on a poll
@@ -666,6 +802,7 @@ export const useSessionPolls = (
     accessDenied: state.accessDenied,
     pollsOpen: state.pollsOpen,
     latestGiveaway: state.latestGiveaway,
+    latestQuizGiveaway: state.latestQuizGiveaway,
     currentUserId: user?.id,
 
     // Loading states
@@ -684,5 +821,6 @@ export const useSessionPolls = (
     getUserVote,
     clearError,
     clearGiveaway,
+    clearQuizGiveaway,
   };
 };

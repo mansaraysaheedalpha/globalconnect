@@ -3,7 +3,14 @@
 
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useSessionPolls, Poll, GiveawayResult } from "@/hooks/use-session-polls";
+import {
+  useSessionPolls,
+  Poll,
+  GiveawayResult,
+  PrizeConfig,
+  PrizeType,
+  QuizGiveawayResult,
+} from "@/hooks/use-session-polls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +18,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +57,14 @@ import {
   Vote,
   ChevronDown,
   ChevronUp,
+  MapPin,
+  Clock,
+  Mail,
+  Package,
+  CreditCard,
+  Ticket,
+  PartyPopper,
+  Info,
 } from "lucide-react";
 import {
   Collapsible,
@@ -56,19 +79,24 @@ interface SessionPollsProps {
   isSpeaker?: boolean;
   className?: string;
   initialPollsOpen?: boolean;
+  onStatusChange?: (isOpen: boolean) => void; // Callback when polls open status changes via WebSocket
 }
 
-// Create Poll Form Component
+// Create Poll Form Component with Quiz Mode Support
 function CreatePollForm({
   onSubmit,
   isSubmitting,
 }: {
-  onSubmit: (question: string, options: string[]) => Promise<boolean>;
+  onSubmit: (question: string, options: string[], isQuiz?: boolean, correctOptionIndex?: number) => Promise<boolean>;
   isSubmitting: boolean;
 }) {
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", ""]);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Quiz mode state
+  const [isQuizMode, setIsQuizMode] = useState(false);
+  const [correctOptionIndex, setCorrectOptionIndex] = useState<number | null>(null);
 
   const addOption = () => {
     if (options.length < 10) {
@@ -79,6 +107,14 @@ function CreatePollForm({
   const removeOption = (index: number) => {
     if (options.length > 2) {
       setOptions(options.filter((_, i) => i !== index));
+      // Adjust correct option index if needed
+      if (correctOptionIndex !== null) {
+        if (index === correctOptionIndex) {
+          setCorrectOptionIndex(null);
+        } else if (index < correctOptionIndex) {
+          setCorrectOptionIndex(correctOptionIndex - 1);
+        }
+      }
     }
   };
 
@@ -96,16 +132,32 @@ function CreatePollForm({
       return;
     }
 
-    const success = await onSubmit(question.trim(), validOptions);
+    // For quiz mode, ensure correct answer is selected
+    if (isQuizMode && correctOptionIndex === null) {
+      return;
+    }
+
+    const success = await onSubmit(
+      question.trim(),
+      validOptions,
+      isQuizMode,
+      isQuizMode ? correctOptionIndex ?? undefined : undefined
+    );
+
     if (success) {
       setQuestion("");
       setOptions(["", ""]);
       setIsExpanded(false);
+      setIsQuizMode(false);
+      setCorrectOptionIndex(null);
     }
   };
 
   const validOptionsCount = options.filter((o) => o.trim()).length;
-  const isValid = question.trim().length > 0 && validOptionsCount >= 2;
+  const isValid =
+    question.trim().length > 0 &&
+    validOptionsCount >= 2 &&
+    (!isQuizMode || correctOptionIndex !== null);
 
   if (!isExpanded) {
     return (
@@ -140,13 +192,35 @@ function CreatePollForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Quiz Mode Toggle */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              <div>
+                <p className="text-sm font-medium">Quiz Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  Mark a correct answer for scoring
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={isQuizMode}
+              onCheckedChange={(checked) => {
+                setIsQuizMode(checked);
+                if (!checked) setCorrectOptionIndex(null);
+              }}
+            />
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="question">Question</Label>
+            <Label htmlFor="question">
+              {isQuizMode ? "Quiz Question" : "Question"}
+            </Label>
             <Textarea
               id="question"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask a question..."
+              placeholder={isQuizMode ? "Ask a quiz question..." : "Ask a question..."}
               maxLength={500}
               rows={2}
               className="resize-none"
@@ -157,15 +231,44 @@ function CreatePollForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Options ({validOptionsCount}/10)</Label>
+            <Label>
+              {isQuizMode ? (
+                <span className="flex items-center gap-2">
+                  Options ({validOptionsCount}/10)
+                  <Badge variant="outline" className="text-xs font-normal">
+                    Click to mark correct answer
+                  </Badge>
+                </span>
+              ) : (
+                `Options (${validOptionsCount}/10)`
+              )}
+            </Label>
             <div className="space-y-2">
               {options.map((option, index) => (
                 <div key={index} className="flex gap-2">
+                  {isQuizMode && (
+                    <Button
+                      type="button"
+                      variant={correctOptionIndex === index ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setCorrectOptionIndex(index)}
+                      className={cn(
+                        "shrink-0 transition-all",
+                        correctOptionIndex === index && "bg-green-600 hover:bg-green-700"
+                      )}
+                      title={correctOptionIndex === index ? "Correct answer" : "Mark as correct"}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Input
                     value={option}
                     onChange={(e) => updateOption(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
+                    placeholder={`Option ${index + 1}${isQuizMode && correctOptionIndex === index ? " (Correct)" : ""}`}
                     maxLength={200}
+                    className={cn(
+                      isQuizMode && correctOptionIndex === index && "border-green-500 ring-1 ring-green-500"
+                    )}
                   />
                   {options.length > 2 && (
                     <Button
@@ -194,6 +297,13 @@ function CreatePollForm({
                 Add Option
               </Button>
             )}
+
+            {isQuizMode && correctOptionIndex === null && validOptionsCount >= 2 && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <Info className="h-3 w-3" />
+                Click the checkmark to mark the correct answer
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2 pt-2">
@@ -215,6 +325,8 @@ function CreatePollForm({
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Creating...
                 </>
+              ) : isQuizMode ? (
+                "Create Quiz Poll"
               ) : (
                 "Create Poll"
               )}
@@ -240,14 +352,24 @@ function PollCard({
   userVotedOptionId: string | null;
   onVote: (pollId: string, optionId: string) => Promise<boolean>;
   onClose?: (pollId: string) => Promise<boolean>;
-  onGiveaway?: (pollId: string, winningOptionId: string, prize: string) => Promise<any>;
+  onGiveaway?: (pollId: string, winningOptionId: string, prize: string | PrizeConfig, sendEmail: boolean) => Promise<any>;
   isVoting: boolean;
   canManage: boolean;
 }) {
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [showGiveawayDialog, setShowGiveawayDialog] = useState(false);
   const [selectedWinningOption, setSelectedWinningOption] = useState<string | null>(null);
-  const [prize, setPrize] = useState("");
+
+  // Enhanced prize state
+  const [prizeTitle, setPrizeTitle] = useState("");
+  const [prizeDescription, setPrizeDescription] = useState("");
+  const [prizeType, setPrizeType] = useState<PrizeType>("virtual");
+  const [prizeValue, setPrizeValue] = useState("");
+  const [claimInstructions, setClaimInstructions] = useState("");
+  const [claimLocation, setClaimLocation] = useState("");
+  const [claimDeadlineHours, setClaimDeadlineHours] = useState("72");
+  const [sendEmail, setSendEmail] = useState(true);
+
   const [isClosing, setIsClosing] = useState(false);
   const [isRunningGiveaway, setIsRunningGiveaway] = useState(false);
 
@@ -269,12 +391,35 @@ function PollCard({
   };
 
   const handleGiveaway = async () => {
-    if (!onGiveaway || !selectedWinningOption || !prize.trim()) return;
+    if (!onGiveaway || !selectedWinningOption || !prizeTitle.trim()) return;
+
     setIsRunningGiveaway(true);
-    await onGiveaway(poll.id, selectedWinningOption, prize.trim());
+
+    // Build prize config
+    const prizeConfig: PrizeConfig = {
+      title: prizeTitle.trim(),
+      type: prizeType,
+      description: prizeDescription.trim() || undefined,
+      value: prizeValue ? parseFloat(prizeValue) : undefined,
+      claimInstructions: claimInstructions.trim() || undefined,
+      claimLocation: prizeType === "physical" ? claimLocation.trim() || undefined : undefined,
+      claimDeadlineHours: claimDeadlineHours ? parseInt(claimDeadlineHours) : undefined,
+    };
+
+    await onGiveaway(poll.id, selectedWinningOption, prizeConfig, sendEmail);
+
     setIsRunningGiveaway(false);
     setShowGiveawayDialog(false);
-    setPrize("");
+
+    // Reset form
+    setPrizeTitle("");
+    setPrizeDescription("");
+    setPrizeType("virtual");
+    setPrizeValue("");
+    setClaimInstructions("");
+    setClaimLocation("");
+    setClaimDeadlineHours("72");
+    setSendEmail(true);
     setSelectedWinningOption(null);
   };
 
@@ -283,12 +428,21 @@ function PollCard({
       <Card className={cn(!poll.isActive && "opacity-75")}>
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-base font-medium leading-tight">
-              {poll.question}
-            </CardTitle>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-base font-medium leading-tight">
+                {poll.question}
+              </CardTitle>
+              {poll.isQuiz && (
+                <Badge variant="outline" className="mt-1.5 text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                  <Trophy className="h-3 w-3 mr-1" />
+                  Quiz
+                </Badge>
+              )}
+            </div>
             <Badge
               variant={poll.isActive ? "default" : "secondary"}
               className={cn(
+                "shrink-0",
                 poll.isActive
                   ? "bg-green-500/10 text-green-600 border-green-500/20"
                   : ""
@@ -305,6 +459,8 @@ function PollCard({
               const voteCount = option.voteCount || 0;
               const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
               const isSelected = option.id === userVotedOptionId;
+              const isCorrectAnswer = poll.isQuiz && poll.correctOptionId === option.id;
+              const showCorrectAnswer = poll.isQuiz && showResults && isCorrectAnswer;
 
               return (
                 <button
@@ -316,7 +472,8 @@ function PollCard({
                     !showResults && poll.isActive && !hasVoted
                       ? "hover:border-primary hover:bg-primary/5 cursor-pointer"
                       : "cursor-default",
-                    isSelected && "border-primary ring-1 ring-primary"
+                    isSelected && "border-primary ring-1 ring-primary",
+                    showCorrectAnswer && "border-green-500 ring-1 ring-green-500"
                   )}
                 >
                   {/* Progress bar background */}
@@ -324,7 +481,7 @@ function PollCard({
                     <div
                       className={cn(
                         "absolute inset-0 transition-all",
-                        isSelected ? "bg-primary/20" : "bg-muted"
+                        showCorrectAnswer ? "bg-green-500/20" : isSelected ? "bg-primary/20" : "bg-muted"
                       )}
                       style={{ width: `${percentage}%` }}
                     />
@@ -333,11 +490,22 @@ function PollCard({
                   {/* Content */}
                   <div className="relative flex items-center justify-between gap-2">
                     <span className="flex items-center gap-2">
-                      {isSelected && (
+                      {showCorrectAnswer ? (
+                        <Check className="h-4 w-4 text-green-600 shrink-0" />
+                      ) : isSelected ? (
                         <Check className="h-4 w-4 text-primary shrink-0" />
-                      )}
-                      <span className={cn("text-sm", isSelected && "font-medium")}>
+                      ) : null}
+                      <span className={cn(
+                        "text-sm",
+                        (isSelected || showCorrectAnswer) && "font-medium",
+                        showCorrectAnswer && "text-green-700"
+                      )}>
                         {option.text}
+                        {showCorrectAnswer && (
+                          <Badge variant="outline" className="ml-2 text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                            Correct
+                          </Badge>
+                        )}
                       </span>
                     </span>
 
@@ -412,22 +580,23 @@ function PollCard({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Giveaway Dialog */}
+      {/* Enhanced Giveaway Dialog */}
       <Dialog open={showGiveawayDialog} onOpenChange={setShowGiveawayDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-yellow-500" />
               Run a Giveaway
             </DialogTitle>
             <DialogDescription>
-              Select the winning option and enter the prize. A random winner will be selected from users who voted for that option.
+              Select the winning option and configure the prize. A random winner will be selected from voters.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
+            {/* Winning Option Selection */}
             <div className="space-y-2">
-              <Label>Winning Option</Label>
+              <Label className="text-sm font-medium">Winning Option</Label>
               <div className="space-y-2">
                 {poll.options.map((option) => (
                   <button
@@ -436,34 +605,181 @@ function PollCard({
                     className={cn(
                       "w-full rounded-lg border p-3 text-left transition-all",
                       selectedWinningOption === option.id
-                        ? "border-primary ring-1 ring-primary bg-primary/5"
-                        : "hover:border-primary/50"
+                        ? "border-primary ring-2 ring-primary bg-primary/5"
+                        : "hover:border-primary/50 hover:bg-muted/50"
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{option.text}</span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm font-medium">{option.text}</span>
+                      <Badge variant="secondary">
                         {option.voteCount || 0} votes
-                      </span>
+                      </Badge>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="prize">Prize</Label>
-              <Input
-                id="prize"
-                value={prize}
-                onChange={(e) => setPrize(e.target.value)}
-                placeholder="e.g., Amazon Gift Card $50"
-                maxLength={255}
+            <Separator />
+
+            {/* Prize Configuration */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <Gift className="h-4 w-4" />
+                Prize Details
+              </h4>
+
+              {/* Prize Title */}
+              <div className="space-y-2">
+                <Label htmlFor="prizeTitle">Prize Title *</Label>
+                <Input
+                  id="prizeTitle"
+                  value={prizeTitle}
+                  onChange={(e) => setPrizeTitle(e.target.value)}
+                  placeholder="e.g., Amazon Gift Card"
+                  maxLength={255}
+                />
+              </div>
+
+              {/* Prize Type */}
+              <div className="space-y-2">
+                <Label htmlFor="prizeType">Prize Type</Label>
+                <Select value={prizeType} onValueChange={(v) => setPrizeType(v as PrizeType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="virtual">
+                      <span className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Digital (email delivery)
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="physical">
+                      <span className="flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        Physical (pickup required)
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="voucher">
+                      <span className="flex items-center gap-2">
+                        <Ticket className="h-4 w-4" />
+                        Voucher/Code
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Prize Description */}
+              <div className="space-y-2">
+                <Label htmlFor="prizeDescription">Description (optional)</Label>
+                <Textarea
+                  id="prizeDescription"
+                  value={prizeDescription}
+                  onChange={(e) => setPrizeDescription(e.target.value)}
+                  placeholder="Describe the prize..."
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
+
+              {/* Prize Value */}
+              <div className="space-y-2">
+                <Label htmlFor="prizeValue">Value (optional)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    id="prizeValue"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={prizeValue}
+                    onChange={(e) => setPrizeValue(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Claim Instructions */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Claim Instructions
+              </h4>
+
+              <div className="space-y-2">
+                <Label htmlFor="claimInstructions">How to Claim (optional)</Label>
+                <Textarea
+                  id="claimInstructions"
+                  value={claimInstructions}
+                  onChange={(e) => setClaimInstructions(e.target.value)}
+                  placeholder="e.g., Present this email at the registration desk..."
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
+
+              {/* Physical Prize Location */}
+              {prizeType === "physical" && (
+                <div className="space-y-2">
+                  <Label htmlFor="claimLocation">Pickup Location</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="claimLocation"
+                      value={claimLocation}
+                      onChange={(e) => setClaimLocation(e.target.value)}
+                      placeholder="e.g., Registration Desk, Hall B"
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Claim Deadline */}
+              <div className="space-y-2">
+                <Label htmlFor="claimDeadline">Claim Deadline (hours)</Label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="claimDeadline"
+                    type="number"
+                    min="1"
+                    value={claimDeadlineHours}
+                    onChange={(e) => setClaimDeadlineHours(e.target.value)}
+                    placeholder="72"
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Email Notification */}
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Send Email Notification</p>
+                  <p className="text-xs text-muted-foreground">
+                    Winner will receive prize details via email
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={sendEmail}
+                onCheckedChange={setSendEmail}
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setShowGiveawayDialog(false)}
@@ -472,18 +788,18 @@ function PollCard({
             </Button>
             <Button
               onClick={handleGiveaway}
-              disabled={!selectedWinningOption || !prize.trim() || isRunningGiveaway}
+              disabled={!selectedWinningOption || !prizeTitle.trim() || isRunningGiveaway}
               className="gap-2"
             >
               {isRunningGiveaway ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Selecting...
+                  Selecting Winner...
                 </>
               ) : (
                 <>
                   <Trophy className="h-4 w-4" />
-                  Pick Winner
+                  Pick Random Winner
                 </>
               )}
             </Button>
@@ -494,43 +810,161 @@ function PollCard({
   );
 }
 
-// Giveaway Winner Modal
+// Prize type icon helper
+function getPrizeTypeIcon(type: PrizeType) {
+  switch (type) {
+    case "physical":
+      return <Package className="h-4 w-4" />;
+    case "virtual":
+      return <CreditCard className="h-4 w-4" />;
+    case "voucher":
+      return <Ticket className="h-4 w-4" />;
+    default:
+      return <Gift className="h-4 w-4" />;
+  }
+}
+
+// Prize type label helper
+function getPrizeTypeLabel(type: PrizeType) {
+  switch (type) {
+    case "physical":
+      return "Physical Prize";
+    case "virtual":
+      return "Digital Prize";
+    case "voucher":
+      return "Voucher/Code";
+    default:
+      return "Prize";
+  }
+}
+
+// Enhanced Giveaway Winner Modal
 function GiveawayWinnerModal({
   result,
   onClose,
+  isCurrentUserWinner = false,
 }: {
   result: GiveawayResult;
   onClose: () => void;
+  isCurrentUserWinner?: boolean;
 }) {
+  // Use backend-computed name field
+  // Priority: name > firstName+lastName > "Winner"
   const winnerName = result.winner
-    ? [result.winner.firstName, result.winner.lastName].filter(Boolean).join(" ") || "Anonymous"
+    ? (result.winner.name ||
+       [result.winner.firstName, result.winner.lastName].filter(Boolean).join(" ") ||
+       "Winner")
     : null;
+
+  // Handle both cases: prize as string (backward compat) or prize as object (new format)
+  const prizeDetails = result.prizeDetails || (typeof result.prize === 'object' ? result.prize as PrizeConfig : undefined);
+  const prizeTitle = prizeDetails?.title || (typeof result.prize === 'string' ? result.prize : 'Prize');
+  const prizeType = prizeDetails?.type || "virtual";
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <div className="text-center py-6">
+      <DialogContent className="sm:max-w-lg">
+        <div className="text-center py-4">
           {result.winner ? (
             <>
-              <div className="relative mx-auto w-20 h-20 mb-4">
+              {/* Celebration animation */}
+              <div className="relative mx-auto w-24 h-24 mb-4">
                 <div className="absolute inset-0 bg-yellow-500/20 rounded-full animate-ping" />
-                <div className="relative flex items-center justify-center w-full h-full bg-yellow-500/10 rounded-full">
-                  <Trophy className="h-10 w-10 text-yellow-500" />
+                <div className="absolute inset-2 bg-yellow-500/10 rounded-full animate-pulse" />
+                <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full border-2 border-yellow-500/30">
+                  <Trophy className="h-12 w-12 text-yellow-500" />
                 </div>
+                <PartyPopper className="absolute -top-1 -right-1 h-6 w-6 text-pink-500 animate-bounce" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
-              <p className="text-lg font-semibold text-primary mb-1">
+
+              <h2 className="text-2xl font-bold mb-1">
+                {isCurrentUserWinner ? "You Won!" : "Congratulations!"}
+              </h2>
+
+              <p className="text-lg font-semibold text-primary mb-4">
                 {winnerName}
               </p>
-              <p className="text-muted-foreground mb-4">wins</p>
-              <div className="inline-block bg-primary/10 rounded-lg px-4 py-2">
-                <p className="text-lg font-medium">{result.prize}</p>
+
+              {/* Prize Card */}
+              <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-4 mb-4 text-left border border-primary/20">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    {getPrizeTypeIcon(prizeType)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-lg">{prizeTitle}</p>
+                    <Badge variant="outline" className="mt-1">
+                      {getPrizeTypeLabel(prizeType)}
+                    </Badge>
+                    {prizeDetails?.description && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {prizeDetails.description}
+                      </p>
+                    )}
+                    {prizeDetails?.value && (
+                      <p className="text-sm font-medium text-green-600 mt-1">
+                        Value: ${prizeDetails.value.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Claim Instructions (shown to winner or organizer) */}
+              {(isCurrentUserWinner || prizeDetails?.claimInstructions) && (
+                <div className="bg-muted/50 rounded-lg p-4 text-left space-y-3">
+                  <h3 className="font-medium flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    How to Claim
+                  </h3>
+
+                  {prizeDetails?.claimInstructions && (
+                    <p className="text-sm text-muted-foreground">
+                      {prizeDetails.claimInstructions}
+                    </p>
+                  )}
+
+                  {prizeDetails?.claimLocation && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{prizeDetails.claimLocation}</span>
+                    </div>
+                  )}
+
+                  {prizeDetails?.claimDeadlineHours && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span>Claim within {prizeDetails.claimDeadlineHours} hours</span>
+                    </div>
+                  )}
+
+                  {result.emailSent && (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <Mail className="h-4 w-4" />
+                      <span>Confirmation email sent to winner</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Winner email (for organizer view) */}
+              {result.winner?.email && !isCurrentUserWinner && (
+                <div className="mt-3 text-sm text-muted-foreground">
+                  Winner's email: <span className="font-medium">{result.winner.email}</span>
+                </div>
+              )}
+
+              {/* Total eligible voters */}
+              {result.totalEligibleVoters !== undefined && (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Selected from {result.totalEligibleVoters} eligible {result.totalEligibleVoters === 1 ? "voter" : "voters"}
+                </p>
+              )}
             </>
           ) : (
             <>
-              <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center bg-muted rounded-full">
-                <Gift className="h-8 w-8 text-muted-foreground" />
+              <div className="mx-auto w-20 h-20 mb-4 flex items-center justify-center bg-muted rounded-full">
+                <Gift className="h-10 w-10 text-muted-foreground" />
               </div>
               <h2 className="text-xl font-semibold mb-2">No Winner</h2>
               <p className="text-muted-foreground">
@@ -540,7 +974,141 @@ function GiveawayWinnerModal({
           )}
         </div>
         <DialogFooter className="sm:justify-center">
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose} size="lg">
+            {isCurrentUserWinner ? "Awesome!" : "Close"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Quiz Giveaway Result Modal (for multi-poll quiz winners)
+function QuizGiveawayResultModal({
+  result,
+  onClose,
+}: {
+  result: QuizGiveawayResult;
+  onClose: () => void;
+}) {
+  const currentUserResult = result.currentUserResult;
+  const isWinner = currentUserResult?.isWinner ?? false;
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="text-center py-4">
+          {isWinner ? (
+            <>
+              {/* Winner celebration */}
+              <div className="relative mx-auto w-24 h-24 mb-4">
+                <div className="absolute inset-0 bg-yellow-500/20 rounded-full animate-ping" />
+                <div className="absolute inset-2 bg-green-500/10 rounded-full animate-pulse" />
+                <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-br from-yellow-400/20 to-green-500/20 rounded-full border-2 border-green-500/30">
+                  <Trophy className="h-12 w-12 text-yellow-500" />
+                </div>
+                <PartyPopper className="absolute -top-1 -right-1 h-6 w-6 text-pink-500 animate-bounce" />
+              </div>
+
+              <h2 className="text-2xl font-bold mb-2">Quiz Champion!</h2>
+              <p className="text-muted-foreground mb-4">
+                You qualified for the giveaway!
+              </p>
+
+              {/* Score Display */}
+              <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-xl p-4 mb-4 border border-green-500/20">
+                <div className="text-4xl font-bold text-green-600">
+                  {currentUserResult?.score}/{currentUserResult?.totalQuestions}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {Math.round(((currentUserResult?.score ?? 0) / (currentUserResult?.totalQuestions ?? 1)) * 100)}% correct
+                </p>
+                {currentUserResult?.rank && (
+                  <Badge className="mt-2">Rank #{currentUserResult.rank}</Badge>
+                )}
+              </div>
+
+              {/* Prize Info */}
+              {currentUserResult?.prize && (
+                <div className="bg-primary/5 rounded-lg p-4 text-left border border-primary/20">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      {getPrizeTypeIcon(currentUserResult.prize.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold">{currentUserResult.prize.title}</p>
+                      {currentUserResult.prize.description && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {currentUserResult.prize.description}
+                        </p>
+                      )}
+                      {currentUserResult.prize.claimInstructions && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">How to Claim:</p>
+                          <p className="text-sm">{currentUserResult.prize.claimInstructions}</p>
+                          {currentUserResult.prize.claimLocation && (
+                            <div className="flex items-center gap-1 text-sm mt-2">
+                              <MapPin className="h-3 w-3" />
+                              {currentUserResult.prize.claimLocation}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Non-winner view */}
+              <div className="mx-auto w-20 h-20 mb-4 flex items-center justify-center bg-muted rounded-full">
+                <BarChart3 className="h-10 w-10 text-muted-foreground" />
+              </div>
+
+              <h2 className="text-xl font-semibold mb-2">Quiz Results</h2>
+
+              {currentUserResult ? (
+                <div className="bg-muted/50 rounded-xl p-4 mb-4">
+                  <div className="text-3xl font-bold">
+                    {currentUserResult.score}/{currentUserResult.totalQuestions}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Passing score: {result.stats.passingScore}
+                  </p>
+                  <p className="text-sm text-amber-600 mt-2">
+                    You needed {result.stats.passingScore - currentUserResult.score} more correct answers to qualify
+                  </p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground mb-4">
+                  You didn't participate in all quiz polls.
+                </p>
+              )}
+            </>
+          )}
+
+          {/* Stats Summary */}
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t">
+            <div className="text-center">
+              <p className="text-2xl font-bold">{result.stats.totalPolls}</p>
+              <p className="text-xs text-muted-foreground">Questions</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">{result.stats.totalWinners}</p>
+              <p className="text-xs text-muted-foreground">Winners</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">{result.stats.totalParticipants}</p>
+              <p className="text-xs text-muted-foreground">Participants</p>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-center">
+          <Button onClick={onClose} size="lg">
+            {isWinner ? "Awesome!" : "Close"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -555,6 +1123,7 @@ export function SessionPolls({
   isSpeaker = false,
   className,
   initialPollsOpen = false,
+  onStatusChange,
 }: SessionPollsProps) {
   const {
     activePolls,
@@ -565,6 +1134,8 @@ export function SessionPolls({
     accessDenied,
     pollsOpen,
     latestGiveaway,
+    latestQuizGiveaway,
+    currentUserId,
     isCreating,
     isVoting,
     createPoll,
@@ -574,9 +1145,17 @@ export function SessionPolls({
     getUserVote,
     clearError,
     clearGiveaway,
+    clearQuizGiveaway,
   } = useSessionPolls(sessionId, eventId, initialPollsOpen);
 
   const [showClosedPolls, setShowClosedPolls] = useState(false);
+
+  // Notify parent when polls open status changes via WebSocket
+  React.useEffect(() => {
+    if (onStatusChange && isJoined) {
+      onStatusChange(pollsOpen);
+    }
+  }, [pollsOpen, isJoined, onStatusChange]);
 
   const canCreate = isOrganizer || isSpeaker;
   const canManage = isOrganizer;
@@ -630,7 +1209,7 @@ export function SessionPolls({
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {/* Polls closed banner (for organizers) */}
         {!pollsOpen && canCreate && (
           <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
@@ -718,7 +1297,19 @@ export function SessionPolls({
 
       {/* Giveaway Winner Modal */}
       {latestGiveaway && (
-        <GiveawayWinnerModal result={latestGiveaway} onClose={clearGiveaway} />
+        <GiveawayWinnerModal
+          result={latestGiveaway}
+          onClose={clearGiveaway}
+          isCurrentUserWinner={latestGiveaway.winner?.id === currentUserId}
+        />
+      )}
+
+      {/* Quiz Giveaway Result Modal */}
+      {latestQuizGiveaway && (
+        <QuizGiveawayResultModal
+          result={latestQuizGiveaway}
+          onClose={clearQuizGiveaway}
+        />
       )}
     </div>
   );

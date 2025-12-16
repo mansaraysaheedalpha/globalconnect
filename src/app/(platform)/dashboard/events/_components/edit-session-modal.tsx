@@ -58,7 +58,7 @@ interface EditSessionModalProps {
 const formSchema = z
   .object({
     title: z.string().min(3, "Session title must be at least 3 characters."),
-    sessionDate: z.date({ required_error: "Please select a date." }),
+    sessionDate: z.date({ message: "Please select a date." }),
     startTime: z
       .string()
       .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please use HH:MM format."),
@@ -66,9 +66,9 @@ const formSchema = z
       .string()
       .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please use HH:MM format."),
     speakerIds: z.array(z.string()).optional(),
-    chatEnabled: z.boolean().default(true),
-    qaEnabled: z.boolean().default(true),
-    pollsEnabled: z.boolean().default(true),
+    chatEnabled: z.boolean(),
+    qaEnabled: z.boolean(),
+    pollsEnabled: z.boolean(),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: "End time must be after start time.",

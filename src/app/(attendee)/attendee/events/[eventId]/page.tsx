@@ -1,6 +1,7 @@
 // src/app/(attendee)/attendee/events/[eventId]/page.tsx
 "use client";
 
+import * as React from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
@@ -110,11 +111,23 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   const pollsEnabled = session.pollsEnabled !== false;
   const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled;
 
-  // Check if features are currently open (controlled by organizer)
-  // Default to false - organizer must explicitly open
-  const chatOpen = session.chatOpen ?? false;
-  const qaOpen = session.qaOpen ?? false;
-  const pollsOpen = session.pollsOpen ?? false;
+  // Local state for live status tracking (updated via WebSocket events from child components)
+  const [liveChatOpen, setLiveChatOpen] = React.useState(session.chatOpen ?? false);
+  const [liveQaOpen, setLiveQaOpen] = React.useState(session.qaOpen ?? false);
+  const [livePollsOpen, setLivePollsOpen] = React.useState(session.pollsOpen ?? false);
+
+  // Sync with props when they change (e.g., from refetch)
+  React.useEffect(() => {
+    setLiveChatOpen(session.chatOpen ?? false);
+  }, [session.chatOpen]);
+
+  React.useEffect(() => {
+    setLiveQaOpen(session.qaOpen ?? false);
+  }, [session.qaOpen]);
+
+  React.useEffect(() => {
+    setLivePollsOpen(session.pollsOpen ?? false);
+  }, [session.pollsOpen]);
 
   return (
     <Card className={`overflow-hidden transition-all ${isLive ? "ring-2 ring-green-500/20" : ""}`}>
@@ -155,9 +168,9 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`gap-1.5 ${!chatOpen ? "opacity-60" : ""}`}
+                      className={`gap-1.5 ${!liveChatOpen ? "opacity-60" : ""}`}
                     >
-                      {chatOpen ? (
+                      {liveChatOpen ? (
                         <Unlock className="h-4 w-4 text-green-600" />
                       ) : (
                         <Lock className="h-4 w-4 text-muted-foreground" />
@@ -173,8 +186,8 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                           <MessageSquare className="h-5 w-5" />
                           {session.title} - Chat
                         </div>
-                        <Badge variant={chatOpen ? "default" : "secondary"} className={chatOpen ? "bg-green-500/10 text-green-600" : ""}>
-                          {chatOpen ? "Open" : "Closed"}
+                        <Badge variant={liveChatOpen ? "default" : "secondary"} className={liveChatOpen ? "bg-green-500/10 text-green-600" : ""}>
+                          {liveChatOpen ? "Open" : "Closed"}
                         </Badge>
                       </SheetTitle>
                     </SheetHeader>
@@ -183,7 +196,8 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                         sessionId={session.id}
                         eventId={eventId}
                         className="h-full border-0 shadow-none rounded-none"
-                        initialChatOpen={chatOpen}
+                        initialChatOpen={liveChatOpen}
+                        onStatusChange={setLiveChatOpen}
                       />
                     </div>
                   </SheetContent>
@@ -197,9 +211,9 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`gap-1.5 ${!qaOpen ? "opacity-60" : ""}`}
+                      className={`gap-1.5 ${!liveQaOpen ? "opacity-60" : ""}`}
                     >
-                      {qaOpen ? (
+                      {liveQaOpen ? (
                         <Unlock className="h-4 w-4 text-green-600" />
                       ) : (
                         <Lock className="h-4 w-4 text-muted-foreground" />
@@ -215,8 +229,8 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                           <HelpCircle className="h-5 w-5" />
                           {session.title} - Q&A
                         </div>
-                        <Badge variant={qaOpen ? "default" : "secondary"} className={qaOpen ? "bg-green-500/10 text-green-600" : ""}>
-                          {qaOpen ? "Open" : "Closed"}
+                        <Badge variant={liveQaOpen ? "default" : "secondary"} className={liveQaOpen ? "bg-green-500/10 text-green-600" : ""}>
+                          {liveQaOpen ? "Open" : "Closed"}
                         </Badge>
                       </SheetTitle>
                     </SheetHeader>
@@ -227,7 +241,8 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                         isOrganizer={false}
                         isSpeaker={false}
                         className="h-full border-0 shadow-none rounded-none"
-                        initialQaOpen={qaOpen}
+                        initialQaOpen={liveQaOpen}
+                        onStatusChange={setLiveQaOpen}
                       />
                     </div>
                   </SheetContent>
@@ -241,9 +256,9 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`gap-1.5 ${!pollsOpen ? "opacity-60" : ""}`}
+                      className={`gap-1.5 ${!livePollsOpen ? "opacity-60" : ""}`}
                     >
-                      {pollsOpen ? (
+                      {livePollsOpen ? (
                         <Unlock className="h-4 w-4 text-green-600" />
                       ) : (
                         <Lock className="h-4 w-4 text-muted-foreground" />
@@ -259,8 +274,8 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                           <BarChart3 className="h-5 w-5" />
                           {session.title} - Polls
                         </div>
-                        <Badge variant={pollsOpen ? "default" : "secondary"} className={pollsOpen ? "bg-green-500/10 text-green-600" : ""}>
-                          {pollsOpen ? "Open" : "Closed"}
+                        <Badge variant={livePollsOpen ? "default" : "secondary"} className={livePollsOpen ? "bg-green-500/10 text-green-600" : ""}>
+                          {livePollsOpen ? "Open" : "Closed"}
                         </Badge>
                       </SheetTitle>
                     </SheetHeader>
@@ -271,7 +286,8 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                         isOrganizer={false}
                         isSpeaker={false}
                         className="h-full border-0 shadow-none rounded-none"
-                        initialPollsOpen={pollsOpen}
+                        initialPollsOpen={livePollsOpen}
+                        onStatusChange={setLivePollsOpen}
                       />
                     </div>
                   </SheetContent>

@@ -40,6 +40,25 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
+// Helper to get display name with proper fallbacks
+const getDisplayName = (author: { firstName?: string; lastName?: string } | undefined | null): string => {
+  if (!author) return "Someone";
+  const firstName = author.firstName?.trim();
+  const lastName = author.lastName?.trim();
+  if (firstName) return firstName;
+  if (lastName) return lastName;
+  return "Someone";
+};
+
+// Helper to get full display name (first + last)
+const getFullDisplayName = (author: { firstName?: string; lastName?: string } | undefined | null, fallback = "Unknown User"): string => {
+  if (!author) return fallback;
+  const firstName = author.firstName?.trim();
+  const lastName = author.lastName?.trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  return fullName || fallback;
+};
+
 interface SessionQAProps {
   sessionId: string;
   eventId: string;
@@ -47,6 +66,7 @@ interface SessionQAProps {
   isOrganizer?: boolean;
   isSpeaker?: boolean;
   initialQaOpen?: boolean; // Initial state from GraphQL query
+  onStatusChange?: (isOpen: boolean) => void; // Callback when Q&A open status changes via WebSocket
 }
 
 // Question card component
@@ -123,14 +143,8 @@ const QuestionCard = ({
             </span>
           ) : (
             <span className="text-sm font-medium">
-              {isOwn
-                ? (question.author?.firstName || question.author?.lastName
-                    ? `${question.author?.firstName || ""} ${question.author?.lastName || ""}`.trim()
-                    : "You")
-                : (question.author?.firstName || question.author?.lastName
-                    ? `${question.author?.firstName || ""} ${question.author?.lastName || ""}`.trim()
-                    : "Unknown User")}
-              {isOwn && question.author?.firstName && <span className="text-muted-foreground ml-1">(You)</span>}
+              {getFullDisplayName(question.author, isOwn ? "You" : "Unknown User")}
+              {isOwn && <span className="text-muted-foreground ml-1">(You)</span>}
             </span>
           )}
           <span className="text-xs text-muted-foreground" title={fullTime}>
@@ -160,7 +174,7 @@ const QuestionCard = ({
           <div className="flex items-center gap-2 mb-1">
             <MessageCircle className="h-3.5 w-3.5 text-primary" />
             <span className="text-xs font-medium text-primary">
-              Answered by {question.answer.author?.firstName || "Speaker"}
+              Answered by {getDisplayName(question.answer.author) || "Speaker"}
             </span>
           </div>
           <p className="text-sm text-foreground">{question.answer.text}</p>
@@ -233,6 +247,7 @@ export const SessionQA = ({
   isOrganizer = false,
   isSpeaker = false,
   initialQaOpen = true,
+  onStatusChange,
 }: SessionQAProps) => {
   const {
     questions,
@@ -251,6 +266,13 @@ export const SessionQA = ({
     answerQuestion,
     clearError,
   } = useSessionQA(sessionId, eventId, initialQaOpen);
+
+  // Notify parent when Q&A open status changes via WebSocket
+  useEffect(() => {
+    if (onStatusChange && isJoined) {
+      onStatusChange(qaOpen);
+    }
+  }, [qaOpen, isJoined, onStatusChange]);
 
   const [inputValue, setInputValue] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -549,9 +571,7 @@ export const SessionQA = ({
                   Asked by{" "}
                   {answerDialogQuestion?.isAnonymous
                     ? "Anonymous"
-                    : answerDialogQuestion?.author?.firstName || answerDialogQuestion?.author?.lastName
-                      ? `${answerDialogQuestion?.author?.firstName || ""} ${answerDialogQuestion?.author?.lastName || ""}`.trim()
-                      : "Unknown User"}
+                    : getFullDisplayName(answerDialogQuestion?.author)}
                 </p>
               </div>
             </AlertDialogDescription>

@@ -104,11 +104,8 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
 
   useEffect(() => {
     if (!sessionId || !eventId || !token) {
-      console.log("[Q&A] Missing required params", { sessionId, eventId, hasToken: !!token });
       return;
     }
-
-    console.log("[Q&A] Initializing socket connection for session:", sessionId);
 
     const realtimeUrl =
       process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
@@ -126,16 +123,11 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
-      console.log("[Q&A] Socket connected:", newSocket.id);
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
     });
 
     newSocket.on("connectionAcknowledged", (data: { userId: string }) => {
-      console.log("[Q&A] Connection acknowledged, userId:", data.userId);
-
       // Join the session room for Q&A
-      console.log("[Q&A] Joining session room:", sessionId);
-
       // Use callback to handle registration validation response
       newSocket.emit("session.join", { sessionId, eventId }, (response: {
         success: boolean;
@@ -146,7 +138,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
           const errorMsg = response.error?.message || "Failed to join session";
           const isAccessDenied = response.error?.statusCode === 403;
 
-          console.error("[Q&A] Failed to join session:", errorMsg);
           setState((prev) => ({
             ...prev,
             isJoined: false,
@@ -164,14 +155,11 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
           accessDenied: false,
           qaOpen: qaOpenFromServer,
         }));
-        console.log("[Q&A] Joined session room, qaOpen:", qaOpenFromServer);
       });
     });
 
     // Listen for Q&A history - backend sends this after session.join
     newSocket.on("qa.history", (data: { questions: Question[] }) => {
-      console.log("[Q&A] ✅ Received qa.history event:", data);
-      console.log("[Q&A] Questions count:", data?.questions?.length || 0);
       if (data?.questions && Array.isArray(data.questions)) {
         setState((prev) => ({
           ...prev,
@@ -181,13 +169,11 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("[Q&A] Socket disconnected:", reason);
       setState((prev) => ({ ...prev, isConnected: false, isJoined: false }));
     });
 
     // New question received
     newSocket.on("qa.question.new", (question: Question) => {
-      console.log("[Q&A] New question received:", question);
       setState((prev) => {
         // Check if this question matches an optimistic question
         const optimisticIndex = prev.questions.findIndex(
@@ -201,7 +187,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
           // Replace optimistic question with real one
           const newQuestions = [...prev.questions];
           newQuestions[optimisticIndex] = question;
-          console.log("[Q&A] Replaced optimistic question with server question");
           return { ...prev, questions: newQuestions };
         }
 
@@ -212,7 +197,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
 
     // Question updated (upvote, moderation, answer, tags)
     newSocket.on("qna.question.updated", (updatedQuestion: Question) => {
-      console.log("[Q&A] Question updated:", updatedQuestion);
       setState((prev) => ({
         ...prev,
         questions: prev.questions.map((q) =>
@@ -223,7 +207,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
 
     // Question removed
     newSocket.on("qna.question.removed", (data: { questionId: string }) => {
-      console.log("[Q&A] Question removed:", data.questionId);
       setState((prev) => ({
         ...prev,
         questions: prev.questions.filter((q) => q.id !== data.questionId),
@@ -232,7 +215,7 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
 
     // Error handling
     newSocket.on("systemError", (error: { message: string; reason: string }) => {
-      console.error("[Q&A] System error:", error.message);
+      console.error("[Q&A] System error:", error);
       setState((prev) => ({ ...prev, error: error.message }));
     });
 
@@ -243,7 +226,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
 
     // Listen for Q&A status changes (open/close by organizer)
     newSocket.on("qa.status.changed", (data: { sessionId: string; isOpen: boolean; message?: string }) => {
-      console.log("[Q&A] Status changed:", data);
       if (data.sessionId === sessionId) {
         setState((prev) => ({
           ...prev,
@@ -254,7 +236,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
 
     // Cleanup
     return () => {
-      console.log("[Q&A] Cleaning up socket connection");
       newSocket.emit("session.leave", { sessionId });
       newSocket.off("connect");
       newSocket.off("connectionAcknowledged");
@@ -274,13 +255,11 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
   const askQuestion = useCallback(
     async (text: string, isAnonymous: boolean = false): Promise<boolean> => {
       if (!socket || !state.isJoined) {
-        console.error("[Q&A] Cannot ask question - not connected");
         return false;
       }
 
       const trimmedText = text.trim();
       if (!trimmedText || trimmedText.length > 500) {
-        console.error("[Q&A] Invalid question text");
         return false;
       }
 
@@ -318,8 +297,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
         questions: [...prev.questions, optimisticQuestion],
       }));
 
-      console.log("[Q&A] Added optimistic question, sending to server...");
-
       return new Promise((resolve) => {
         // Note: sessionId is NOT included - backend gets it from the joined session room
         const payload = {
@@ -356,7 +333,6 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
               typeof response?.error === "string"
                 ? response.error
                 : response?.error?.message || "Failed to ask question";
-            console.error("[Q&A] Failed to ask question:", errorMsg);
             // Remove optimistic question on failure
             setState((prev) => ({
               ...prev,

@@ -75,9 +75,9 @@ const formSchema = z
         "Please use a valid HH:MM format."
       ),
     speakerIds: z.array(z.string()).optional(),
-    chatEnabled: z.boolean().default(true),
-    qaEnabled: z.boolean().default(true),
-    pollsEnabled: z.boolean().default(true),
+    chatEnabled: z.boolean(),
+    qaEnabled: z.boolean(),
+    pollsEnabled: z.boolean(),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: "End time must be after the start time.",

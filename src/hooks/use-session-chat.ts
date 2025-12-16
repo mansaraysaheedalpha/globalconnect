@@ -89,11 +89,8 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
 
   useEffect(() => {
     if (!sessionId || !eventId || !token) {
-      console.log("[Chat] Missing required params", { sessionId, eventId, hasToken: !!token });
       return;
     }
-
-    console.log("[Chat] Initializing socket connection for session:", sessionId);
 
     const realtimeUrl =
       process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
@@ -110,18 +107,11 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
-      console.log("[Chat] Socket connected:", newSocket.id);
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
     });
 
     newSocket.on("connectionAcknowledged", (data: { userId: string }) => {
-      console.log("[Chat] Connection acknowledged, userId:", data.userId);
-
       // Join the session room for chat
-      // Backend will send chat.history event after joining
-      console.log("[Chat] Joining session room:", sessionId);
-
-      // Use callback to handle registration validation response
       newSocket.emit("session.join", { sessionId, eventId }, (response: {
         success: boolean;
         error?: { message: string; statusCode: number };
@@ -130,8 +120,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
         if (response?.success === false) {
           const errorMsg = response.error?.message || "Failed to join session";
           const isAccessDenied = response.error?.statusCode === 403;
-
-          console.error("[Chat] Failed to join session:", errorMsg);
           setState((prev) => ({
             ...prev,
             isJoined: false,
@@ -149,15 +137,11 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
           accessDenied: false,
           chatOpen: chatOpenFromServer,
         }));
-        console.log("[Chat] Joined session room, chatOpen:", chatOpenFromServer);
       });
     });
 
     // Listen for chat history - backend sends this after session.join
-    // Backend format: { messages: ChatMessage[] }
     newSocket.on("chat.history", (data: { messages: ChatMessage[] }) => {
-      console.log("[Chat] ✅ Received chat.history event:", data);
-      console.log("[Chat] Messages count:", data?.messages?.length || 0);
       if (data?.messages && Array.isArray(data.messages)) {
         setState((prev) => ({
           ...prev,
@@ -167,16 +151,13 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("[Chat] Socket disconnected:", reason);
       setState((prev) => ({ ...prev, isConnected: false, isJoined: false }));
     });
 
     // New message received
     newSocket.on("chat.message.new", (message: ChatMessage) => {
-      console.log("[Chat] New message received:", message);
       setState((prev) => {
-        // Check if this message matches an optimistic message (same text from same author)
-        // If so, replace the optimistic message with the real one
+        // Check if this message matches an optimistic message
         const optimisticIndex = prev.messages.findIndex(
           (m) =>
             (m as OptimisticMessage).isOptimistic &&
@@ -188,7 +169,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
           // Replace optimistic message with real one
           const newMessages = [...prev.messages];
           newMessages[optimisticIndex] = message;
-          console.log("[Chat] Replaced optimistic message with server message");
           return { ...prev, messages: newMessages };
         }
 
@@ -199,7 +179,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
 
     // Message updated (edit or reaction)
     newSocket.on("chat.message.updated", (updatedMessage: ChatMessage) => {
-      console.log("[Chat] Message updated:", updatedMessage);
       setState((prev) => ({
         ...prev,
         messages: prev.messages.map((msg) =>
@@ -210,7 +189,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
 
     // Message deleted
     newSocket.on("chat.message.deleted", (data: { messageId: string }) => {
-      console.log("[Chat] Message deleted:", data.messageId);
       setState((prev) => ({
         ...prev,
         messages: prev.messages.filter((msg) => msg.id !== data.messageId),
@@ -219,7 +197,7 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
 
     // Error handling
     newSocket.on("systemError", (error: { message: string; reason: string }) => {
-      console.error("[Chat] System error:", error.message);
+      console.error("[Chat] System error:", error);
       setState((prev) => ({ ...prev, error: error.message }));
     });
 
@@ -230,7 +208,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
 
     // Listen for chat status changes (open/close by organizer)
     newSocket.on("chat.status.changed", (data: { sessionId: string; isOpen: boolean; message?: string }) => {
-      console.log("[Chat] Status changed:", data);
       if (data.sessionId === sessionId) {
         setState((prev) => ({
           ...prev,
@@ -241,8 +218,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
 
     // Cleanup
     return () => {
-      console.log("[Chat] Cleaning up socket connection");
-      // Leave the session room before disconnecting
       newSocket.emit("session.leave", { sessionId });
       newSocket.off("connect");
       newSocket.off("connectionAcknowledged");
@@ -262,13 +237,11 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
   const sendMessage = useCallback(
     async (text: string, replyingToMessageId?: string): Promise<boolean> => {
       if (!socket || !state.isJoined) {
-        console.error("[Chat] Cannot send message - not connected");
         return false;
       }
 
       const trimmedText = text.trim();
       if (!trimmedText || trimmedText.length > 1000) {
-        console.error("[Chat] Invalid message text");
         return false;
       }
 
@@ -313,8 +286,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
         messages: [...prev.messages, optimisticMessage],
       }));
 
-      console.log("[Chat] Added optimistic message, sending to server...");
-
       return new Promise((resolve) => {
         const payload: {
           sessionId: string;
@@ -353,14 +324,11 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
           setIsSending(false);
 
           if (response?.success) {
-            // The real message will arrive via chat.message.new event
-            // Remove optimistic message if server confirms (real one will come via event)
             resolve(true);
           } else {
             const errorMsg = typeof response?.error === "string"
               ? response.error
               : response?.error?.message || "Failed to send message";
-            console.error("[Chat] Failed to send message:", errorMsg);
             // Remove optimistic message on failure
             setState((prev) => ({
               ...prev,
@@ -500,7 +468,6 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
           const currentCount = currentReactions[emoji] || 0;
 
           // Toggle: if count > 0, decrement (assume user is removing their reaction)
-          // This is a simplified optimistic approach
           const newCount = currentCount > 0 ? currentCount - 1 : 1;
 
           const newReactions = { ...currentReactions };

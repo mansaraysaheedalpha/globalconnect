@@ -39,10 +39,14 @@ export interface LiveDashboardData {
 
 // Transform backend data to frontend format (handles multiple field name formats)
 const transformDashboardData = (data: BackendDashboardData): LiveDashboardData => {
+  console.log("🔄 [LiveDashboard] Transforming backend data...");
+  console.log("🔄 [LiveDashboard] Input data:", JSON.stringify(data, null, 2));
+
   // Handle check-ins from either field name
   const checkIns = data.recentCheckIns || data.liveCheckInFeed || [];
+  console.log("🔄 [LiveDashboard] Check-ins found:", checkIns.length);
 
-  return {
+  const transformed = {
     totalMessages: data.totalMessages ?? 0,
     totalVotes: data.totalVotes ?? data.pollVotes ?? 0,
     totalQuestions: data.totalQuestions ?? data.questionsAsked ?? 0,
@@ -54,6 +58,9 @@ const transformDashboardData = (data: BackendDashboardData): LiveDashboardData =
       timestamp: checkIn.timestamp,
     })),
   };
+
+  console.log("🔄 [LiveDashboard] Transformed data:", JSON.stringify(transformed, null, 2));
+  return transformed;
 };
 
 export const useLiveDashboard = (eventId: string) => {
@@ -65,18 +72,25 @@ export const useLiveDashboard = (eventId: string) => {
 
   useEffect(() => {
     if (!eventId || !token) {
-      console.log("❌ Missing eventId or token", {
-        eventId,
-        hasToken: !!token,
-      });
+      console.log("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🔴 [LiveDashboard] MISSING REQUIRED PARAMS");
+      console.log("🔴 [LiveDashboard] Event ID:", eventId);
+      console.log("🔴 [LiveDashboard] Has Token:", !!token);
+      console.log("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
       return;
     }
 
-    console.log("🔌 Initializing socket connection for event:", eventId);
+    console.log("🟡 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+    console.log("🟡 [LiveDashboard] INITIALIZING SOCKET CONNECTION");
+    console.log("🟡 [LiveDashboard] Event ID:", eventId);
+    console.log("🟡 [LiveDashboard] Token present:", !!token);
+    console.log("🟡 [LiveDashboard] ═══════════════════════════════════════════════════════════");
 
     // Connect to the WebSocket server
     const realtimeUrl =
       process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+
+    console.log("🟡 [LiveDashboard] Connecting to:", realtimeUrl);
 
     const newSocket = io(realtimeUrl, {
       auth: { token: `Bearer ${token}` },
@@ -89,24 +103,50 @@ export const useLiveDashboard = (eventId: string) => {
 
     setSocket(newSocket);
 
+    // Log ALL incoming events for debugging
+    newSocket.onAny((eventName, ...args) => {
+      console.log("📨 [LiveDashboard] RECEIVED EVENT:", eventName, JSON.stringify(args, null, 2));
+    });
+
+    // Log ALL outgoing events for debugging
+    newSocket.onAnyOutgoing((eventName, ...args) => {
+      console.log("📤 [LiveDashboard] SENT EVENT:", eventName, JSON.stringify(args, null, 2));
+    });
+
     newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🟢 [LiveDashboard] SOCKET CONNECTED");
+      console.log("🟢 [LiveDashboard] Socket ID:", newSocket.id);
+      console.log("🟢 [LiveDashboard] Transport:", newSocket.io.engine.transport.name);
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
       setIsConnected(true);
     });
 
     // Handle connection acknowledged (backend confirms user identity)
     // IMPORTANT: Must emit dashboard.join AFTER connectionAcknowledged, not after connect
     newSocket.on("connectionAcknowledged", (data: { userId: string }) => {
-      console.log("✅ Connection acknowledged, userId:", data.userId);
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🟢 [LiveDashboard] CONNECTION ACKNOWLEDGED BY SERVER");
+      console.log("🟢 [LiveDashboard] User ID from server:", data.userId);
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
 
       // Now join the dashboard room - this triggers the broadcast loop
-      console.log("📤 Emitting dashboard.join for event:", eventId);
+      console.log("🟡 [LiveDashboard] EMITTING dashboard.join for event:", eventId);
+
       newSocket.emit("dashboard.join", (response: { success: boolean; error?: string }) => {
+        console.log("🔵 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+        console.log("🔵 [LiveDashboard] dashboard.join CALLBACK RECEIVED");
+        console.log("🔵 [LiveDashboard] Response:", JSON.stringify(response, null, 2));
+        console.log("🔵 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+
         if (response?.success) {
-          console.log("✅ Successfully joined dashboard room (acknowledged)");
+          console.log("🟢 [LiveDashboard] SUCCESSFULLY JOINED DASHBOARD ROOM");
           setIsJoined(true);
         } else if (response?.error) {
-          console.error("❌ Failed to join dashboard room:", response.error);
+          console.error("🔴 [LiveDashboard] FAILED TO JOIN DASHBOARD ROOM:", response.error);
+        } else {
+          console.warn("⚠️ [LiveDashboard] dashboard.join callback received but no success/error field");
+          console.warn("⚠️ [LiveDashboard] Full response:", response);
         }
       });
 
@@ -114,7 +154,7 @@ export const useLiveDashboard = (eventId: string) => {
       setTimeout(() => {
         setIsJoined((current) => {
           if (!current) {
-            console.log("⏱️ Setting isJoined optimistically (no callback received)");
+            console.log("⏱️ [LiveDashboard] Setting isJoined optimistically (no callback received after 1s)");
             return true;
           }
           return current;
@@ -123,48 +163,117 @@ export const useLiveDashboard = (eventId: string) => {
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("🔌 Socket disconnected:", reason);
+      console.log("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🔴 [LiveDashboard] SOCKET DISCONNECTED");
+      console.log("🔴 [LiveDashboard] Reason:", reason);
+      console.log("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
       setIsConnected(false);
       setIsJoined(false);
     });
 
     // Listen for dashboard updates
     newSocket.on("dashboard.update", (data: BackendDashboardData) => {
-      console.log("📊 Dashboard update received:", data);
+      console.log("🟣 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🟣 [LiveDashboard] ✅ RECEIVED dashboard.update EVENT");
+      console.log("🟣 [LiveDashboard] Raw data type:", typeof data);
+      console.log("🟣 [LiveDashboard] Raw data:", JSON.stringify(data, null, 2));
+      console.log("🟣 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+
       setIsJoined(true);
-      setDashboardData(transformDashboardData(data));
+      const transformed = transformDashboardData(data);
+      console.log("🟣 [LiveDashboard] Setting dashboard data state...");
+      setDashboardData(transformed);
+      console.log("🟣 [LiveDashboard] Dashboard data state updated!");
     });
 
     // Listen for capacity updates
     newSocket.on("dashboard.capacity.updated", (data) => {
-      console.log("📊 Capacity update received:", data);
+      console.log("🔵 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🔵 [LiveDashboard] CAPACITY UPDATE RECEIVED");
+      console.log("🔵 [LiveDashboard] Data:", JSON.stringify(data, null, 2));
+      console.log("🔵 [LiveDashboard] ═══════════════════════════════════════════════════════════");
     });
 
     // Listen for system metrics
     newSocket.on("dashboard.metrics.updated", (data) => {
-      console.log("📊 Metrics update received:", data);
+      console.log("🔵 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🔵 [LiveDashboard] METRICS UPDATE RECEIVED");
+      console.log("🔵 [LiveDashboard] Data:", JSON.stringify(data, null, 2));
+      console.log("🔵 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+    });
+
+    // Listen for check-in events
+    newSocket.on("dashboard.checkin", (data) => {
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🟢 [LiveDashboard] CHECK-IN EVENT RECEIVED");
+      console.log("🟢 [LiveDashboard] Data:", JSON.stringify(data, null, 2));
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+    });
+
+    // Listen for registration events
+    newSocket.on("dashboard.registration", (data) => {
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🟢 [LiveDashboard] REGISTRATION EVENT RECEIVED");
+      console.log("🟢 [LiveDashboard] Data:", JSON.stringify(data, null, 2));
+      console.log("🟢 [LiveDashboard] ═══════════════════════════════════════════════════════════");
     });
 
     // Error handling
     newSocket.on("systemError", (error: { message: string; reason: string }) => {
-      console.error("❌ System error:", error.message, error.reason);
+      console.error("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.error("🔴 [LiveDashboard] SYSTEM ERROR");
+      console.error("🔴 [LiveDashboard] Message:", error.message);
+      console.error("🔴 [LiveDashboard] Reason:", error.reason);
+      console.error("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
     });
 
     newSocket.on("connect_error", (error) => {
-      console.error("❌ Connection error:", error.message);
+      console.error("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.error("🔴 [LiveDashboard] CONNECTION ERROR");
+      console.error("🔴 [LiveDashboard] Error:", error.message);
+      console.error("🔴 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+    });
+
+    newSocket.on("reconnect", (attemptNumber) => {
+      console.log("🟡 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🟡 [LiveDashboard] RECONNECTED");
+      console.log("🟡 [LiveDashboard] Attempt number:", attemptNumber);
+      console.log("🟡 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+    });
+
+    newSocket.on("reconnect_attempt", (attemptNumber) => {
+      console.log("🟡 [LiveDashboard] Reconnect attempt:", attemptNumber);
+    });
+
+    newSocket.on("reconnect_error", (error) => {
+      console.error("🔴 [LiveDashboard] Reconnect error:", error.message);
+    });
+
+    newSocket.on("reconnect_failed", () => {
+      console.error("🔴 [LiveDashboard] Reconnect failed after all attempts");
     });
 
     // Cleanup on component unmount
     return () => {
-      console.log("🧹 Cleaning up socket connection");
+      console.log("🟡 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      console.log("🟡 [LiveDashboard] CLEANING UP - Disconnecting socket");
+      console.log("🟡 [LiveDashboard] ═══════════════════════════════════════════════════════════");
+      newSocket.offAny();
+      newSocket.offAnyOutgoing();
       newSocket.off("connectionAcknowledged");
       newSocket.off("connect");
       newSocket.off("disconnect");
       newSocket.off("dashboard.update");
       newSocket.off("dashboard.capacity.updated");
       newSocket.off("dashboard.metrics.updated");
+      newSocket.off("dashboard.checkin");
+      newSocket.off("dashboard.registration");
       newSocket.off("systemError");
       newSocket.off("connect_error");
+      newSocket.off("reconnect");
+      newSocket.off("reconnect_attempt");
+      newSocket.off("reconnect_error");
+      newSocket.off("reconnect_failed");
       newSocket.disconnect();
     };
   }, [eventId, token]);

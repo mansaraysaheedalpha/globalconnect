@@ -40,12 +40,32 @@ import { format, formatDistanceToNow } from "date-fns";
 // Common emoji reactions
 const QUICK_REACTIONS = ["👍", "❤️", "😂", "🎉", "🔥", "👏"];
 
+// Helper to get display name with proper fallbacks
+const getDisplayName = (author: { firstName?: string; lastName?: string } | undefined | null): string => {
+  if (!author) return "Someone";
+  const firstName = author.firstName?.trim();
+  const lastName = author.lastName?.trim();
+  if (firstName) return firstName;
+  if (lastName) return lastName;
+  return "Someone";
+};
+
+// Helper to get full display name (first + last)
+const getFullDisplayName = (author: { firstName?: string; lastName?: string } | undefined | null): string => {
+  if (!author) return "Someone";
+  const firstName = author.firstName?.trim();
+  const lastName = author.lastName?.trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  return fullName || "Someone";
+};
+
 interface SessionChatProps {
   sessionId: string;
   eventId: string;
   className?: string;
   initialChatOpen?: boolean; // Initial state from GraphQL query
   isOrganizer?: boolean; // Organizers can send messages even when chat is closed
+  onStatusChange?: (isOpen: boolean) => void; // Callback when chat open status changes via WebSocket
 }
 
 // Extended message type to handle optimistic messages
@@ -94,7 +114,7 @@ const MessageBubble = ({
           )}
         >
           <span className="font-medium text-muted-foreground">
-            Replying to {message.parentMessage.author.firstName}
+            Replying to {getDisplayName(message.parentMessage.author)}
           </span>
           <p className="text-muted-foreground truncate max-w-[200px]">
             {message.parentMessage.text}
@@ -105,7 +125,7 @@ const MessageBubble = ({
       {/* Author name (for others' messages) */}
       {!isOwn && (
         <span className="text-xs font-medium text-muted-foreground ml-1">
-          {message.author.firstName} {message.author.lastName}
+          {getFullDisplayName(message.author)}
         </span>
       )}
 
@@ -234,7 +254,7 @@ const MessageBubble = ({
   );
 };
 
-export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = true, isOrganizer = false }: SessionChatProps) => {
+export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = true, isOrganizer = false, onStatusChange }: SessionChatProps) => {
   const {
     messages,
     isConnected,
@@ -250,6 +270,13 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
     reactToMessage,
     clearError,
   } = useSessionChat(sessionId, eventId, initialChatOpen);
+
+  // Notify parent when chat open status changes via WebSocket
+  useEffect(() => {
+    if (onStatusChange && isJoined) {
+      onStatusChange(chatOpen);
+    }
+  }, [chatOpen, isJoined, onStatusChange]);
 
   const [inputValue, setInputValue] = useState("");
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
@@ -414,7 +441,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
         {/* Error banner */}
         {error && (
           <div className="mx-4 mb-2 px-3 py-2 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center justify-between">
@@ -431,8 +458,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
         {/* Messages area */}
         <div
           ref={scrollAreaRef}
-          className="flex-1 px-4 overflow-y-auto"
-          style={{ height: "400px" }}
+          className="flex-1 px-4 overflow-y-auto min-h-0"
         >
           <div className="space-y-4 py-4">
             {messages.length === 0 ? (
@@ -465,7 +491,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
                 <>
                   <Reply className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Replying to</span>
-                  <span className="font-medium">{replyingTo.author.firstName}</span>
+                  <span className="font-medium">{getDisplayName(replyingTo.author)}</span>
                 </>
               ) : (
                 <>
@@ -505,7 +531,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
                     editingMessage
                       ? "Edit your message..."
                       : replyingTo
-                      ? `Reply to ${replyingTo.author.firstName}...`
+                      ? `Reply to ${getDisplayName(replyingTo.author)}...`
                       : "Type a message..."
                   }
                   disabled={isSending}
