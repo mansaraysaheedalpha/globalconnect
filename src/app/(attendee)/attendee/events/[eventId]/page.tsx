@@ -30,6 +30,8 @@ import {
   AlertTriangle,
   Lock,
   Unlock,
+  Presentation,
+  X,
 } from "lucide-react";
 import { format, isWithinInterval, isFuture } from "date-fns";
 import Link from "next/link";
@@ -37,6 +39,13 @@ import Image from "next/image";
 import { SessionChat } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-chat";
 import { SessionQA } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-qa";
 import { SessionPolls } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-polls";
+import { SlideViewer, DroppedContentNotification } from "@/components/features/presentation/slide-viewer";
+import { usePresentationControl, DroppedContent } from "@/hooks/use-presentation-control";
+import { LiveReactionsFull } from "@/components/features/live-reactions-overlay";
+import { FloatingScoreWidget } from "@/components/features/gamification/gamification-container";
+import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
+import { AgendaSession } from "@/hooks/use-agenda-updates";
+import { FloatingDMButton } from "@/components/features/dm";
 
 type Session = {
   id: string;
@@ -47,9 +56,11 @@ type Session = {
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  presentationEnabled?: boolean;
   chatOpen?: boolean;  // Runtime state: organizer controls when chat is open
   qaOpen?: boolean;    // Runtime state: organizer controls when Q&A is open
   pollsOpen?: boolean; // Runtime state: organizer controls when polls are open
+  presentationActive?: boolean; // Runtime state: presentation is currently being shown
   speakers: { id: string; name: string }[];
 };
 
@@ -101,6 +112,63 @@ const getSessionStatusBadge = (status: string) => {
   }
 };
 
+// Separate component for attendee presentation viewer (hooks need stable component)
+const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
+  sessionId: string;
+  eventId: string;
+  sessionTitle: string;
+}) => {
+  const {
+    slideState,
+    droppedContent,
+    isConnected,
+    isJoined,
+    error,
+    clearDroppedContent,
+  } = usePresentationControl(sessionId, eventId, false); // canControl = false for attendees
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Connection status */}
+      {!isConnected && (
+        <div className="px-4 py-2 bg-yellow-500/10 text-yellow-600 text-sm flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+          Connecting...
+        </div>
+      )}
+
+      {error && (
+        <div className="px-4 py-2 bg-red-500/10 text-red-600 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Slide Viewer - view only for attendees */}
+      <div className="flex-1 p-4">
+        <SlideViewer
+          slideState={slideState}
+          slideUrls={slideState?.slideUrls}
+          isPresenter={false} // Attendees can only view, not control
+          className="h-full"
+        />
+      </div>
+
+      {/* Dropped content notifications */}
+      {droppedContent.length > 0 && (
+        <div className="absolute bottom-4 right-4 space-y-2 z-10">
+          {droppedContent.map((content) => (
+            <DroppedContentNotification
+              key={content.id}
+              content={content}
+              onDismiss={() => clearDroppedContent(content.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SessionCard = ({ session, eventId }: { session: Session; eventId: string }) => {
   const isLive = session.status === "LIVE";
   const isEnded = session.status === "ENDED";
@@ -109,12 +177,14 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   const chatEnabled = session.chatEnabled !== false;
   const qaEnabled = session.qaEnabled !== false;
   const pollsEnabled = session.pollsEnabled !== false;
-  const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled;
+  const presentationEnabled = session.presentationEnabled !== false;
+  const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled || presentationEnabled;
 
   // Local state for live status tracking (updated via WebSocket events from child components)
   const [liveChatOpen, setLiveChatOpen] = React.useState(session.chatOpen ?? false);
   const [liveQaOpen, setLiveQaOpen] = React.useState(session.qaOpen ?? false);
   const [livePollsOpen, setLivePollsOpen] = React.useState(session.pollsOpen ?? false);
+  const [livePresentationActive, setLivePresentationActive] = React.useState(session.presentationActive ?? false);
 
   // Sync with props when they change (e.g., from refetch)
   React.useEffect(() => {
@@ -128,6 +198,10 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   React.useEffect(() => {
     setLivePollsOpen(session.pollsOpen ?? false);
   }, [session.pollsOpen]);
+
+  React.useEffect(() => {
+    setLivePresentationActive(session.presentationActive ?? false);
+  }, [session.presentationActive]);
 
   return (
     <Card className={`overflow-hidden transition-all ${isLive ? "ring-2 ring-green-500/20" : ""}`}>
@@ -288,6 +362,47 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                         className="h-full border-0 shadow-none rounded-none"
                         initialPollsOpen={livePollsOpen}
                         onStatusChange={setLivePollsOpen}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
+
+              {/* Session Presentation - View Only for Attendees */}
+              {presentationEnabled && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`gap-1.5 ${!livePresentationActive ? "opacity-60" : ""}`}
+                    >
+                      {livePresentationActive ? (
+                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      ) : (
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+                      )}
+                      <Presentation className="h-4 w-4" />
+                      Slides
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent className="w-full sm:max-w-2xl p-0">
+                    <SheetHeader className="px-6 pt-6 pb-2">
+                      <SheetTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Presentation className="h-5 w-5" />
+                          {session.title} - Presentation
+                        </div>
+                        <Badge variant={livePresentationActive ? "default" : "secondary"} className={livePresentationActive ? "bg-green-500/10 text-green-600" : ""}>
+                          {livePresentationActive ? "Live" : "Not Started"}
+                        </Badge>
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="h-[calc(100vh-100px)] relative">
+                      <AttendeePresentation
+                        sessionId={session.id}
+                        eventId={eventId}
+                        sessionTitle={session.title}
                       />
                     </div>
                   </SheetContent>
@@ -534,6 +649,48 @@ export default function AttendeeEventPage() {
           </Card>
         )}
       </div>
+
+      {/* Live Reactions Overlay - Shows when there are live sessions */}
+      {liveSessions.length > 0 && (
+        <>
+          <LiveReactionsFull
+            sessionId={liveSessions[0].id}
+            eventId={eventId}
+            showMoodIndicator={true}
+            reactionBarPosition="bottom-right"
+          />
+          {/* Floating Score Widget - Gamification */}
+          <FloatingScoreWidget
+            sessionId={liveSessions[0].id}
+            eventId={eventId}
+          />
+        </>
+      )}
+
+      {/* Floating Schedule Indicator - Real-time agenda updates */}
+      {sessions.length > 0 && (
+        <FloatingScheduleIndicator
+          eventId={eventId}
+          initialSessions={sessions.map((s): AgendaSession => ({
+            id: s.id,
+            title: s.title,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            status: s.status === "LIVE" ? "live" : s.status === "ENDED" ? "completed" : "upcoming",
+            speakers: s.speakers.map((sp) => ({
+              id: sp.id,
+              firstName: sp.name.split(" ")[0] || sp.name,
+              lastName: sp.name.split(" ").slice(1).join(" ") || "",
+            })),
+          }))}
+        />
+      )}
+
+      {/* Floating Direct Messages Button */}
+      <FloatingDMButton
+        eventId={eventId}
+        position="bottom-left"
+      />
     </div>
   );
 }

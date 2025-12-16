@@ -1,13 +1,16 @@
 //src/app/(public)/events/[eventId]/_components/registration-modal.tsx
 "use client";
 
-import React, { useState } from "react";
-import { useMutation } from "@apollo/client";
+import React, { useState, useEffect } from "react";
+import { useMutation, useLazyQuery } from "@apollo/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { CREATE_REGISTRATION_MUTATION } from "@/graphql/public.graphql";
+import {
+  CREATE_REGISTRATION_MUTATION,
+  CHECK_EXISTING_REGISTRATION_QUERY,
+} from "@/graphql/public.graphql";
 import { useAuthStore } from "@/store/auth.store";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +30,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader, PartyPopper, ExternalLink, UserPlus } from "lucide-react";
+import {
+  Loader,
+  PartyPopper,
+  ExternalLink,
+  UserPlus,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -35,6 +45,13 @@ interface RegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   eventId: string;
+}
+
+interface ExistingRegistration {
+  id: string;
+  status: string;
+  ticketCode: string;
+  checkedInAt: string | null;
 }
 
 const guestFormSchema = z.object({
@@ -45,6 +62,17 @@ const guestFormSchema = z.object({
 
 type GuestFormValues = z.infer<typeof guestFormSchema>;
 
+// Helper to detect duplicate registration errors (HTTP 409 or GraphQL error)
+const isDuplicateRegistrationError = (error: Error): boolean => {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("already registered") ||
+    message.includes("duplicate") ||
+    message.includes("conflict") ||
+    message.includes("409")
+  );
+};
+
 export const RegistrationModal = ({
   isOpen,
   onClose,
@@ -54,11 +82,40 @@ export const RegistrationModal = ({
   const { user, token } = useAuthStore();
   const [isSuccess, setIsSuccess] = useState(false);
   const [ticketCode, setTicketCode] = useState("");
+  const [existingRegistration, setExistingRegistration] =
+    useState<ExistingRegistration | null>(null);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
   const form = useForm<GuestFormValues>({
     resolver: zodResolver(guestFormSchema),
     defaultValues: { first_name: "", last_name: "", email: "" },
   });
+
+  // Query to check if user is already registered
+  const [checkExistingRegistration, { loading: checkingRegistration }] =
+    useLazyQuery(CHECK_EXISTING_REGISTRATION_QUERY, {
+      fetchPolicy: "network-only",
+      onCompleted: (data) => {
+        if (data?.myRegistrationForEvent) {
+          setExistingRegistration(data.myRegistrationForEvent);
+          setIsAlreadyRegistered(true);
+        }
+      },
+    });
+
+  // Check for existing registration when modal opens (for authenticated users)
+  useEffect(() => {
+    if (isOpen && token && user) {
+      checkExistingRegistration({
+        variables: { eventId },
+        context: {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        },
+      });
+    }
+  }, [isOpen, token, user, eventId, checkExistingRegistration]);
 
   const [createRegistration, { loading }] = useMutation(
     CREATE_REGISTRATION_MUTATION,
@@ -68,7 +125,27 @@ export const RegistrationModal = ({
         setIsSuccess(true);
       },
       onError: (error) => {
-        toast.error("Registration Failed", { description: error.message });
+        // Handle duplicate registration error (HTTP 409)
+        if (isDuplicateRegistrationError(error)) {
+          toast.error("Already Registered", {
+            description:
+              "You or this email is already registered for this event.",
+            icon: <AlertCircle className="h-4 w-4" />,
+          });
+          // For authenticated users, try to fetch their existing registration
+          if (token && user) {
+            checkExistingRegistration({
+              variables: { eventId },
+              context: {
+                headers: {
+                  authorization: `Bearer ${token}`,
+                },
+              },
+            });
+          }
+        } else {
+          toast.error("Registration Failed", { description: error.message });
+        }
       },
     }
   );
@@ -106,6 +183,8 @@ export const RegistrationModal = ({
     setTimeout(() => {
       setIsSuccess(false);
       setTicketCode("");
+      setExistingRegistration(null);
+      setIsAlreadyRegistered(false);
       form.reset();
     }, 300);
   };
@@ -116,6 +195,63 @@ export const RegistrationModal = ({
   };
 
   const renderContent = () => {
+    // Loading state while checking existing registration
+    if (checkingRegistration) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground mt-4">
+            Checking registration status...
+          </p>
+        </div>
+      );
+    }
+
+    // Already registered state
+    if (isAlreadyRegistered && existingRegistration) {
+      return (
+        <div className="text-center py-8">
+          <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
+          <h2 className="text-2xl font-bold mt-4">Already Registered!</h2>
+          <p className="text-muted-foreground mt-2">
+            You're already registered for this event.
+          </p>
+          <p className="text-muted-foreground mt-1">Your ticket code is:</p>
+          <p className="text-2xl font-mono bg-secondary rounded-md p-2 mt-2 inline-block">
+            {existingRegistration.ticketCode}
+          </p>
+          <div className="mt-4">
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                existingRegistration.status === "checked_in"
+                  ? "bg-green-100 text-green-800"
+                  : existingRegistration.status === "confirmed"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {existingRegistration.status.replace("_", " ").toUpperCase()}
+            </span>
+          </div>
+          {existingRegistration.checkedInAt && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Checked in at{" "}
+              {new Date(existingRegistration.checkedInAt).toLocaleString()}
+            </p>
+          )}
+          <DialogFooter className="mt-6 flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={handleClose}>
+              Close
+            </Button>
+            <Button onClick={handleGoToEvent} className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Go to My Event
+            </Button>
+          </DialogFooter>
+        </div>
+      );
+    }
+
     if (isSuccess) {
       const isGuestRegistration = !token && !user;
 

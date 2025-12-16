@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +23,11 @@ import {
   Minimize2,
   ChevronLeft,
   ChevronRight,
+  Radio,
+  StopCircle,
+  Users,
 } from "lucide-react";
+import { usePresentationControl } from "@/hooks/use-presentation-control";
 
 type Presentation = {
   id: string;
@@ -49,13 +54,50 @@ export const PresentationViewer = ({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLiveMode, setIsLiveMode] = useState(false);
   const { token } = useAuthStore();
+
+  // Live presentation control hook (only active when in live mode)
+  const {
+    isConnected: liveConnected,
+    isJoined: liveJoined,
+    slideState: liveSlideState,
+    nextSlide: liveNextSlide,
+    prevSlide: livePrevSlide,
+    goToSlide: liveGoToSlide,
+    startPresentation,
+    stopPresentation,
+  } = usePresentationControl(session.id, event.id, isLiveMode);
 
   const zoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 5));
   const zoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.25));
   const resetZoom = () => setZoom(1);
   const toggleFullscreen = () => setIsFullscreen((prev) => !prev);
   const fitToWidth = () => setZoom(1); // Reset to fit width
+
+  // Toggle live presentation mode
+  const toggleLiveMode = async () => {
+    if (isLiveMode) {
+      // Stop live presentation
+      await stopPresentation();
+      setIsLiveMode(false);
+      toast.success("Live presentation ended", {
+        description: "Attendees will no longer see slide updates",
+      });
+    } else {
+      // Start live presentation
+      setIsLiveMode(true);
+      // Wait for connection then start
+      setTimeout(async () => {
+        const result = await startPresentation();
+        if (result.success) {
+          toast.success("Live presentation started!", {
+            description: "Attendees can now see your slides in real-time",
+          });
+        }
+      }, 1000);
+    }
+  };
 
   const fetchPresentation = useCallback(async () => {
     const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
@@ -127,17 +169,37 @@ export const PresentationViewer = ({
     };
   }, [isOpen, fetchPresentation]);
 
-  const goToNextSlide = useCallback(() => {
+  const goToNextSlide = useCallback(async () => {
     if (presentation) {
-      setCurrentSlide((prev) =>
-        Math.min(prev + 1, presentation.slide_urls.length - 1)
-      );
-    }
-  }, [presentation]);
+      const newSlide = Math.min(currentSlide + 1, presentation.slide_urls.length - 1);
+      setCurrentSlide(newSlide);
 
-  const goToPrevSlide = useCallback(() => {
-    setCurrentSlide((prev) => Math.max(prev - 1, 0));
-  }, []);
+      // Broadcast to attendees if in live mode
+      if (isLiveMode && liveJoined) {
+        await liveNextSlide();
+      }
+    }
+  }, [presentation, currentSlide, isLiveMode, liveJoined, liveNextSlide]);
+
+  const goToPrevSlide = useCallback(async () => {
+    const newSlide = Math.max(currentSlide - 1, 0);
+    setCurrentSlide(newSlide);
+
+    // Broadcast to attendees if in live mode
+    if (isLiveMode && liveJoined) {
+      await livePrevSlide();
+    }
+  }, [currentSlide, isLiveMode, liveJoined, livePrevSlide]);
+
+  // Go to specific slide (with live broadcast)
+  const goToSpecificSlide = useCallback(async (slideIndex: number) => {
+    setCurrentSlide(slideIndex);
+
+    // Broadcast to attendees if in live mode (slide numbers are 1-indexed for backend)
+    if (isLiveMode && liveJoined) {
+      await liveGoToSlide(slideIndex + 1);
+    }
+  }, [isLiveMode, liveJoined, liveGoToSlide]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -240,21 +302,54 @@ export const PresentationViewer = ({
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </div>
-            <span className="text-sm font-medium">
-              Slide {currentSlide + 1} of {presentation.slide_urls.length}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleFullscreen}
-              title="Toggle fullscreen (F)"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
+
+            {/* Center: Slide counter & Live status */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                Slide {currentSlide + 1} of {presentation.slide_urls.length}
+              </span>
+              {isLiveMode && (
+                <Badge variant="default" className="bg-red-600 hover:bg-red-600 gap-1.5 animate-pulse">
+                  <Radio className="h-3 w-3" />
+                  LIVE
+                </Badge>
               )}
-            </Button>
+            </div>
+
+            {/* Right: Live toggle & Fullscreen */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant={isLiveMode ? "destructive" : "default"}
+                size="sm"
+                onClick={toggleLiveMode}
+                title={isLiveMode ? "Stop live presentation" : "Start live presentation"}
+                className="gap-1.5"
+              >
+                {isLiveMode ? (
+                  <>
+                    <StopCircle className="h-4 w-4" />
+                    <span className="hidden sm:inline">End Live</span>
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">Present Live</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleFullscreen}
+                title="Toggle fullscreen (F)"
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Slide Container */}
@@ -313,7 +408,7 @@ export const PresentationViewer = ({
             {presentation.slide_urls.map((url, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentSlide(index)}
+                onClick={() => goToSpecificSlide(index)}
                 className={`relative flex-shrink-0 w-16 h-10 rounded border-2 overflow-hidden transition-all ${
                   index === currentSlide
                     ? "border-primary ring-2 ring-primary/30"

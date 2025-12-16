@@ -1,5 +1,18 @@
 //app/graphql/public.graphql.ts
 import { gql } from "@apollo/client";
+
+// Check if current user is already registered for an event (for authenticated users)
+export const CHECK_EXISTING_REGISTRATION_QUERY = gql`
+  query CheckExistingRegistration($eventId: ID!) {
+    myRegistrationForEvent(eventId: $eventId) {
+      id
+      status
+      ticketCode
+      checkedInAt
+    }
+  }
+`;
+
 export const CREATE_REGISTRATION_MUTATION = gql`
   mutation CreateRegistration(
     $registrationIn: RegistrationCreateInput!

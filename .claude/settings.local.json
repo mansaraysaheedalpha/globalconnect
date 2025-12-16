@@ -22,7 +22,8 @@
       "Bash(POLLS_BACKEND.md)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement interactive polls system with real-time updates\n\n## New Features\n- Full polls system with real-time WebSocket integration\n- Organizer features: create polls, view live results, close polls, run giveaways\n- Attendee features: vote on polls, see live results after voting\n- Polls open/close toggle for session-level control\n\n## Files Added\n- src/hooks/use-session-polls.ts - WebSocket hook for polls state management\n- src/app/(platform)/dashboard/events/[eventId]/_components/session-polls.tsx - Main polls component\n- src/components/ui/collapsible.tsx - Collapsible UI component\n- .github/workflows/ci.yml - GitHub Actions CI workflow\n- POLLS_BACKEND.md - Backend API documentation\n- POLLS_IMPLEMENTATION_PLAN.md - Implementation plan\n\n## Files Modified\n- GraphQL: Added pollsEnabled, pollsOpen fields and TOGGLE_SESSION_POLLS_MUTATION\n- SessionItem: Added polls button and sheet panel with toggle\n- Attendee page: Added polls button and sheet for attendees\n- Add/Edit session modals: Added pollsEnabled toggle\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

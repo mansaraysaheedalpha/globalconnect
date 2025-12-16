@@ -19,6 +19,8 @@ import {
 import { UserAvatar } from "../ui/user-avatar";
 import Link from "next/link";
 import { Globe } from "lucide-react";
+import { NotificationBellOnly } from "@/components/features/notifications/notifications-container";
+import { HeaderDMButton } from "@/components/features/dm";
 
 export function Header() {
   const { user, orgId, logout } = useAuthStore();
@@ -52,9 +54,17 @@ export function Header() {
       </div>
 
       {user ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Direct Messages */}
+          <HeaderDMButton />
+
+          {/* Notifications Bell */}
+          <NotificationBellOnly />
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-3">
               <UserAvatar
                 firstName={user.first_name}
                 lastName={user.last_name}
@@ -88,7 +98,8 @@ export function Header() {
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
       ) : (
         <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
       )}

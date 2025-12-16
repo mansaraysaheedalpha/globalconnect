@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangleIcon } from "lucide-react";
 import { EventHistoryTimeline } from "./_components/event-history-timeline";
+import { LiveAgendaContainer } from "@/components/features/agenda/live-agenda-container";
+import { AgendaSession } from "@/hooks/use-agenda-updates";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -118,6 +120,27 @@ export default function EventDetailPage() {
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6">
             <EventDetailsCard event={event} />
+
+            {/* Live Agenda Widget - Real-time schedule updates */}
+            {sessions.length > 0 && (
+              <LiveAgendaContainer
+                eventId={event.id}
+                initialSessions={sessions.map((s: any): AgendaSession => ({
+                  id: s.id,
+                  title: s.title,
+                  startTime: s.startTime,
+                  endTime: s.endTime,
+                  status: s.status === "LIVE" ? "live" : s.status === "ENDED" ? "completed" : "upcoming",
+                  location: s.location || undefined,
+                  speakers: s.speakers?.map((sp: any) => ({
+                    id: sp.id,
+                    firstName: sp.name?.split(" ")[0] || sp.firstName || "",
+                    lastName: sp.name?.split(" ").slice(1).join(" ") || sp.lastName || "",
+                  })) || [],
+                }))}
+                variant="widget"
+              />
+            )}
           </div>
         </div>
       </div>
