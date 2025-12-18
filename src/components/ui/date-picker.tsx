@@ -49,7 +49,7 @@ export function DatePicker({
           fromDate={fromDate}
           toDate={toDate}
           disabled={(date) =>
-            (fromDate && date < fromDate) || (toDate && date > toDate)
+            (fromDate && date < fromDate) || (toDate && date > toDate) || false
           }
         />
       </PopoverContent>

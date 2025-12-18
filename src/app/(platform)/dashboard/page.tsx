@@ -1,10 +1,323 @@
 // src/app/(platform)/dashboard/page.tsx
+"use client";
+
+import { useAuthStore } from "@/store/auth.store";
+import { useQuery } from "@apollo/client";
+import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
+import {
+  GET_DASHBOARD_DATA_QUERY,
+  type DashboardData,
+} from "@/graphql/dashboard.graphql";
+import {
+  PageTransition,
+  SectionHeader,
+  StaggerContainer,
+  StaggerItem,
+  PremiumCard,
+} from "@/components/ui/premium-components";
+import {
+  BarChart,
+  Sparkline,
+  ProgressStat,
+  MiniStatsGrid,
+} from "@/components/ui/charts";
+import { CardSkeleton, ShimmerSkeleton } from "@/components/ui/skeleton-patterns";
+import { Button } from "@/components/ui/button";
+import {
+  Calendar,
+  Users,
+  TrendingUp,
+  ArrowRight,
+  Plus,
+  Clock,
+  MapPin,
+} from "lucide-react";
+import Link from "next/link";
+import { format } from "date-fns";
 
 export default function DashboardPage() {
+  const { user, orgId } = useAuthStore();
+
+  // Fetch events
+  const { data: eventsData, loading: eventsLoading } = useQuery(
+    GET_EVENTS_BY_ORGANIZATION_QUERY,
+    {
+      variables: {
+        limit: 5,
+        offset: 0,
+        sortBy: "startDate",
+        sortDirection: "desc",
+      },
+      skip: !orgId,
+    }
+  );
+
+  // Fetch dashboard stats from real API
+  const { data: dashboardData, loading: dashboardLoading } = useQuery<DashboardData>(
+    GET_DASHBOARD_DATA_QUERY,
+    {
+      variables: {
+        attendanceDays: 7,
+        trendPeriods: 12,
+      },
+      skip: !orgId,
+    }
+  );
+
+
+  const events = eventsData?.eventsByOrganization?.events || [];
+  const totalEvents = eventsData?.eventsByOrganization?.totalCount || 0;
+
+  // Extract dashboard data with fallbacks (shows 0 when API not ready)
+  const dashboardStats = dashboardData?.organizationDashboardStats;
+  const weeklyAttendance = dashboardData?.weeklyAttendance?.data;
+  const engagementTrend = dashboardData?.engagementTrend?.data;
+  const engagementBreakdown = dashboardData?.engagementBreakdown;
+
+  // Build stats array from real API data
+  const stats = [
+    {
+      label: "Total Events",
+      value: totalEvents,
+      change: dashboardStats?.totalEventsChange ?? 0,
+      icon: <Calendar className="h-4 w-4" />,
+    },
+    {
+      label: "Total Attendees",
+      value: dashboardStats?.totalAttendees ?? 0,
+      change: dashboardStats?.totalAttendeesChange ?? 0,
+      icon: <Users className="h-4 w-4" />,
+    },
+    {
+      label: "Avg. Engagement",
+      value: dashboardStats?.avgEngagementRate
+        ? `${Math.round(dashboardStats.avgEngagementRate)}%`
+        : "0%",
+      change: dashboardStats?.avgEngagementChange ?? 0,
+      icon: <TrendingUp className="h-4 w-4" />,
+    },
+    {
+      label: "Active Sessions",
+      value: dashboardStats?.activeSessions ?? 0,
+      change: dashboardStats?.activeSessionsChange ?? 0,
+      icon: <Clock className="h-4 w-4" />,
+    },
+  ];
+
+  // Transform attendance data for chart from API
+  const attendanceData =
+    weeklyAttendance?.map((item) => ({
+      label: item.label,
+      value: item.value,
+    })) || [];
+
+  // Transform sparkline data from API
+  const sparklineData = engagementTrend?.map((item) => item.value) || [];
+
+  // Get engagement breakdown values from API
+  const qaParticipation = engagementBreakdown?.qaParticipation ?? 0;
+  const pollResponseRate = engagementBreakdown?.pollResponseRate ?? 0;
+  const chatActivityRate = engagementBreakdown?.chatActivityRate ?? 0;
+  const avgEngagementRate = dashboardStats?.avgEngagementRate ?? 0;
+
+  const loading = eventsLoading || dashboardLoading;
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="space-y-2">
+          <ShimmerSkeleton className="h-9 w-64" />
+          <ShimmerSkeleton className="h-5 w-48" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <CardSkeleton key={i} lines={2} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <CardSkeleton className="lg:col-span-2" lines={6} />
+          <CardSkeleton lines={4} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h1 className="text-3xl font-bold">Welcome to your Dashboard</h1>
-      <p className="mt-2 text-gray-400">This is your main control center.</p>
-    </div>
+    <PageTransition className="p-6 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {user?.first_name || "Organizer"}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Here&apos;s what&apos;s happening with your events today.
+          </p>
+        </div>
+        <Link href="/dashboard/events">
+          <Button variant="premium" size="lg">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Event
+          </Button>
+        </Link>
+      </div>
+
+      {/* Stats Grid */}
+      <MiniStatsGrid items={stats} columns={4} />
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Attendance Chart */}
+        <PremiumCard variant="elevated" padding="md" className="lg:col-span-2">
+          <SectionHeader
+            title="Weekly Attendance"
+            subtitle="Attendee check-ins across all events"
+          />
+          {attendanceData.length > 0 ? (
+            <BarChart
+              data={attendanceData}
+              height={220}
+              showValues
+              showLabels
+              animate
+            />
+          ) : (
+            <div className="h-[220px] flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No attendance data yet</p>
+                <p className="text-xs mt-1">Data will appear once attendees check in</p>
+              </div>
+            </div>
+          )}
+        </PremiumCard>
+
+        {/* Engagement Trends */}
+        <PremiumCard variant="elevated" padding="md">
+          <SectionHeader title="Engagement Trend" />
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-3xl font-bold">
+                {Math.round(avgEngagementRate)}%
+              </p>
+              <p className="text-sm text-muted-foreground">Average rate</p>
+            </div>
+            {sparklineData.length > 0 ? (
+              <Sparkline
+                data={sparklineData}
+                width={100}
+                height={40}
+                animate
+              />
+            ) : (
+              <div className="w-[100px] h-[40px] bg-muted/30 rounded flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">No data</span>
+              </div>
+            )}
+          </div>
+          <div className="space-y-4 pt-4 border-t">
+            <ProgressStat
+              label="Q&A Participation"
+              value={Math.round(qaParticipation)}
+              color="bg-primary"
+            />
+            <ProgressStat
+              label="Poll Responses"
+              value={Math.round(pollResponseRate)}
+              color="bg-blue-500"
+            />
+            <ProgressStat
+              label="Chat Activity"
+              value={Math.round(chatActivityRate)}
+              color="bg-green-500"
+            />
+          </div>
+        </PremiumCard>
+      </div>
+
+      {/* Upcoming Events */}
+      <div>
+        <SectionHeader
+          title="Upcoming Events"
+          subtitle="Your next scheduled events"
+          action={
+            <Link href="/dashboard/events">
+              <Button variant="ghost" size="sm">
+                View all <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+          }
+        />
+        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {events.length > 0 ? (
+            events.slice(0, 3).map((event: any) => (
+              <StaggerItem key={event.id}>
+                <Link href={`/dashboard/events/${event.id}`}>
+                  <PremiumCard
+                    variant="elevated"
+                    padding="none"
+                    hover="lift"
+                    className="overflow-hidden group"
+                  >
+                    {/* Event Image */}
+                    <div className="h-32 bg-gradient-to-br from-primary/20 to-primary/5 relative">
+                      {event.coverImage && (
+                        <img
+                          src={event.coverImage}
+                          alt={event.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-3 left-3">
+                        <span className="px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded">
+                          {event.status || "Draft"}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Event Details */}
+                    <div className="p-4">
+                      <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-1">
+                        {event.name}
+                      </h3>
+                      <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {event.startDate
+                            ? format(new Date(event.startDate), "MMM d, yyyy")
+                            : "Date TBD"}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span className="line-clamp-1">
+                            {event.venue?.name || event.location || "Location TBD"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </PremiumCard>
+                </Link>
+              </StaggerItem>
+            ))
+          ) : (
+            <StaggerItem className="col-span-full">
+              <PremiumCard variant="glass" padding="lg" className="text-center">
+                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">No events yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create your first event to get started
+                </p>
+                <Link href="/dashboard/events">
+                  <Button variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Event
+                  </Button>
+                </Link>
+              </PremiumCard>
+            </StaggerItem>
+          )}
+        </StaggerContainer>
+      </div>
+    </PageTransition>
   );
 }

@@ -2,18 +2,41 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export type InputProps = React.ComponentProps<"input">
+export interface InputProps extends React.ComponentProps<"input"> {
+  variant?: "default" | "filled" | "ghost";
+}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, variant = "default", ...props }, ref) => {
+    const variants = {
+      default: "border-input bg-transparent dark:bg-input/30",
+      filled: "border-transparent bg-muted/50 hover:bg-muted/70 focus:bg-background",
+      ghost: "border-transparent bg-transparent hover:bg-muted/50 focus:bg-muted/30",
+    };
+
     return (
       <input
         type={type}
         data-slot="input"
         className={cn(
-          "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+          // Base styles
+          "flex h-10 w-full min-w-0 rounded-lg border px-3 py-2 text-base shadow-sm",
+          "transition-all duration-200 outline-none",
+          // File input styles
+          "file:text-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium",
+          // Placeholder & selection
+          "placeholder:text-muted-foreground/70",
+          "selection:bg-primary selection:text-primary-foreground",
+          // Focus state with premium glow
+          "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
+          // Invalid state
           "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+          // Disabled state
+          "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/30",
+          // Variant
+          variants[variant],
+          // Responsive
+          "md:text-sm",
           className
         )}
         ref={ref}

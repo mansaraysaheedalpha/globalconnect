@@ -15,12 +15,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -32,7 +29,7 @@ import { PresentationStatus, PresentationState } from "./presentation-status";
 import { SessionChat } from "./session-chat";
 import { SessionQA } from "./session-qa";
 import { SessionPolls } from "./session-polls";
-import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3 } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, X } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION } from "@/graphql/events.graphql";
 import { cn } from "@/lib/utils";
@@ -81,6 +78,11 @@ export const SessionItem = ({
   const [isChatOpen, setIsChatOpen] = useState(session.chatOpen ?? false);
   const [isQaOpen, setIsQaOpen] = useState(session.qaOpen ?? false);
   const [isPollsOpen, setIsPollsOpen] = useState(session.pollsOpen ?? false);
+
+  // Dialog open states
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
+  const [qaDialogOpen, setQaDialogOpen] = useState(false);
+  const [pollsDialogOpen, setPollsDialogOpen] = useState(false);
 
   // Sync local state with props when they change (e.g., from refetch)
   useEffect(() => {
@@ -315,181 +317,217 @@ export const SessionItem = ({
                 <div className="flex items-center rounded-lg border bg-muted/30 p-1 gap-1">
                   {/* Chat Button */}
                   {chatEnabled && (
-                    <Sheet>
+                    <>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <SheetTrigger asChild>
-                            <Button
-                              variant={isChatOpen ? "default" : "ghost"}
-                              size="sm"
-                              className={cn(
-                                "h-8 px-2 sm:px-3 gap-1.5 transition-colors",
-                                isChatOpen && "bg-green-600 hover:bg-green-700 text-white"
-                              )}
-                            >
-                              <MessageSquare className="h-4 w-4" />
-                              <span className="hidden sm:inline text-xs">Chat</span>
-                              {isChatOpen && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
-                              )}
-                            </Button>
-                          </SheetTrigger>
+                          <Button
+                            variant={isChatOpen ? "default" : "ghost"}
+                            size="sm"
+                            className={cn(
+                              "h-8 px-2 sm:px-3 gap-1.5 transition-colors",
+                              isChatOpen && "bg-green-600 hover:bg-green-700 text-white"
+                            )}
+                            onClick={() => setChatDialogOpen(true)}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            <span className="hidden sm:inline text-xs">Chat</span>
+                            {isChatOpen && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
+                            )}
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="sm:hidden">
                           <p>Chat {isChatOpen ? "(Open)" : "(Closed)"}</p>
                         </TooltipContent>
                       </Tooltip>
-                      <SheetContent className="w-full sm:max-w-lg p-0">
-                        <SheetHeader className="px-6 pt-6 pb-2 border-b">
-                          <SheetTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <MessageSquare className="h-5 w-5" />
-                              <span className="truncate">{session.title} - Chat</span>
-                            </div>
-                            <div className="flex items-center gap-2">
+                      <Dialog open={chatDialogOpen} onOpenChange={setChatDialogOpen}>
+                        <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+                          {/* Header */}
+                          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+                            <div className="flex items-center gap-3">
+                              <MessageSquare className="h-5 w-5 text-primary" />
+                              <span className="font-medium truncate">{session.title} - Chat</span>
                               <Badge variant={isChatOpen ? "default" : "secondary"} className={cn(isChatOpen && "bg-green-600")}>
                                 {isChatOpen ? "Open" : "Closed"}
                               </Badge>
-                              <Switch
-                                checked={isChatOpen}
-                                onCheckedChange={handleToggleChat}
-                                disabled={togglingChat}
-                                aria-label="Toggle chat"
-                              />
                             </div>
-                          </SheetTitle>
-                        </SheetHeader>
-                        <div className="h-[calc(100vh-100px)]">
-                          <SessionChat
-                            sessionId={session.id}
-                            eventId={event.id}
-                            className="h-full border-0 shadow-none rounded-none"
-                            initialChatOpen={isChatOpen}
-                            isOrganizer={true}
-                          />
-                        </div>
-                      </SheetContent>
-                    </Sheet>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">Allow Chat</span>
+                                <Switch
+                                  checked={isChatOpen}
+                                  onCheckedChange={handleToggleChat}
+                                  disabled={togglingChat}
+                                  aria-label="Toggle chat"
+                                />
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setChatDialogOpen(false)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          {/* Chat Content */}
+                          <div className="flex-1 min-h-0 overflow-hidden">
+                            <SessionChat
+                              sessionId={session.id}
+                              eventId={event.id}
+                              className="h-full border-0 shadow-none rounded-none"
+                              initialChatOpen={isChatOpen}
+                              isOrganizer={true}
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   )}
 
                   {/* Q&A Button */}
                   {qaEnabled && (
-                    <Sheet>
+                    <>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <SheetTrigger asChild>
-                            <Button
-                              variant={isQaOpen ? "default" : "ghost"}
-                              size="sm"
-                              className={cn(
-                                "h-8 px-2 sm:px-3 gap-1.5 transition-colors",
-                                isQaOpen && "bg-green-600 hover:bg-green-700 text-white"
-                              )}
-                            >
-                              <HelpCircle className="h-4 w-4" />
-                              <span className="hidden sm:inline text-xs">Q&A</span>
-                              {isQaOpen && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
-                              )}
-                            </Button>
-                          </SheetTrigger>
+                          <Button
+                            variant={isQaOpen ? "default" : "ghost"}
+                            size="sm"
+                            className={cn(
+                              "h-8 px-2 sm:px-3 gap-1.5 transition-colors",
+                              isQaOpen && "bg-green-600 hover:bg-green-700 text-white"
+                            )}
+                            onClick={() => setQaDialogOpen(true)}
+                          >
+                            <HelpCircle className="h-4 w-4" />
+                            <span className="hidden sm:inline text-xs">Q&A</span>
+                            {isQaOpen && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
+                            )}
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="sm:hidden">
                           <p>Q&A {isQaOpen ? "(Open)" : "(Closed)"}</p>
                         </TooltipContent>
                       </Tooltip>
-                      <SheetContent className="w-full sm:max-w-lg p-0">
-                        <SheetHeader className="px-6 pt-6 pb-2 border-b">
-                          <SheetTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <HelpCircle className="h-5 w-5" />
-                              <span className="truncate">{session.title} - Q&A</span>
-                            </div>
-                            <div className="flex items-center gap-2">
+                      <Dialog open={qaDialogOpen} onOpenChange={setQaDialogOpen}>
+                        <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+                          {/* Header */}
+                          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+                            <div className="flex items-center gap-3">
+                              <HelpCircle className="h-5 w-5 text-primary" />
+                              <span className="font-medium truncate">{session.title} - Q&A</span>
                               <Badge variant={isQaOpen ? "default" : "secondary"} className={cn(isQaOpen && "bg-green-600")}>
                                 {isQaOpen ? "Open" : "Closed"}
                               </Badge>
-                              <Switch
-                                checked={isQaOpen}
-                                onCheckedChange={handleToggleQa}
-                                disabled={togglingQa}
-                                aria-label="Toggle Q&A"
-                              />
                             </div>
-                          </SheetTitle>
-                        </SheetHeader>
-                        <div className="h-[calc(100vh-100px)]">
-                          <SessionQA
-                            sessionId={session.id}
-                            eventId={event.id}
-                            isOrganizer={true}
-                            isSpeaker={false}
-                            className="h-full border-0 shadow-none rounded-none"
-                            initialQaOpen={isQaOpen}
-                          />
-                        </div>
-                      </SheetContent>
-                    </Sheet>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">Allow Q&A</span>
+                                <Switch
+                                  checked={isQaOpen}
+                                  onCheckedChange={handleToggleQa}
+                                  disabled={togglingQa}
+                                  aria-label="Toggle Q&A"
+                                />
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setQaDialogOpen(false)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          {/* Q&A Content */}
+                          <div className="flex-1 min-h-0 overflow-auto">
+                            <SessionQA
+                              sessionId={session.id}
+                              eventId={event.id}
+                              isOrganizer={true}
+                              isSpeaker={false}
+                              className="h-full border-0 shadow-none rounded-none"
+                              initialQaOpen={isQaOpen}
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   )}
 
                   {/* Polls Button */}
                   {pollsEnabled && (
-                    <Sheet>
+                    <>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <SheetTrigger asChild>
-                            <Button
-                              variant={isPollsOpen ? "default" : "ghost"}
-                              size="sm"
-                              className={cn(
-                                "h-8 px-2 sm:px-3 gap-1.5 transition-colors",
-                                isPollsOpen && "bg-green-600 hover:bg-green-700 text-white"
-                              )}
-                            >
-                              <BarChart3 className="h-4 w-4" />
-                              <span className="hidden sm:inline text-xs">Polls</span>
-                              {isPollsOpen && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
-                              )}
-                            </Button>
-                          </SheetTrigger>
+                          <Button
+                            variant={isPollsOpen ? "default" : "ghost"}
+                            size="sm"
+                            className={cn(
+                              "h-8 px-2 sm:px-3 gap-1.5 transition-colors",
+                              isPollsOpen && "bg-green-600 hover:bg-green-700 text-white"
+                            )}
+                            onClick={() => setPollsDialogOpen(true)}
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                            <span className="hidden sm:inline text-xs">Polls</span>
+                            {isPollsOpen && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
+                            )}
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="sm:hidden">
                           <p>Polls {isPollsOpen ? "(Open)" : "(Closed)"}</p>
                         </TooltipContent>
                       </Tooltip>
-                      <SheetContent className="w-full sm:max-w-lg p-0">
-                        <SheetHeader className="px-6 pt-6 pb-2 border-b">
-                          <SheetTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <BarChart3 className="h-5 w-5" />
-                              <span className="truncate">{session.title} - Polls</span>
-                            </div>
-                            <div className="flex items-center gap-2">
+                      <Dialog open={pollsDialogOpen} onOpenChange={setPollsDialogOpen}>
+                        <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+                          {/* Header */}
+                          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+                            <div className="flex items-center gap-3">
+                              <BarChart3 className="h-5 w-5 text-primary" />
+                              <span className="font-medium truncate">{session.title} - Polls</span>
                               <Badge variant={isPollsOpen ? "default" : "secondary"} className={cn(isPollsOpen && "bg-green-600")}>
                                 {isPollsOpen ? "Open" : "Closed"}
                               </Badge>
-                              <Switch
-                                checked={isPollsOpen}
-                                onCheckedChange={handleTogglePolls}
-                                disabled={togglingPolls}
-                                aria-label="Toggle Polls"
-                              />
                             </div>
-                          </SheetTitle>
-                        </SheetHeader>
-                        <div className="h-[calc(100vh-100px)]">
-                          <SessionPolls
-                            sessionId={session.id}
-                            eventId={event.id}
-                            isOrganizer={true}
-                            isSpeaker={false}
-                            className="h-full border-0 shadow-none rounded-none"
-                            initialPollsOpen={isPollsOpen}
-                          />
-                        </div>
-                      </SheetContent>
-                    </Sheet>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">Allow Polls</span>
+                                <Switch
+                                  checked={isPollsOpen}
+                                  onCheckedChange={handleTogglePolls}
+                                  disabled={togglingPolls}
+                                  aria-label="Toggle Polls"
+                                />
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setPollsDialogOpen(false)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          {/* Polls Content */}
+                          <div className="flex-1 min-h-0 overflow-auto">
+                            <SessionPolls
+                              sessionId={session.id}
+                              eventId={event.id}
+                              isOrganizer={true}
+                              isSpeaker={false}
+                              className="h-full border-0 shadow-none rounded-none"
+                              initialPollsOpen={isPollsOpen}
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   )}
                 </div>
               </TooltipProvider>

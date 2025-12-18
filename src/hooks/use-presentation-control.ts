@@ -18,10 +18,10 @@ export type ContentDropType = "LINK" | "FILE" | "RESOURCE";
 
 // Slide state from server
 export interface SlideState {
-  currentSlide: number;
-  totalSlides: number;
-  isActive: boolean;
-  slideUrls?: string[];
+  currentSlide: number;    // 1-indexed (starts at 1, NOT 0)
+  totalSlides: number;     // Total number of slides
+  isActive: boolean;       // true = live, false = ended/not started
+  slideUrls: string[];     // Array of slide image URLs (always provided by backend)
 }
 
 // Dropped content from presenter
@@ -57,6 +57,10 @@ export const usePresentationControl = (
   canControl: boolean = false
 ) => {
   const socketRef = useRef<Socket | null>(null);
+  // Use a ref to track canControl - this ensures callbacks always read the latest value
+  // instead of a stale closure value from when the callback was created
+  const canControlRef = useRef(canControl);
+
   const [state, setState] = useState<PresentationControlState>({
     isConnected: false,
     isJoined: false,
@@ -67,6 +71,19 @@ export const usePresentationControl = (
     isControlling: canControl,
   });
   const { token } = useAuthStore();
+
+  // Keep the ref in sync with the prop (this runs synchronously on every render)
+  canControlRef.current = canControl;
+
+  // Sync isControlling state with canControl prop (for UI reactivity)
+  useEffect(() => {
+    setState((prev) => {
+      if (prev.isControlling !== canControl) {
+        return { ...prev, isControlling: canControl };
+      }
+      return prev;
+    });
+  }, [canControl]);
 
   // Socket connection and event handling
   useEffect(() => {
@@ -97,26 +114,43 @@ export const usePresentationControl = (
       newSocket.emit(
         "session.join",
         { sessionId, eventId },
-        (response: { success: boolean; error?: { message: string } }) => {
+        (response: {
+          success: boolean;
+          error?: { message: string };
+          session?: {
+            chatEnabled?: boolean;
+            qaEnabled?: boolean;
+            pollsEnabled?: boolean;
+            reactionsEnabled?: boolean;
+          };
+          presentationState?: SlideState;  // Backend includes this in join response
+        }) => {
           if (response?.success) {
-            setState((prev) => ({ ...prev, isJoined: true }));
+            setState((prev) => ({
+              ...prev,
+              isJoined: true,
+              // Use presentationState from join response if available
+              slideState: response.presentationState || prev.slideState,
+            }));
 
-            // Request current presentation state
-            newSocket.emit(
-              "content.request_state",
-              { sessionId },
-              (stateResponse: {
-                success: boolean;
-                state?: SlideState & { slideUrls?: string[] };
-              }) => {
-                if (stateResponse?.success && stateResponse.state) {
-                  setState((prev) => ({
-                    ...prev,
-                    slideState: stateResponse.state!,
-                  }));
+            // Only request state if not provided in join response
+            if (!response.presentationState) {
+              newSocket.emit(
+                "content.request_state",
+                { sessionId },
+                (stateResponse: {
+                  success: boolean;
+                  state?: SlideState;
+                }) => {
+                  if (stateResponse?.success && stateResponse.state) {
+                    setState((prev) => ({
+                      ...prev,
+                      slideState: stateResponse.state!,
+                    }));
+                  }
                 }
-              }
-            );
+              );
+            }
           } else {
             setState((prev) => ({
               ...prev,
@@ -177,12 +211,10 @@ export const usePresentationControl = (
 
     // Error handling
     newSocket.on("systemError", (error: { message: string }) => {
-      console.error("[Presentation] System error:", error.message);
       setState((prev) => ({ ...prev, error: error.message }));
     });
 
     newSocket.on("connect_error", (error) => {
-      console.error("[Presentation] Connection error:", error.message);
       setState((prev) => ({ ...prev, error: error.message }));
     });
 
@@ -209,19 +241,31 @@ export const usePresentationControl = (
       targetSlide?: number
     ): Promise<{ success: boolean; newState?: SlideState; error?: string }> => {
       return new Promise((resolve) => {
+        // Use ref for canControl to get the latest value (avoids stale closure issue)
+        const currentCanControl = canControlRef.current;
+
         if (!socketRef.current || !state.isJoined) {
           resolve({ success: false, error: "Not connected" });
           return;
         }
 
-        if (!state.isControlling) {
+        if (!currentCanControl) {
           resolve({ success: false, error: "Not authorized to control" });
           return;
         }
 
-        const payload: { sessionId: string; action: ContentAction; targetSlide?: number } = {
+        // Generate unique idempotencyKey for each action (required by backend)
+        const idempotencyKey = crypto.randomUUID();
+
+        const payload: {
+          sessionId: string;
+          action: ContentAction;
+          targetSlide?: number;
+          idempotencyKey: string;
+        } = {
           sessionId,
           action,
+          idempotencyKey,
         };
 
         if (action === "GO_TO_SLIDE" && targetSlide !== undefined) {
@@ -247,7 +291,7 @@ export const usePresentationControl = (
         );
       });
     },
-    [sessionId, state.isJoined, state.isControlling]
+    [sessionId, state.isJoined] // Note: canControlRef is a ref, doesn't need to be a dependency
   );
 
   // Next slide
@@ -292,7 +336,8 @@ export const usePresentationControl = (
           return;
         }
 
-        if (!state.isControlling) {
+        // Use ref to get latest canControl value
+        if (!canControlRef.current) {
           resolve({ success: false, error: "Not authorized" });
           return;
         }
@@ -306,7 +351,7 @@ export const usePresentationControl = (
         );
       });
     },
-    [state.isJoined, state.isControlling]
+    [state.isJoined]
   );
 
   // Request current state (for syncing)

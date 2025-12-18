@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Calendar, Bell, RefreshCw } from "lucide-react";
+import { Calendar } from "lucide-react";
 
 interface LiveAgendaContainerProps {
   eventId: string;

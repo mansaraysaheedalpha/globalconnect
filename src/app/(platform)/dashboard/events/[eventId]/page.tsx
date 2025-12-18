@@ -9,6 +9,12 @@ import {
   GET_ATTENDEES_BY_EVENT_QUERY,
 } from "@/graphql/events.graphql";
 import { Loader } from "lucide-react";
+import {
+  PageLoadingSkeleton,
+  StatsCardSkeleton,
+  ShimmerSkeleton,
+  SessionCardSkeleton,
+} from "@/components/ui/skeleton-patterns";
 import { EventDetailHeader } from "../_components/event-detail-header";
 import { EventDetailsCard } from "../_components/event-details-card";
 import { SessionList } from "./_components/session-list";
@@ -17,6 +23,7 @@ import { LiveDashboard } from "./_components/live-dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangleIcon } from "lucide-react";
+import { ErrorState, QueryErrorHandler } from "@/components/ui/error-boundary";
 import { EventHistoryTimeline } from "./_components/event-history-timeline";
 import { LiveAgendaContainer } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
@@ -53,22 +60,53 @@ export default function EventDetailPage() {
 
   if (eventLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
+      <div className="p-6 animate-fade-in">
+        {/* Header skeleton */}
+        <div className="mb-6 space-y-4">
+          <ShimmerSkeleton className="h-10 w-64" />
+          <div className="flex gap-2">
+            <ShimmerSkeleton className="h-6 w-20 rounded-full" />
+            <ShimmerSkeleton className="h-6 w-24 rounded-full" />
+          </div>
+        </div>
+
+        {/* Tabs skeleton */}
+        <ShimmerSkeleton className="h-10 w-96 mb-6 rounded-md" />
+
+        {/* Main content grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            {/* Stats cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <StatsCardSkeleton key={i} />
+              ))}
+            </div>
+            {/* Session list skeleton */}
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <SessionCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+          {/* Sidebar skeleton */}
+          <div className="space-y-4">
+            <ShimmerSkeleton className="h-64 rounded-lg" />
+            <ShimmerSkeleton className="h-48 rounded-lg" />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (eventError || !eventData?.event) {
     return (
-      <Alert variant="destructive" className="max-w-2xl mx-auto mt-6">
-        <AlertTriangleIcon className="h-4 w-4" />
-        <AlertTitle>Error Loading Event</AlertTitle>
-        <AlertDescription>
-          {eventError?.message ||
-            "The event could not be found. It may have been deleted."}
-        </AlertDescription>
-      </Alert>
+      <div className="p-6">
+        <QueryErrorHandler
+          error={eventError || new Error("Event not found")}
+          onRetry={() => refetchEvent()}
+        />
+      </div>
     );
   }
 

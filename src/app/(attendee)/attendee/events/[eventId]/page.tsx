@@ -8,14 +8,23 @@ import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  EventHeaderSkeleton,
+  SessionCardSkeleton,
+  ShimmerSkeleton,
+} from "@/components/ui/skeleton-patterns";
+import { NotFoundError } from "@/components/ui/error-boundary";
+import {
+  PageTransition,
+  StaggerContainer,
+  StaggerItem,
+  PremiumCard,
+  SectionHeader,
+} from "@/components/ui/premium-components";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import {
   CalendarDays,
   MapPin,
@@ -112,11 +121,295 @@ const getSessionStatusBadge = (status: string) => {
   }
 };
 
+// Dialog wrapper for Chat (full-screen modal)
+const AttendeeChatDialog = ({
+  session,
+  eventId,
+  liveChatOpen,
+  setLiveChatOpen,
+}: {
+  session: Session;
+  eventId: string;
+  liveChatOpen: boolean;
+  setLiveChatOpen: (open: boolean) => void;
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="outline"
+        size="sm"
+        className={`gap-1.5 ${!liveChatOpen ? "opacity-60" : ""}`}
+        onClick={() => setIsOpen(true)}
+      >
+        {liveChatOpen ? (
+          <Unlock className="h-4 w-4 text-green-600" />
+        ) : (
+          <Lock className="h-4 w-4 text-muted-foreground" />
+        )}
+        <MessageSquare className="h-4 w-4" />
+        Chat
+        {liveChatOpen && (
+          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+            Open
+          </Badge>
+        )}
+      </Button>
+      <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <span className="font-medium">{session.title} - Chat</span>
+            <Badge variant={liveChatOpen ? "default" : "secondary"} className={liveChatOpen ? "bg-green-500/10 text-green-600" : ""}>
+              {liveChatOpen ? "Open" : "Closed"}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Chat Content - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <SessionChat
+            sessionId={session.id}
+            eventId={eventId}
+            className="h-full border-0 shadow-none rounded-none"
+            initialChatOpen={liveChatOpen}
+            onStatusChange={setLiveChatOpen}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Dialog wrapper for Q&A (full-screen modal)
+const AttendeeQADialog = ({
+  session,
+  eventId,
+  liveQaOpen,
+  setLiveQaOpen,
+}: {
+  session: Session;
+  eventId: string;
+  liveQaOpen: boolean;
+  setLiveQaOpen: (open: boolean) => void;
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="outline"
+        size="sm"
+        className={`gap-1.5 ${!liveQaOpen ? "opacity-60" : ""}`}
+        onClick={() => setIsOpen(true)}
+      >
+        {liveQaOpen ? (
+          <Unlock className="h-4 w-4 text-green-600" />
+        ) : (
+          <Lock className="h-4 w-4 text-muted-foreground" />
+        )}
+        <HelpCircle className="h-4 w-4" />
+        Q&A
+        {liveQaOpen && (
+          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+            Open
+          </Badge>
+        )}
+      </Button>
+      <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-3">
+            <HelpCircle className="h-5 w-5 text-primary" />
+            <span className="font-medium">{session.title} - Q&A</span>
+            <Badge variant={liveQaOpen ? "default" : "secondary"} className={liveQaOpen ? "bg-green-500/10 text-green-600" : ""}>
+              {liveQaOpen ? "Open" : "Closed"}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Q&A Content - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-auto">
+          <SessionQA
+            sessionId={session.id}
+            eventId={eventId}
+            isOrganizer={false}
+            isSpeaker={false}
+            className="h-full border-0 shadow-none rounded-none"
+            initialQaOpen={liveQaOpen}
+            onStatusChange={setLiveQaOpen}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Dialog wrapper for Polls (full-screen modal)
+const AttendeePollsDialog = ({
+  session,
+  eventId,
+  livePollsOpen,
+  setLivePollsOpen,
+}: {
+  session: Session;
+  eventId: string;
+  livePollsOpen: boolean;
+  setLivePollsOpen: (open: boolean) => void;
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="outline"
+        size="sm"
+        className={`gap-1.5 ${!livePollsOpen ? "opacity-60" : ""}`}
+        onClick={() => setIsOpen(true)}
+      >
+        {livePollsOpen ? (
+          <Unlock className="h-4 w-4 text-green-600" />
+        ) : (
+          <Lock className="h-4 w-4 text-muted-foreground" />
+        )}
+        <BarChart3 className="h-4 w-4" />
+        Polls
+        {livePollsOpen && (
+          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+            Open
+          </Badge>
+        )}
+      </Button>
+      <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <span className="font-medium">{session.title} - Polls</span>
+            <Badge variant={livePollsOpen ? "default" : "secondary"} className={livePollsOpen ? "bg-green-500/10 text-green-600" : ""}>
+              {livePollsOpen ? "Open" : "Closed"}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Polls Content - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-auto">
+          <SessionPolls
+            sessionId={session.id}
+            eventId={eventId}
+            isOrganizer={false}
+            isSpeaker={false}
+            className="h-full border-0 shadow-none rounded-none"
+            initialPollsOpen={livePollsOpen}
+            onStatusChange={setLivePollsOpen}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Dialog wrapper for presentation (full-screen like organizer's view)
+const AttendeePresentationDialog = ({
+  session,
+  eventId,
+  livePresentationActive,
+  setLivePresentationActive,
+}: {
+  session: Session;
+  eventId: string;
+  livePresentationActive: boolean;
+  setLivePresentationActive: (active: boolean) => void;
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="outline"
+        size="sm"
+        className={`gap-1.5 ${!livePresentationActive ? "opacity-60" : ""}`}
+        onClick={() => setIsOpen(true)}
+      >
+        {livePresentationActive ? (
+          <Unlock className="h-4 w-4 text-green-600" />
+        ) : (
+          <Lock className="h-4 w-4 text-muted-foreground" />
+        )}
+        <Presentation className="h-4 w-4" />
+        Slides
+        {livePresentationActive && (
+          <Badge className="ml-1 bg-red-600 text-white text-[10px] px-1.5 py-0 h-4 animate-pulse">
+            LIVE
+          </Badge>
+        )}
+      </Button>
+      <DialogContent className="!max-w-[98vw] !w-[98vw] !h-[90vh] p-0 gap-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-950">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40">
+          <div className="flex items-center gap-3">
+            <Presentation className="h-5 w-5 text-white/70" />
+            <span className="font-medium text-white">{session.title} - Presentation</span>
+            {livePresentationActive && (
+              <Badge className="bg-red-600 text-white animate-pulse">LIVE</Badge>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Presentation Content - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-auto">
+          <AttendeePresentation
+            sessionId={session.id}
+            eventId={eventId}
+            sessionTitle={session.title}
+            onStatusChange={setLivePresentationActive}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Separate component for attendee presentation viewer (hooks need stable component)
-const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
+const AttendeePresentation = ({ sessionId, eventId, sessionTitle, onStatusChange }: {
   sessionId: string;
   eventId: string;
   sessionTitle: string;
+  onStatusChange?: (isActive: boolean) => void;
 }) => {
   const {
     slideState,
@@ -126,6 +419,13 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
     error,
     clearDroppedContent,
   } = usePresentationControl(sessionId, eventId, false); // canControl = false for attendees
+
+  // Notify parent when presentation status changes
+  React.useEffect(() => {
+    if (slideState?.isActive !== undefined && onStatusChange) {
+      onStatusChange(slideState.isActive);
+    }
+  }, [slideState?.isActive, onStatusChange]);
 
   return (
     <div className="h-full flex flex-col">
@@ -204,8 +504,13 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   }, [session.presentationActive]);
 
   return (
-    <Card className={`overflow-hidden transition-all ${isLive ? "ring-2 ring-green-500/20" : ""}`}>
-      <CardContent className="p-4">
+    <PremiumCard
+      variant={isLive ? "glow" : "elevated"}
+      padding="none"
+      hover={!isEnded ? "lift" : "none"}
+      className={`overflow-hidden ${isLive ? "ring-2 ring-green-500/20 border-green-500/30" : ""}`}
+    >
+      <div className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
@@ -232,187 +537,53 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
             </div>
           </div>
 
-          {/* Chat & Q&A Buttons - show if features are enabled (not ended sessions) */}
+          {/* Interactive Features - show if features are enabled (not ended sessions) */}
           {!isEnded && hasInteractiveFeatures && (
             <div className="flex flex-col gap-2">
               {/* Session Chat */}
               {chatEnabled && (
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`gap-1.5 ${!liveChatOpen ? "opacity-60" : ""}`}
-                    >
-                      {liveChatOpen ? (
-                        <Unlock className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <MessageSquare className="h-4 w-4" />
-                      Chat
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="w-full sm:max-w-lg p-0">
-                    <SheetHeader className="px-6 pt-6 pb-2">
-                      <SheetTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="h-5 w-5" />
-                          {session.title} - Chat
-                        </div>
-                        <Badge variant={liveChatOpen ? "default" : "secondary"} className={liveChatOpen ? "bg-green-500/10 text-green-600" : ""}>
-                          {liveChatOpen ? "Open" : "Closed"}
-                        </Badge>
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="h-[calc(100vh-100px)]">
-                      <SessionChat
-                        sessionId={session.id}
-                        eventId={eventId}
-                        className="h-full border-0 shadow-none rounded-none"
-                        initialChatOpen={liveChatOpen}
-                        onStatusChange={setLiveChatOpen}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                <AttendeeChatDialog
+                  session={session}
+                  eventId={eventId}
+                  liveChatOpen={liveChatOpen}
+                  setLiveChatOpen={setLiveChatOpen}
+                />
               )}
 
               {/* Session Q&A */}
               {qaEnabled && (
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`gap-1.5 ${!liveQaOpen ? "opacity-60" : ""}`}
-                    >
-                      {liveQaOpen ? (
-                        <Unlock className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <HelpCircle className="h-4 w-4" />
-                      Q&A
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="w-full sm:max-w-lg p-0">
-                    <SheetHeader className="px-6 pt-6 pb-2">
-                      <SheetTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <HelpCircle className="h-5 w-5" />
-                          {session.title} - Q&A
-                        </div>
-                        <Badge variant={liveQaOpen ? "default" : "secondary"} className={liveQaOpen ? "bg-green-500/10 text-green-600" : ""}>
-                          {liveQaOpen ? "Open" : "Closed"}
-                        </Badge>
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="h-[calc(100vh-100px)]">
-                      <SessionQA
-                        sessionId={session.id}
-                        eventId={eventId}
-                        isOrganizer={false}
-                        isSpeaker={false}
-                        className="h-full border-0 shadow-none rounded-none"
-                        initialQaOpen={liveQaOpen}
-                        onStatusChange={setLiveQaOpen}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                <AttendeeQADialog
+                  session={session}
+                  eventId={eventId}
+                  liveQaOpen={liveQaOpen}
+                  setLiveQaOpen={setLiveQaOpen}
+                />
               )}
 
               {/* Session Polls */}
               {pollsEnabled && (
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`gap-1.5 ${!livePollsOpen ? "opacity-60" : ""}`}
-                    >
-                      {livePollsOpen ? (
-                        <Unlock className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <BarChart3 className="h-4 w-4" />
-                      Polls
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="w-full sm:max-w-lg p-0">
-                    <SheetHeader className="px-6 pt-6 pb-2">
-                      <SheetTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <BarChart3 className="h-5 w-5" />
-                          {session.title} - Polls
-                        </div>
-                        <Badge variant={livePollsOpen ? "default" : "secondary"} className={livePollsOpen ? "bg-green-500/10 text-green-600" : ""}>
-                          {livePollsOpen ? "Open" : "Closed"}
-                        </Badge>
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="h-[calc(100vh-100px)]">
-                      <SessionPolls
-                        sessionId={session.id}
-                        eventId={eventId}
-                        isOrganizer={false}
-                        isSpeaker={false}
-                        className="h-full border-0 shadow-none rounded-none"
-                        initialPollsOpen={livePollsOpen}
-                        onStatusChange={setLivePollsOpen}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                <AttendeePollsDialog
+                  session={session}
+                  eventId={eventId}
+                  livePollsOpen={livePollsOpen}
+                  setLivePollsOpen={setLivePollsOpen}
+                />
               )}
 
-              {/* Session Presentation - View Only for Attendees */}
+              {/* Session Presentation */}
               {presentationEnabled && (
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`gap-1.5 ${!livePresentationActive ? "opacity-60" : ""}`}
-                    >
-                      {livePresentationActive ? (
-                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      ) : (
-                        <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-                      )}
-                      <Presentation className="h-4 w-4" />
-                      Slides
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="w-full sm:max-w-2xl p-0">
-                    <SheetHeader className="px-6 pt-6 pb-2">
-                      <SheetTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Presentation className="h-5 w-5" />
-                          {session.title} - Presentation
-                        </div>
-                        <Badge variant={livePresentationActive ? "default" : "secondary"} className={livePresentationActive ? "bg-green-500/10 text-green-600" : ""}>
-                          {livePresentationActive ? "Live" : "Not Started"}
-                        </Badge>
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="h-[calc(100vh-100px)] relative">
-                      <AttendeePresentation
-                        sessionId={session.id}
-                        eventId={eventId}
-                        sessionTitle={session.title}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                <AttendeePresentationDialog
+                  session={session}
+                  eventId={eventId}
+                  livePresentationActive={livePresentationActive}
+                  setLivePresentationActive={setLivePresentationActive}
+                />
               )}
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </PremiumCard>
   );
 };
 
@@ -427,13 +598,23 @@ export default function AttendeeEventPage() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
-        <Skeleton className="h-8 w-32 mb-6" />
-        <Skeleton className="h-64 w-full rounded-lg mb-6" />
-        <Skeleton className="h-8 w-48 mb-4" />
+      <div className="p-6 max-w-5xl mx-auto animate-fade-in">
+        {/* Back button skeleton */}
+        <ShimmerSkeleton className="h-9 w-36 mb-6 rounded-md" />
+
+        {/* Event header skeleton */}
+        <EventHeaderSkeleton className="mb-8" />
+
+        {/* Sessions header */}
+        <div className="flex items-center justify-between mb-4">
+          <ShimmerSkeleton className="h-7 w-32" />
+          <ShimmerSkeleton className="h-5 w-24" />
+        </div>
+
+        {/* Session cards skeleton */}
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            <SessionCardSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -449,15 +630,11 @@ export default function AttendeeEventPage() {
             Back to My Events
           </Button>
         </Link>
-        <Card className="border-destructive">
-          <CardContent className="pt-6 text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <p className="text-destructive font-semibold">Event Not Found</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              This event may not exist or you don't have access to it.
-            </p>
-          </CardContent>
-        </Card>
+        <NotFoundError
+          resource="event"
+          onGoBack={() => window.history.back()}
+          onGoHome={() => window.location.href = "/attendee"}
+        />
       </div>
     );
   }
@@ -478,26 +655,28 @@ export default function AttendeeEventPage() {
   // Check if user is registered
   if (!registration) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
+      <PageTransition className="p-6 max-w-5xl mx-auto">
         <Link href="/attendee">
-          <Button variant="ghost" className="mb-4 gap-2">
+          <Button variant="ghost" className="mb-4 gap-2 hover:-translate-x-1 transition-transform">
             <ArrowLeft className="h-4 w-4" />
             Back to My Events
           </Button>
         </Link>
-        <Card className="border-yellow-500/50">
-          <CardContent className="pt-6 text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
-            <p className="font-semibold">Not Registered</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              You need to register for this event to access its features.
-            </p>
-            <Link href={`/events/${eventId}`}>
-              <Button className="mt-4">View Event & Register</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+        <PremiumCard variant="elevated" padding="lg" className="border-yellow-500/30 text-center">
+          <div className="p-3 w-fit mx-auto rounded-full bg-yellow-500/10 mb-4">
+            <AlertTriangle className="h-12 w-12 text-yellow-500" />
+          </div>
+          <h3 className="text-xl font-semibold">Not Registered</h3>
+          <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
+            You need to register for this event to access its features.
+          </p>
+          <Link href={`/events/${eventId}`}>
+            <Button variant="premium" size="lg" className="mt-6">
+              View Event & Register
+            </Button>
+          </Link>
+        </PremiumCard>
+      </PageTransition>
     );
   }
 
@@ -512,17 +691,17 @@ export default function AttendeeEventPage() {
   const endedSessions = sortedSessions.filter((s) => s.status === "ENDED");
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <PageTransition className="p-6 max-w-5xl mx-auto">
       {/* Back Button */}
       <Link href="/attendee">
-        <Button variant="ghost" className="mb-4 gap-2">
+        <Button variant="ghost" className="mb-4 gap-2 hover:-translate-x-1 transition-transform">
           <ArrowLeft className="h-4 w-4" />
           Back to My Events
         </Button>
       </Link>
 
       {/* Event Header */}
-      <Card className="overflow-hidden mb-6">
+      <PremiumCard variant="elevated" padding="none" className="overflow-hidden mb-6">
         <div className="relative h-48 md:h-64">
           {event.imageUrl ? (
             <Image
@@ -542,111 +721,130 @@ export default function AttendeeEventPage() {
           </div>
         </div>
 
-        <CardContent className="p-4 md:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3">
-              <CalendarDays className="h-5 w-5 text-primary" />
+        <div className="p-4 md:p-6">
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <CalendarDays className="h-5 w-5 text-primary" />
+              </div>
               <div>
-                <p className="text-sm text-muted-foreground">Date</p>
-                <p className="font-medium">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Date</p>
+                <p className="font-semibold">
                   {format(new Date(event.startDate), "MMM d, yyyy")}
                 </p>
               </div>
-            </div>
+            </StaggerItem>
 
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-primary" />
+            <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Clock className="h-5 w-5 text-primary" />
+              </div>
               <div>
-                <p className="text-sm text-muted-foreground">Time</p>
-                <p className="font-medium">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Time</p>
+                <p className="font-semibold">
                   {format(new Date(event.startDate), "h:mm a")}
                 </p>
               </div>
-            </div>
+            </StaggerItem>
 
             {event.venue && (
-              <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Venue</p>
-                  <p className="font-medium">{event.venue.name}</p>
+              <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <MapPin className="h-5 w-5 text-primary" />
                 </div>
-              </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Venue</p>
+                  <p className="font-semibold">{event.venue.name}</p>
+                </div>
+              </StaggerItem>
             )}
 
-            <div className="flex items-center gap-3">
-              <Ticket className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Ticket</p>
-                <p className="font-mono font-medium">{registration.ticketCode}</p>
+            <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Ticket className="h-5 w-5 text-primary" />
               </div>
-            </div>
-          </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Ticket</p>
+                <p className="font-mono font-semibold">{registration.ticketCode}</p>
+              </div>
+            </StaggerItem>
+          </StaggerContainer>
 
           {registration.checkedInAt && (
-            <div className="mt-4 flex items-center gap-2 text-green-600">
+            <div className="mt-4 flex items-center gap-2 text-green-600 bg-green-500/10 px-4 py-2 rounded-lg w-fit">
               <CheckCircle className="h-5 w-5" />
               <span className="text-sm font-medium">
                 Checked in at {format(new Date(registration.checkedInAt), "h:mm a")}
               </span>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </PremiumCard>
 
       {/* Sessions */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Live Sessions */}
         {liveSessions.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              Live Now
-            </h2>
-            <div className="space-y-3">
-              {liveSessions.map((session) => (
-                <SessionCard key={session.id} session={session} eventId={eventId} />
+            <SectionHeader
+              title="Live Now"
+              subtitle="Currently happening sessions"
+              className="mb-4"
+            />
+            <StaggerContainer className="space-y-3">
+              {liveSessions.map((session, index) => (
+                <StaggerItem key={session.id}>
+                  <SessionCard session={session} eventId={eventId} />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </section>
         )}
 
         {/* Upcoming Sessions */}
         {upcomingSessions.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold mb-4">Upcoming Sessions</h2>
-            <div className="space-y-3">
-              {upcomingSessions.map((session) => (
-                <SessionCard key={session.id} session={session} eventId={eventId} />
+            <SectionHeader
+              title="Upcoming Sessions"
+              subtitle={`${upcomingSessions.length} session${upcomingSessions.length > 1 ? 's' : ''} scheduled`}
+              className="mb-4"
+            />
+            <StaggerContainer className="space-y-3">
+              {upcomingSessions.map((session, index) => (
+                <StaggerItem key={session.id}>
+                  <SessionCard session={session} eventId={eventId} />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </section>
         )}
 
         {/* Ended Sessions */}
         {endedSessions.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold mb-4 text-muted-foreground">
-              Past Sessions
-            </h2>
-            <div className="space-y-3 opacity-60">
-              {endedSessions.map((session) => (
-                <SessionCard key={session.id} session={session} eventId={eventId} />
+          <section className="opacity-70">
+            <SectionHeader
+              title="Past Sessions"
+              subtitle="Completed sessions"
+              className="mb-4"
+            />
+            <StaggerContainer className="space-y-3">
+              {endedSessions.map((session, index) => (
+                <StaggerItem key={session.id}>
+                  <SessionCard session={session} eventId={eventId} />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </section>
         )}
 
         {sessions.length === 0 && (
-          <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold">No Sessions Yet</h3>
-              <p className="text-muted-foreground mt-2">
-                The event schedule hasn't been published yet.
-              </p>
-            </CardContent>
-          </Card>
+          <PremiumCard variant="outline" padding="lg" className="border-dashed text-center">
+            <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold">No Sessions Yet</h3>
+            <p className="text-muted-foreground mt-2">
+              The event schedule hasn't been published yet.
+            </p>
+          </PremiumCard>
         )}
       </div>
 
@@ -691,6 +889,6 @@ export default function AttendeeEventPage() {
         eventId={eventId}
         position="bottom-left"
       />
-    </div>
+    </PageTransition>
   );
 }

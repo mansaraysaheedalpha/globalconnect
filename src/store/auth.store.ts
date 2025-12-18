@@ -9,6 +9,7 @@ interface User {
   first_name: string;
   last_name: string;
   imageUrl?: string | null;
+  role?: "OWNER" | "ADMIN" | "MEMBER" | null;
 }
 
 // This now correctly expects orgId (camelCase)

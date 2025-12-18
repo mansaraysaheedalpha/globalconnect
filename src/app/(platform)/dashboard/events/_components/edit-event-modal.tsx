@@ -62,8 +62,8 @@ const formSchema = z
   .object({
     name: z.string().min(3, "Event name must be at least 3 characters long."),
     description: z.string().optional(),
-    startDate: z.date({ required_error: "A start date is required." }),
-    endDate: z.date({ required_error: "An end date is required." }),
+    startDate: z.date({ message: "A start date is required." }),
+    endDate: z.date({ message: "An end date is required." }),
     // --- VENUE ID IS NOW CORRECTLY INCLUDED ---
     venueId: z.string().optional(),
     // --- IMAGE URL IS NOW CORRECTLY INCLUDED ---

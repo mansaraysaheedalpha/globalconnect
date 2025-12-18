@@ -1,7 +1,7 @@
 // src/components/features/presentation/slide-viewer.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,15 @@ import {
   Link as LinkIcon,
   Download,
   X,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Radio,
 } from "lucide-react";
 
 interface SlideViewerProps {
   slideState: SlideState | null;
-  slideUrls?: string[];
+  slideUrls?: string[];  // Optional here since slideState.slideUrls is primary source
   isPresenter?: boolean;
   onPrevSlide?: () => void;
   onNextSlide?: () => void;
@@ -45,18 +49,26 @@ export const SlideViewer = ({
 }: SlideViewerProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [zoom, setZoom] = useState(1);
 
+  // Prefer slideUrls from slideState (backend always provides it), fallback to prop
+  const urls = slideState?.slideUrls || slideUrls;
   const currentSlideUrl =
-    slideUrls && slideState
-      ? slideUrls[slideState.currentSlide - 1]
+    urls && slideState
+      ? urls[slideState.currentSlide - 1]
       : undefined;
 
   const progress = slideState
     ? (slideState.currentSlide / slideState.totalSlides) * 100
     : 0;
 
+  // Zoom controls
+  const zoomIn = useCallback(() => setZoom((prev) => Math.min(prev + 0.25, 3)), []);
+  const zoomOut = useCallback(() => setZoom((prev) => Math.max(prev - 0.25, 0.5)), []);
+  const resetZoom = useCallback(() => setZoom(1), []);
+
   // Handle fullscreen
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
       setIsFullscreen(true);
@@ -64,7 +76,7 @@ export const SlideViewer = ({
       document.exitFullscreen();
       setIsFullscreen(false);
     }
-  };
+  }, []);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -76,25 +88,71 @@ export const SlideViewer = ({
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  // Reset image error when slide changes
+  // Reset image error and zoom when slide changes
   useEffect(() => {
     setImageError(false);
   }, [slideState?.currentSlide]);
 
+  // Keyboard navigation for attendees
+  useEffect(() => {
+    if (!slideState?.isActive) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "+":
+        case "=":
+          e.preventDefault();
+          zoomIn();
+          break;
+        case "-":
+          e.preventDefault();
+          zoomOut();
+          break;
+        case "0":
+          e.preventDefault();
+          resetZoom();
+          break;
+        case "f":
+        case "F":
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case "Escape":
+          if (isFullscreen) {
+            setIsFullscreen(false);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [slideState?.isActive, isFullscreen, zoomIn, zoomOut, resetZoom, toggleFullscreen]);
+
+  // Waiting state
   if (!slideState || !slideState.isActive) {
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center bg-muted rounded-lg p-8",
+          "flex flex-col items-center justify-center bg-neutral-900 rounded-lg p-8 h-full",
           className
         )}
       >
-        <ImageIcon className="h-16 w-16 text-muted-foreground/30 mb-4" />
-        <p className="text-muted-foreground text-center">
-          {slideState
-            ? "Presentation has ended"
-            : "Waiting for presentation to start..."}
-        </p>
+        <div className="text-center">
+          <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
+            <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
+          </div>
+          <h3 className="text-lg font-medium text-white/80 mb-2">
+            {slideState
+              ? "Presentation has ended"
+              : "Waiting for presentation to start..."}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {slideState
+              ? "The presenter has ended the live presentation"
+              : "The presenter will start the slides shortly"}
+          </p>
+        </div>
       </div>
     );
   }
@@ -102,102 +160,169 @@ export const SlideViewer = ({
   return (
     <div
       className={cn(
-        "relative flex flex-col bg-black rounded-lg overflow-hidden",
+        "relative flex flex-col bg-neutral-900 rounded-lg overflow-hidden h-full",
         isFullscreen && "fixed inset-0 z-50 rounded-none",
         className
       )}
     >
-      {/* Slide Content */}
-      <div className="relative flex-1 flex items-center justify-center bg-black min-h-[300px]">
-        <AnimatePresence mode="wait">
-          {currentSlideUrl && !imageError ? (
-            <motion.img
-              key={slideState.currentSlide}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02 }}
-              transition={{ duration: 0.3 }}
-              src={currentSlideUrl}
-              alt={`Slide ${slideState.currentSlide}`}
-              className="max-w-full max-h-full object-contain"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center text-white/60"
-            >
-              {imageError ? (
-                <>
-                  <ImageIcon className="h-12 w-12 mb-2" />
-                  <p>Failed to load slide</p>
-                </>
-              ) : (
-                <>
-                  <FileText className="h-12 w-12 mb-2" />
-                  <p>Slide {slideState.currentSlide}</p>
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between py-2 px-3 border-b border-white/10 bg-black/40 flex-shrink-0">
+        {/* Left: Zoom controls */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={zoomOut}
+            disabled={zoom <= 0.5}
+            title="Zoom out (-)"
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-xs text-white/60 w-12 text-center font-mono">
+            {Math.round(zoom * 100)}%
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={zoomIn}
+            disabled={zoom >= 3}
+            title="Zoom in (+)"
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetZoom}
+            title="Reset zoom (0)"
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
 
-        {/* Navigation overlay for presenters */}
-        {isPresenter && (
-          <>
-            <button
-              onClick={onPrevSlide}
-              disabled={slideState.currentSlide <= 1}
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-            <button
-              onClick={onNextSlide}
-              disabled={slideState.currentSlide >= slideState.totalSlides}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          </>
-        )}
-
-        {/* Fullscreen toggle */}
-        <button
-          onClick={toggleFullscreen}
-          className="absolute top-2 right-2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all"
-        >
-          {isFullscreen ? (
-            <Minimize2 className="h-4 w-4" />
-          ) : (
-            <Maximize2 className="h-4 w-4" />
-          )}
-        </button>
-      </div>
-
-      {/* Controls bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-black/80">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="font-mono">
-            {slideState.currentSlide} / {slideState.totalSlides}
+        {/* Center: Slide counter & Live badge */}
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-white/90">
+            Slide {slideState.currentSlide} of {slideState.totalSlides}
+          </span>
+          <Badge variant="default" className="bg-red-600 hover:bg-red-600 gap-1.5 animate-pulse">
+            <Radio className="h-3 w-3" />
+            LIVE
           </Badge>
         </div>
 
-        {/* Progress bar */}
-        <div className="flex-1 mx-4">
-          <Progress value={progress} className="h-1" />
+        {/* Right: Expand/Fullscreen */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleFullscreen}
+            title="Toggle fullscreen (F)"
+            className="text-white/70 hover:text-white hover:bg-white/10 gap-1.5"
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">Exit</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">Expand</span>
+              </>
+            )}
+          </Button>
         </div>
+      </div>
 
-        {/* Slide thumbnails button for presenter */}
-        {isPresenter && onGoToSlide && (
-          <SlideThumbnails
-            currentSlide={slideState.currentSlide}
-            totalSlides={slideState.totalSlides}
-            slideUrls={slideUrls}
-            onSelectSlide={onGoToSlide}
-          />
-        )}
+      {/* Slide Container - Optimized for landscape viewing */}
+      <div className="flex-1 relative overflow-hidden min-h-0 flex bg-black">
+        {/* Scrollable Slide Area */}
+        <div className="flex-1 overflow-auto flex items-center justify-center">
+          <div
+            className="flex items-center justify-center w-full h-full p-2 sm:p-4"
+          >
+            <AnimatePresence mode="wait">
+              {currentSlideUrl && !imageError ? (
+                <motion.img
+                  key={slideState.currentSlide}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.02 }}
+                  transition={{ duration: 0.3 }}
+                  src={currentSlideUrl}
+                  alt={`Slide ${slideState.currentSlide}`}
+                  className="object-contain rounded shadow-2xl"
+                  style={{
+                    width: zoom === 1 ? "100%" : `${zoom * 100}%`,
+                    maxWidth: zoom === 1 ? "100%" : "none",
+                    maxHeight: zoom === 1 ? "100%" : "none",
+                    height: zoom === 1 ? "auto" : "auto",
+                    transition: "all 0.2s ease",
+                  }}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center text-white/60"
+                >
+                  {imageError ? (
+                    <>
+                      <ImageIcon className="h-12 w-12 mb-2" />
+                      <p>Failed to load slide</p>
+                    </>
+                  ) : (
+                    <>
+                      <Loader className="h-8 w-8 animate-spin mb-2" />
+                      <p>Loading slide...</p>
+                    </>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* Slide Thumbnails */}
+      {urls && urls.length > 0 && (
+        <div className="flex gap-2 py-2 px-3 overflow-x-auto flex-shrink-0 border-t border-white/10 bg-black/40">
+          {urls.map((url, index) => (
+            <button
+              key={index}
+              onClick={() => isPresenter && onGoToSlide?.(index + 1)}
+              disabled={!isPresenter}
+              className={cn(
+                "relative flex-shrink-0 w-16 h-10 rounded border-2 overflow-hidden transition-all",
+                index + 1 === slideState.currentSlide
+                  ? "border-primary ring-2 ring-primary/30"
+                  : "border-transparent opacity-60",
+                isPresenter && "hover:border-white/50 hover:opacity-100 cursor-pointer",
+                !isPresenter && "cursor-default"
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={`Thumbnail ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[10px] px-1 rounded-tl">
+                {index + 1}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Progress bar at the very bottom */}
+      <div className="h-1 flex-shrink-0">
+        <Progress value={progress} className="h-1 rounded-none" />
       </div>
     </div>
   );

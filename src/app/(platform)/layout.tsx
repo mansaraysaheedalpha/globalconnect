@@ -21,7 +21,15 @@ export default function PlatformLayout({
         <Sidebar onOpenCreateOrgModal={() => setIsModalOpen(true)} />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex-1 overflow-y-auto outline-none"
+            role="main"
+            aria-label="Main content"
+          >
+            {children}
+          </main>
         </div>
       </div>
     </AuthGuard>

@@ -2,8 +2,9 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ApolloProvider } from '@/lib/apollo-provider'; // Import the provider
+import { ApolloProvider } from '@/lib/apollo-provider';
 import { Toaster } from "@/components/ui/sonner";
+import { LiveRegionProvider, SkipLink } from "@/components/ui/accessibility";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -23,8 +24,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ApolloProvider>{children}</ApolloProvider> {/* Wrap children with the provider */}
-         <Toaster /> {/* Add the Toaster component here */}
+        <LiveRegionProvider>
+          <SkipLink href="#main-content" />
+          <ApolloProvider>{children}</ApolloProvider>
+          <Toaster />
+        </LiveRegionProvider>
       </body>
     </html>
   );

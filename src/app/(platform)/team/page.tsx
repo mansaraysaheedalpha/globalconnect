@@ -200,7 +200,7 @@ export default function TeamPage() {
                       sideOffset={5}
                       className="min-w-[200px] rounded-md border bg-white p-1 shadow-md dark:bg-neutral-900"
                     >
-                      {data?.listRolesForOrg.map((orgRole) => (
+                      {data?.listRolesForOrg.map((orgRole: { id: string; name: string }) => (
                         <DropdownMenuItem
                           key={orgRole.id}
                           onSelect={() => setRole(orgRole.name)}

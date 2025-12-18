@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "../ui/loader";
 import { useAuthStore } from "@/store/auth.store";
-import { GET_MY_ORGS_QUERY } from "./OrganizationSwitcher";
+import { GET_MY_ORGS_QUERY } from "@/graphql/queries";
 
 // This mutation now expects an AuthPayload in return
 const CREATE_ADDITIONAL_ORGANIZATION = gql`

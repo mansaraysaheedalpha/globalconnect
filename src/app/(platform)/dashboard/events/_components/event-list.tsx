@@ -4,9 +4,16 @@
 import { EventPageHeader } from "./event-page-header";
 import { EventCard } from "./event-card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Calendar } from "lucide-react";
 import { useState } from "react";
 import { CreateEventModal } from "./create-event-modal";
+import {
+  PageTransition,
+  StaggerContainer,
+  StaggerItem,
+  PremiumCard,
+} from "@/components/ui/premium-components";
+import { NoEventsEmpty } from "@/components/ui/empty-states";
 
 type Event = {
   id: string;
@@ -39,38 +46,46 @@ export const EventList = ({
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         />
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center p-8 border-2 border-dashed rounded-lg">
-          <h2 className="text-2xl font-semibold mb-2">
-            You have no events yet
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Get started by creating your first event.
-          </p>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Create New Event
-          </Button>
-        </div>
+        <PageTransition className="p-6">
+          <NoEventsEmpty onCreateEvent={() => setIsModalOpen(true)} />
+        </PageTransition>
       </>
     );
   }
 
+  if (events.length === 0 && isArchivedView) {
+    return (
+      <PageTransition className="p-6">
+        <EventPageHeader
+          pageTitle={pageTitle}
+          totalCount={0}
+          isArchivedView={isArchivedView}
+        />
+        <PremiumCard variant="glass" padding="lg" className="text-center mt-8">
+          <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="font-semibold mb-2">No archived events</h3>
+          <p className="text-sm text-muted-foreground">
+            Events you archive will appear here
+          </p>
+        </PremiumCard>
+      </PageTransition>
+    );
+  }
+
   return (
-    <div className="p-6">
+    <PageTransition className="p-6">
       <EventPageHeader
         pageTitle={pageTitle}
         totalCount={totalCount}
         isArchivedView={isArchivedView}
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {events.map((event) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            isArchivedView={isArchivedView}
-          />
+          <StaggerItem key={event.id}>
+            <EventCard event={event} isArchivedView={isArchivedView} />
+          </StaggerItem>
         ))}
-      </div>
-    </div>
+      </StaggerContainer>
+    </PageTransition>
   );
 };

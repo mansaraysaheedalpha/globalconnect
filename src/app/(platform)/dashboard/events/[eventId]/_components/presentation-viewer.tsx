@@ -87,15 +87,21 @@ export const PresentationViewer = ({
     } else {
       // Start live presentation
       setIsLiveMode(true);
-      // Wait for connection then start
+      // Wait for connection and state sync then start
       setTimeout(async () => {
         const result = await startPresentation();
         if (result.success) {
           toast.success("Live presentation started!", {
             description: "Attendees can now see your slides in real-time",
           });
+        } else {
+          toast.error("Failed to start live presentation", {
+            description: result.error || "Please try again",
+          });
+          // Revert live mode if start failed
+          setIsLiveMode(false);
         }
-      }, 1000);
+      }, 1500); // Increased timeout to ensure state sync
     }
   };
 

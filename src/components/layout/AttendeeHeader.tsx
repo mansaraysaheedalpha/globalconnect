@@ -16,6 +16,7 @@ import { UserAvatar } from "../ui/user-avatar";
 import Link from "next/link";
 import { ExternalLink, Settings, LogOut } from "lucide-react";
 import { NotificationBellOnly } from "@/components/features/notifications/notifications-container";
+import { HeaderDMButton } from "@/components/features/dm";
 
 export function AttendeeHeader() {
   const { user, logout } = useAuthStore();
@@ -41,21 +42,37 @@ export function AttendeeHeader() {
     return "Attendee Portal";
   };
 
+  const pageTitle = getPageTitle();
+
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-background px-6">
-      <div className="font-semibold text-lg">
-        {getPageTitle()}
-      </div>
+    <header
+      className="flex h-14 items-center justify-between border-b bg-background px-6"
+      role="banner"
+      aria-label="Attendee header"
+    >
+      <h1 className="font-semibold text-lg">{pageTitle}</h1>
 
       {user && (
-        <div className="flex items-center gap-2">
+        <nav
+          className="flex items-center gap-2"
+          role="navigation"
+          aria-label="User actions"
+        >
+          {/* Direct Messages - with eventId if on event page */}
+          <HeaderDMButton eventId={eventId} />
+
           {/* Notifications Bell - with eventId if on event page */}
           <NotificationBellOnly eventId={eventId} />
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                className="flex items-center gap-3"
+                aria-label={`User menu for ${user.first_name} ${user.last_name}`}
+                aria-haspopup="menu"
+              >
                 <UserAvatar
                   firstName={user.first_name}
                   lastName={user.last_name}
@@ -66,7 +83,7 @@ export function AttendeeHeader() {
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuContent className="w-56" align="end" role="menu">
               <DropdownMenuLabel>
                 {user.first_name} {user.last_name}
                 <p className="text-xs font-normal text-muted-foreground">
@@ -75,25 +92,26 @@ export function AttendeeHeader() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <Link href="/attendee/settings">
-                <DropdownMenuItem>
-                  <Settings className="h-4 w-4 mr-2" />
+                <DropdownMenuItem role="menuitem">
+                  <Settings className="h-4 w-4 mr-2" aria-hidden="true" />
                   Settings
                 </DropdownMenuItem>
               </Link>
               <Link href="/events" target="_blank" rel="noopener noreferrer">
-                <DropdownMenuItem>
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                <DropdownMenuItem role="menuitem">
+                  <ExternalLink className="h-4 w-4 mr-2" aria-hidden="true" />
                   Browse Events
+                  <span className="sr-only">(opens in new tab)</span>
                 </DropdownMenuItem>
               </Link>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
+              <DropdownMenuItem onClick={handleLogout} role="menuitem">
+                <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </nav>
       )}
     </header>
   );

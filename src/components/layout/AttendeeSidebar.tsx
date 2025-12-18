@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import {
-  LayoutGrid,
   CalendarDays,
   Ticket,
   Bell,
@@ -52,14 +51,23 @@ export function AttendeeSidebar() {
   ];
 
   return (
-    <aside className="dark w-64 flex-shrink-0 bg-background text-foreground border-r border-border/50 p-4 flex flex-col">
+    <aside
+      className="dark w-64 flex-shrink-0 bg-background text-foreground border-r border-border/50 p-4 flex flex-col"
+      role="complementary"
+      aria-label="Attendee sidebar navigation"
+    >
       <div className="mb-8 p-2">
-        <Link href="/attendee" className="flex items-center gap-3">
+        <Link
+          href="/attendee"
+          className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+          aria-label="GlobalConnect - Go to home"
+        >
           <Image
             src="/logo.png"
-            alt="GlobalConnect Logo"
+            alt=""
             width={36}
             height={36}
+            aria-hidden="true"
           />
           <span className="text-xl font-bold text-foreground">
             GlobalConnect
@@ -68,51 +76,72 @@ export function AttendeeSidebar() {
       </div>
 
       {/* User Info */}
-      <div className="mb-6 px-3 py-3 rounded-lg bg-white/5">
+      <div
+        className="mb-6 px-3 py-3 rounded-lg bg-white/5"
+        role="region"
+        aria-label="User information"
+      >
         <p className="text-sm font-medium text-foreground">
           {user?.first_name} {user?.last_name}
         </p>
         <p className="text-xs text-muted-foreground">{user?.email}</p>
       </div>
 
-      <nav className="flex flex-col gap-2 flex-grow">
-        {navLinks.map((link) => {
-          const Icon = link.icon;
-          const isActive = link.exact
-            ? pathname === link.href
-            : pathname.startsWith(link.href);
+      <nav
+        className="flex flex-col gap-2 flex-grow"
+        role="navigation"
+        aria-label="Main navigation"
+      >
+        <ul className="flex flex-col gap-1" role="list">
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = link.exact
+              ? pathname === link.href
+              : pathname.startsWith(link.href);
 
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:text-foreground hover:bg-white/5",
-                isActive &&
-                  "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {link.label}
-            </Link>
-          );
-        })}
+            return (
+              <li key={link.href} role="listitem">
+                <Link
+                  href={link.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:text-foreground hover:bg-white/5",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    isActive &&
+                      "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                  )}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                  {link.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
-      <div className="mt-auto space-y-2 border-t border-white/10 pt-4">
+      <div
+        className="mt-auto space-y-2 border-t border-white/10 pt-4"
+        role="region"
+        aria-label="Additional actions"
+      >
         <Link
           href="/events"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:text-foreground hover:bg-white/5"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:text-foreground hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          <ExternalLink className="h-5 w-5" />
+          <ExternalLink className="h-5 w-5" aria-hidden="true" />
           Browse Events
+          <span className="sr-only">(opens in new tab)</span>
         </Link>
         <Button
           className="w-full justify-start gap-3"
           variant="ghost"
           onClick={handleLogout}
+          aria-label="Log out of your account"
         >
-          <LogOut className="h-5 w-5" />
+          <LogOut className="h-5 w-5" aria-hidden="true" />
           Logout
         </Button>
       </div>

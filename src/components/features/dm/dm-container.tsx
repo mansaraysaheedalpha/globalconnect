@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Plus, X } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 
 interface DMContainerProps {
   eventId?: string;

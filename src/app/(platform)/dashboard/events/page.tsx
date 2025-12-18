@@ -6,7 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 import { EventList } from "./_components/event-list";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CardSkeleton, ShimmerSkeleton } from "@/components/ui/skeleton-patterns";
+import { QueryErrorHandler } from "@/components/ui/error-boundary";
 import { AlertTriangle } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -17,7 +18,7 @@ const EventsPage = () => {
 
   const isArchivedView = status === "archived";
 
-  const { data, loading, error } = useQuery(GET_EVENTS_BY_ORGANIZATION_QUERY, {
+  const { data, loading, error, refetch } = useQuery(GET_EVENTS_BY_ORGANIZATION_QUERY, {
     variables: {
       limit: 10,
       offset: 0,
@@ -43,15 +44,28 @@ const EventsPage = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-6 animate-fade-in">
+        {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-9 w-32" />
+          <div className="space-y-2">
+            <ShimmerSkeleton className="h-9 w-48" />
+            <ShimmerSkeleton className="h-4 w-32" />
+          </div>
+          <ShimmerSkeleton className="h-10 w-36 rounded-md" />
         </div>
+
+        {/* Filters/Tabs */}
+        <div className="flex gap-2 mb-6">
+          <ShimmerSkeleton className="h-9 w-24 rounded-md" />
+          <ShimmerSkeleton className="h-9 w-24 rounded-md" />
+          <ShimmerSkeleton className="h-9 w-24 rounded-md" />
+        </div>
+
+        {/* Event cards grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-48 rounded-lg" />
-          <Skeleton className="h-48 rounded-lg" />
-          <Skeleton className="h-48 rounded-lg" />
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <CardSkeleton key={i} hasImage lines={2} />
+          ))}
         </div>
       </div>
     );
@@ -59,10 +73,11 @@ const EventsPage = () => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-red-600 p-6">
-        <AlertTriangle className="h-12 w-12 mb-4" />
-        <h2 className="text-2xl font-semibold">Failed to load events</h2>
-        <p className="text-sm">{error.message}</p>
+      <div className="p-6 h-full flex items-center justify-center">
+        <QueryErrorHandler
+          error={error}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }

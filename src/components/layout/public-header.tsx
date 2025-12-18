@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useMutation } from "@apollo/client";
 import { useAuthStore } from "@/store/auth.store";
 import { LOGOUT_MUTATION } from "@/components/features/Auth/auth.graphql";
@@ -19,13 +19,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils";
-import { Menu, X, LayoutDashboard, LogOut, User } from "lucide-react";
+import { Menu, X, LayoutDashboard, LogOut, User, ChevronRight } from "lucide-react";
 
 export function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, orgId, logout } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   const [logoutUser] = useMutation(LOGOUT_MUTATION, {
     onCompleted: () => {
@@ -40,11 +41,16 @@ export function PublicHeader() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const logoSrc = "/logo.png";
   const isLoggedIn = !!user;
@@ -52,8 +58,9 @@ export function PublicHeader() {
   const dashboardPath = isOrganizer ? "/dashboard" : "/attendee";
 
   const navLinks = [
-    { href: "/events", label: "Events" },
+    { href: "/events", label: "Discover Events" },
     { href: "#features", label: "Features" },
+    { href: "#benefits", label: "Why Us" },
   ];
 
   return (
@@ -61,35 +68,38 @@ export function PublicHeader() {
       {/* Top gradient overlay for better header visibility */}
       <div
         className={cn(
-          "fixed top-0 left-0 right-0 h-32 pointer-events-none z-40 transition-opacity duration-300",
-          "bg-gradient-to-b from-black/60 via-black/30 to-transparent",
+          "fixed top-0 left-0 right-0 h-40 pointer-events-none z-40 transition-opacity duration-500",
+          "bg-gradient-to-b from-black/70 via-black/40 to-transparent",
           scrolled && "opacity-0"
         )}
       />
 
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out",
           scrolled
-            ? "bg-white/95 dark:bg-background/95 backdrop-blur-md border-b shadow-sm"
-            : "bg-black/20 backdrop-blur-sm border-b border-white/10"
+            ? "bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-sm"
+            : "bg-transparent"
         )}
       >
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <Link href="/" className="flex items-center gap-3">
-            <Image
-              src={logoSrc}
-              alt="GlobalConnect Logo"
-              width={32}
-              height={32}
-              className={cn(
-                "transition-all",
-                !scrolled && "drop-shadow-lg"
-              )}
-            />
+        <div className="container mx-auto flex h-18 sm:h-20 items-center justify-between px-4 md:px-6">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className={cn(
+              "relative transition-transform duration-300 group-hover:scale-105",
+              !scrolled && "drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+            )}>
+              <Image
+                src={logoSrc}
+                alt="GlobalConnect Logo"
+                width={52}
+                height={52}
+                className="transition-all"
+              />
+            </div>
             <span
               className={cn(
-                "text-xl font-bold transition-colors",
+                "text-xl font-bold transition-all duration-300",
                 scrolled
                   ? "text-foreground"
                   : "text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
@@ -99,16 +109,18 @@ export function PublicHeader() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          {/* Desktop Navigation */}
+          <nav className="hidden items-center gap-1 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "text-sm font-medium transition-colors",
+                  "relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
                   scrolled
-                    ? "text-muted-foreground hover:text-foreground"
-                    : "text-white/90 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                    ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    : "text-white/80 hover:text-white hover:bg-white/10",
+                  pathname === link.href && (scrolled ? "text-foreground bg-muted" : "text-white bg-white/10")
                 )}
               >
                 {link.label}
@@ -116,17 +128,19 @@ export function PublicHeader() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {isLoggedIn ? (
               <>
                 {/* Dashboard button - Desktop */}
                 <Button
-                  variant={scrolled ? "ghost" : "secondary"}
                   size="sm"
                   asChild
                   className={cn(
-                    "hidden md:inline-flex",
-                    !scrolled && "bg-white/20 hover:bg-white/30 text-white border-white/20"
+                    "hidden md:inline-flex transition-all duration-300",
+                    scrolled
+                      ? "bg-primary/10 text-primary hover:bg-primary/20"
+                      : "bg-white/15 hover:bg-white/25 text-white border border-white/20"
                   )}
                 >
                   <Link href={dashboardPath}>
@@ -142,8 +156,10 @@ export function PublicHeader() {
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "hidden md:flex items-center gap-2",
-                        !scrolled && "text-white hover:bg-white/20"
+                        "hidden md:flex items-center gap-2 h-10 px-2 rounded-full transition-all duration-300",
+                        scrolled
+                          ? "hover:bg-muted"
+                          : "text-white hover:bg-white/15"
                       )}
                     >
                       <UserAvatar
@@ -151,15 +167,15 @@ export function PublicHeader() {
                         lastName={user.last_name}
                         imageUrl={user.imageUrl}
                         className={cn(
-                          "h-8 w-8",
+                          "h-8 w-8 transition-all duration-300",
                           scrolled
                             ? "ring-2 ring-border"
-                            : "ring-2 ring-white shadow-lg"
+                            : "ring-2 ring-white/50 shadow-lg"
                         )}
                       />
                       <span
                         className={cn(
-                          "max-w-[100px] truncate",
+                          "max-w-[100px] truncate text-sm font-medium",
                           !scrolled && "drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
                         )}
                       >
@@ -170,7 +186,7 @@ export function PublicHeader() {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>
                       <div className="flex flex-col">
-                        <span>
+                        <span className="font-semibold">
                           {user.first_name} {user.last_name}
                         </span>
                         <span className="text-xs font-normal text-muted-foreground">
@@ -180,19 +196,22 @@ export function PublicHeader() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <Link href={dashboardPath}>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer">
                         <LayoutDashboard className="h-4 w-4 mr-2" />
                         {isOrganizer ? "Dashboard" : "My Events"}
                       </DropdownMenuItem>
                     </Link>
                     <Link href="/settings/profile">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer">
                         <User className="h-4 w-4 mr-2" />
-                        Profile
+                        Profile Settings
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => logoutUser()}>
+                    <DropdownMenuItem
+                      onClick={() => logoutUser()}
+                      className="cursor-pointer text-destructive focus:text-destructive"
+                    >
                       <LogOut className="h-4 w-4 mr-2" />
                       Log out
                     </DropdownMenuItem>
@@ -202,18 +221,30 @@ export function PublicHeader() {
             ) : (
               <>
                 <Button
-                  variant={scrolled ? "ghost" : "secondary"}
+                  variant="ghost"
                   size="sm"
                   asChild
                   className={cn(
-                    "hidden md:inline-flex",
-                    !scrolled && "bg-white/20 hover:bg-white/30 text-white border-white/20"
+                    "hidden md:inline-flex transition-all duration-300",
+                    scrolled
+                      ? "text-muted-foreground hover:text-foreground"
+                      : "text-white/90 hover:text-white hover:bg-white/10"
                   )}
                 >
                   <Link href="/auth/login">Sign In</Link>
                 </Button>
-                <Button size="sm" asChild className="hidden md:inline-flex">
-                  <Link href="/auth/register">Get Started</Link>
+                <Button
+                  size="sm"
+                  asChild
+                  className={cn(
+                    "hidden md:inline-flex group transition-all duration-300",
+                    !scrolled && "shadow-lg shadow-primary/30"
+                  )}
+                >
+                  <Link href="/auth/register">
+                    Get Started
+                    <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
                 </Button>
               </>
             )}
@@ -223,98 +254,129 @@ export function PublicHeader() {
               variant="ghost"
               size="icon"
               className={cn(
-                "md:hidden",
-                !scrolled && "text-white hover:bg-white/20"
+                "md:hidden h-10 w-10 rounded-lg transition-all duration-300",
+                scrolled
+                  ? "hover:bg-muted"
+                  : "text-white hover:bg-white/15"
               )}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              <div className="relative w-5 h-5">
+                <span
+                  className={cn(
+                    "absolute left-0 w-5 h-0.5 bg-current transition-all duration-300",
+                    mobileMenuOpen ? "top-2 rotate-45" : "top-1"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 top-2 w-5 h-0.5 bg-current transition-all duration-300",
+                    mobileMenuOpen && "opacity-0"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 w-5 h-0.5 bg-current transition-all duration-300",
+                    mobileMenuOpen ? "top-2 -rotate-45" : "top-3"
+                  )}
+                />
+              </div>
             </Button>
           </div>
         </div>
 
         {/* Mobile menu panel */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-background border-b shadow-lg">
-            <div className="container mx-auto px-4 py-4 space-y-4">
+        <div
+          className={cn(
+            "md:hidden overflow-hidden transition-all duration-300 ease-out",
+            mobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
+          <div className="bg-background/98 backdrop-blur-xl border-t border-border/50">
+            <div className="container mx-auto px-4 py-4 space-y-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block text-sm font-medium text-muted-foreground hover:text-foreground"
+                  className={cn(
+                    "flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                    "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    pathname === link.href && "text-foreground bg-muted"
+                  )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}
+                  <ChevronRight className="h-4 w-4 opacity-50" />
                 </Link>
               ))}
-              <div className="flex flex-col gap-2 pt-4 border-t">
+
+              <div className="pt-4 mt-4 border-t border-border/50 space-y-3">
                 {isLoggedIn ? (
                   <>
                     {/* User info */}
-                    <div className="flex items-center gap-3 pb-2">
+                    <div className="flex items-center gap-3 px-4 py-2">
                       <UserAvatar
                         firstName={user.first_name}
                         lastName={user.last_name}
                         imageUrl={user.imageUrl}
-                        className="h-10 w-10"
+                        className="h-10 w-10 ring-2 ring-border"
                       />
-                      <div>
-                        <p className="font-medium">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">
                           {user.first_name} {user.last_name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {user.email}
                         </p>
                       </div>
                     </div>
-                    <Button variant="outline" asChild className="w-full">
+                    <Button variant="outline" asChild className="w-full justify-start h-11">
                       <Link
                         href={dashboardPath}
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        <LayoutDashboard className="h-4 w-4 mr-3" />
                         {isOrganizer ? "Dashboard" : "My Events"}
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild className="w-full">
+                    <Button variant="outline" asChild className="w-full justify-start h-11">
                       <Link
                         href="/settings/profile"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <User className="h-4 w-4 mr-2" />
-                        Profile
+                        <User className="h-4 w-4 mr-3" />
+                        Profile Settings
                       </Link>
                     </Button>
                     <Button
-                      variant="destructive"
-                      className="w-full"
+                      variant="ghost"
+                      className="w-full justify-start h-11 text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => {
                         logoutUser();
                         setMobileMenuOpen(false);
                       }}
                     >
-                      <LogOut className="h-4 w-4 mr-2" />
+                      <LogOut className="h-4 w-4 mr-3" />
                       Log out
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Button variant="outline" asChild className="w-full">
+                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" asChild className="w-full h-11">
                       <Link href="/auth/login">Sign In</Link>
                     </Button>
-                    <Button asChild className="w-full">
-                      <Link href="/auth/register">Get Started</Link>
+                    <Button asChild className="w-full h-11">
+                      <Link href="/auth/register">
+                        Get Started
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Link>
                     </Button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
           </div>
-        )}
+        </div>
       </header>
     </>
   );

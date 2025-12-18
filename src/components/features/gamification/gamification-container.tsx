@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Trophy, TrendingUp, RefreshCw, Star } from "lucide-react";
+import { Trophy, RefreshCw, Star } from "lucide-react";
 
 interface GamificationContainerProps {
   sessionId: string;
@@ -217,13 +217,13 @@ export const FloatingScoreWidget = ({
     currentScore,
     currentRank,
     recentPointEvents,
-    getReasonText,
   } = useGamification(sessionId, eventId);
 
   if (!isConnected) return null;
 
+  // Positioned above the DM button (which is at bottom-4)
   return (
-    <div className={cn("fixed bottom-20 left-4 z-40", className)}>
+    <div className={cn("fixed bottom-24 left-4 z-40", className)}>
       <Card className="shadow-lg">
         <CardContent className="p-3">
           <div className="flex items-center gap-2">
