@@ -1,10 +1,11 @@
 // src/app/(public)/events/[eventId]/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_PUBLIC_EVENT_DETAILS_QUERY } from "@/graphql/public.graphql";
+import { GET_EVENT_TICKET_TYPES_QUERY } from "@/graphql/payments.graphql";
 import { RegistrationModal } from "./_components/registration-model";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +23,40 @@ const PublicEventPage = () => {
     variables: { eventId },
     skip: !eventId,
   });
+
+  // Fetch ticket types for pricing info
+  const { data: ticketData, loading: ticketLoading } = useQuery(
+    GET_EVENT_TICKET_TYPES_QUERY,
+    {
+      variables: { eventId },
+      skip: !eventId,
+    }
+  );
+
+  // Calculate ticket price info
+  const ticketInfo = useMemo(() => {
+    const ticketTypes = ticketData?.eventTicketTypes;
+    if (!ticketTypes || ticketTypes.length === 0) return null;
+
+    const prices = ticketTypes
+      .filter((t: { isOnSale: boolean }) => t.isOnSale)
+      .map((t: { price: { amount: number; currency: string } }) => t.price.amount);
+
+    if (prices.length === 0) return null;
+
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const currency = ticketTypes[0]?.price?.currency || 'USD';
+    const allFree = prices.every((p: number) => p === 0);
+
+    return {
+      minPrice,
+      maxPrice,
+      currency,
+      hasMultipleTiers: ticketTypes.length > 1,
+      allFree,
+    };
+  }, [ticketData]);
 
   if (loading) {
     return (
@@ -126,10 +161,13 @@ const PublicEventPage = () => {
             {/* Right Column - Registration Card */}
             <div className="lg:col-span-1">
               <StickyRegistrationCard
+                eventId={event.id}
                 startDate={event.startDate}
                 endDate={event.endDate}
                 venueName={event.venue?.name}
                 onRegisterClick={() => setIsModalOpen(true)}
+                ticketInfo={ticketInfo}
+                isLoadingTickets={ticketLoading}
               />
             </div>
           </div>

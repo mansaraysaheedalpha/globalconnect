@@ -20,6 +20,7 @@ import { EventDetailsCard } from "../_components/event-details-card";
 import { SessionList } from "./_components/session-list";
 import { AttendeeList } from "../_components/attendee-list";
 import { LiveDashboard } from "./_components/live-dashboard";
+import { TicketManagement } from "./_components/ticket-management";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangleIcon } from "lucide-react";
@@ -128,12 +129,11 @@ export default function EventDetailPage() {
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Tabs defaultValue="live">
-            {/* --- CHANGE 1: Update grid columns from 3 to 4 --- */}
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="live">Live Dashboard</TabsTrigger>
               <TabsTrigger value="agenda">Agenda</TabsTrigger>
               <TabsTrigger value="attendees">Attendees</TabsTrigger>
-              {/* --- CHANGE 2: Add the missing trigger for the History tab --- */}
+              <TabsTrigger value="tickets">Tickets</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
             <TabsContent value="live" className="mt-6">
@@ -148,6 +148,9 @@ export default function EventDetailPage() {
             </TabsContent>
             <TabsContent value="attendees">
               <AttendeeList attendees={attendees} />
+            </TabsContent>
+            <TabsContent value="tickets" className="mt-6">
+              <TicketManagement eventId={event.id} />
             </TabsContent>
             <TabsContent value="history" className="mt-6">
               <EventHistoryTimeline eventId={event.id} />

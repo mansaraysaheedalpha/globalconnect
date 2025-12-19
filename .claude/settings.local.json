@@ -28,7 +28,8 @@
       "Bash(pnpm install:*)",
       "Bash(powershell:*)",
       "Bash(pnpm build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(copy /Y \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\public\\\\web-app-manifest-512x512.png\" \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\public\\\\logo.png\")"
     ]
   }
 }

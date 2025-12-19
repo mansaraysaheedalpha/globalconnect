@@ -2,14 +2,17 @@
 "use client";
 
 import React from "react";
+import { useQuery } from "@apollo/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DescriptionList,
   DescriptionTerm,
   DescriptionDetails,
 } from "@/components/ui/description-list";
-import { Globe, Lock, Users, MapPin, CalendarDays, Ticket } from "lucide-react";
+import { Globe, Lock, Users, MapPin, CalendarDays, Ticket, DollarSign } from "lucide-react";
+import { GET_EVENT_TICKET_SUMMARY_QUERY } from "@/graphql/payments.graphql";
 
 type Event = {
   id: string;
@@ -30,6 +33,17 @@ interface EventDetailsCardProps {
 }
 
 export const EventDetailsCard = ({ event }: EventDetailsCardProps) => {
+  // Fetch ticket summary for real data
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GET_EVENT_TICKET_SUMMARY_QUERY,
+    {
+      variables: { eventId: event.id },
+      skip: !event.id,
+    }
+  );
+
+  const ticketSummary = summaryData?.eventTicketSummary;
+
   const formattedStartDate = new Date(event.startDate).toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -55,9 +69,26 @@ export const EventDetailsCard = ({ event }: EventDetailsCardProps) => {
           </div>
           <div className="p-3 bg-secondary rounded-lg">
             <p className="text-sm text-muted-foreground">Tickets Sold</p>
-            <p className="text-2xl font-bold">0</p>
+            {summaryLoading ? (
+              <Skeleton className="h-8 w-12 mx-auto" />
+            ) : (
+              <p className="text-2xl font-bold">{ticketSummary?.totalSold || 0}</p>
+            )}
           </div>
         </div>
+
+        {/* Revenue (if has ticket sales) */}
+        {ticketSummary?.totalRevenue && ticketSummary.totalRevenue.amount > 0 && (
+          <div className="p-3 bg-green-500/10 rounded-lg mb-6 text-center">
+            <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground mb-1">
+              <DollarSign className="h-4 w-4" />
+              <span>Total Revenue</span>
+            </div>
+            <p className="text-2xl font-bold text-green-600">
+              {ticketSummary.totalRevenue.formatted}
+            </p>
+          </div>
+        )}
 
         {/* Details List */}
         <DescriptionList>

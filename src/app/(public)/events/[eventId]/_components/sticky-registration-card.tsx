@@ -2,28 +2,57 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Ticket,
   Users,
   Clock,
   Sparkles,
+  ArrowRight,
 } from "lucide-react";
 
+interface TicketPriceInfo {
+  minPrice: number;
+  maxPrice: number;
+  currency: string;
+  hasMultipleTiers: boolean;
+  allFree: boolean;
+}
+
 interface StickyRegistrationCardProps {
+  eventId: string;
   startDate: string;
   endDate: string;
   venueName?: string | null;
   onRegisterClick: () => void;
+  ticketInfo?: TicketPriceInfo | null;
+  isLoadingTickets?: boolean;
+}
+
+// Helper function to format price
+function formatPrice(amountInCents: number, currency: string): string {
+  const amount = amountInCents / 100;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export const StickyRegistrationCard = ({
+  eventId,
   startDate,
   endDate,
   onRegisterClick,
+  ticketInfo,
+  isLoadingTickets,
 }: StickyRegistrationCardProps) => {
+  const router = useRouter();
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -119,19 +148,51 @@ export const StickyRegistrationCard = ({
             </div>
           )}
 
-          {/* Register Button */}
+          {/* Price Display */}
+          {isLoadingTickets ? (
+            <Skeleton className="h-8 w-32 mx-auto mb-4" />
+          ) : ticketInfo ? (
+            <div className="text-center mb-4">
+              {ticketInfo.allFree ? (
+                <p className="text-2xl font-bold text-green-600">Free</p>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold">
+                    {ticketInfo.hasMultipleTiers ? 'From ' : ''}
+                    {formatPrice(ticketInfo.minPrice, ticketInfo.currency)}
+                  </p>
+                  {ticketInfo.hasMultipleTiers && ticketInfo.maxPrice > ticketInfo.minPrice && (
+                    <p className="text-sm text-muted-foreground">
+                      Up to {formatPrice(ticketInfo.maxPrice, ticketInfo.currency)}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-2xl font-bold text-green-600 mb-4">Free</p>
+          )}
+
+          {/* Register/Get Tickets Button */}
           <Button
             size="lg"
             className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-            onClick={onRegisterClick}
+            onClick={() => {
+              if (ticketInfo && !ticketInfo.allFree) {
+                router.push(`/events/${eventId}/checkout`);
+              } else {
+                onRegisterClick();
+              }
+            }}
           >
             <Ticket className="h-5 w-5 mr-2" />
-            Register Now
+            {ticketInfo && !ticketInfo.allFree ? 'Get Tickets' : 'Register Now'}
+            {ticketInfo && !ticketInfo.allFree && <ArrowRight className="h-5 w-5 ml-2" />}
           </Button>
 
-          {/* Free badge */}
+          {/* Registration type indicator */}
           <p className="text-center text-sm text-muted-foreground mt-3">
-            Free Registration
+            {ticketInfo?.allFree !== false ? 'Free Registration' : 'Secure Checkout'}
           </p>
 
           <Separator className="my-6" />
@@ -163,10 +224,19 @@ export const StickyRegistrationCard = ({
         <Button
           size="lg"
           className="w-full h-12 font-semibold"
-          onClick={onRegisterClick}
+          onClick={() => {
+            if (ticketInfo && !ticketInfo.allFree) {
+              router.push(`/events/${eventId}/checkout`);
+            } else {
+              onRegisterClick();
+            }
+          }}
         >
           <Ticket className="h-5 w-5 mr-2" />
-          Register Now - Free
+          {ticketInfo && !ticketInfo.allFree
+            ? `Get Tickets - ${ticketInfo.hasMultipleTiers ? 'From ' : ''}${formatPrice(ticketInfo.minPrice, ticketInfo.currency)}`
+            : 'Register Now - Free'
+          }
         </Button>
       </div>
     </aside>

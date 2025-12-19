@@ -2137,7 +2137,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }) {
 
 ---
 
-## Recommended Implementation Order
+## Recommend Implementation Order
 
 1. **Chat** - Most foundational, teaches the patterns
 2. **Reactions** - Enhances chat, simple to add
