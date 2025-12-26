@@ -8,7 +8,7 @@ import { ArrowRight, Play, Sparkles } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center text-center text-white overflow-hidden pt-24">
+    <section className="relative min-h-[80vh] sm:min-h-screen flex items-center justify-center text-center text-white overflow-hidden pt-20 pb-16 sm:pt-24">
       {/* Video Background */}
       <video
         autoPlay
@@ -59,7 +59,7 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
 
       {/* Content */}
-      <div className="container px-4 md:px-6 relative z-10">
+      <div className="container px-4 md:px-6 max-w-6xl relative z-10">
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -78,7 +78,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight max-w-5xl mx-auto"
+          className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight max-w-5xl mx-auto px-2"
         >
           The Intelligent Unified OS for{" "}
           <span className="relative">
@@ -99,7 +99,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-neutral-300 leading-relaxed"
+          className="mt-5 sm:mt-6 max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-neutral-300 leading-relaxed px-2"
         >
           Where enterprise power meets unparalleled simplicity. Create, manage,
           and deliver unforgettable experiences that captivate your audience.
@@ -110,7 +110,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+          className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2"
         >
           <Button size="lg" variant="premium" className="group text-base h-12 px-8" asChild>
             <Link href="/auth/register">
@@ -135,7 +135,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-16 flex flex-wrap justify-center gap-8 md:gap-16"
+          className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 md:gap-12 px-4"
         >
           {[
             { value: "10K+", label: "Events Created" },

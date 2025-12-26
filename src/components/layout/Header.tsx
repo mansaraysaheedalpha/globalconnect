@@ -18,11 +18,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "../ui/user-avatar";
 import Link from "next/link";
-import { Globe } from "lucide-react";
+import { Globe, Menu } from "lucide-react";
 import { NotificationBellOnly } from "@/components/features/notifications/notifications-container";
 import { HeaderDMButton } from "@/components/features/dm";
 
-export function Header() {
+type HeaderProps = {
+  onOpenSidebar?: () => void;
+};
+
+export function Header({ onOpenSidebar }: HeaderProps) {
   const { user, orgId, logout } = useAuthStore();
   const router = useRouter();
   const { data, loading } = useQuery(GET_MY_ORGS_QUERY);
@@ -45,16 +49,29 @@ export function Header() {
   });
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-      <div className="flex items-center gap-4">
-        <div className="font-semibold text-lg">
-          {loading ? "..." : currentOrg?.name || "Organization"}
+    <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b bg-background/95 px-4 sm:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <div className="flex items-center gap-3 min-w-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={() => onOpenSidebar?.()}
+          aria-label="Open navigation"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="font-semibold text-base sm:text-lg truncate">
+            {loading ? "..." : currentOrg?.name || "Organization"}
+          </div>
+          <div className="hidden md:block">
+            <OrganizationSwitcher />
+          </div>
         </div>
-        <OrganizationSwitcher />
       </div>
 
       {user ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Direct Messages */}
           <HeaderDMButton />
 

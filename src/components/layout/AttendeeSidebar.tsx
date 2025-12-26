@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 
-export function AttendeeSidebar() {
+export function AttendeeSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, user } = useAuthStore();
@@ -52,7 +52,10 @@ export function AttendeeSidebar() {
 
   return (
     <aside
-      className="dark w-64 flex-shrink-0 bg-background text-foreground border-r border-border/50 p-4 flex flex-col"
+      className={cn(
+        "dark w-64 flex-shrink-0 bg-background text-foreground border-r border-border/50 p-4 flex flex-col h-full",
+        className
+      )}
       role="complementary"
       aria-label="Attendee sidebar navigation"
     >

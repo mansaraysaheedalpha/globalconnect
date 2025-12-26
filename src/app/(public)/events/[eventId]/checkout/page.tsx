@@ -39,7 +39,8 @@ export default function CheckoutPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, token } = useAuthStore();
+  const isAuthenticated = !!token && !!user;
 
   const [step, setStep] = useState<CheckoutStep>('tickets');
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -93,7 +94,9 @@ export default function CheckoutPage() {
       // Logged-in user - create checkout directly
       const session = await createCheckout();
       if (session) {
-        if (isFreeOrder) {
+        // Check if free using the returned session data (not stale state)
+        const orderTotal = session.order?.totalAmount?.amount ?? 0;
+        if (orderTotal === 0) {
           // Free order - go straight to confirmation
           setStep('confirmation');
         } else {
@@ -115,7 +118,9 @@ export default function CheckoutPage() {
   }) => {
     const session = await createCheckout(guestInfo);
     if (session) {
-      if (isFreeOrder) {
+      // Check if free using the returned session data (not stale state)
+      const orderTotal = session.order?.totalAmount?.amount ?? 0;
+      if (orderTotal === 0) {
         setStep('confirmation');
       } else {
         setStep('payment');
@@ -219,7 +224,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <div className="bg-background border-b sticky top-0 z-40">
-        <div className="container max-w-6xl mx-auto px-4 py-4">
+        <div className="container max-w-6xl mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -238,7 +243,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="container max-w-6xl mx-auto px-4 py-8">
+      <div className="container max-w-6xl mx-auto px-4 py-6 sm:py-8">
         {/* Event Info Banner */}
         <Card className="mb-8">
           <CardContent className="py-4">
@@ -348,9 +353,21 @@ export default function CheckoutPage() {
         )}
 
         {/* Step: Payment */}
-        {step === 'payment' && order && paymentIntent && (
+        {step === 'payment' && (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
+              {order && (
+                <div className="lg:hidden mb-4 flex items-center justify-between rounded-lg border bg-card p-3 shadow-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-lg font-semibold">{order.totalAmount?.formatted}</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    Secure payment
+                  </Badge>
+                </div>
+              )}
+
               {paymentError && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
@@ -358,14 +375,36 @@ export default function CheckoutPage() {
                 </Alert>
               )}
 
-              <StripeCheckoutProvider clientSecret={paymentIntent.clientSecret}>
-                <PaymentForm
-                  order={order}
-                  onPaymentSuccess={handlePaymentSuccess}
-                  onPaymentError={handlePaymentError}
-                  returnUrl={`${window.location.origin}/events/${eventId}/checkout/confirmation?order=${order.orderNumber}`}
-                />
-              </StripeCheckoutProvider>
+              {checkoutError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{checkoutError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="rounded-xl border bg-card p-4 sm:p-6 shadow-sm">
+                {order && paymentIntent ? (
+                  <StripeCheckoutProvider clientSecret={paymentIntent.clientSecret}>
+                    <PaymentForm
+                      order={order}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentError={handlePaymentError}
+                      returnUrl={`${window.location.origin}/events/${eventId}/checkout/confirmation?order=${order.orderNumber}`}
+                    />
+                  </StripeCheckoutProvider>
+                ) : !checkoutError ? (
+                  <div className="py-8 text-center">
+                    <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Payment Setup Failed</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Unable to initialize payment. Please try again.
+                    </p>
+                    <Button onClick={handleBackToTickets}>
+                      Back to Tickets
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="lg:col-span-1">
@@ -393,6 +432,25 @@ export default function CheckoutPage() {
           </div>
         )}
       </div>
+
+      {/* Mobile sticky cart summary */}
+      {step === 'tickets' && cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 safe-bottom shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-lg font-semibold">{cartTotalFormatted}</p>
+            </div>
+            <Button
+              className="h-11 px-4"
+              onClick={handleProceedToCheckout}
+              disabled={cart.length === 0 || isCreatingCheckout}
+            >
+              {isCreatingCheckout ? "Preparing..." : "Continue"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -31,7 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader, DollarSign, Ticket, Calendar, Eye, AlertTriangle } from "lucide-react";
+import { Loader, DollarSign, Ticket, Calendar, AlertTriangle, EyeOff } from "lucide-react";
 
 interface TicketType {
   id: string;
@@ -117,7 +117,7 @@ export const EditTicketTypeModal = ({
       salesStartAt: ticketType.salesStartAt ? new Date(ticketType.salesStartAt) : null,
       salesEndAt: ticketType.salesEndAt ? new Date(ticketType.salesEndAt) : null,
       isActive: ticketType.isActive,
-      isHidden: ticketType.isHidden,
+      isHidden: ticketType.isHidden ?? false,
     },
   });
 
@@ -135,7 +135,7 @@ export const EditTicketTypeModal = ({
       salesStartAt: ticketType.salesStartAt ? new Date(ticketType.salesStartAt) : null,
       salesEndAt: ticketType.salesEndAt ? new Date(ticketType.salesEndAt) : null,
       isActive: ticketType.isActive,
-      isHidden: ticketType.isHidden,
+      isHidden: ticketType.isHidden ?? false,
     });
   }, [ticketType, form]);
 
@@ -188,8 +188,7 @@ export const EditTicketTypeModal = ({
           ...(hasSales
             ? {}
             : {
-                priceAmount: Math.round(values.priceAmount * 100),
-                currency: values.currency,
+                price: Math.round(values.priceAmount * 100),
               }),
           quantityTotal: values.unlimitedQuantity ? null : values.quantityTotal,
           minPerOrder: values.minPerOrder,
@@ -455,10 +454,7 @@ export const EditTicketTypeModal = ({
 
             {/* Visibility Options */}
             <div className="space-y-3 pt-2 border-t">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <Eye className="h-4 w-4 text-muted-foreground" />
-                Visibility Settings
-              </p>
+              <p className="text-sm font-medium">Visibility Settings</p>
               <FormField
                 control={form.control}
                 name="isActive"
@@ -481,11 +477,14 @@ export const EditTicketTypeModal = ({
                 name="isHidden"
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <FormLabel className="font-normal cursor-pointer">Hidden</FormLabel>
-                      <FormDescription className="text-xs">
-                        Hidden tickets are only accessible via direct link
-                      </FormDescription>
+                    <div className="flex items-center gap-2">
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <FormLabel className="font-normal cursor-pointer">Hidden</FormLabel>
+                        <FormDescription className="text-xs">
+                          Hidden tickets are not shown publicly
+                        </FormDescription>
+                      </div>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />

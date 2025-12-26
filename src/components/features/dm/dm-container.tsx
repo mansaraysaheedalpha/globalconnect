@@ -246,8 +246,8 @@ export const FloatingDMButton = ({
 
   const positionClasses =
     position === "bottom-left"
-      ? "bottom-4 left-4"
-      : "bottom-4 right-4";
+      ? "bottom-4 left-4 safe-bottom"
+      : "bottom-4 right-4 safe-bottom";
 
   return (
     <>

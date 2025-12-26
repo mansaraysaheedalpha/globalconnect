@@ -156,9 +156,9 @@ const AttendeeChatDialog = ({
           </Badge>
         )}
       </Button>
-      <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] max-h-[92vh] sm:max-h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
         {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
           <div className="flex items-center gap-3">
             <MessageSquare className="h-5 w-5 text-primary" />
             <span className="font-medium">{session.title} - Chat</span>
@@ -226,9 +226,9 @@ const AttendeeQADialog = ({
           </Badge>
         )}
       </Button>
-      <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] max-h-[92vh] sm:max-h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
         {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
           <div className="flex items-center gap-3">
             <HelpCircle className="h-5 w-5 text-primary" />
             <span className="font-medium">{session.title} - Q&A</span>
@@ -298,9 +298,9 @@ const AttendeePollsDialog = ({
           </Badge>
         )}
       </Button>
-      <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] max-h-[92vh] sm:max-h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
         {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
           <div className="flex items-center gap-3">
             <BarChart3 className="h-5 w-5 text-primary" />
             <span className="font-medium">{session.title} - Polls</span>
@@ -370,9 +370,9 @@ const AttendeePresentationDialog = ({
           </Badge>
         )}
       </Button>
-      <DialogContent className="!max-w-[98vw] !w-[98vw] !h-[90vh] p-0 gap-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-950">
+      <DialogContent className="!max-w-[98vw] !w-[98vw] max-h-[92vh] sm:max-h-[90vh] p-0 gap-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl overflow-hidden pt-safe pb-safe">
         {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/60">
           <div className="flex items-center gap-3">
             <Presentation className="h-5 w-5 text-white/70" />
             <span className="font-medium text-white">{session.title} - Presentation</span>
@@ -598,7 +598,7 @@ export default function AttendeeEventPage() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-5xl mx-auto animate-fade-in">
+      <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto animate-fade-in">
         {/* Back button skeleton */}
         <ShimmerSkeleton className="h-9 w-36 mb-6 rounded-md" />
 
@@ -623,7 +623,7 @@ export default function AttendeeEventPage() {
 
   if (error || !data?.event) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
         <Link href="/attendee">
           <Button variant="ghost" className="mb-4 gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -691,7 +691,7 @@ export default function AttendeeEventPage() {
   const endedSessions = sortedSessions.filter((s) => s.status === "ENDED");
 
   return (
-    <PageTransition className="p-6 max-w-5xl mx-auto">
+    <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
       {/* Back Button */}
       <Link href="/attendee">
         <Button variant="ghost" className="mb-4 gap-2 hover:-translate-x-1 transition-transform">
@@ -861,6 +861,7 @@ export default function AttendeeEventPage() {
           <FloatingScoreWidget
             sessionId={liveSessions[0].id}
             eventId={eventId}
+            className="right-4 sm:right-6"
           />
         </>
       )}
@@ -881,6 +882,7 @@ export default function AttendeeEventPage() {
               lastName: sp.name.split(" ").slice(1).join(" ") || "",
             })),
           }))}
+          className="right-4 sm:right-6"
         />
       )}
 
@@ -888,6 +890,7 @@ export default function AttendeeEventPage() {
       <FloatingDMButton
         eventId={eventId}
         position="bottom-left"
+        className="left-4 sm:left-6"
       />
     </PageTransition>
   );

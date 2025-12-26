@@ -80,7 +80,7 @@ export function ForOrganizersSection() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
 
   return (
-    <section id="for-organizers" className="py-24 sm:py-32 relative overflow-hidden scroll-mt-20 bg-secondary/30">
+    <section id="for-organizers" className="py-16 sm:py-24 relative overflow-hidden scroll-mt-20 bg-secondary/30">
       {/* Background decorations */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[150px]" />
@@ -91,7 +91,7 @@ export function ForOrganizersSection() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
 
       <div className="container mx-auto px-4 md:px-6 relative">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Left Content */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -109,19 +109,19 @@ export function ForOrganizersSection() {
               For Organizers
             </motion.span>
 
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-6">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4 sm:mb-6">
               Everything you need to{" "}
               <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
                 create amazing events
               </span>
             </h2>
 
-            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+            <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 leading-relaxed">
               From intimate workshops to large conferences, our powerful tools give you complete control over every aspect of your event.
             </p>
 
             {/* Highlights grid */}
-            <div className="grid grid-cols-2 gap-3 mb-8">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-6 sm:mb-8">
               {highlights.map((item, index) => (
                 <motion.div
                   key={item}

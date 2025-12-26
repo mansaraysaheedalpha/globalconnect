@@ -48,10 +48,10 @@ const EventCard = ({ event }: { event: Event }) => {
   });
 
   return (
-    <Link href={`/events/${event.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-xl bg-card border shadow-sm hover:shadow-xl transition-all duration-300 ease-out hover:-translate-y-1">
+    <Link href={`/events/${event.id}`} className="group block h-full">
+      <div className="relative overflow-hidden rounded-xl bg-card border shadow-sm hover:shadow-xl transition-all duration-300 ease-out hover:-translate-y-1 h-full flex flex-col">
         {/* Image */}
-        <div className="relative h-48 overflow-hidden">
+        <div className="relative aspect-[4/3] sm:aspect-[16/9] overflow-hidden">
           {event.imageUrl ? (
             <Image
               src={event.imageUrl}
@@ -77,7 +77,7 @@ const EventCard = ({ event }: { event: Event }) => {
         </div>
 
         {/* Content */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5 flex-1 flex flex-col">
           <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
             {event.name}
           </h3>
@@ -108,8 +108,8 @@ const EventCard = ({ event }: { event: Event }) => {
 
 const EventCardSkeleton = () => (
   <div className="rounded-xl bg-card border shadow-sm overflow-hidden">
-    <Skeleton className="h-48 w-full" />
-    <div className="p-5 space-y-3">
+    <Skeleton className="aspect-[4/3] sm:aspect-[16/9] w-full" />
+    <div className="p-4 sm:p-5 space-y-3">
       <Skeleton className="h-5 w-3/4" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-1/2" />
@@ -128,13 +128,13 @@ const PublicEventsPage = () => {
   return (
     <div className="bg-background min-h-screen">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-primary/10 via-background to-background pt-24 pb-12">
+      <div className="relative bg-gradient-to-br from-primary/10 via-background to-background pt-20 sm:pt-24 pb-10 sm:pb-12">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-2xl">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
               Upcoming Events
             </h1>
-            <p className="mt-4 text-lg text-muted-foreground">
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
               Discover and register for exciting events happening near you.
               From conferences to workshops, find your next experience.
             </p>
@@ -143,9 +143,9 @@ const PublicEventsPage = () => {
       </div>
 
       {/* Events Grid */}
-      <div className="container mx-auto px-4 md:px-6 py-12">
+      <div className="container mx-auto px-4 md:px-6 py-8 sm:py-12">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <EventCardSkeleton key={i} />
             ))}
@@ -173,7 +173,7 @@ const PublicEventsPage = () => {
                 Showing {events.length} of {totalCount} events
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
               {events.map((event: Event) => (
                 <EventCard key={event.id} event={event} />
               ))}

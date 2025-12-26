@@ -14,7 +14,7 @@ const highlights = [
 
 export function CtaSection() {
   return (
-    <section className="relative bg-background py-24 sm:py-32 overflow-hidden">
+    <section className="relative bg-background py-16 sm:py-24 overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px]" />
@@ -42,7 +42,7 @@ export function CtaSection() {
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px]" />
 
             {/* Content */}
-            <div className="relative px-8 py-16 md:px-16 md:py-20 lg:py-24 text-center">
+            <div className="relative px-6 py-14 sm:px-10 md:px-16 md:py-20 lg:py-24 text-center">
               {/* Badge */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -63,7 +63,7 @@ export function CtaSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl"
+                className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white"
               >
                 Ready to redefine your
                 <br className="hidden sm:block" />{" "}
@@ -85,7 +85,7 @@ export function CtaSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="mx-auto mt-6 max-w-xl text-lg md:text-xl text-white/80 leading-relaxed"
+                className="mx-auto mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg md:text-xl text-white/80 leading-relaxed px-2"
               >
                 Join the next generation of event creators and start building
                 unforgettable moments today.
@@ -97,7 +97,7 @@ export function CtaSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="flex flex-wrap justify-center gap-4 md:gap-6 mt-8"
+                className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 mt-7 sm:mt-8 px-1"
               >
                 {highlights.map((item, index) => (
                   <div
@@ -118,11 +118,11 @@ export function CtaSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.6 }}
-                className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+                className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2"
               >
                 <Button
                   size="lg"
-                  className="bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/20 h-14 px-8 text-base font-semibold group"
+                  className="bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/20 h-13 sm:h-14 px-6 sm:px-8 text-base font-semibold group"
                   asChild
                 >
                   <Link href="/auth/register">
@@ -132,7 +132,7 @@ export function CtaSection() {
                 </Button>
                 <Button
                   size="lg"
-                  className="bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50 h-14 px-8 text-base backdrop-blur-sm"
+                  className="bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50 h-13 sm:h-14 px-6 sm:px-8 text-base backdrop-blur-sm"
                   asChild
                 >
                   <Link href="/events">Explore Events</Link>

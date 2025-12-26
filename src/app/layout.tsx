@@ -42,7 +42,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground no-text-adjust`}>
         <LiveRegionProvider>
           <SkipLink href="#main-content" />
           <ApolloProvider>{children}</ApolloProvider>

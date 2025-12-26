@@ -78,7 +78,7 @@ export function FeaturesSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="features" className="py-24 sm:py-32 relative overflow-hidden scroll-mt-20">
+    <section id="features" className="py-16 sm:py-24 relative overflow-hidden scroll-mt-20">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
@@ -92,7 +92,7 @@ export function FeaturesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mx-auto max-w-2xl text-center mb-16"
+          className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-2"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.9 }}
@@ -105,7 +105,7 @@ export function FeaturesSection() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
             An Intelligent, Unified OS
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground px-2">
             Everything you need to run successful events, all in one beautifully designed platform.
           </p>
         </motion.div>
@@ -116,7 +116,7 @@ export function FeaturesSection() {
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
         >
           {features.map((feature, index) => (
             <motion.div
@@ -124,7 +124,7 @@ export function FeaturesSection() {
               variants={itemVariants}
               className="group relative"
             >
-              <div className="relative h-full rounded-2xl border bg-card p-6 sm:p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 overflow-hidden">
+              <div className="relative h-full rounded-2xl border bg-card p-5 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 overflow-hidden">
                 {/* Gradient hover effect */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
 

@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Loader, DollarSign, Ticket, Calendar, Eye } from "lucide-react";
+import { Loader, DollarSign, Ticket, Calendar, EyeOff } from "lucide-react";
 
 interface CreateTicketTypeModalProps {
   isOpen: boolean;
@@ -124,7 +124,7 @@ export const CreateTicketTypeModal = ({
           eventId,
           name: values.name,
           description: values.description || null,
-          priceAmount: Math.round(values.priceAmount * 100), // Convert to cents
+          price: Math.round(values.priceAmount * 100), // Convert to cents
           currency: values.currency,
           quantityTotal: values.unlimitedQuantity ? null : values.quantityTotal,
           minPerOrder: values.minPerOrder,
@@ -133,6 +133,7 @@ export const CreateTicketTypeModal = ({
           salesEndAt: values.salesEndAt?.toISOString() || null,
           isActive: values.isActive,
           isHidden: values.isHidden,
+          sortOrder: 0, // Default sort order, backend can auto-increment
         },
       },
     });
@@ -355,10 +356,7 @@ export const CreateTicketTypeModal = ({
 
             {/* Visibility Options */}
             <div className="space-y-3 pt-2 border-t">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <Eye className="h-4 w-4 text-muted-foreground" />
-                Visibility Settings
-              </p>
+              <p className="text-sm font-medium">Visibility Settings</p>
               <FormField
                 control={form.control}
                 name="isActive"
@@ -381,11 +379,14 @@ export const CreateTicketTypeModal = ({
                 name="isHidden"
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <FormLabel className="font-normal cursor-pointer">Hidden</FormLabel>
-                      <FormDescription className="text-xs">
-                        Hidden tickets are only accessible via direct link
-                      </FormDescription>
+                    <div className="flex items-center gap-2">
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <FormLabel className="font-normal cursor-pointer">Hidden</FormLabel>
+                        <FormDescription className="text-xs">
+                          Hidden tickets are not shown publicly
+                        </FormDescription>
+                      </div>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />

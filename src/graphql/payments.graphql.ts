@@ -127,17 +127,7 @@ export const GET_ORDER_BY_NUMBER_QUERY = gql`
     orderByNumber(orderNumber: $orderNumber) {
       id
       orderNumber
-      event {
-        id
-        name
-        startDate
-        endDate
-        imageUrl
-        venue {
-          id
-          name
-        }
-      }
+      eventId
       status
       customerEmail
       customerName
@@ -171,17 +161,6 @@ export const GET_ORDER_BY_NUMBER_QUERY = gql`
         amount
         currency
         formatted
-      }
-      promoCode {
-        id
-        code
-      }
-      payment {
-        id
-        status
-        paymentMethodBrand
-        paymentMethodLast4
-        processedAt
       }
       completedAt
       createdAt
@@ -583,7 +562,7 @@ export const GET_EVENT_TICKET_SUMMARY_QUERY = gql`
  * Create a new ticket type
  */
 export const CREATE_TICKET_TYPE_MUTATION = gql`
-  mutation CreateTicketType($input: CreateTicketTypeInput!) {
+  mutation CreateTicketType($input: TicketTypeCreateInput!) {
     createTicketType(input: $input) {
       id
       name
@@ -601,6 +580,7 @@ export const CREATE_TICKET_TYPE_MUTATION = gql`
       salesEndAt
       isActive
       isHidden
+      isOnSale
       sortOrder
     }
   }
@@ -610,7 +590,7 @@ export const CREATE_TICKET_TYPE_MUTATION = gql`
  * Update a ticket type
  */
 export const UPDATE_TICKET_TYPE_MUTATION = gql`
-  mutation UpdateTicketType($id: ID!, $input: UpdateTicketTypeInput!) {
+  mutation UpdateTicketType($id: ID!, $input: TicketTypeUpdateInput!) {
     updateTicketType(id: $id, input: $input) {
       id
       name
@@ -629,6 +609,7 @@ export const UPDATE_TICKET_TYPE_MUTATION = gql`
       salesEndAt
       isActive
       isHidden
+      isOnSale
       sortOrder
     }
   }
@@ -722,7 +703,7 @@ export const GET_EVENT_PROMO_CODES_QUERY = gql`
  * Create a promo code
  */
 export const CREATE_PROMO_CODE_MUTATION = gql`
-  mutation CreatePromoCode($input: CreatePromoCodeInput!) {
+  mutation CreatePromoCode($input: PromoCodeCreateInput!) {
     createPromoCode(input: $input) {
       id
       code
@@ -743,7 +724,7 @@ export const CREATE_PROMO_CODE_MUTATION = gql`
  * Update a promo code
  */
 export const UPDATE_PROMO_CODE_MUTATION = gql`
-  mutation UpdatePromoCode($id: ID!, $input: UpdatePromoCodeInput!) {
+  mutation UpdatePromoCode($id: ID!, $input: PromoCodeUpdateInput!) {
     updatePromoCode(id: $id, input: $input) {
       id
       code

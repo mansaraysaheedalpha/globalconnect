@@ -79,7 +79,7 @@ export function BenefitsSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="benefits" className="relative py-24 sm:py-32 overflow-hidden scroll-mt-20">
+    <section id="benefits" className="relative py-16 sm:py-24 overflow-hidden scroll-mt-20">
       {/* Background with gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 via-secondary to-secondary/50" />
 
@@ -98,7 +98,7 @@ export function BenefitsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mx-auto max-w-3xl text-center mb-16"
+          className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-2"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.9 }}
@@ -114,7 +114,7 @@ export function BenefitsSection() {
               Advantage
             </span>
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground px-2">
             We built a platform that's both incredibly powerful and beautifully
             simple. Here's why teams love us.
           </p>
@@ -126,7 +126,7 @@ export function BenefitsSection() {
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
         >
           {benefits.map((benefit, index) => (
             <motion.div
@@ -134,7 +134,7 @@ export function BenefitsSection() {
               variants={itemVariants}
               className="group relative"
             >
-              <div className="relative h-full rounded-2xl bg-background/80 backdrop-blur-sm border border-border/50 p-6 sm:p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 overflow-hidden">
+              <div className="relative h-full rounded-2xl bg-background/80 backdrop-blur-sm border border-border/50 p-5 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 overflow-hidden">
                 {/* Gradient hover effect */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${benefit.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
 

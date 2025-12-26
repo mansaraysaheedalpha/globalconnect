@@ -42,8 +42,6 @@ import {
   DollarSign,
   TrendingUp,
   Tag,
-  Eye,
-  EyeOff,
   Calendar,
   Loader,
 } from "lucide-react";
@@ -128,16 +126,24 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
   } = useQuery(GET_EVENT_TICKET_TYPES_ADMIN_QUERY, {
     variables: { eventId },
     skip: !eventId,
+    fetchPolicy: "cache-and-network",
   });
 
   // Fetch ticket summary
-  const { data: summaryData, loading: summaryLoading } = useQuery(
+  const { data: summaryData, loading: summaryLoading, refetch: refetchSummary } = useQuery(
     GET_EVENT_TICKET_SUMMARY_QUERY,
     {
       variables: { eventId },
       skip: !eventId,
+      fetchPolicy: "cache-and-network",
     }
   );
+
+  // Refetch both queries
+  const refetchAll = () => {
+    refetchTicketTypes();
+    refetchSummary();
+  };
 
   // Delete mutation
   const [deleteTicketType, { loading: deleting }] = useMutation(
@@ -146,7 +152,7 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
       onCompleted: () => {
         toast.success("Ticket type deleted successfully");
         setDeletingTicketType(null);
-        refetchTicketTypes();
+        refetchAll();
       },
       onError: (error) => {
         toast.error("Failed to delete ticket type", {
@@ -162,7 +168,7 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
     {
       onCompleted: () => {
         toast.success("Ticket type duplicated successfully");
-        refetchTicketTypes();
+        refetchAll();
       },
       onError: (error) => {
         toast.error("Failed to duplicate ticket type", {
@@ -334,7 +340,7 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
         onClose={() => setIsCreateModalOpen(false)}
         eventId={eventId}
         onSuccess={() => {
-          refetchTicketTypes();
+          refetchAll();
           setIsCreateModalOpen(false);
         }}
       />
@@ -346,7 +352,7 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
           onClose={() => setEditingTicketType(null)}
           ticketType={editingTicketType}
           onSuccess={() => {
-            refetchTicketTypes();
+            refetchAll();
             setEditingTicketType(null);
           }}
         />
@@ -418,10 +424,7 @@ const TicketTypeCard = ({
                 <Badge variant="secondary">Inactive</Badge>
               )}
               {ticketType.isHidden && (
-                <Badge variant="outline" className="gap-1">
-                  <EyeOff className="h-3 w-3" />
-                  Hidden
-                </Badge>
+                <Badge variant="outline">Hidden</Badge>
               )}
               {ticketType.isOnSale && (
                 <Badge variant="default" className="bg-green-600">

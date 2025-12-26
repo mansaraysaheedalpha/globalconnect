@@ -317,7 +317,7 @@ export const FloatingScheduleIndicator = ({
   if (!isConnected) return null;
 
   return (
-    <div className={cn("fixed bottom-20 right-4 z-40", className)}>
+    <div className={cn("fixed bottom-20 right-4 z-40 safe-bottom", className)}>
       <Sheet>
         <SheetTrigger asChild>
           <Button

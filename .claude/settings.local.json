@@ -29,7 +29,11 @@
       "Bash(powershell:*)",
       "Bash(pnpm build:*)",
       "Bash(find:*)",
-      "Bash(copy /Y \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\public\\\\web-app-manifest-512x512.png\" \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\public\\\\logo.png\")"
+      "Bash(copy /Y \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\public\\\\web-app-manifest-512x512.png\" \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\public\\\\logo.png\")",
+      "Bash(git commit:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(if exist node_modules.cache rmdir /s /q node_modules.cache)"
     ]
   }
 }

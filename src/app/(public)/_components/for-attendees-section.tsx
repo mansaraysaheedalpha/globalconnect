@@ -64,7 +64,7 @@ export function ForAttendeesSection() {
   const [activeCard, setActiveCard] = useState<number | null>(null);
 
   return (
-    <section id="for-attendees" className="py-24 sm:py-32 relative overflow-hidden scroll-mt-20">
+    <section id="for-attendees" className="py-16 sm:py-24 relative overflow-hidden scroll-mt-20">
       {/* Background decorations */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-pink-500/5 rounded-full blur-[150px]" />
@@ -78,7 +78,7 @@ export function ForAttendeesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16 px-2"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.9 }}
@@ -90,14 +90,14 @@ export function ForAttendeesSection() {
             For Attendees
           </motion.span>
 
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-6">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4 sm:mb-6">
             Experience events like{" "}
             <span className="bg-gradient-to-r from-pink-500 to-violet-500 bg-clip-text text-transparent">
               never before
             </span>
           </h2>
 
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
             Discover, register, and engage with events through a beautifully designed experience that puts you first.
           </p>
         </motion.div>
@@ -105,7 +105,7 @@ export function ForAttendeesSection() {
         {/* Feature Cards - Bento Grid Style */}
         <motion.div
           ref={ref}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
         >
           {attendeeFeatures.map((feature, index) => (
             <motion.div
@@ -116,7 +116,7 @@ export function ForAttendeesSection() {
               onMouseEnter={() => setActiveCard(index)}
               onMouseLeave={() => setActiveCard(null)}
               className={cn(
-                "group relative p-6 rounded-2xl border border-border/50 bg-background transition-all duration-500 cursor-pointer overflow-hidden",
+                "group relative p-5 sm:p-6 rounded-2xl border border-border/50 bg-background transition-all duration-500 cursor-pointer overflow-hidden",
                 activeCard === index ? "shadow-2xl border-transparent -translate-y-2" : "shadow-sm hover:shadow-lg"
               )}
             >
@@ -131,7 +131,7 @@ export function ForAttendeesSection() {
               <div className="relative">
                 {/* Icon */}
                 <div className={cn(
-                  "flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br mb-5 shadow-lg transition-all duration-300",
+                  "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br mb-4 sm:mb-5 shadow-lg transition-all duration-300",
                   feature.gradient,
                   activeCard === index && "scale-110 shadow-xl"
                 )}>
@@ -139,10 +139,10 @@ export function ForAttendeesSection() {
                 </div>
 
                 {/* Text */}
-                <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 group-hover:text-primary transition-colors">
                   {feature.title}
                 </h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
 
@@ -177,7 +177,7 @@ export function ForAttendeesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.4 }}
-          className="mt-16 text-center"
+          className="mt-12 sm:mt-16 text-center"
         >
           <Button size="lg" variant="outline" className="group" asChild>
             <Link href="/events">

@@ -223,7 +223,7 @@ export const FloatingScoreWidget = ({
 
   // Positioned above the DM button (which is at bottom-4)
   return (
-    <div className={cn("fixed bottom-24 left-4 z-40", className)}>
+    <div className={cn("fixed bottom-24 left-4 z-40 safe-bottom", className)}>
       <Card className="shadow-lg">
         <CardContent className="p-3">
           <div className="flex items-center gap-2">

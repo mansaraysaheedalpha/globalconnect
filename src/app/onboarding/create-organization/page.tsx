@@ -126,11 +126,11 @@ export default function CreateOrganizationPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-muted/30">
+    <div className="relative flex min-h-screen flex-col items-center justify-center px-4 sm:px-6 py-8 bg-gradient-to-b from-background to-muted/30">
       <FloatingShapes />
 
       <motion.div
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-lg"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -169,16 +169,16 @@ export default function CreateOrganizationPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="border-2 shadow-xl">
+          <Card className="border shadow-lg">
             <form onSubmit={handleSubmit}>
-              <CardHeader className="text-center pb-4">
+              <CardHeader className="text-center pb-3 sm:pb-4">
                 <motion.div
-                  className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center mb-4"
+                  className="mx-auto w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center mb-4"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                 >
-                  <Building2 className="h-7 w-7 text-primary" />
+                  <Building2 className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                 </motion.div>
                 <CardTitle className="text-2xl">
                   Create Your Organization

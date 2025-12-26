@@ -195,7 +195,7 @@ export default function AttendeeDashboard() {
   // Only show loading skeleton if we have no data at all (first load)
   if (loading && !data) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
         <Skeleton className="h-10 w-48 mb-6" />
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -208,7 +208,7 @@ export default function AttendeeDashboard() {
 
   if (error) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
         <Card className="border-destructive">
           <CardContent className="pt-6 text-center">
             <p className="text-destructive">Failed to load your events</p>
@@ -242,7 +242,7 @@ export default function AttendeeDashboard() {
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">My Events</h1>

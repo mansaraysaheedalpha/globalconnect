@@ -19,8 +19,10 @@ import {
 
 export function Sidebar({
   onOpenCreateOrgModal,
+  className,
 }: {
   onOpenCreateOrgModal: () => void;
+  className?: string;
 }) {
   const pathname = usePathname();
 
@@ -64,7 +66,10 @@ export function Sidebar({
 
   return (
     <aside
-      className="dark w-64 flex-shrink-0 bg-background text-foreground border-r border-border/50 p-4 flex flex-col"
+      className={cn(
+        "dark w-64 flex-shrink-0 bg-background text-foreground border-r border-border/50 p-4 flex flex-col h-full",
+        className
+      )}
       role="complementary"
       aria-label="Organizer sidebar navigation"
     >

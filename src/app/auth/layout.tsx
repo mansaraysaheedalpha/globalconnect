@@ -112,10 +112,10 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex min-h-screen w-full bg-background px-4 sm:px-6 py-6 sm:py-8">
       {/* --- FORM SIDE (LEFT) --- */}
       <motion.div
-        className="flex flex-1 flex-col items-center justify-center gap-6 p-6 md:p-10 overflow-y-auto"
+        className="flex flex-1 flex-col items-center justify-center gap-6 rounded-2xl bg-card/60 border border-border/50 shadow-sm px-4 py-6 sm:p-8 lg:p-10 backdrop-blur-sm"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
@@ -130,11 +130,11 @@ export default function AuthLayout({
           />
           <span className="text-xl font-bold">GlobalConnect</span>
         </Link>
-        <div className="w-full max-w-sm">{children}</div>
+        <div className="w-full max-w-md">{children}</div>
       </motion.div>
 
       {/* --- VISUAL SIDE (RIGHT) --- */}
-      <div className="relative hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="relative hidden lg:flex lg:w-1/2 rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 ml-4">
         {/* Animated background */}
         <FloatingShapes />
 

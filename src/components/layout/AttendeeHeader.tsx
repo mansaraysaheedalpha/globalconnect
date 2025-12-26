@@ -14,11 +14,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "../ui/user-avatar";
 import Link from "next/link";
-import { ExternalLink, Settings, LogOut } from "lucide-react";
+import { ExternalLink, Settings, LogOut, Menu } from "lucide-react";
 import { NotificationBellOnly } from "@/components/features/notifications/notifications-container";
 import { HeaderDMButton } from "@/components/features/dm";
 
-export function AttendeeHeader() {
+type AttendeeHeaderProps = {
+  onOpenSidebar?: () => void;
+};
+
+export function AttendeeHeader({ onOpenSidebar }: AttendeeHeaderProps) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
@@ -46,15 +50,26 @@ export function AttendeeHeader() {
 
   return (
     <header
-      className="flex h-14 items-center justify-between border-b bg-background px-6"
+      className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 sm:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/75"
       role="banner"
       aria-label="Attendee header"
     >
-      <h1 className="font-semibold text-lg">{pageTitle}</h1>
+      <div className="flex items-center gap-3 min-w-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={() => onOpenSidebar?.()}
+          aria-label="Open navigation"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <h1 className="font-semibold text-base sm:text-lg truncate">{pageTitle}</h1>
+      </div>
 
       {user && (
         <nav
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 sm:gap-2"
           role="navigation"
           aria-label="User actions"
         >

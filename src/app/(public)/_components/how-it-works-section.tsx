@@ -54,7 +54,7 @@ export function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
 
   return (
-    <section id="how-it-works" className="py-24 sm:py-32 relative overflow-hidden scroll-mt-20">
+    <section id="how-it-works" className="py-16 sm:py-24 relative overflow-hidden scroll-mt-20">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px]" />
@@ -67,7 +67,7 @@ export function HowItWorksSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16 px-2"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.9 }}
@@ -83,7 +83,7 @@ export function HowItWorksSection() {
               Works
             </span>
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Get started in minutes. Whether you're organizing or attending, the journey is seamless.
           </p>
         </motion.div>
@@ -178,7 +178,7 @@ export function HowItWorksSection() {
         </div>
 
         {/* Steps - Mobile */}
-        <div className="lg:hidden space-y-6">
+        <div className="lg:hidden space-y-5">
           {steps.map((step, index) => (
             <motion.div
               key={step.number}
@@ -186,7 +186,7 @@ export function HowItWorksSection() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="flex gap-4"
+              className="flex gap-4 bg-card border border-border/60 rounded-2xl p-4 shadow-sm"
             >
               {/* Icon */}
               <div className="flex-shrink-0">
