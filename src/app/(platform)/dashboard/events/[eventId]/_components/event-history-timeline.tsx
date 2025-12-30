@@ -75,24 +75,21 @@ export const EventHistoryTimeline = ({
       </CardHeader>
       <CardContent>
         {history.length > 0 ? (
-          <div className="space-y-8">
-            {history.map((item) => (
-              <div key={item.id} className="relative flex gap-x-4">
-                <div className="absolute left-0 top-0 flex w-12 justify-center -bottom-8">
-                  <div className="w-px bg-border"></div>
-                </div>
-                <div className="relative flex h-12 w-12 flex-none items-center justify-center bg-card rounded-full shadow-sm ring-1 ring-border">
+          <div className="space-y-6">
+            {history.map((item, idx) => (
+              <div key={item.id} className="relative flex gap-3 sm:gap-4">
+                <div className="relative flex h-10 w-10 sm:h-12 sm:w-12 flex-none items-center justify-center bg-card rounded-full shadow-sm ring-1 ring-border">
                   <ClockIcon
-                    className="h-6 w-6 text-primary"
+                    className="h-5 w-5 sm:h-6 sm:w-6 text-primary"
                     aria-hidden="true"
                   />
                 </div>
-                <div className="pb-8 pt-1.5">
+                <div className="flex-1 pb-4 border-b last:border-b-0 border-border/60">
                   <h3 className="font-semibold text-foreground">
                     {item.eventType}
                   </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {format(new Date(item.timestamp), "MMMM d, yyyy 'at' p")}
+                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                    {format(new Date(item.timestamp), "MMM d, yyyy 'at' p")}
                   </p>
                   <p className="mt-2 text-sm text-foreground">
                     {formatEventData(item)}

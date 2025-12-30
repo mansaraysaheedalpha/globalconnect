@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 type Attendee = {
   id: string;
@@ -66,17 +67,62 @@ export const AttendeeList = ({ attendees }: AttendeeListProps) => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h3 className="text-xl font-semibold">{attendees.length} Attendees</h3>
         <Input
           placeholder="Search by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm w-full sm:w-auto"
         />
       </div>
-      <div className="border rounded-lg">
+      {/* Mobile cards */}
+      <div className="grid grid-cols-1 gap-3 md:hidden">
+        {filteredAttendees.length > 0 ? (
+          filteredAttendees.map((attendee) => {
+            const name = attendee.user
+              ? `${attendee.user.first_name} ${attendee.user.last_name}`
+              : attendee.guestName;
+            const email = attendee.user ? attendee.user.email : attendee.guestEmail;
+            return (
+              <Card key={attendee.id} className="border shadow-sm">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-semibold">{name || "Name not available"}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {email || "Email not available"}
+                      </div>
+                    </div>
+                    <Badge variant={getStatusVariant(attendee.status)} className="capitalize">
+                      {attendee.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Ticket</span>
+                    <span className="font-mono">{attendee.ticketCode}</span>
+                  </div>
+                  {attendee.checkedInAt && (
+                    <div className="text-xs text-muted-foreground">
+                      Checked in at {format(new Date(attendee.checkedInAt), "p")}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Card>
+            <CardContent className="p-4 text-center text-sm text-muted-foreground">
+              No attendees found.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -97,15 +143,12 @@ export const AttendeeList = ({ attendees }: AttendeeListProps) => {
                 return (
                   <TableRow key={attendee.id}>
                     <TableCell>
-                      {/* --- THIS IS THE FIX --- */}
-                      {/* Removed icons and added explicit fallback text */}
                       <div className="font-medium">
                         {name || "Name not available"}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {email || "Email not available"}
                       </div>
-                      {/* -------------------- */}
                     </TableCell>
                     <TableCell>
                       <span className="font-mono text-sm">

@@ -130,44 +130,45 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
   });
 
   const cardContent = (
-    <div className="relative group overflow-hidden rounded-xl shadow-md hover:shadow-2xl h-full flex flex-col justify-between bg-card transition-all duration-300 ease-out hover:-translate-y-1">
-      {event.imageUrl ? (
-        <Image
-          src={event.imageUrl}
-          alt={event.name}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
-        />
-      ) : (
-        <EventCardPlaceholder />
-      )}
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/10 group-hover:from-black/95 group-hover:via-black/60 transition-all duration-300" />
-
-      <div className="relative p-4 w-full flex justify-between items-start">
-        <Badge
-          variant={event.status === "published" ? "default" : "secondary"}
-          className="capitalize shadow-lg"
-        >
-          {isArchivedView ? "Archived" : event.status}
-        </Badge>
+    <div className="relative group overflow-hidden rounded-xl shadow-md hover:shadow-2xl h-full flex flex-col bg-card transition-all duration-300 ease-out hover:-translate-y-1 border">
+      <div className="relative w-full aspect-[4/3]">
+        {event.imageUrl ? (
+          <Image
+            src={event.imageUrl}
+            alt={event.name}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
+          />
+        ) : (
+          <EventCardPlaceholder />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent group-hover:from-black/90 group-hover:via-black/60 transition-all duration-300" />
+        <div className="absolute top-3 left-3">
+          <Badge
+            variant={event.status === "published" ? "default" : "secondary"}
+            className="capitalize shadow-lg"
+          >
+            {isArchivedView ? "Archived" : event.status}
+          </Badge>
+        </div>
       </div>
 
-      <div className="relative p-4 w-full text-white">
-        <h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors duration-300">{event.name}</h3>
-        <div className="mt-3 space-y-2 text-sm text-neutral-300">
-          <div className="flex items-center">
-            <CalendarDays className="h-4 w-4 mr-2 flex-shrink-0" />
+      <div className="relative p-4 w-full text-foreground flex-1 flex flex-col">
+        <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
+          {event.name}
+        </h3>
+        <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 flex-shrink-0" />
             <span>{formattedDate}</span>
           </div>
-          <div className="flex items-center">
-            <Users className="h-4 w-4 mr-2 flex-shrink-0" />
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 flex-shrink-0" />
             <span>{event.registrationsCount} Registrations</span>
           </div>
         </div>
 
-        {/* View Event indicator - appears on hover */}
         {!isArchivedView && (
           <div className="mt-4 flex items-center text-primary font-medium opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
             <span>View Event</span>
@@ -177,7 +178,7 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
       </div>
 
       {isArchivedView && (
-        <div className="relative p-4 border-t border-white/10">
+        <div className="p-4 border-t border-border/60">
           <Button
             variant="secondary"
             className="w-full"
@@ -197,11 +198,11 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
   );
 
   return isArchivedView ? (
-    <div className="h-80">{cardContent}</div>
+    <div className="h-full">{cardContent}</div>
   ) : (
     <Link
       href={`/dashboard/events/${event.id}`}
-      className="block no-underline h-80"
+      className="block no-underline h-full"
     >
       {cardContent}
     </Link>

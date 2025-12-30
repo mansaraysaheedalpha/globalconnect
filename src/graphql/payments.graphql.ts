@@ -724,7 +724,7 @@ export const CREATE_PROMO_CODE_MUTATION = gql`
  * Update a promo code
  */
 export const UPDATE_PROMO_CODE_MUTATION = gql`
-  mutation UpdatePromoCode($id: ID!, $input: PromoCodeUpdateInput!) {
+  mutation UpdatePromoCode($id: String!, $input: UpdatePromoCodeInput!) {
     updatePromoCode(id: $id, input: $input) {
       id
       code
@@ -746,19 +746,23 @@ export const UPDATE_PROMO_CODE_MUTATION = gql`
  * Delete a promo code
  */
 export const DELETE_PROMO_CODE_MUTATION = gql`
-  mutation DeletePromoCode($id: ID!) {
+  mutation DeletePromoCode($id: String!) {
     deletePromoCode(id: $id)
   }
 `;
 
+
 /**
- * Deactivate a promo code
+ * Check in a ticket
  */
-export const DEACTIVATE_PROMO_CODE_MUTATION = gql`
-  mutation DeactivatePromoCode($id: ID!) {
-    deactivatePromoCode(id: $id) {
+export const CHECK_IN_TICKET_MUTATION = gql`
+  mutation CheckInTicket($input: CheckInTicketInput!) {
+    checkInTicket(input: $input) {
       id
-      isActive
+      status
+      ticketCode
+      checkedInAt
+      checkInLocation
     }
   }
 `;

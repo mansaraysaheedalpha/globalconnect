@@ -1,3 +1,4 @@
+
 // src/app/(public)/events/[eventId]/checkout/confirmation/page.tsx
 'use client';
 
@@ -25,7 +26,7 @@ import {
   PartyPopper,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { Order, OrderStatus } from '@/types/payment.types';
+import { Order, OrderItem, OrderStatus } from '@/types/payment.types';
 import confetti from 'canvas-confetti';
 
 export default function ConfirmationPage() {
@@ -249,7 +250,7 @@ export default function ConfirmationPage() {
                 Tickets
               </h3>
               <div className="space-y-3">
-                {order.items.map((item) => (
+                {order.items.map((item: OrderItem) => (
                   <div key={item.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Ticket className="h-4 w-4 text-muted-foreground" />

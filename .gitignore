@@ -17,6 +17,7 @@ package-lock.json
 # next.js
 /.next/
 /out/
+/.vscode/
 
 # production
 /build
@@ -36,6 +37,13 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# PWA
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/worker-*.js
+public/fallback-*.js
 
 # typescript
 *.tsbuildinfo

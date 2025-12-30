@@ -124,12 +124,12 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="px-4 sm:px-6 py-6 space-y-6">
         <div className="space-y-2">
           <ShimmerSkeleton className="h-9 w-64" />
           <ShimmerSkeleton className="h-5 w-48" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <CardSkeleton key={i} lines={2} />
           ))}
@@ -143,7 +143,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <PageTransition className="p-6 space-y-8">
+    <PageTransition className="px-4 sm:px-6 py-6 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -166,7 +166,7 @@ export default function DashboardPage() {
       <MiniStatsGrid items={stats} columns={4} />
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Attendance Chart */}
         <PremiumCard variant="elevated" padding="md" className="lg:col-span-2">
           <SectionHeader

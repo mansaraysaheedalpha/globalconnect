@@ -1,3 +1,4 @@
+
 // src/components/features/checkout/ticket-selector.tsx
 'use client';
 
@@ -120,7 +121,7 @@ function TicketTypeCard({
   const isFree = price.amount === 0;
 
   // Check if user can add more
-  const canAddMore = quantity < maxPerOrder && (quantityAvailable === null || quantity < quantityAvailable);
+  const canAddMore = quantity < maxPerOrder && (quantityAvailable === null || quantity < (quantityAvailable ?? Infinity));
 
   return (
     <Card

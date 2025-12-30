@@ -1,3 +1,4 @@
+
 // src/app/(platform)/dashboard/events/[eventId]/page.tsx
 "use client";
 
@@ -28,6 +29,8 @@ import { ErrorState, QueryErrorHandler } from "@/components/ui/error-boundary";
 import { EventHistoryTimeline } from "./_components/event-history-timeline";
 import { LiveAgendaContainer } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
+import LeaderboardPage from "./leaderboard/page";
+import MonetizationPage from "./monetization/page";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -61,7 +64,7 @@ export default function EventDetailPage() {
 
   if (eventLoading) {
     return (
-      <div className="p-6 animate-fade-in">
+      <div className="px-4 sm:px-6 py-6 animate-fade-in">
         {/* Header skeleton */}
         <div className="mb-6 space-y-4">
           <ShimmerSkeleton className="h-10 w-64" />
@@ -102,7 +105,7 @@ export default function EventDetailPage() {
 
   if (eventError || !eventData?.event) {
     return (
-      <div className="p-6">
+      <div className="px-4 sm:px-6 py-6">
         <QueryErrorHandler
           error={eventError || new Error("Event not found")}
           onRetry={() => refetchEvent()}
@@ -123,18 +126,20 @@ export default function EventDetailPage() {
   });
 
   return (
-    <div className="p-6">
+    <div className="px-4 sm:px-6 py-6">
       <EventDetailHeader event={event} refetch={refetchEvent} />
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         <div className="lg:col-span-2">
           <Tabs defaultValue="live">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="w-full flex gap-2 overflow-x-auto scrollbar-hide">
               <TabsTrigger value="live">Live Dashboard</TabsTrigger>
               <TabsTrigger value="agenda">Agenda</TabsTrigger>
               <TabsTrigger value="attendees">Attendees</TabsTrigger>
               <TabsTrigger value="tickets">Tickets</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+              <TabsTrigger value="monetization">Monetization</TabsTrigger>
             </TabsList>
             <TabsContent value="live" className="mt-6">
               <LiveDashboard eventId={event.id} />
@@ -154,6 +159,12 @@ export default function EventDetailPage() {
             </TabsContent>
             <TabsContent value="history" className="mt-6">
               <EventHistoryTimeline eventId={event.id} />
+            </TabsContent>
+            <TabsContent value="leaderboard" className="mt-6">
+              <LeaderboardPage />
+            </TabsContent>
+            <TabsContent value="monetization" className="mt-6">
+              <MonetizationPage />
             </TabsContent>
           </Tabs>
         </div>

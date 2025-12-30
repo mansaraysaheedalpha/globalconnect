@@ -1,14 +1,16 @@
+
 "use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useMutation, ApolloCache } from "@apollo/client";
+import { useMutation, ApolloCache, useApolloClient } from "@apollo/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
   PUBLISH_EVENT_MUTATION,
   ARCHIVE_EVENT_MUTATION,
   UPDATE_EVENT_MUTATION,
+  UNPUBLISH_EVENT_MUTATION,
 } from "@/graphql/events.graphql";
 import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 import { GET_PUBLIC_EVENT_DETAILS_QUERY } from "@/graphql/public.graphql";
@@ -86,8 +88,10 @@ export const EventDetailHeader = ({
   refetch,
 }: EventDetailHeaderProps) => {
   const router = useRouter();
+  const client = useApolloClient();
   const { user } = useAuthStore();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUnpublishDialogOpen, setIsUnpublishDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBlueprintModalOpen, setIsBlueprintModalOpen] = useState(false);
 
@@ -187,6 +191,49 @@ export const EventDetailHeader = ({
     }
   );
 
+  const updateEventInCaches = (updated: Event) => {
+    const variants = [null, "archived", "published", "draft"];
+    variants.forEach((status) => {
+      const variables = { status };
+      try {
+        const existing = client.readQuery<EventsQueryData>({
+          query: GET_EVENTS_BY_ORGANIZATION_QUERY,
+          variables,
+        });
+        if (existing) {
+          client.writeQuery<EventsQueryData>({
+            query: GET_EVENTS_BY_ORGANIZATION_QUERY,
+            variables,
+            data: {
+              eventsByOrganization: {
+                ...existing.eventsByOrganization,
+                events: existing.eventsByOrganization.events.map((e: Event) =>
+                  e.id === updated.id ? { ...e, ...updated } : e
+                ),
+              },
+            },
+          });
+        }
+      } catch {
+        // ignore cache misses
+      }
+    });
+  };
+
+  const [unpublishEvent, { loading: isUnpublishing }] = useMutation(
+    UNPUBLISH_EVENT_MUTATION,
+    {
+      onCompleted: (res) => {
+        toast.success("Event unpublished");
+        refetch();
+        updateEventInCaches(res.unpublishEvent);
+      },
+      onError: (error) => {
+        toast.error("Failed to unpublish", { description: error.message });
+      },
+    }
+  );
+
   const isOwnerOrAdmin =
     user?.id === event?.ownerId ||
     user?.role === "OWNER" ||
@@ -198,6 +245,7 @@ export const EventDetailHeader = ({
 
   const handlePublish = () => publishEvent({ variables: { id: event.id } });
   const handleDelete = () => archiveEvent({ variables: { id: event.id } });
+  const handleUnpublish = () => unpublishEvent({ variables: { id: event.id } });
   const handleCopyLink = () => {
     navigator.clipboard.writeText(publicUrl);
     toast.success("Public link copied to clipboard!");
@@ -276,7 +324,7 @@ export const EventDetailHeader = ({
               ? "Your event is public and ready for registrations."
               : "Publish this event to make it visible to the public."}
             {event.isPublic ? (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={handleCopyLink}>
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Link
@@ -287,6 +335,22 @@ export const EventDetailHeader = ({
                     View Public Page
                   </Button>
                 </Link>
+                {event.status === "published" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                    onClick={() => setIsUnpublishDialogOpen(true)}
+                    disabled={isUnpublishing}
+                  >
+                    {isUnpublishing ? (
+                      <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Globe className="h-4 w-4 mr-2" />
+                    )}
+                    Unpublish
+                  </Button>
+                )}
               </div>
             ) : (
               <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
@@ -320,6 +384,37 @@ export const EventDetailHeader = ({
               className="bg-destructive hover:bg-destructive/90"
             >
               Yes, delete event
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isUnpublishDialogOpen}
+        onOpenChange={setIsUnpublishDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the event back to draft and remove it from public discovery.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUnpublishing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnpublish}
+              disabled={isUnpublishing}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isUnpublishing ? (
+                <>
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  Unpublishing...
+                </>
+              ) : (
+                "Yes, unpublish"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

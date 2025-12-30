@@ -61,10 +61,10 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           <Menu className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3 min-w-0">
-          <div className="font-semibold text-base sm:text-lg truncate">
+          <div className="font-semibold text-base sm:text-lg truncate max-w-[150px] sm:max-w-none">
             {loading ? "..." : currentOrg?.name || "Organization"}
           </div>
-          <div className="hidden md:block">
+          <div>
             <OrganizationSwitcher />
           </div>
         </div>

@@ -60,11 +60,11 @@ export function OrganizationSwitcher() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="w-56 justify-between"
+            className="w-10 px-0 md:w-56 md:px-4 justify-center md:justify-between"
             disabled={loading}
           >
             {/* THIS IS THE CHANGE */}
-            <span className="truncate">Switch Organization</span>
+            <span className="truncate hidden md:inline">Switch Organization</span>
             <ChevronsUpDown className="h-4 w-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>

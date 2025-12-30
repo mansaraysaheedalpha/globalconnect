@@ -170,7 +170,12 @@ export const StickyRegistrationCard = ({
               )}
             </div>
           ) : (
-            <p className="text-center text-2xl font-bold text-green-600 mb-4">Free</p>
+            <div className="text-center mb-4">
+              <p className="text-lg font-semibold">Tickets available</p>
+              <p className="text-sm text-muted-foreground">
+                See ticket options
+              </p>
+            </div>
           )}
 
           {/* Register/Get Tickets Button */}
@@ -220,7 +225,7 @@ export const StickyRegistrationCard = ({
       </Card>
 
       {/* Mobile Fixed Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t lg:hidden z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-background/95 backdrop-blur-sm border-t lg:hidden z-50">
         <Button
           size="lg"
           className="w-full h-12 font-semibold"
@@ -235,7 +240,7 @@ export const StickyRegistrationCard = ({
           <Ticket className="h-5 w-5 mr-2" />
           {ticketInfo && !ticketInfo.allFree
             ? `Get Tickets - ${ticketInfo.hasMultipleTiers ? 'From ' : ''}${formatPrice(ticketInfo.minPrice, ticketInfo.currency)}`
-            : 'Register Now - Free'
+            : 'Register Now'
           }
         </Button>
       </div>

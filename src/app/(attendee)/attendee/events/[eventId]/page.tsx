@@ -1,3 +1,4 @@
+
 // src/app/(attendee)/attendee/events/[eventId]/page.tsx
 "use client";
 
@@ -5,6 +6,7 @@ import * as React from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
+import { GET_REGISTRATIONS_BY_EVENT_QUERY } from "@/graphql/registrations.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,7 @@ import { FloatingScoreWidget } from "@/components/features/gamification/gamifica
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
 import { FloatingDMButton } from "@/components/features/dm";
+import { OfferGrid } from "@/components/features/offers";
 
 type Session = {
   id: string;
@@ -169,7 +172,7 @@ const AttendeeChatDialog = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-10 w-10"
             onClick={() => setIsOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -383,7 +386,7 @@ const AttendeePresentationDialog = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+            className="h-10 w-10 text-white/70 hover:text-white hover:bg-white/10"
             onClick={() => setIsOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -596,6 +599,24 @@ export default function AttendeeEventPage() {
     skip: !eventId,
   });
 
+  const { data: attendeesData } = useQuery(GET_REGISTRATIONS_BY_EVENT_QUERY, {
+    variables: { eventId },
+    skip: !eventId,
+  });
+
+  const availableUsers = React.useMemo(() => {
+    if (!attendeesData?.registrationsByEvent) return [];
+    
+    return attendeesData.registrationsByEvent
+      .filter((reg: any) => reg.user) // Only users, not guests without accounts
+      .map((reg: any) => ({
+        id: reg.user.id,
+        firstName: reg.user.first_name,
+        lastName: reg.user.last_name,
+        avatar: reg.user.imageUrl // Assuming user has imageUrl
+      }));
+  }, [attendeesData]);
+
   if (loading) {
     return (
       <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto animate-fade-in">
@@ -781,6 +802,21 @@ export default function AttendeeEventPage() {
         </div>
       </PremiumCard>
 
+      {/* Exclusive Offers */}
+      <section className="mb-8">
+        <SectionHeader
+          title="Exclusive Offers"
+          subtitle="Limited-time upgrades and add-ons for this event"
+          className="mb-4"
+        />
+        <OfferGrid
+          eventId={eventId}
+          placement="IN_EVENT"
+          variant="featured"
+          limit={3}
+        />
+      </section>
+
       {/* Sessions */}
       <div className="space-y-8">
         {/* Live Sessions */}
@@ -889,6 +925,7 @@ export default function AttendeeEventPage() {
       {/* Floating Direct Messages Button */}
       <FloatingDMButton
         eventId={eventId}
+        availableUsers={availableUsers}
         position="bottom-left"
         className="left-4 sm:left-6"
       />

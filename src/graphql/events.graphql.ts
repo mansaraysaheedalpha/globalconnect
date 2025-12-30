@@ -68,6 +68,19 @@ export const RESTORE_EVENT_MUTATION = gql`
   }
 `;
 
+export const UNPUBLISH_EVENT_MUTATION = gql`
+  mutation UnpublishEvent($id: String!) {
+    unpublishEvent(id: $id) {
+      id
+      status
+      isPublic
+      name
+      startDate
+      endDate
+    }
+  }
+`;
+
 export const GET_ARCHIVED_EVENTS_COUNT_QUERY = gql`
   query GetArchivedEventsCount($status: String) {
     eventsByOrganization(status: $status) {

@@ -119,6 +119,7 @@ const EventCard = ({ registration }: { registration: Registration }) => {
                   src={event.imageUrl}
                   alt={event.name}
                   fill
+                  sizes="(max-width: 768px) 100vw, 192px"
                   className="object-cover"
                 />
               ) : (

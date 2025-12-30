@@ -33,7 +33,10 @@
       "Bash(git commit:*)",
       "Bash(pnpm dev:*)",
       "Bash(if exist .next rmdir /s /q .next)",
-      "Bash(if exist node_modules.cache rmdir /s /q node_modules.cache)"
+      "Bash(if exist node_modules.cache rmdir /s /q node_modules.cache)",
+      "Bash(test:*)",
+      "Bash(wc:*)",
+      "Bash(rm:*)"
     ]
   }
 }

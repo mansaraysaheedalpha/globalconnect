@@ -1,3 +1,4 @@
+
 // src/app/(platform)/dashboard/events/[eventId]/_components/ticket-management.tsx
 "use client";
 
@@ -6,7 +7,6 @@ import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import {
   GET_EVENT_TICKET_TYPES_ADMIN_QUERY,
-  GET_EVENT_TICKET_SUMMARY_QUERY,
   DELETE_TICKET_TYPE_MUTATION,
   DUPLICATE_TICKET_TYPE_MUTATION,
 } from "@/graphql/payments.graphql";
@@ -48,6 +48,8 @@ import {
 import { CreateTicketTypeModal } from "./create-ticket-type-modal";
 import { EditTicketTypeModal } from "./edit-ticket-type-modal";
 import { PromoCodesManagement } from "./promo-codes-management";
+import { TicketCheckIn } from "./ticket-check-in";
+import { useTicketMetrics, TicketSummary } from "@/hooks/use-ticket-metrics";
 
 interface TicketType {
   id: string;
@@ -79,36 +81,6 @@ interface TicketType {
   updatedAt: string;
 }
 
-interface TicketSummary {
-  eventId: string;
-  totalTicketTypes: number;
-  totalCapacity: number;
-  totalSold: number;
-  totalRevenue: {
-    amount: number;
-    currency: string;
-    formatted: string;
-  };
-  ticketTypeStats: Array<{
-    ticketTypeId: string;
-    ticketTypeName: string;
-    quantitySold: number;
-    quantityAvailable: number;
-    revenue: {
-      amount: number;
-      currency: string;
-      formatted: string;
-    };
-    percentageSold: number;
-  }>;
-  salesToday: number;
-  salesThisWeek: number;
-  salesThisMonth: number;
-  revenueToday: { formatted: string };
-  revenueThisWeek: { formatted: string };
-  revenueThisMonth: { formatted: string };
-}
-
 interface TicketManagementProps {
   eventId: string;
 }
@@ -117,6 +89,8 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTicketType, setEditingTicketType] = useState<TicketType | null>(null);
   const [deletingTicketType, setDeletingTicketType] = useState<TicketType | null>(null);
+
+  const { ticketSummary: summary, isConnected } = useTicketMetrics(eventId);
 
   // Fetch ticket types
   const {
@@ -129,20 +103,8 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
     fetchPolicy: "cache-and-network",
   });
 
-  // Fetch ticket summary
-  const { data: summaryData, loading: summaryLoading, refetch: refetchSummary } = useQuery(
-    GET_EVENT_TICKET_SUMMARY_QUERY,
-    {
-      variables: { eventId },
-      skip: !eventId,
-      fetchPolicy: "cache-and-network",
-    }
-  );
-
-  // Refetch both queries
   const refetchAll = () => {
     refetchTicketTypes();
-    refetchSummary();
   };
 
   // Delete mutation
@@ -179,7 +141,6 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
   );
 
   const ticketTypes: TicketType[] = ticketTypesData?.eventTicketTypesAdmin || [];
-  const summary: TicketSummary | null = summaryData?.eventTicketSummary || null;
 
   const handleDelete = (ticketType: TicketType) => {
     if (ticketType.quantitySold > 0) {
@@ -202,8 +163,8 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {summaryLoading ? (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {!isConnected ? (
           <>
             {[1, 2, 3, 4].map((i) => (
               <Card key={i}>
@@ -262,21 +223,22 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
 
       {/* Tabs for Ticket Types and Promo Codes */}
       <Tabs defaultValue="ticket-types">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <TabsList className="w-full sm:w-auto overflow-x-auto scrollbar-hide">
             <TabsTrigger value="ticket-types">Ticket Types</TabsTrigger>
             <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
+            <TabsTrigger value="check-in">Check In</TabsTrigger>
           </TabsList>
+          <Button className="w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Ticket Type
+          </Button>
         </div>
 
-        <TabsContent value="ticket-types" className="mt-0">
+        <TabsContent value="ticket-types" className="mt-0 space-y-4">
           {/* Ticket Types Header */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Manage Ticket Types</h3>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Ticket Type
-            </Button>
           </div>
 
           {/* Ticket Types List */}
@@ -331,6 +293,10 @@ export const TicketManagement = ({ eventId }: TicketManagementProps) => {
 
         <TabsContent value="promo-codes" className="mt-0">
           <PromoCodesManagement eventId={eventId} />
+        </TabsContent>
+
+        <TabsContent value="check-in" className="mt-0">
+          <TicketCheckIn eventId={eventId} />
         </TabsContent>
       </Tabs>
 

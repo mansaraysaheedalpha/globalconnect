@@ -102,7 +102,7 @@ const SheetContent = React.forwardRef<
         <SheetPrimitive.Close
           className={cn(
             "absolute top-3 right-3 sm:top-4 sm:right-4",
-            "h-8 w-8 rounded-lg flex items-center justify-center",
+            "h-10 w-10 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center",
             "text-muted-foreground hover:text-foreground",
             "hover:bg-muted transition-all duration-200",
             "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",

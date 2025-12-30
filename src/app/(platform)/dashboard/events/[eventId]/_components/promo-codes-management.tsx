@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   GET_EVENT_PROMO_CODES_QUERY,
   DELETE_PROMO_CODE_MUTATION,
-  DEACTIVATE_PROMO_CODE_MUTATION,
+  UPDATE_PROMO_CODE_MUTATION,
 } from "@/graphql/payments.graphql";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +43,7 @@ import {
   Users,
   Loader,
   PowerOff,
+  Power,
   Check,
 } from "lucide-react";
 import { CreatePromoCodeModal } from "./create-promo-code-modal";
@@ -112,16 +113,16 @@ export const PromoCodesManagement = ({ eventId }: PromoCodesManagementProps) => 
     }
   );
 
-  // Deactivate mutation
-  const [deactivatePromoCode, { loading: deactivating }] = useMutation(
-    DEACTIVATE_PROMO_CODE_MUTATION,
+  // Update status mutation
+  const [updatePromoCode, { loading: updatingStatus }] = useMutation(
+    UPDATE_PROMO_CODE_MUTATION,
     {
       onCompleted: () => {
-        toast.success("Promo code deactivated");
+        toast.success("Promo code status updated");
         refetchPromoCodes();
       },
       onError: (error) => {
-        toast.error("Failed to deactivate promo code", {
+        toast.error("Failed to update promo code status", {
           description: error.message,
         });
       },
@@ -144,8 +145,13 @@ export const PromoCodesManagement = ({ eventId }: PromoCodesManagementProps) => 
     }
   };
 
-  const handleDeactivate = (promoCode: PromoCode) => {
-    deactivatePromoCode({ variables: { id: promoCode.id } });
+  const handleToggleActive = (promoCode: PromoCode) => {
+    updatePromoCode({
+      variables: {
+        id: promoCode.id,
+        input: { isActive: !promoCode.isActive },
+      },
+    });
   };
 
   const handleCopyCode = async (code: string) => {
@@ -209,10 +215,10 @@ export const PromoCodesManagement = ({ eventId }: PromoCodesManagementProps) => 
               promoCode={promoCode}
               onEdit={() => setEditingPromoCode(promoCode)}
               onDelete={() => handleDelete(promoCode)}
-              onDeactivate={() => handleDeactivate(promoCode)}
+              onToggleActive={() => handleToggleActive(promoCode)}
               onCopy={() => handleCopyCode(promoCode.code)}
               isCopied={copiedCode === promoCode.code}
-              isDeactivating={deactivating}
+              isUpdating={updatingStatus}
             />
           ))}
         </div>
@@ -278,20 +284,20 @@ interface PromoCodeCardProps {
   promoCode: PromoCode;
   onEdit: () => void;
   onDelete: () => void;
-  onDeactivate: () => void;
+  onToggleActive: () => void;
   onCopy: () => void;
   isCopied: boolean;
-  isDeactivating: boolean;
+  isUpdating: boolean;
 }
 
 const PromoCodeCard = ({
   promoCode,
   onEdit,
   onDelete,
-  onDeactivate,
+  onToggleActive,
   onCopy,
   isCopied,
-  isDeactivating,
+  isUpdating,
 }: PromoCodeCardProps) => {
   const isPercentage = promoCode.discountType === "PERCENTAGE";
   const hasUnlimitedUses = promoCode.maxUses === null;
@@ -419,12 +425,19 @@ const PromoCodeCard = ({
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              {promoCode.isActive && (
-                <DropdownMenuItem onClick={onDeactivate} disabled={isDeactivating}>
-                  <PowerOff className="h-4 w-4 mr-2" />
-                  Deactivate
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onClick={onToggleActive} disabled={isUpdating}>
+                {promoCode.isActive ? (
+                  <>
+                    <PowerOff className="h-4 w-4 mr-2" />
+                    Deactivate
+                  </>
+                ) : (
+                  <>
+                    <Power className="h-4 w-4 mr-2" />
+                    Activate
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={onDelete}

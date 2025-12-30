@@ -46,7 +46,7 @@ export const EventList = ({
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         />
-        <PageTransition className="p-6">
+        <PageTransition className="px-4 sm:px-6 py-6">
           <NoEventsEmpty onCreateEvent={() => setIsModalOpen(true)} />
         </PageTransition>
       </>
@@ -55,7 +55,7 @@ export const EventList = ({
 
   if (events.length === 0 && isArchivedView) {
     return (
-      <PageTransition className="p-6">
+      <PageTransition className="px-4 sm:px-6 py-6">
         <EventPageHeader
           pageTitle={pageTitle}
           totalCount={0}
@@ -73,13 +73,13 @@ export const EventList = ({
   }
 
   return (
-    <PageTransition className="p-6">
+    <PageTransition className="px-4 sm:px-6 py-6">
       <EventPageHeader
         pageTitle={pageTitle}
         totalCount={totalCount}
         isArchivedView={isArchivedView}
       />
-      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
         {events.map((event) => (
           <StaggerItem key={event.id}>
             <EventCard event={event} isArchivedView={isArchivedView} />

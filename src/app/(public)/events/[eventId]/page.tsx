@@ -38,22 +38,26 @@ const PublicEventPage = () => {
     const ticketTypes = ticketData?.eventTicketTypes;
     if (!ticketTypes || ticketTypes.length === 0) return null;
 
-    const prices = ticketTypes
-      .filter((t: { isOnSale: boolean }) => t.isOnSale)
-      .map((t: { price: { amount: number; currency: string } }) => t.price.amount);
+    // Use all ticket types that have a numeric price; do not depend solely on isOnSale flags
+    const pricedTickets = ticketTypes.filter(
+      (t: { price?: { amount?: number } }) => typeof t.price?.amount === "number"
+    );
 
-    if (prices.length === 0) return null;
+    if (pricedTickets.length === 0) return null;
+
+    const prices = pricedTickets.map((t: any) => t.price.amount as number);
 
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
-    const currency = ticketTypes[0]?.price?.currency || 'USD';
+    const currency =
+      pricedTickets.find((t: any) => t.price?.currency)?.price?.currency || "USD";
     const allFree = prices.every((p: number) => p === 0);
 
     return {
       minPrice,
       maxPrice,
       currency,
-      hasMultipleTiers: ticketTypes.length > 1,
+      hasMultipleTiers: pricedTickets.length > 1,
       allFree,
     };
   }, [ticketData]);

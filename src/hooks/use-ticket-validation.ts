@@ -2,6 +2,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useMutation } from "@apollo/client";
+import { CHECK_IN_TICKET_MUTATION } from "@/graphql/payments.graphql";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -11,18 +13,14 @@ export interface ValidationResult {
 }
 
 interface UseTicketValidationOptions {
-  /**
-   * Internal API key for ticket validation endpoint.
-   * In production, this should come from environment variables
-   * and only be used in server-side or internal admin tools.
-   */
-  internalApiKey?: string;
+  // Options kept for compatibility but no longer used for internal API key
 }
 
 export function useTicketValidation(options: UseTicketValidationOptions = {}) {
-  const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState<ValidationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [checkInTicket, { loading }] = useMutation(CHECK_IN_TICKET_MUTATION);
 
   /**
    * Validates a ticket code for a specific event.
@@ -35,38 +33,32 @@ export function useTicketValidation(options: UseTicketValidationOptions = {}) {
    */
   const validateTicket = useCallback(
     async (eventId: string, ticketCode: string): Promise<ValidationResult> => {
-      setLoading(true);
       setError(null);
 
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-        const apiKey =
-          options.internalApiKey ||
-          process.env.NEXT_PUBLIC_INTERNAL_API_KEY ||
-          "";
-
-        const response = await fetch(
-          `${baseUrl}/api/v1/internal/tickets/validate`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Internal-Api-Key": apiKey,
-            },
-            body: JSON.stringify({
-              eventId,
+        const { data } = await checkInTicket({
+          variables: {
+            input: {
               ticketCode: ticketCode.toUpperCase().trim(),
-            }),
-          }
-        );
+              eventId,
+              location: "Organizer Dashboard", // Default location
+            },
+          },
+        });
 
-        if (!response.ok && response.status !== 200) {
-          throw new Error(
-            `Validation request failed with status ${response.status}`
-          );
+        const ticket = data?.checkInTicket;
+
+        if (!ticket) {
+          throw new Error("Invalid response from server");
         }
 
-        const result: ValidationResult = await response.json();
+        const result: ValidationResult = {
+          isValid: true,
+          ticketCode: ticket.ticketCode,
+          validatedAt: ticket.checkedInAt || new Date().toISOString(),
+          errorReason: null,
+        };
+
         setLastResult(result);
         return result;
       } catch (err) {
@@ -84,11 +76,9 @@ export function useTicketValidation(options: UseTicketValidationOptions = {}) {
         };
         setLastResult(errorResult);
         return errorResult;
-      } finally {
-        setLoading(false);
       }
     },
-    [options.internalApiKey]
+    [checkInTicket]
   );
 
   /**

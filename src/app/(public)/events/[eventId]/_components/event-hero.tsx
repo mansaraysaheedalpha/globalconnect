@@ -41,7 +41,7 @@ export const EventHero = ({
   const isMultiDay = start.toDateString() !== end.toDateString();
 
   return (
-    <header className="relative w-full min-h-[70vh] flex items-end">
+    <header className="relative w-full min-h-[50vh] md:min-h-[70vh] flex items-end">
       {/* Background Image */}
       <Image
         src={imageSrc}

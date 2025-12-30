@@ -1,3 +1,4 @@
+
 // src/components/features/gamification/gamification-container.tsx
 "use client";
 
@@ -66,7 +67,7 @@ export const GamificationContainer = ({
   if (variant === "leaderboard-only") {
     return (
       <Leaderboard
-        entries={leaderboard?.topEntries || []}
+        entries={leaderboard || []}
         currentUserId={currentUserId}
         currentUserRank={currentRank}
         currentUserScore={currentScore}
@@ -115,7 +116,7 @@ export const GamificationContainer = ({
       {/* Leaderboard */}
       <div className="relative">
         <Leaderboard
-          entries={leaderboard?.topEntries || []}
+          entries={leaderboard || []}
           currentUserId={currentUserId}
           currentUserRank={currentRank}
           currentUserScore={currentScore}

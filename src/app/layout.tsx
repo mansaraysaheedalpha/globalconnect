@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ApolloProvider } from '@/lib/apollo-provider';
@@ -30,9 +30,14 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'GlobalConnect',
   },
-  other: {
-    'mobile-web-app-capable': 'yes',
-  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
