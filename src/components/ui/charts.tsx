@@ -549,6 +549,71 @@ export function ActivityTimeline({ items, className }: ActivityTimelineProps) {
 }
 
 // ============================================
+// Chart Container & Tooltip (for recharts integration)
+// ============================================
+
+interface ChartContainerProps {
+  children: React.ReactNode;
+  className?: string;
+  config?: Record<string, any>;
+}
+
+export function ChartContainer({ children, className, config }: ChartContainerProps) {
+  return (
+    <div className={cn("w-full", className)}>
+      {children}
+    </div>
+  );
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  content?: React.ComponentType<any>;
+}
+
+export function ChartTooltip({ active, payload, label, content: Content }: ChartTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  if (Content) {
+    return <Content active={active} payload={payload} label={label} />;
+  }
+
+  return null;
+}
+
+interface ChartTooltipContentProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  className?: string;
+}
+
+export function ChartTooltipContent({ active, payload, label, className }: ChartTooltipContentProps) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  return (
+    <div className={cn(
+      "rounded-lg border bg-background p-2 shadow-md",
+      className
+    )}>
+      {label && <p className="text-sm font-medium mb-1">{label}</p>}
+      {payload.map((entry: any, index: number) => (
+        <div key={index} className="flex items-center gap-2 text-sm">
+          <div
+            className="w-3 h-3 rounded-sm"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-muted-foreground">{entry.name}:</span>
+          <span className="font-medium">{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================
 // Comparison Bar
 // ============================================
 

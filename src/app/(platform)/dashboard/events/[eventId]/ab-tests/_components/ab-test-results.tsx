@@ -170,7 +170,7 @@ export function ABTestResults({ testName, variants, confidence, winner }: ABTest
                   axisLine={false}
                   tickFormatter={(value) => `${value}%`}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={ChartTooltipContent} />
                 <Bar
                   dataKey="conversionRate"
                   fill="hsl(var(--chart-1))"

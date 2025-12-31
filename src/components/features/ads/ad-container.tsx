@@ -41,7 +41,7 @@ export const AdContainer = ({
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [impressionQueue, setImpressionQueue] = useState<ImpressionData[]>([]);
   const impressionQueueRef = useRef<ImpressionData[]>([]);
-  const flushTimerRef = useRef<NodeJS.Timeout>();
+  const flushTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Fetch ads for context
   const { data, loading, error } = useQuery(GET_ADS_FOR_CONTEXT_QUERY, {

@@ -142,7 +142,7 @@ export function RevenueOverview({ data }: RevenueOverviewProps) {
                   axisLine={false}
                   tickFormatter={(value) => `$${value}`}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={ChartTooltipContent} />
                 <Bar
                   dataKey="amount"
                   fill="hsl(var(--chart-1))"
@@ -192,7 +192,7 @@ export function RevenueOverview({ data }: RevenueOverviewProps) {
                     axisLine={false}
                     tickFormatter={(value) => `$${value}`}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartTooltip content={ChartTooltipContent} />
                   <Area
                     type="monotone"
                     dataKey="revenue"

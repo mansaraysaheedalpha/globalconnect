@@ -188,7 +188,7 @@ export function CreateABTestDialog({ eventId, open, onOpenChange }: CreateABTest
                           value={variant.name}
                           onChange={(e) => handleUpdateVariant(index, "name", e.target.value)}
                           placeholder="Variant name"
-                          size="sm"
+                          className="h-8"
                         />
                       </div>
                     )}
