@@ -17,6 +17,9 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useOfferTracking } from "@/hooks/use-offer-tracking";
+import { useOfferCheckout } from "@/hooks/use-offer-checkout";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export interface Offer {
   id: string;
@@ -41,6 +44,7 @@ export interface Offer {
 interface OfferCardProps {
   offer: Offer;
   onPurchase?: (offerId: string) => void;
+  onPurchaseSuccess?: () => void;
   onViewDetails?: (offerId: string) => void;
   loading?: boolean;
   className?: string;
@@ -50,6 +54,7 @@ interface OfferCardProps {
 export const OfferCard = ({
   offer,
   onPurchase,
+  onPurchaseSuccess,
   onViewDetails,
   loading = false,
   className = "",
@@ -61,6 +66,32 @@ export const OfferCard = ({
     placement: offer.placement,
     price: offer.price,
   });
+
+  // Stripe checkout
+  const { initiateCheckout, loading: checkoutLoading } = useOfferCheckout({
+    onSuccess: () => {
+      onPurchaseSuccess?.();
+    },
+  });
+
+  const handlePurchase = () => {
+    if (isSoldOut) {
+      toast.error("This offer is sold out");
+      return;
+    }
+
+    trackPurchaseClick();
+
+    // If custom onPurchase callback provided, use it (for backward compatibility)
+    if (onPurchase) {
+      onPurchase(offer.id);
+    } else {
+      // Otherwise use Stripe checkout
+      initiateCheckout(offer.id, 1);
+    }
+  };
+
+  const isLoading = loading || checkoutLoading;
 
   const discountPercentage = offer.originalPrice
     ? Math.round(((offer.originalPrice - offer.price) / offer.originalPrice) * 100)
@@ -109,14 +140,17 @@ export const OfferCard = ({
               </div>
             </div>
             <Button
-              onClick={() => {
-                trackPurchaseClick();
-                onPurchase?.(offer.id);
-              }}
-              disabled={loading || isSoldOut}
+              onClick={handlePurchase}
+              disabled={isLoading || isSoldOut}
               size="sm"
             >
-              {isSoldOut ? "Sold Out" : "Buy"}
+              {isLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : isSoldOut ? (
+                "Sold Out"
+              ) : (
+                "Buy"
+              )}
             </Button>
           </div>
         </CardContent>
@@ -249,15 +283,12 @@ export const OfferCard = ({
         )}
         <Button
           className={cn("flex-1", variant === "featured" && "bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600")}
-          onClick={() => {
-            trackPurchaseClick();
-            onPurchase?.(offer.id);
-          }}
-          disabled={loading || isSoldOut}
+          onClick={handlePurchase}
+          disabled={isLoading || isSoldOut}
         >
-          {loading ? (
+          {isLoading ? (
             <span className="flex items-center gap-2">
-              <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <Loader2 className="h-4 w-4 animate-spin" />
               Processing...
             </span>
           ) : isSoldOut ? (

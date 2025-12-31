@@ -4,20 +4,23 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
-import { 
-  Plus, 
-  Trash2, 
+import {
+  Plus,
+  Trash2,
   Tag,
   Loader2,
   AlertCircle,
-  TrendingUp,
-  Clock
+  Clock,
+  Edit,
+  Package
 } from "lucide-react";
-import { 
-  GET_EVENT_MONETIZATION_QUERY, 
-  CREATE_OFFER_MUTATION, 
-  DELETE_OFFER_MUTATION 
+import {
+  GET_EVENT_MONETIZATION_QUERY,
+  CREATE_OFFER_MUTATION,
+  DELETE_OFFER_MUTATION,
+  UPDATE_OFFER_MUTATION
 } from "@/graphql/monetization.graphql";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -51,6 +54,13 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+interface Inventory {
+  total: number | null;
+  available: number;
+  sold: number;
+  reserved: number;
+}
+
 interface Offer {
   id: string;
   title: string;
@@ -61,6 +71,9 @@ interface Offer {
   offerType: string;
   imageUrl?: string;
   expiresAt?: string;
+  inventory?: Inventory;
+  isActive: boolean;
+  stripePriceId?: string;
 }
 
 export const Upsells = () => {
@@ -81,6 +94,9 @@ export const Upsells = () => {
 
   const { data, loading, error, refetch } = useQuery(GET_EVENT_MONETIZATION_QUERY, {
     variables: { eventId },
+    onError: (err) => {
+      logger.error("Failed to load offers", err, { eventId });
+    },
   });
 
   const [createOffer, { loading: creating }] = useMutation(CREATE_OFFER_MUTATION, {
@@ -308,7 +324,7 @@ export const Upsells = () => {
                   {offer.description || "No description provided."}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1">
+              <CardContent className="flex-1 space-y-3">
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
                     ${offer.price.toFixed(2)}
@@ -319,6 +335,33 @@ export const Upsells = () => {
                     </span>
                   )}
                 </div>
+
+                {/* Inventory Status */}
+                {offer.inventory && (
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <div className="text-sm">
+                      {offer.inventory.total ? (
+                        <span className={
+                          offer.inventory.available === 0
+                            ? "text-destructive font-medium"
+                            : offer.inventory.available <= 5
+                            ? "text-orange-600 font-medium"
+                            : "text-muted-foreground"
+                        }>
+                          {offer.inventory.available}/{offer.inventory.total} available
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Unlimited</span>
+                      )}
+                      {offer.inventory.sold > 0 && (
+                        <span className="ml-2 text-muted-foreground">
+                          ({offer.inventory.sold} sold)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="border-t pt-4 flex justify-end gap-2">
                 <Button
