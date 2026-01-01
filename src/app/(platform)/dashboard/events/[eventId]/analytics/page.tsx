@@ -1,7 +1,7 @@
 // src/app/(platform)/dashboard/events/[eventId]/analytics/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_MONETIZATION_ANALYTICS_QUERY } from "@/graphql/monetization.graphql";
@@ -55,6 +55,15 @@ export default function MonetizationAnalyticsPage() {
   const handleRefresh = () => {
     refetch();
   };
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   return (
     <ErrorBoundary>

@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { useMutation } from "@apollo/client";
-import { TRACK_AD_CLICK_MUTATION } from "@/graphql/monetization.graphql";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { useAnalyticsTracker } from "@/lib/analytics-tracker";
 
 export interface Ad {
   id: string;
@@ -40,7 +40,7 @@ export const BannerAd = ({
   const [viewStartTime, setViewStartTime] = useState<number | null>(null);
   const [hasTrackedImpression, setHasTrackedImpression] = useState(false);
 
-  const [trackClick] = useMutation(TRACK_AD_CLICK_MUTATION);
+  const { trackAdImpression, trackAdClick } = useAnalyticsTracker();
 
   // Intersection Observer for viewability tracking
   useEffect(() => {
@@ -63,11 +63,22 @@ export const BannerAd = ({
 
             // Track impression if viewed for 1+ second and 50%+ visible
             if (viewDuration >= 1000 && !hasTrackedImpression) {
-              onImpression(ad.id, {
+              // Track via analytics tracker
+              trackAdImpression(ad.id, {
+                viewable_duration_ms: viewDuration,
+                viewport_percentage: viewportPercentage,
+                ad_name: ad.name,
+                content_type: ad.contentType,
+              });
+
+              // Also call callback if provided
+              onImpression?.(ad.id, {
                 viewable_duration_ms: viewDuration,
                 viewport_percentage: viewportPercentage,
               });
+
               setHasTrackedImpression(true);
+              logger.info("Ad impression tracked", { adId: ad.id, viewDuration });
             }
           }
           setIsInView(false);
@@ -84,24 +95,29 @@ export const BannerAd = ({
     return () => {
       observer.disconnect();
     };
-  }, [ad.id, isInView, viewStartTime, hasTrackedImpression, onImpression]);
+  }, [ad.id, isInView, viewStartTime, hasTrackedImpression, onImpression, trackAdImpression]);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
 
     try {
-      // Track click
-      const { data } = await trackClick({
-        variables: {
-          adId: ad.id,
-          sessionContext: window.location.pathname,
-        },
+      // Track click via analytics tracker
+      trackAdClick(ad.id, {
+        ad_name: ad.name,
+        content_type: ad.contentType,
+        click_url: ad.clickUrl,
+        session_context: window.location.pathname,
       });
 
+      logger.info("Ad click tracked successfully", { adId: ad.id });
+
       // Open in new tab
-      window.open(data?.trackAdClick?.redirectUrl || ad.clickUrl, "_blank", "noopener,noreferrer");
+      window.open(ad.clickUrl, "_blank", "noopener,noreferrer");
     } catch (error) {
-      console.error("Failed to track ad click:", error);
+      logger.error("Failed to track ad click", error, {
+        adId: ad.id,
+        clickUrl: ad.clickUrl
+      });
       // Fallback: still open the link
       window.open(ad.clickUrl, "_blank", "noopener,noreferrer");
     }

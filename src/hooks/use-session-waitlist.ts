@@ -1,42 +1,65 @@
 // src/hooks/use-session-waitlist.ts
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
+import { initializeSocket, joinSessionWaitlistRoom, leaveSessionWaitlistRoom } from "@/lib/socket";
+import { logger } from "@/lib/logger";
 
 export interface WaitlistOffer {
   title: string;
   message: string;
   join_token: string;
   expires_at: string;
+  session_id: string;
 }
 
 export interface WaitlistPosition {
   position: number;
   total: number;
+  estimated_wait_minutes?: number;
+}
+
+export interface WaitlistPositionUpdate {
+  session_id: string;
+  position: number;
+  total: number;
+  estimated_wait_minutes?: number;
+}
+
+export interface WaitlistOfferExpired {
+  message: string;
+  session_id: string;
 }
 
 interface UseSessionWaitlistOptions {
   sessionId: string;
   /**
-   * Socket instance for listening to waitlist offers
-   * Pass the socket from your real-time connection
+   * Auto-initialize socket connection for real-time updates
+   * Defaults to true
    */
-  socket?: {
-    on: (event: string, callback: (data: WaitlistOffer) => void) => void;
-    off: (event: string) => void;
-  };
+  autoConnect?: boolean;
   /**
    * Callback when a waitlist offer is received
    */
   onOfferReceived?: (offer: WaitlistOffer) => void;
+  /**
+   * Callback when position is updated
+   */
+  onPositionUpdated?: (position: WaitlistPosition) => void;
+  /**
+   * Callback when offer expires
+   */
+  onOfferExpired?: () => void;
 }
 
 export function useSessionWaitlist({
   sessionId,
-  socket,
+  autoConnect = true,
   onOfferReceived,
+  onPositionUpdated,
+  onOfferExpired,
 }: UseSessionWaitlistOptions) {
   const { token } = useAuthStore();
   const [isOnWaitlist, setIsOnWaitlist] = useState(false);
@@ -44,6 +67,7 @@ export function useSessionWaitlist({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentOffer, setCurrentOffer] = useState<WaitlistOffer | null>(null);
+  const socketRef = useRef<ReturnType<typeof initializeSocket> | null>(null);
 
   /**
    * Join the session waitlist
@@ -256,12 +280,51 @@ export function useSessionWaitlist({
     });
   }, []);
 
-  // Listen for waitlist offers via WebSocket
+  // Initialize Socket.io and listen for real-time events
   useEffect(() => {
-    if (!socket) return;
+    if (!autoConnect || !token || !isOnWaitlist) return;
 
+    // Initialize socket connection
+    logger.info("Initializing Socket.io for waitlist", { sessionId });
+    const socket = initializeSocket(token);
+    socketRef.current = socket;
+
+    // Join session waitlist room for real-time updates
+    if (socket.connected) {
+      joinSessionWaitlistRoom(sessionId);
+    } else {
+      socket.on("connect", () => {
+        joinSessionWaitlistRoom(sessionId);
+      });
+    }
+
+    // Handler for position updates
+    const handlePositionUpdate = (data: WaitlistPositionUpdate) => {
+      // Only process updates for this session
+      if (data.session_id !== sessionId) return;
+
+      logger.info("Waitlist position updated", {
+        sessionId,
+        position: data.position,
+        total: data.total,
+      });
+
+      const newPosition: WaitlistPosition = {
+        position: data.position,
+        total: data.total,
+        estimated_wait_minutes: data.estimated_wait_minutes,
+      };
+
+      setPosition(newPosition);
+      onPositionUpdated?.(newPosition);
+    };
+
+    // Handler for waitlist offers
     const handleWaitlistOffer = (offer: WaitlistOffer) => {
-      console.log("[useSessionWaitlist] Received waitlist offer:", offer);
+      // Only process offers for this session
+      if (offer.session_id !== sessionId) return;
+
+      logger.info("Received waitlist offer", { sessionId, expiresAt: offer.expires_at });
       setCurrentOffer(offer);
       onOfferReceived?.(offer);
 
@@ -278,12 +341,33 @@ export function useSessionWaitlist({
       });
     };
 
-    socket.on("WAITLIST_OFFER", handleWaitlistOffer);
+    // Handler for expired offers
+    const handleOfferExpired = (data: WaitlistOfferExpired) => {
+      if (data.session_id !== sessionId) return;
 
-    return () => {
-      socket.off("WAITLIST_OFFER");
+      logger.info("Waitlist offer expired", { sessionId });
+      setCurrentOffer(null);
+      onOfferExpired?.();
+
+      toast.warning("Offer expired", {
+        description: data.message,
+      });
     };
-  }, [socket, onOfferReceived]);
+
+    // Register event listeners
+    socket.on("WAITLIST_POSITION_UPDATE", handlePositionUpdate);
+    socket.on("WAITLIST_OFFER", handleWaitlistOffer);
+    socket.on("WAITLIST_OFFER_EXPIRED", handleOfferExpired);
+
+    // Cleanup on unmount or when leaving waitlist
+    return () => {
+      logger.info("Cleaning up Socket.io waitlist listeners", { sessionId });
+      socket.off("WAITLIST_POSITION_UPDATE", handlePositionUpdate);
+      socket.off("WAITLIST_OFFER", handleWaitlistOffer);
+      socket.off("WAITLIST_OFFER_EXPIRED", handleOfferExpired);
+      leaveSessionWaitlistRoom(sessionId);
+    };
+  }, [autoConnect, token, isOnWaitlist, sessionId, onOfferReceived, onPositionUpdated, onOfferExpired]);
 
   /**
    * Calculate time remaining on current offer

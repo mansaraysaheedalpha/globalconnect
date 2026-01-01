@@ -11,6 +11,8 @@ import { BannerAd, Ad } from "./banner-ad";
 import { VideoAd } from "./video-ad";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+import { safeStorage } from "@/lib/safe-storage";
 
 interface ImpressionData {
   adId: string;
@@ -43,6 +45,17 @@ export const AdContainer = ({
   const impressionQueueRef = useRef<ImpressionData[]>([]);
   const flushTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
+  // Generate or retrieve session token for frequency capping
+  const [sessionToken] = useState(() => {
+    const stored = safeStorage.getItem("ad_session_token");
+    if (stored) return stored;
+
+    const newToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    safeStorage.setItem("ad_session_token", newToken);
+    logger.info("Generated new ad session token", { sessionToken: newToken });
+    return newToken;
+  });
+
   // Fetch ads for context
   const { data, loading, error } = useQuery(GET_ADS_FOR_CONTEXT_QUERY, {
     variables: {
@@ -51,13 +64,30 @@ export const AdContainer = ({
       placement,
       limit: limit * 3, // Fetch more for rotation
     },
+    context: {
+      headers: {
+        "X-Session-Token": sessionToken,
+      },
+    },
     fetchPolicy: "cache-and-network",
+    onError: (err) => {
+      logger.error("Failed to load ads", err, {
+        eventId,
+        sessionId,
+        placement,
+        sessionToken
+      });
+    },
   });
 
   // Track impressions mutation
   const [trackImpressions] = useMutation(TRACK_AD_IMPRESSIONS_MUTATION, {
     onError: (error) => {
-      console.error("Failed to track ad impressions:", error);
+      logger.error("Failed to track ad impressions", error, {
+        eventId,
+        placement,
+        sessionToken,
+      });
     },
   });
 
@@ -93,8 +123,18 @@ export const AdContainer = ({
           })),
         },
       });
+      logger.info("Successfully tracked ad impressions", {
+        count: impressionsToSend.length,
+        eventId,
+        placement,
+      });
     } catch (error) {
-      console.error("Failed to send impression batch:", error);
+      logger.error("Failed to send impression batch", error, {
+        count: impressionsToSend.length,
+        eventId,
+        placement,
+        impressions: impressionsToSend,
+      });
     }
   }, [trackImpressions]);
 

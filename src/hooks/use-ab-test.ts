@@ -48,16 +48,35 @@ export function useABTest(config: ABTestConfig): ABTestResult {
 
       // Check if user already has an assignment
       const storedAssignment = safeStorage.getItem(storageKey);
+
+      // EDGE CASE: Variant removal - Check if stored variant still exists in config
       if (storedAssignment && config.variants.includes(storedAssignment)) {
         const index = config.variants.indexOf(storedAssignment);
         setVariant(storedAssignment);
         setVariantIndex(index);
+        logger.info("A/B Test: Using existing assignment", {
+          testId: config.testId,
+          variant: storedAssignment,
+          source: "localStorage",
+        });
         return;
       }
 
-      // Assign new variant
+      // EDGE CASE: Variant was removed or first assignment
+      if (storedAssignment && !config.variants.includes(storedAssignment)) {
+        logger.info("A/B Test: Stored variant no longer exists, reassigning", {
+          testId: config.testId,
+          oldVariant: storedAssignment,
+          availableVariants: config.variants,
+        });
+      }
+
+      // Get consistent identifier (user ID or session ID)
+      const identifier = user?.id || getSessionId();
+
+      // Assign new variant using deterministic hash
       const assignedVariant = selectVariant(
-        user?.id || getSessionId(),
+        identifier,
         config.testId,
         config.variants,
         config.weights
@@ -67,21 +86,31 @@ export function useABTest(config: ABTestConfig): ABTestResult {
       setVariant(assignedVariant);
       setVariantIndex(index);
 
-      // Persist assignment
+      // EDGE CASE: Private browsing mode - Persist assignment (may fail in private mode)
       const stored = safeStorage.setItem(storageKey, assignedVariant);
       if (!stored) {
-        logger.warn("Failed to persist A/B test assignment to localStorage", {
+        logger.warn("A/B Test: Failed to persist assignment (private browsing?)", {
           testId: config.testId,
           variant: assignedVariant,
+          identifier,
+        });
+      } else {
+        logger.info("A/B Test: New assignment persisted", {
+          testId: config.testId,
+          variant: assignedVariant,
+          identifier,
         });
       }
 
       // Track assignment event
-      trackABTestAssignment(config.testId, assignedVariant, index);
+      trackABTestAssignment(config.testId, assignedVariant, index, identifier);
     };
 
     assignVariant();
-  }, [config.testId, config.variants, config.weights, user?.id]);
+    // NOTE: Deliberately excluding config.variants and config.weights from deps
+    // to avoid re-assignment when parent components re-render with new array instances
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.testId, user?.id]);
 
   return {
     variant,
@@ -134,14 +163,33 @@ function hashString(str: string): number {
 
 /**
  * Get or create anonymous session ID
+ * Handles private browsing mode by falling back to in-memory storage
  */
-function getSessionId(): string {
+let inMemorySessionId: string | null = null;
+
+export function getSessionId(): string {
   const storageKey = "ab_session_id";
   let sessionId = safeStorage.getItem(storageKey);
 
   if (!sessionId) {
-    sessionId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    safeStorage.setItem(storageKey, sessionId);
+    // Try to use in-memory session ID first (for private browsing)
+    if (inMemorySessionId) {
+      return inMemorySessionId;
+    }
+
+    // Generate new session ID
+    sessionId = `anon_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+
+    // Try to persist to localStorage
+    const stored = safeStorage.setItem(storageKey, sessionId);
+
+    // EDGE CASE: Private browsing mode - Store in memory as fallback
+    if (!stored) {
+      inMemorySessionId = sessionId;
+      logger.info("A/B Test: Using in-memory session ID (private browsing mode)", {
+        sessionId,
+      });
+    }
   }
 
   return sessionId;
@@ -150,32 +198,45 @@ function getSessionId(): string {
 /**
  * Track A/B test assignment
  * Sends assignment data to analytics backend
+ *
+ * NOTE: This now uses the A/B Test Tracker for backend integration.
+ * Event tracking is handled by lib/ab-test-tracker.ts
  */
-function trackABTestAssignment(testId: string, variant: string, variantIndex: number) {
+function trackABTestAssignment(
+  testId: string,
+  variant: string,
+  variantIndex: number,
+  identifier: string
+) {
   const assignmentData = {
     testId,
     variant,
     variantIndex,
+    userId: identifier,
     timestamp: new Date().toISOString(),
   };
 
   // Log in development
   logger.info("A/B Test Assignment", assignmentData);
 
-  // Send to analytics backend
-  if (typeof window !== 'undefined') {
-    fetch("/api/v1/analytics/ab-test/assignment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(assignmentData),
-    }).catch((error) => {
-      logger.error("Failed to track A/B test assignment", error, assignmentData);
-    });
-  }
+  // NOTE: Actual event tracking should be done in component using useABTestTracker()
+  // This function now only logs the assignment. Components should track "variant_view"
+  // events using the tracker when they render the variant.
 }
 
 /**
  * Hook to track A/B test conversion events
+ *
+ * @deprecated Use useABTestTracker() from lib/ab-test-tracker.ts instead
+ *
+ * This hook is kept for backward compatibility but now just logs the conversion.
+ * For proper backend tracking, use the new tracker:
+ *
+ * @example
+ * import { useABTestTracker } from '@/lib/ab-test-tracker';
+ *
+ * const { trackConversion } = useABTestTracker();
+ * trackConversion(testId, eventId, sessionToken, variantId, goalValue, userId);
  */
 export function useABTestConversion() {
   return useCallback((testId: string, variant: string, conversionValue?: number) => {
@@ -187,17 +248,7 @@ export function useABTestConversion() {
     };
 
     // Log in development
-    logger.info("A/B Test Conversion", conversionData);
-
-    // Send to analytics backend
-    if (typeof window !== 'undefined') {
-      fetch("/api/v1/analytics/ab-test/conversion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(conversionData),
-      }).catch((error) => {
-        logger.error("Failed to track A/B test conversion", error, conversionData);
-      });
-    }
+    logger.info("A/B Test Conversion (DEPRECATED - use useABTestTracker)", conversionData);
+    logger.warn("useABTestConversion is deprecated. Use useABTestTracker() for backend integration.");
   }, []);
 }

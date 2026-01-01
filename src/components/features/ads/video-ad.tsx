@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX, Maximize2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 export interface Ad {
   id: string;
@@ -142,9 +143,14 @@ export const VideoAd = ({
         },
       });
 
+      logger.info("Video ad click tracked successfully", { adId: ad.id });
+
       window.open(data?.trackAdClick?.redirectUrl || ad.clickUrl, "_blank", "noopener,noreferrer");
     } catch (error) {
-      console.error("Failed to track ad click:", error);
+      logger.error("Failed to track video ad click", error, {
+        adId: ad.id,
+        clickUrl: ad.clickUrl
+      });
       window.open(ad.clickUrl, "_blank", "noopener,noreferrer");
     }
   };

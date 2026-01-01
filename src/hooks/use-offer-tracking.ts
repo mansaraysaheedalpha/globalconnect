@@ -2,34 +2,8 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useMutation } from "@apollo/client";
-import { gql } from "@apollo/client";
 import { logger } from "@/lib/logger";
-
-// GraphQL mutations for tracking offer events
-const TRACK_OFFER_VIEW_MUTATION = gql`
-  mutation TrackOfferView($offerId: ID!, $context: OfferViewContext!) {
-    trackOfferView(offerId: $offerId, context: $context) {
-      success
-    }
-  }
-`;
-
-const TRACK_OFFER_CLICK_MUTATION = gql`
-  mutation TrackOfferClick($offerId: ID!, $actionType: String!) {
-    trackOfferClick(offerId: $offerId, actionType: $actionType) {
-      success
-    }
-  }
-`;
-
-const TRACK_OFFER_PURCHASE_INITIATION_MUTATION = gql`
-  mutation TrackOfferPurchaseInitiation($offerId: ID!, $price: Float!) {
-    trackOfferPurchaseInitiation(offerId: $offerId, price: $price) {
-      success
-    }
-  }
-`;
+import { useAnalyticsTracker } from "@/lib/analytics-tracker";
 
 interface OfferTrackingOptions {
   offerId: string;
@@ -45,7 +19,14 @@ interface OfferTrackingOptions {
  * - Automatic impression tracking when offer is visible
  * - Manual click tracking for interactions
  * - Purchase initiation tracking
- * - Debouncing to prevent duplicate events
+ * - Batched event tracking for optimal performance
+ *
+ * @example
+ * const { elementRef, trackViewDetailsClick, trackPurchaseClick } = useOfferTracking({
+ *   offerId: offer.id,
+ *   placement: "event-detail",
+ *   price: offer.price,
+ * });
  */
 export function useOfferTracking(options: OfferTrackingOptions) {
   const { offerId, placement = "unknown", price = 0, enabled = true } = options;
@@ -53,9 +34,7 @@ export function useOfferTracking(options: OfferTrackingOptions) {
   const elementRef = useRef<HTMLDivElement>(null);
   const hasTrackedView = useRef(false);
 
-  const [trackView] = useMutation(TRACK_OFFER_VIEW_MUTATION);
-  const [trackClick] = useMutation(TRACK_OFFER_CLICK_MUTATION);
-  const [trackPurchaseInitiation] = useMutation(TRACK_OFFER_PURCHASE_INITIATION_MUTATION);
+  const { trackOfferView, trackOfferClick: trackClick } = useAnalyticsTracker();
 
   // Track offer view (impression) when visible
   useEffect(() => {
@@ -66,18 +45,16 @@ export function useOfferTracking(options: OfferTrackingOptions) {
         if (entry.isIntersecting && !hasTrackedView.current) {
           // Track view after 1 second of visibility
           const timeout = setTimeout(() => {
-            trackView({
-              variables: {
-                offerId,
-                context: {
-                  placement,
-                  timestamp: new Date().toISOString(),
-                },
-              },
-            }).catch((error) => {
+            try {
+              trackOfferView(offerId, {
+                placement,
+                timestamp: new Date().toISOString(),
+              });
+              hasTrackedView.current = true;
+              logger.info("Offer view tracked", { offerId, placement });
+            } catch (error) {
               logger.error("Failed to track offer view", error, { offerId, placement });
-            });
-            hasTrackedView.current = true;
+            }
           }, 1000);
 
           return () => clearTimeout(timeout);
@@ -93,45 +70,38 @@ export function useOfferTracking(options: OfferTrackingOptions) {
     return () => {
       observer.disconnect();
     };
-  }, [offerId, placement, enabled, trackView]);
+  }, [offerId, placement, enabled, trackOfferView]);
 
   // Track click on "View Details"
   const trackViewDetailsClick = useCallback(() => {
     if (!enabled) return;
 
-    trackClick({
-      variables: {
-        offerId,
+    try {
+      trackClick(offerId, {
         actionType: "VIEW_DETAILS",
-      },
-    }).catch((error) => {
+        placement,
+      });
+      logger.info("Offer view details clicked", { offerId });
+    } catch (error) {
       logger.error("Failed to track offer click", error, { offerId, actionType: "VIEW_DETAILS" });
-    });
-  }, [offerId, enabled, trackClick]);
+    }
+  }, [offerId, placement, enabled, trackClick]);
 
   // Track purchase button click
   const trackPurchaseClick = useCallback(() => {
     if (!enabled) return;
 
-    // Track both click and purchase initiation
-    trackClick({
-      variables: {
-        offerId,
+    try {
+      trackClick(offerId, {
         actionType: "PURCHASE_BUTTON",
-      },
-    }).catch((error) => {
-      logger.error("Failed to track purchase click", error, { offerId });
-    });
-
-    trackPurchaseInitiation({
-      variables: {
-        offerId,
+        placement,
         price,
-      },
-    }).catch((error) => {
-      logger.error("Failed to track purchase initiation", error, { offerId, price });
-    });
-  }, [offerId, price, enabled, trackClick, trackPurchaseInitiation]);
+      });
+      logger.info("Offer purchase button clicked", { offerId, price });
+    } catch (error) {
+      logger.error("Failed to track purchase click", error, { offerId });
+    }
+  }, [offerId, price, placement, enabled, trackClick]);
 
   return {
     elementRef,
@@ -142,35 +112,41 @@ export function useOfferTracking(options: OfferTrackingOptions) {
 
 /**
  * Simple offer tracking (without Intersection Observer) for non-card components
+ *
+ * @example
+ * const { trackOfferClick, trackOfferPurchaseInitiation } = useSimpleOfferTracking();
+ * trackOfferClick(offerId, "ADD_TO_CART");
+ * trackOfferPurchaseInitiation(offerId, 29.99);
  */
 export function useSimpleOfferTracking() {
-  const [trackClick] = useMutation(TRACK_OFFER_CLICK_MUTATION);
-  const [trackPurchaseInitiation] = useMutation(TRACK_OFFER_PURCHASE_INITIATION_MUTATION);
+  const { trackOfferClick, trackOfferPurchase } = useAnalyticsTracker();
 
-  const trackOfferClick = useCallback(
-    (offerId: string, actionType: string) => {
-      trackClick({
-        variables: { offerId, actionType },
-      }).catch((error) => {
+  const handleTrackOfferClick = useCallback(
+    (offerId: string, actionType: string, context?: Record<string, any>) => {
+      try {
+        trackOfferClick(offerId, { actionType, ...context });
+        logger.info("Offer clicked", { offerId, actionType });
+      } catch (error) {
         logger.error("Failed to track offer click", error, { offerId, actionType });
-      });
+      }
     },
-    [trackClick]
+    [trackOfferClick]
   );
 
-  const trackOfferPurchaseInitiation = useCallback(
-    (offerId: string, price: number) => {
-      trackPurchaseInitiation({
-        variables: { offerId, price },
-      }).catch((error) => {
+  const handleTrackOfferPurchaseInitiation = useCallback(
+    (offerId: string, price: number, context?: Record<string, any>) => {
+      try {
+        trackOfferPurchase(offerId, price, context);
+        logger.info("Offer purchase tracked", { offerId, price });
+      } catch (error) {
         logger.error("Failed to track purchase initiation", error, { offerId, price });
-      });
+      }
     },
-    [trackPurchaseInitiation]
+    [trackOfferPurchase]
   );
 
   return {
-    trackOfferClick,
-    trackOfferPurchaseInitiation,
+    trackOfferClick: handleTrackOfferClick,
+    trackOfferPurchaseInitiation: handleTrackOfferPurchaseInitiation,
   };
 }

@@ -36,7 +36,9 @@
       "Bash(if exist node_modules.cache rmdir /s /q node_modules.cache)",
       "Bash(test:*)",
       "Bash(wc:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pnpm list:*)",
+      "Bash(done)"
     ]
   }
 }
