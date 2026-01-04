@@ -265,3 +265,113 @@ export const GET_MONETIZATION_ANALYTICS_QUERY = gql`
     }
   }
 `;
+
+// Waitlist Management Queries (Organizers Only)
+export const GET_SESSION_WAITLIST_QUERY = gql`
+  query GetSessionWaitlist($sessionId: ID!) {
+    sessionWaitlist(sessionId: $sessionId) {
+      id
+      position
+      user {
+        id
+        firstName
+        lastName
+        email
+        imageUrl
+      }
+      sessionId
+      status
+      priorityTier
+      joinedAt
+      offerSentAt
+      offerExpiresAt
+      offerRespondedAt
+      leftAt
+    }
+    sessionCapacity(sessionId: $sessionId) {
+      sessionId
+      maximumCapacity
+      currentAttendance
+      availableSpots
+      isAvailable
+      waitlistCount
+    }
+  }
+`;
+
+export const GET_EVENT_WAITLIST_ANALYTICS_QUERY = gql`
+  query GetEventWaitlistAnalytics($eventId: ID!) {
+    eventWaitlistAnalytics(eventId: $eventId) {
+      totalWaitlistEntries
+      activeWaitlistCount
+      totalOffersIssued
+      totalOffersAccepted
+      totalOffersDeclined
+      totalOffersExpired
+      acceptanceRate
+      averageWaitTimeMinutes
+      bySession {
+        sessionId
+        sessionTitle
+        waitlistCount
+        offersIssued
+        acceptanceRate
+      }
+    }
+  }
+`;
+
+export const REMOVE_FROM_WAITLIST_MUTATION = gql`
+  mutation RemoveFromWaitlist($input: RemoveFromWaitlistInput!) {
+    removeFromWaitlist(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+export const MANUALLY_ADD_TO_WAITLIST_MUTATION = gql`
+  mutation ManuallyAddToWaitlist($sessionId: ID!, $userId: ID!) {
+    manuallyAddToWaitlist(sessionId: $sessionId, userId: $userId) {
+      id
+      position
+      joinedAt
+    }
+  }
+`;
+
+export const UPDATE_SESSION_CAPACITY_MUTATION = gql`
+  mutation UpdateSessionCapacity($input: UpdateCapacityInput!) {
+    updateSessionCapacity(input: $input) {
+      sessionId
+      maximumCapacity
+      currentAttendance
+      availableSpots
+      isAvailable
+      offersAutomaticallySent
+    }
+  }
+`;
+
+export const SEND_WAITLIST_OFFER_MUTATION = gql`
+  mutation SendWaitlistOffer($input: SendOfferInput!) {
+    sendWaitlistOffer(input: $input) {
+      id
+      sessionId
+      userId
+      status
+      offerSentAt
+      offerExpiresAt
+    }
+  }
+`;
+
+export const BULK_SEND_WAITLIST_OFFERS_MUTATION = gql`
+  mutation BulkSendWaitlistOffers($input: BulkSendOffersInput!) {
+    bulkSendWaitlistOffers(input: $input) {
+      success
+      offersSent
+      message
+    }
+  }
+`;
