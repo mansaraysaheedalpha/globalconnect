@@ -12,9 +12,9 @@ interface User {
   role?: "OWNER" | "ADMIN" | "MEMBER" | null;
 }
 
-// This now correctly expects orgId (camelCase)
 interface JwtPayload {
   orgId: string;
+  exp?: number;
 }
 
 interface AuthState {
@@ -27,6 +27,39 @@ interface AuthState {
   setOnboardingToken: (token: string | null) => void;
   logout: () => void;
   updateUser: (newUserData: Partial<User>) => void;
+  isTokenExpired: () => boolean;
+}
+
+/**
+ * Sync auth state to cookie for middleware access
+ * This is a bridge solution until backend implements httpOnly cookies
+ */
+function syncAuthToCookie(state: { token: string | null; orgId: string | null }) {
+  if (typeof document === 'undefined') return;
+
+  const authData = JSON.stringify({
+    state: {
+      token: state.token,
+      orgId: state.orgId,
+    },
+  });
+
+  if (state.token) {
+    // Set cookie with SameSite=Lax for navigation requests
+    // Max age of 7 days (same as typical refresh token)
+    document.cookie = `auth-storage=${encodeURIComponent(authData)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+  } else {
+    // Clear cookie on logout
+    document.cookie = 'auth-storage=; path=/; max-age=0; SameSite=Lax';
+  }
+}
+
+/**
+ * Clear auth cookie on logout
+ */
+function clearAuthCookie() {
+  if (typeof document === 'undefined') return;
+  document.cookie = 'auth-storage=; path=/; max-age=0; SameSite=Lax';
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -43,17 +76,47 @@ export const useAuthStore = create<AuthState>()(
           set({ user: { ...currentUser, ...newUserData } });
         }
       },
+
       setAuth: (token, user) => {
-        const decodedPayload = jwtDecode<JwtPayload>(token);
-        // This now correctly reads orgId (camelCase)
-        const orgId = decodedPayload.orgId;
-        set({ token, user, orgId, onboardingToken: null });
+        try {
+          const decodedPayload = jwtDecode<JwtPayload>(token);
+          const orgId = decodedPayload.orgId || null;
+
+          set({ token, user, orgId, onboardingToken: null });
+
+          // Sync to cookie for middleware
+          syncAuthToCookie({ token, orgId });
+        } catch (error) {
+          // Invalid token - clear auth state
+          console.error('Failed to decode token:', error);
+          set({ token: null, user: null, orgId: null, onboardingToken: null });
+          clearAuthCookie();
+        }
       },
 
       setOnboardingToken: (token) => set({ onboardingToken: token }),
 
-      logout: () =>
-        set({ token: null, user: null, orgId: null, onboardingToken: null }),
+      logout: () => {
+        set({ token: null, user: null, orgId: null, onboardingToken: null });
+        clearAuthCookie();
+      },
+
+      isTokenExpired: () => {
+        const token = get().token;
+        if (!token) return true;
+
+        try {
+          const decoded = jwtDecode<JwtPayload>(token);
+          if (!decoded.exp) return false;
+
+          // Check if token expires within next 60 seconds
+          const expiresAt = decoded.exp * 1000;
+          const bufferMs = 60 * 1000;
+          return Date.now() >= expiresAt - bufferMs;
+        } catch {
+          return true;
+        }
+      },
     }),
     {
       name: "auth-storage",
@@ -63,6 +126,29 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         orgId: state.orgId,
       }),
+      // Sync to cookie when state is rehydrated from localStorage
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) {
+          syncAuthToCookie({ token: state.token, orgId: state.orgId });
+        }
+      },
     }
   )
 );
+
+// Export helper to check auth status without hooks (for non-React code)
+export function getAuthState() {
+  return useAuthStore.getState();
+}
+
+// Export helper to check if user is authenticated
+export function isAuthenticated(): boolean {
+  const state = useAuthStore.getState();
+  return !!state.token && !state.isTokenExpired();
+}
+
+// Export helper to check if user is an organizer
+export function isOrganizer(): boolean {
+  const state = useAuthStore.getState();
+  return !!state.token && !!state.orgId;
+}

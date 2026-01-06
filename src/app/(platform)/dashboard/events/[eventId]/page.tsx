@@ -31,6 +31,7 @@ import { LiveAgendaContainer } from "@/components/features/agenda/live-agenda-co
 import { AgendaSession } from "@/hooks/use-agenda-updates";
 import LeaderboardPage from "./leaderboard/page";
 import MonetizationPage from "./monetization/page";
+import EngagementConductorPage from "./engagement/page";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -134,6 +135,7 @@ export default function EventDetailPage() {
           <Tabs defaultValue="live">
             <TabsList className="w-full flex gap-2 overflow-x-auto scrollbar-hide">
               <TabsTrigger value="live">Live Dashboard</TabsTrigger>
+              <TabsTrigger value="engagement">🤖 AI Conductor</TabsTrigger>
               <TabsTrigger value="agenda">Agenda</TabsTrigger>
               <TabsTrigger value="attendees">Attendees</TabsTrigger>
               <TabsTrigger value="tickets">Tickets</TabsTrigger>
@@ -143,6 +145,9 @@ export default function EventDetailPage() {
             </TabsList>
             <TabsContent value="live" className="mt-6">
               <LiveDashboard eventId={event.id} />
+            </TabsContent>
+            <TabsContent value="engagement" className="mt-6">
+              <EngagementConductorPage />
             </TabsContent>
             <TabsContent value="agenda">
               <SessionList

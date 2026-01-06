@@ -36,8 +36,10 @@ export const viewport: Viewport = {
   themeColor: '#0f172a',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // WCAG 2.1 AA Compliance: Allow users to zoom up to 500%
+  // This is required for users with visual impairments
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({

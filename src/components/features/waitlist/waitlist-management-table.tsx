@@ -61,26 +61,28 @@ interface WaitlistManagementTableProps {
   sessionTitle?: string;
 }
 
+// Backend returns snake_case fields
 interface WaitlistUser {
   id: string;
-  firstName: string;
-  lastName: string;
   email: string;
-  imageUrl?: string;
+  first_name: string;
+  last_name: string;
+  image_url?: string;
 }
 
 interface WaitlistEntry {
   id: string;
   position: number;
-  user: WaitlistUser;
-  sessionId: string;
+  user_id: string;
+  user?: WaitlistUser;
+  session_id: string;
   status: "WAITING" | "OFFERED" | "ACCEPTED" | "DECLINED" | "EXPIRED" | "LEFT";
-  priorityTier: "VIP" | "PREMIUM" | "STANDARD";
-  joinedAt: string;
-  offerSentAt?: string;
-  offerExpiresAt?: string;
-  offerRespondedAt?: string;
-  leftAt?: string;
+  priority_tier: "VIP" | "PREMIUM" | "STANDARD";
+  joined_at: string;
+  offer_sent_at?: string;
+  offer_expires_at?: string;
+  offer_responded_at?: string;
+  left_at?: string;
 }
 
 export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistManagementTableProps) {
@@ -111,8 +113,11 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
 
   const [sendOffer, { loading: sendingOffer }] = useMutation(SEND_WAITLIST_OFFER_MUTATION, {
     onCompleted: (data) => {
+      const offerData = data.send_waitlist_offer;
       toast.success("Waitlist offer sent", {
-        description: `Offer will expire at ${new Date(data.sendWaitlistOffer.offerExpiresAt).toLocaleTimeString()}`,
+        description: offerData?.offer_expires_at
+          ? `Offer will expire at ${new Date(offerData.offer_expires_at).toLocaleTimeString()}`
+          : undefined,
       });
       refetch();
     },
@@ -125,8 +130,9 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
 
   const [bulkSendOffers, { loading: sendingBulk }] = useMutation(BULK_SEND_WAITLIST_OFFERS_MUTATION, {
     onCompleted: (data) => {
-      toast.success(`Sent ${data.bulkSendWaitlistOffers.offersSent} offers`, {
-        description: data.bulkSendWaitlistOffers.message,
+      const result = data.bulk_send_waitlist_offers;
+      toast.success(`Sent ${result?.offers_sent || 0} offers`, {
+        description: result?.message,
       });
       refetch();
     },
@@ -196,7 +202,8 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     );
   }
 
-  const waitlist: WaitlistEntry[] = data?.sessionWaitlist || [];
+  // Backend uses snake_case: session_waitlist
+  const waitlist: WaitlistEntry[] = data?.session_waitlist || [];
 
   const handleRemove = (entry: WaitlistEntry) => {
     setSelectedEntry(entry);
@@ -209,8 +216,8 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     removeFromWaitlist({
       variables: {
         input: {
-          sessionId,
-          userId: selectedEntry.user.id,
+          session_id: sessionId,
+          user_id: selectedEntry.user_id,
         },
       },
     });
@@ -220,8 +227,8 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     sendOffer({
       variables: {
         input: {
-          sessionId,
-          userId: entry.user.id,
+          session_id: sessionId,
+          user_id: entry.user_id,
         },
       },
     });
@@ -231,7 +238,7 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     bulkSendOffers({
       variables: {
         input: {
-          sessionId,
+          session_id: sessionId,
           count: bulkOfferCount,
         },
       },
@@ -313,78 +320,84 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {waitlist.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span>{entry.position}</span>
-                          {entry.priorityTier !== "STANDARD" && (
-                            <Badge variant="outline" className="text-xs">
-                              {entry.priorityTier}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={entry.user.imageUrl}
-                              alt={`${entry.user.firstName} ${entry.user.lastName}`}
-                            />
-                            <AvatarFallback>
-                              {entry.user.firstName[0]}{entry.user.lastName[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">
-                              {entry.user.firstName} {entry.user.lastName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{entry.user.email}</p>
+                  {waitlist.map((entry) => {
+                    // Get user display info with fallbacks
+                    const firstName = entry.user?.first_name || "User";
+                    const lastName = entry.user?.last_name || entry.user_id.slice(0, 8);
+                    const email = entry.user?.email || "";
+                    const imageUrl = entry.user?.image_url;
+                    const initials = `${firstName[0] || "U"}${lastName[0] || ""}`.toUpperCase();
+
+                    return (
+                      <TableRow key={entry.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <span>{entry.position}</span>
+                            {entry.priority_tier !== "STANDARD" && (
+                              <Badge variant="outline" className="text-xs">
+                                {entry.priority_tier}
+                              </Badge>
+                            )}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {getStatusBadge(entry.status)}
-                          {entry.offerSentAt && (
-                            <p className="text-xs text-muted-foreground">
-                              Sent {formatSafeDate(entry.offerSentAt)}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5" />
-                          {formatSafeDate(entry.joinedAt)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {entry.status === "WAITING" && (
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              {imageUrl && <AvatarImage src={imageUrl} alt={`${firstName} ${lastName}`} />}
+                              <AvatarFallback>{initials}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">
+                                {firstName} {lastName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {email || `ID: ${entry.user_id.slice(0, 8)}...`}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {getStatusBadge(entry.status)}
+                            {entry.offer_sent_at && (
+                              <p className="text-xs text-muted-foreground">
+                                Sent {formatSafeDate(entry.offer_sent_at)}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatSafeDate(entry.joined_at)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {entry.status === "WAITING" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleSendOffer(entry)}
+                                disabled={sendingOffer}
+                              >
+                                <Send className="h-3.5 w-3.5 mr-1.5" />
+                                Send Offer
+                              </Button>
+                            )}
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => handleSendOffer(entry)}
-                              disabled={sendingOffer}
+                              variant="ghost"
+                              onClick={() => handleRemove(entry)}
+                              disabled={removing}
                             >
-                              <Send className="h-3.5 w-3.5 mr-1.5" />
-                              Send Offer
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleRemove(entry)}
-                            disabled={removing}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -398,8 +411,12 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
           <DialogHeader>
             <DialogTitle>Remove from Waitlist</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove {selectedEntry?.user.firstName} {selectedEntry?.user.lastName} from the waitlist?
-              This action cannot be undone.
+              Are you sure you want to remove{" "}
+              <strong>
+                {selectedEntry?.user?.first_name || "User"}{" "}
+                {selectedEntry?.user?.last_name || selectedEntry?.user_id.slice(0, 8)}
+              </strong>{" "}
+              from the waitlist? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

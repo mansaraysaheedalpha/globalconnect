@@ -1,0 +1,158 @@
+.container {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.currentMode {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  position: relative;
+}
+
+.modeButton:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.modeButton.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+}
+
+.modeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.modeIcon {
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.modeInfo {
+  flex: 1;
+}
+
+.modeLabel {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.modeButton.active .modeLabel {
+  color: white;
+}
+
+.modeButton:not(.active) .modeLabel {
+  color: #111827;
+}
+
+.modeDescription {
+  font-size: 13px;
+}
+
+.modeButton.active .modeDescription {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.modeButton:not(.active) .modeDescription {
+  color: #6b7280;
+}
+
+.activeIndicator {
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  position: absolute;
+  right: 16px;
+}
+
+.warning {
+  min-height: 40px;
+}
+
+.warningBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+}
+
+.warningIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.warningText {
+  font-size: 13px;
+  font-weight: 500;
+  color: #92400e;
+}
+
+.infoBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 1px solid #60a5fa;
+  border-radius: 8px;
+}
+
+.infoIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.infoText {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e40af;
+}
