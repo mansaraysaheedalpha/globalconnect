@@ -9,42 +9,42 @@ const benefits = [
   {
     name: "Unparalleled Simplicity",
     description:
-      "Create stunning events in minutes, not days. Our powerful, intuitive interface requires no coding or complex training.",
+      "Create events in minutes, not days. Our intuitive interface requires no coding or complex training.",
     icon: Sparkles,
     gradient: "from-amber-500 to-orange-500",
   },
   {
-    name: "Enterprise-Grade Power",
+    name: "AI-Powered Engagement",
     description:
-      "Global-scale analytics, robust security, and seamless integrations. Professional tools you can trust.",
+      "Our unique AI Engagement Conductor monitors sessions and suggests interventions to keep audiences engaged.",
     icon: ShieldCheck,
     gradient: "from-blue-500 to-cyan-500",
   },
   {
-    name: "Global Reach",
+    name: "Real-Time Everything",
     description:
-      "Connect with attendees worldwide. Multi-language support, timezone handling, and currency flexibility built-in.",
+      "WebSocket-powered polls, Q&A, chat, and reactions. Changes appear instantly for all participants.",
     icon: Globe,
     gradient: "from-violet-500 to-purple-500",
   },
   {
     name: "Lightning Fast",
     description:
-      "Optimized performance ensures your events load instantly. No waiting, no friction, just results.",
+      "Built on Next.js 15 with optimized performance. Your events and dashboards load in milliseconds.",
     icon: Zap,
     gradient: "from-yellow-500 to-amber-500",
   },
   {
-    name: "Save Time",
+    name: "Comprehensive Analytics",
     description:
-      "Automate repetitive tasks and workflows. Focus on what matters most—creating memorable experiences.",
+      "Track registrations, engagement metrics, and revenue with detailed dashboards and exportable reports.",
     icon: Clock,
     gradient: "from-emerald-500 to-green-500",
   },
   {
-    name: "Loved by Users",
+    name: "Stripe-Powered Payments",
     description:
-      "Join thousands of event creators who trust GlobalConnect to deliver exceptional experiences.",
+      "Secure payment processing with multiple ticket types, promo codes, and real-time revenue tracking.",
     icon: Heart,
     gradient: "from-pink-500 to-rose-500",
   },

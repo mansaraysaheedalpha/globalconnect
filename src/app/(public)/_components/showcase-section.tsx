@@ -12,26 +12,26 @@ const showcaseItems = [
   {
     title: "Seamless Registration & Ticketing",
     description:
-      "Our intuitive platform makes event registration a breeze for attendees and organizers alike. Customize ticket types, manage capacities, and track sales with powerful, easy-to-use tools.",
+      "Our intuitive platform makes event registration a breeze for attendees and organizers alike. Customize ticket types, manage capacities, and track sales with Stripe-powered payments.",
     image: "/showcase-registration.png",
     alt: "Person using a tablet with a sleek event registration interface",
     highlights: [
-      "Zero friction checkout",
+      "Stripe-powered checkout",
       "Multiple ticket types",
       "Real-time capacity tracking",
     ],
     gradient: "from-blue-500/20 to-cyan-500/20",
   },
   {
-    title: "Immersive Virtual & Hybrid Experiences",
+    title: "AI-Powered Engagement Conductor",
     description:
-      "Extend your reach beyond physical boundaries. Our platform supports engaging virtual and hybrid events with integrated streaming, interactive Q&A, and networking features.",
+      "Our unique AI monitors audience participation in real-time and suggests interventions when engagement drops. Polls, Q&A prompts, and more - all optimized automatically.",
     image: "/showcase-hybrid.png",
-    alt: "People engaging with both virtual and physical elements of a hybrid event",
+    alt: "AI engagement dashboard showing real-time audience metrics",
     highlights: [
-      "HD live streaming",
-      "Interactive Q&A sessions",
-      "Virtual networking rooms",
+      "Real-time monitoring",
+      "Smart interventions",
+      "Engagement analytics",
     ],
     gradient: "from-violet-500/20 to-purple-500/20",
   },

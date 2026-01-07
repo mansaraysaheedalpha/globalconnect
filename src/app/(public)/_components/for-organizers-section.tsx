@@ -10,8 +10,6 @@ import {
   Ticket,
   BarChart3,
   Users,
-  Mail,
-  Megaphone,
   Settings,
   Presentation,
   ArrowRight,
@@ -45,7 +43,7 @@ const organizerFeatures = [
   {
     icon: Users,
     title: "Attendee Management",
-    description: "Check-in guests, manage waitlists, and communicate with attendees seamlessly.",
+    description: "Check-in guests, manage waitlists, and view attendee details at a glance.",
     color: "text-amber-500",
     bg: "bg-amber-500/10",
   },
@@ -57,9 +55,9 @@ const organizerFeatures = [
     bg: "bg-pink-500/10",
   },
   {
-    icon: Megaphone,
-    title: "Marketing Tools",
-    description: "Built-in email campaigns, social sharing, and promotional tools to boost attendance.",
+    icon: Sparkles,
+    title: "AI Engagement",
+    description: "Let our AI monitor sessions and suggest polls, Q&A, and interventions automatically.",
     color: "text-cyan-500",
     bg: "bg-cyan-500/10",
   },
@@ -68,10 +66,10 @@ const organizerFeatures = [
 const highlights = [
   "Create unlimited events",
   "Custom branding options",
-  "Embed on your website",
+  "Real-time engagement tools",
   "Export attendee data",
   "Team collaboration",
-  "24/7 support",
+  "Detailed analytics",
 ];
 
 export function ForOrganizersSection() {

@@ -101,8 +101,8 @@ export function HeroSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mt-5 sm:mt-6 max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-neutral-300 leading-relaxed px-2"
         >
-          Where enterprise power meets unparalleled simplicity. Create, manage,
-          and deliver unforgettable experiences that captivate your audience.
+          Create events, engage attendees with real-time polls and Q&A, and let
+          our AI Engagement Conductor optimize audience participation automatically.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -130,7 +130,7 @@ export function HeroSection() {
           </Button>
         </motion.div>
 
-        {/* Stats Row */}
+        {/* Stats Row - TODO: Update with real metrics */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

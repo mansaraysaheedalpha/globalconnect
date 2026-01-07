@@ -9,7 +9,7 @@ const features = [
   {
     name: "Create",
     description:
-      "Launch stunning event pages in minutes with our intuitive drag-and-drop builder. No design skills required.",
+      "Build professional event pages quickly with our streamlined event builder. Add sessions, speakers, and tickets with ease.",
     icon: Paintbrush,
     gradient: "from-pink-500 to-rose-500",
   },
@@ -21,30 +21,30 @@ const features = [
     gradient: "from-blue-500 to-cyan-500",
   },
   {
-    name: "Experience",
+    name: "Engage",
     description:
-      "Discover, register, and engage with events through a frictionless, beautiful interface that delights.",
+      "Keep your audience active with real-time polls, live Q&A, chat, and emoji reactions during sessions.",
     icon: Users,
     gradient: "from-violet-500 to-purple-500",
   },
   {
-    name: "Automate",
+    name: "AI-Powered",
     description:
-      "Set up smart workflows that handle repetitive tasks automatically, saving you hours every week.",
+      "Our AI Engagement Conductor monitors audience participation and suggests interventions to boost engagement.",
     icon: Zap,
     gradient: "from-amber-500 to-orange-500",
   },
   {
     name: "Analyze",
     description:
-      "Get actionable insights with real-time analytics and beautiful reports that drive better decisions.",
+      "Get actionable insights with real-time analytics and detailed reports that drive better decisions.",
     icon: BarChart3,
     gradient: "from-emerald-500 to-green-500",
   },
   {
     name: "Secure",
     description:
-      "Enterprise-grade security with SOC 2 compliance, encryption, and role-based access controls.",
+      "Built with security in mind including encrypted connections, secure authentication, and role-based access.",
     icon: Shield,
     gradient: "from-slate-500 to-gray-500",
   },
