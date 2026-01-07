@@ -50,52 +50,101 @@ const features = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0, 0, 0.2, 1] as const,
+    },
+  },
+};
+
 export function FeaturesSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="features" className="py-16 sm:py-24 scroll-mt-20">
+    <section id="features" className="py-16 sm:py-24 relative overflow-hidden scroll-mt-20">
+      {/* Background decoration */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
+      </div>
+
       <div className="container mx-auto px-4 md:px-6">
         {/* Section Header */}
-        <div className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-2">
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-2"
+        >
+          <motion.span
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full"
+          >
             Powerful Features
-          </span>
+          </motion.span>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
             An Intelligent, Unified OS
           </h2>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground px-2">
             Everything you need to run successful events, all in one beautifully designed platform.
           </p>
-        </div>
+        </motion.div>
 
         {/* Features Grid */}
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5 }}
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
         >
-          {features.map((feature) => (
-            <div
+          {features.map((feature, index) => (
+            <motion.div
               key={feature.name}
-              className="group relative h-full rounded-2xl border bg-card p-5 sm:p-7 shadow-sm transition-shadow duration-200 hover:shadow-lg"
+              variants={itemVariants}
+              className="group relative"
             >
-              {/* Icon */}
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient} mb-5`}>
-                <feature.icon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
+              <div className="relative h-full rounded-2xl border bg-card p-5 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 overflow-hidden">
+                {/* Gradient hover effect */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
 
-              {/* Content */}
-              <h3 className="text-lg font-semibold mb-2">
-                {feature.name}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
+                {/* Icon */}
+                <div className={`relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg mb-6`}>
+                  <feature.icon className="h-7 w-7 text-white" aria-hidden="true" />
+                </div>
+
+                {/* Content */}
+                <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+                  {feature.name}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+
+                {/* Corner decoration */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-[80px] opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>

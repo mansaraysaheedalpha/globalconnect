@@ -2,7 +2,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const attendeeFeatures = [
   {
@@ -57,21 +58,39 @@ const attendeeFeatures = [
 
 export function ForAttendeesSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [activeCard, setActiveCard] = useState<number | null>(null);
 
   return (
-    <section id="for-attendees" className="py-16 sm:py-24 scroll-mt-20">
+    <section id="for-attendees" className="py-16 sm:py-24 relative overflow-hidden scroll-mt-20">
+      {/* Background decorations */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-pink-500/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-violet-500/5 rounded-full blur-[120px]" />
+      </div>
+
       <div className="container mx-auto px-4 md:px-6">
         {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16 px-2">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-pink-500/10 text-pink-600 dark:text-pink-400 rounded-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12 sm:mb-16 px-2"
+        >
+          <motion.span
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-pink-500/10 text-pink-600 dark:text-pink-400 rounded-full"
+          >
             <Heart className="h-4 w-4" />
             For Attendees
-          </span>
+          </motion.span>
 
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4 sm:mb-6">
             Experience events like{" "}
-            <span className="text-primary">
+            <span className="bg-gradient-to-r from-pink-500 to-violet-500 bg-clip-text text-transparent">
               never before
             </span>
           </h2>
@@ -79,39 +98,85 @@ export function ForAttendeesSection() {
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
             Discover, register, and engage with events through a beautifully designed experience that puts you first.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Feature Cards Grid */}
+        {/* Feature Cards - Bento Grid Style */}
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
         >
-          {attendeeFeatures.map((feature) => (
-            <div
+          {attendeeFeatures.map((feature, index) => (
+            <motion.div
               key={feature.title}
-              className="p-5 sm:p-6 rounded-2xl border bg-card shadow-sm transition-shadow duration-200 hover:shadow-lg"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ duration: 0.5, delay: 0.1 + index * 0.08 }}
+              onMouseEnter={() => setActiveCard(index)}
+              onMouseLeave={() => setActiveCard(null)}
+              className={cn(
+                "group relative p-5 sm:p-6 rounded-2xl border border-border/50 bg-background transition-all duration-500 cursor-pointer overflow-hidden",
+                activeCard === index ? "shadow-2xl border-transparent -translate-y-2" : "shadow-sm hover:shadow-lg"
+              )}
             >
-              {/* Icon */}
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient} mb-5`}>
-                <feature.icon className="h-6 w-6 text-white" />
-              </div>
+              {/* Gradient background on hover */}
+              <div className={cn(
+                "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-500",
+                feature.gradient,
+                activeCard === index && "opacity-[0.08]"
+              )} />
 
               {/* Content */}
-              <h3 className="text-lg font-semibold mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
+              <div className="relative">
+                {/* Icon */}
+                <div className={cn(
+                  "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br mb-4 sm:mb-5 shadow-lg transition-all duration-300",
+                  feature.gradient,
+                  activeCard === index && "scale-110 shadow-xl"
+                )}>
+                  <feature.icon className="h-7 w-7 text-white" />
+                </div>
+
+                {/* Text */}
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 group-hover:text-primary transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+
+                {/* Arrow indicator */}
+                <div className={cn(
+                  "mt-4 flex items-center gap-1 text-sm font-medium transition-all duration-300",
+                  "text-muted-foreground group-hover:text-primary",
+                  activeCard === index && "translate-x-1"
+                )}>
+                  Learn more
+                  <ArrowRight className={cn(
+                    "h-4 w-4 transition-transform duration-300",
+                    activeCard === index && "translate-x-1"
+                  )} />
+                </div>
+              </div>
+
+              {/* Decorative corner */}
+              <div className={cn(
+                "absolute top-0 right-0 w-24 h-24 rounded-bl-[60px] transition-opacity duration-300",
+                "bg-gradient-to-bl opacity-0",
+                feature.gradient.replace("from-", "from-").replace("to-", "to-") + "/10",
+                activeCard === index && "opacity-100"
+              )} />
+            </motion.div>
           ))}
         </motion.div>
 
         {/* CTA */}
-        <div className="mt-12 sm:mt-16 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+          className="mt-12 sm:mt-16 text-center"
+        >
           <Button size="lg" variant="outline" className="group" asChild>
             <Link href="/events">
               <Sparkles className="mr-2 h-4 w-4" />
@@ -119,7 +184,7 @@ export function ForAttendeesSection() {
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

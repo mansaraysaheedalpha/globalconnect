@@ -1,7 +1,7 @@
 // src/app/(public)/_components/benefits-section.tsx
 "use client";
 
-import { Sparkles, Brain, Wifi, Zap, BarChart3, CreditCard } from "lucide-react";
+import { Sparkles, ShieldCheck, Globe, Zap, Clock, Heart } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
@@ -17,14 +17,14 @@ const benefits = [
     name: "AI-Powered Engagement",
     description:
       "Our unique AI Engagement Conductor monitors sessions and suggests interventions to keep audiences engaged.",
-    icon: Brain,
+    icon: ShieldCheck,
     gradient: "from-blue-500 to-cyan-500",
   },
   {
     name: "Real-Time Everything",
     description:
       "WebSocket-powered polls, Q&A, chat, and reactions. Changes appear instantly for all participants.",
-    icon: Wifi,
+    icon: Globe,
     gradient: "from-violet-500 to-purple-500",
   },
   {
@@ -38,64 +38,126 @@ const benefits = [
     name: "Comprehensive Analytics",
     description:
       "Track registrations, engagement metrics, and revenue with detailed dashboards and exportable reports.",
-    icon: BarChart3,
+    icon: Clock,
     gradient: "from-emerald-500 to-green-500",
   },
   {
     name: "Stripe-Powered Payments",
     description:
       "Secure payment processing with multiple ticket types, promo codes, and real-time revenue tracking.",
-    icon: CreditCard,
+    icon: Heart,
     gradient: "from-pink-500 to-rose-500",
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.5,
+      ease: [0, 0, 0.2, 1] as const,
+    },
+  },
+};
+
 export function BenefitsSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="benefits" className="py-16 sm:py-24 bg-secondary/30 scroll-mt-20">
-      <div className="container mx-auto px-4 md:px-6">
+    <section id="benefits" className="relative py-16 sm:py-24 overflow-hidden scroll-mt-20">
+      {/* Background with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 via-secondary to-secondary/50" />
+
+      {/* Decorative elements */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[120px]" />
+      </div>
+
+      {/* Grid pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      <div className="container mx-auto px-4 md:px-6 relative">
         {/* Section Header */}
-        <div className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-2">
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto max-w-3xl text-center mb-12 sm:mb-16 px-2"
+        >
+          <motion.span
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full"
+          >
             Why GlobalConnect
-          </span>
+          </motion.span>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            The GlobalConnect Advantage
+            The GlobalConnect{" "}
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Advantage
+            </span>
           </h2>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground px-2">
-            We built a platform that&apos;s both incredibly powerful and beautifully simple.
+            We built a platform that's both incredibly powerful and beautifully
+            simple. Here's why teams love us.
           </p>
-        </div>
+        </motion.div>
 
         {/* Benefits Grid */}
         <motion.div
           ref={ref}
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5 }}
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
         >
-          {benefits.map((benefit) => (
-            <div
+          {benefits.map((benefit, index) => (
+            <motion.div
               key={benefit.name}
-              className="h-full rounded-2xl bg-background border p-5 sm:p-7 shadow-sm transition-shadow duration-200 hover:shadow-lg"
+              variants={itemVariants}
+              className="group relative"
             >
-              {/* Icon */}
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${benefit.gradient} mb-5`}>
-                <benefit.icon className="h-6 w-6 text-white" aria-hidden="true" />
-              </div>
+              <div className="relative h-full rounded-2xl bg-background/80 backdrop-blur-sm border border-border/50 p-5 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 overflow-hidden">
+                {/* Gradient hover effect */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${benefit.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
 
-              {/* Content */}
-              <h3 className="text-lg font-semibold mb-2">
-                {benefit.name}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {benefit.description}
-              </p>
-            </div>
+                {/* Icon with gradient background */}
+                <div className={`relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${benefit.gradient} shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <benefit.icon className="h-7 w-7 text-white" aria-hidden="true" />
+                </div>
+
+                {/* Content */}
+                <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+                  {benefit.name}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {benefit.description}
+                </p>
+
+                {/* Corner decoration */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-[100px] opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                {/* Bottom line accent */}
+                <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${benefit.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
+              </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
