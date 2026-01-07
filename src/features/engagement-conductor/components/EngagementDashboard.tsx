@@ -10,7 +10,6 @@ import { AgentStatus } from './AgentStatus';
 import { DecisionExplainer } from './DecisionExplainer';
 import { OnboardingTour, defaultTourSteps, useOnboardingTour } from './OnboardingTour';
 import { ChartSkeleton, ErrorState, EmptyState } from './LoadingStates';
-import { createDemoSimulation } from '../demo/simulator';
 import { exportInterventionsAsCSV, exportInterventionsAsJSON } from '../utils/exportReports';
 import { initializeSocket, disconnectSocket } from '@/lib/socket';
 import styles from './EngagementDashboard.module.css';
@@ -26,7 +25,6 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
   eventId,
   enabled = true,
 }) => {
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const {
@@ -71,16 +69,6 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
       // disconnectSocket();
     };
   }, [sessionId]);
-
-  // Demo mode handlers
-  const startDemo = () => {
-    setIsDemoMode(true);
-    const simulator = createDemoSimulation((event) => {
-      console.log('[DEMO]', event.type, event.data);
-      // TODO: Update engagement data from demo events
-    });
-    simulator.start();
-  };
 
   // Export handlers
   const handleExportCSV = () => {
@@ -178,9 +166,6 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
         <div className={styles.titleRow}>
           <h2 className={styles.title}>Engagement Conductor</h2>
           <div className={styles.headerActions}>
-            <button className={styles.demoButton} onClick={startDemo} disabled={isDemoMode}>
-              {isDemoMode ? '▶️ Demo Running...' : '🎬 Start Demo'}
-            </button>
             <div className={styles.exportDropdown}>
               <button
                 className={styles.exportButton}
