@@ -36,14 +36,15 @@ const clientEnvSchema = z.object({
     .url('NEXT_PUBLIC_REALTIME_URL must be a valid URL')
     .default('http://localhost:3002/events'),
 
-  NEXT_PUBLIC_REALTIME_SERVICE_URL: z
-    .string()
-    .url('NEXT_PUBLIC_REALTIME_SERVICE_URL must be a valid URL')
-    .optional(),
-
   NEXT_PUBLIC_SOCKET_URL: z
     .string()
     .url('NEXT_PUBLIC_SOCKET_URL must be a valid URL')
+    .optional(),
+
+  // AI Agent Configuration
+  NEXT_PUBLIC_AGENT_SERVICE_URL: z
+    .string()
+    .url('NEXT_PUBLIC_AGENT_SERVICE_URL must be a valid URL')
     .optional(),
 
   // Stripe Configuration
@@ -75,11 +76,6 @@ const serverEnvSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
-
-  // Add any server-only variables here
-  // Example:
-  // DATABASE_URL: z.string().url().optional(),
-  // STRIPE_SECRET_KEY: z.string().startsWith('sk_').optional(),
 });
 
 /**
@@ -97,8 +93,8 @@ function getClientEnv() {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
     NEXT_PUBLIC_EVENT_SERVICE_URL: process.env.NEXT_PUBLIC_EVENT_SERVICE_URL,
     NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
-    NEXT_PUBLIC_REALTIME_SERVICE_URL: process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL,
     NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL,
+    NEXT_PUBLIC_AGENT_SERVICE_URL: process.env.NEXT_PUBLIC_AGENT_SERVICE_URL,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
@@ -195,4 +191,11 @@ export function getRealtimeUrl(): string {
  */
 export function getSocketUrl(): string {
   return clientEnv.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3002';
+}
+
+/**
+ * Helper to get the agent service URL with fallback
+ */
+export function getAgentServiceUrl(): string {
+  return clientEnv.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8003';
 }

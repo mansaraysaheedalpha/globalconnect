@@ -38,7 +38,8 @@
       "Bash(wc:*)",
       "Bash(rm:*)",
       "Bash(pnpm list:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(if not exist \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\docs\" mkdir \"c:\\\\Users\\\\User\\\\Desktop\\\\globalconnect\\\\docs\")"
     ]
   }
 }
