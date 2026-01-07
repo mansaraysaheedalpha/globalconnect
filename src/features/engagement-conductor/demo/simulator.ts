@@ -238,7 +238,7 @@ export class EngagementDemoSimulator {
       timestamp: new Date().toISOString(),
       status: 'PENDING',
       poll: {
-        question: 'Quick check: How's the presentation so far?',
+        question: "Quick check: How's the presentation so far?",
         options: [
           'Great, very clear! 👍',
           'Good, but could use more examples',

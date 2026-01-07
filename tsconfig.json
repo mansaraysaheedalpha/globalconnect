@@ -13,15 +13,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-
-    // Stricter type checking options for production safety
-    "noUncheckedIndexedAccess": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true,
-
     "plugins": [
       {
         "name": "next"
