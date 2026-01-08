@@ -276,8 +276,9 @@ export const PresentationViewer = ({
       return (
         <div className="flex flex-col h-full overflow-hidden">
           {/* Toolbar */}
-          <div className="flex items-center justify-between py-2 px-2 border-b bg-muted/30 rounded-t-lg flex-shrink-0">
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between py-1.5 md:py-2 px-2 border-b bg-muted/30 rounded-t-lg flex-shrink-0">
+            {/* Zoom controls - hidden on mobile */}
+            <div className="hidden md:flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -310,13 +311,13 @@ export const PresentationViewer = ({
             </div>
 
             {/* Center: Slide counter & Live status */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-xs md:text-sm font-medium">
                 Slide {currentSlide + 1} of {presentation.slide_urls.length}
               </span>
               {isLiveMode && (
-                <Badge variant="default" className="bg-red-600 hover:bg-red-600 gap-1.5 animate-pulse">
-                  <Radio className="h-3 w-3" />
+                <Badge variant="default" className="bg-red-600 hover:bg-red-600 gap-1 md:gap-1.5 animate-pulse text-xs">
+                  <Radio className="h-2.5 w-2.5 md:h-3 md:w-3" />
                   LIVE
                 </Badge>
               )}
@@ -329,16 +330,16 @@ export const PresentationViewer = ({
                 size="sm"
                 onClick={toggleLiveMode}
                 title={isLiveMode ? "Stop live presentation" : "Start live presentation"}
-                className="gap-1.5"
+                className="gap-1 md:gap-1.5 text-xs md:text-sm h-7 md:h-8 px-2 md:px-3"
               >
                 {isLiveMode ? (
                   <>
-                    <StopCircle className="h-4 w-4" />
+                    <StopCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     <span className="hidden sm:inline">End Live</span>
                   </>
                 ) : (
                   <>
-                    <Users className="h-4 w-4" />
+                    <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     <span className="hidden sm:inline">Present Live</span>
                   </>
                 )}
@@ -348,34 +349,35 @@ export const PresentationViewer = ({
                 size="sm"
                 onClick={toggleFullscreen}
                 title="Toggle fullscreen (F)"
+                className="h-7 md:h-8 w-7 md:w-8 p-0"
               >
                 {isFullscreen ? (
-                  <Minimize2 className="h-4 w-4" />
+                  <Minimize2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 ) : (
-                  <Maximize2 className="h-4 w-4" />
+                  <Maximize2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 )}
               </Button>
             </div>
           </div>
 
           {/* Slide Container */}
-          <div className="flex-1 relative bg-neutral-900 overflow-auto min-h-0 flex">
+          <div className="flex-1 relative bg-white dark:bg-neutral-800 md:bg-neutral-900 overflow-auto min-h-0 flex">
             {/* Left Arrow - Sticky */}
             <div className="sticky left-0 top-0 h-full flex items-center z-10 flex-shrink-0">
               <button
                 onClick={goToPrevSlide}
                 disabled={currentSlide === 0}
-                className="m-2 p-3 rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
+                className="m-1 md:m-2 p-1.5 md:p-3 rounded-full bg-black/40 md:bg-black/60 hover:bg-black/80 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
                 title="Previous slide (Left Arrow)"
               >
-                <ChevronLeft className="h-8 w-8" />
+                <ChevronLeft className="h-5 w-5 md:h-8 md:w-8" />
               </button>
             </div>
 
             {/* Scrollable Slide Area */}
             <div className="flex-1 overflow-auto">
               <div
-                className="flex items-center justify-center p-4"
+                className="flex items-center justify-center p-1 md:p-4"
                 style={{
                   minWidth: "100%",
                   minHeight: "100%",
@@ -385,7 +387,7 @@ export const PresentationViewer = ({
                 <img
                   src={presentation.slide_urls[currentSlide]}
                   alt={`Slide ${currentSlide + 1}`}
-                  className="object-contain transition-all duration-200"
+                  className="object-contain transition-all duration-200 shadow-lg md:shadow-2xl"
                   style={{
                     width: zoom === 1 ? "auto" : `${zoom * 100}%`,
                     maxWidth: zoom === 1 ? "100%" : "none",
@@ -401,21 +403,21 @@ export const PresentationViewer = ({
               <button
                 onClick={goToNextSlide}
                 disabled={currentSlide === presentation.slide_urls.length - 1}
-                className="m-2 p-3 rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
+                className="m-1 md:m-2 p-1.5 md:p-3 rounded-full bg-black/40 md:bg-black/60 hover:bg-black/80 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
                 title="Next slide (Right Arrow)"
               >
-                <ChevronRight className="h-8 w-8" />
+                <ChevronRight className="h-5 w-5 md:h-8 md:w-8" />
               </button>
             </div>
           </div>
 
           {/* Slide Thumbnails */}
-          <div className="flex gap-2 py-2 px-2 overflow-x-auto flex-shrink-0 border-t bg-muted/20">
+          <div className="flex gap-1.5 md:gap-2 py-1.5 md:py-2 px-2 overflow-x-auto flex-shrink-0 border-t bg-muted/20">
             {presentation.slide_urls.map((url, index) => (
               <button
                 key={index}
                 onClick={() => goToSpecificSlide(index)}
-                className={`relative flex-shrink-0 w-16 h-10 rounded border-2 overflow-hidden transition-all ${
+                className={`relative flex-shrink-0 w-12 h-8 md:w-16 md:h-10 rounded border-2 overflow-hidden transition-all ${
                   index === currentSlide
                     ? "border-primary ring-2 ring-primary/30"
                     : "border-transparent hover:border-muted-foreground/50"
@@ -427,7 +429,7 @@ export const PresentationViewer = ({
                   alt={`Thumbnail ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
-                <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[10px] px-1">
+                <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[8px] md:text-[10px] px-0.5 md:px-1">
                   {index + 1}
                 </span>
               </button>
