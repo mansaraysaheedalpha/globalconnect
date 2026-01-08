@@ -87,9 +87,26 @@ export const PresentationViewer = ({
     } else {
       // Start live presentation
       setIsLiveMode(true);
+
+      // Debug: Log connection state
+      console.log("[PresentationViewer] Starting live mode...", {
+        liveConnected,
+        liveJoined,
+        sessionId: session.id,
+        eventId: event.id,
+      });
+
       // Wait for connection and state sync then start
       setTimeout(async () => {
+        console.log("[PresentationViewer] After timeout - attempting startPresentation", {
+          liveConnected,
+          liveJoined,
+        });
+
         const result = await startPresentation();
+
+        console.log("[PresentationViewer] startPresentation result:", result);
+
         if (result.success) {
           toast.success("Live presentation started!", {
             description: "Attendees can now see your slides in real-time",
