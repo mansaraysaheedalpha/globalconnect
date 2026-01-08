@@ -139,6 +139,72 @@ const nextConfig = {
         protocol: "https",
         hostname: "images.pexels.com",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.pixabay.com",
+      },
+      {
+        protocol: "https",
+        hostname: "pixabay.com",
+      },
+      // Imgur
+      {
+        protocol: "https",
+        hostname: "i.imgur.com",
+      },
+      {
+        protocol: "https",
+        hostname: "imgur.com",
+      },
+      // Cloudinary
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      // Flickr
+      {
+        protocol: "https",
+        hostname: "live.staticflickr.com",
+      },
+      // Google (profile pics, drive images)
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      // GitHub
+      {
+        protocol: "https",
+        hostname: "raw.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+      },
+      // Giphy
+      {
+        protocol: "https",
+        hostname: "media.giphy.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media0.giphy.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media1.giphy.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media2.giphy.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media3.giphy.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media4.giphy.com",
+      },
     ],
   },
 };
