@@ -343,12 +343,10 @@ const AttendeePresentationDialog = ({
   session,
   eventId,
   livePresentationActive,
-  setLivePresentationActive,
 }: {
   session: Session;
   eventId: string;
   livePresentationActive: boolean;
-  setLivePresentationActive: (active: boolean) => void;
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -368,8 +366,8 @@ const AttendeePresentationDialog = ({
         <Presentation className="h-4 w-4" />
         Slides
         {livePresentationActive && (
-          <Badge className="ml-1 bg-red-600 text-white text-[10px] px-1.5 py-0 h-4 animate-pulse">
-            LIVE
+          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+            Open
           </Badge>
         )}
       </Button>
@@ -399,7 +397,6 @@ const AttendeePresentationDialog = ({
             sessionId={session.id}
             eventId={eventId}
             sessionTitle={session.title}
-            onStatusChange={setLivePresentationActive}
           />
         </div>
       </DialogContent>
@@ -408,27 +405,18 @@ const AttendeePresentationDialog = ({
 };
 
 // Separate component for attendee presentation viewer (hooks need stable component)
-const AttendeePresentation = ({ sessionId, eventId, sessionTitle, onStatusChange }: {
+const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
   sessionId: string;
   eventId: string;
   sessionTitle: string;
-  onStatusChange?: (isActive: boolean) => void;
 }) => {
   const {
     slideState,
     droppedContent,
     isConnected,
-    isJoined,
     error,
     clearDroppedContent,
   } = usePresentationControl(sessionId, eventId, false); // canControl = false for attendees
-
-  // Notify parent when presentation status changes
-  React.useEffect(() => {
-    if (slideState?.isActive !== undefined && onStatusChange) {
-      onStatusChange(slideState.isActive);
-    }
-  }, [slideState?.isActive, onStatusChange]);
 
   return (
     <div className="h-full flex flex-col">
@@ -487,7 +475,10 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   const [liveChatOpen, setLiveChatOpen] = React.useState(session.chatOpen ?? false);
   const [liveQaOpen, setLiveQaOpen] = React.useState(session.qaOpen ?? false);
   const [livePollsOpen, setLivePollsOpen] = React.useState(session.pollsOpen ?? false);
-  const [livePresentationActive, setLivePresentationActive] = React.useState(session.presentationActive ?? false);
+
+  // Track presentation status via WebSocket (always connected for live sessions)
+  const { slideState } = usePresentationControl(session.id, eventId, false);
+  const livePresentationActive = slideState?.isActive ?? false;
 
   // Sync with props when they change (e.g., from refetch)
   React.useEffect(() => {
@@ -501,10 +492,6 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   React.useEffect(() => {
     setLivePollsOpen(session.pollsOpen ?? false);
   }, [session.pollsOpen]);
-
-  React.useEffect(() => {
-    setLivePresentationActive(session.presentationActive ?? false);
-  }, [session.presentationActive]);
 
   return (
     <PremiumCard
@@ -579,7 +566,6 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                   session={session}
                   eventId={eventId}
                   livePresentationActive={livePresentationActive}
-                  setLivePresentationActive={setLivePresentationActive}
                 />
               )}
             </div>
