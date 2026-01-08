@@ -19,9 +19,11 @@ import {
 
 export function Sidebar({
   onOpenCreateOrgModal,
+  onNavigate,
   className,
 }: {
   onOpenCreateOrgModal: () => void;
+  onNavigate?: () => void;
   className?: string;
 }) {
   const pathname = usePathname();
@@ -76,6 +78,7 @@ export function Sidebar({
       <div className="mb-8 p-2">
         <Link
           href="/dashboard"
+          onClick={onNavigate}
           className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
           aria-label="GlobalConnect - Go to dashboard"
         >
@@ -109,6 +112,7 @@ export function Sidebar({
               <li key={link.href} role="listitem">
                 <Link
                   href={link.href}
+                  onClick={onNavigate}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-foreground/70 transition-all hover:text-foreground hover:bg-white/5",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",

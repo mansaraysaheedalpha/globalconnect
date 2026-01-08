@@ -33,6 +33,7 @@ export default function PlatformLayout({
                 setIsModalOpen(true);
                 setIsSidebarOpen(false);
               }}
+              onNavigate={() => setIsSidebarOpen(false)}
               className="w-full max-w-sm"
             />
           </SheetContent>
