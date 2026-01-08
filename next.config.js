@@ -116,24 +116,15 @@ const nextConfig = {
         port: "9000",
         pathname: "/globalconnect-dev/**",
       },
-      // Restricted AWS S3 patterns - replace with your actual bucket names in production
+      // AWS S3 - Production bucket (eu-north-1)
       {
         protocol: "https",
-        hostname: "globalconnect-prod.s3.amazonaws.com",
+        hostname: "108782064634-globalconnect-uploads.s3.eu-north-1.amazonaws.com",
       },
       {
         protocol: "https",
-        hostname: "globalconnect-dev.s3.amazonaws.com",
-      },
-      {
-        protocol: "https",
-        hostname: "s3.amazonaws.com",
-        pathname: "/globalconnect-*/**",
-      },
-      {
-        protocol: "https",
-        hostname: "s3.*.amazonaws.com",
-        pathname: "/globalconnect-*/**",
+        hostname: "s3.eu-north-1.amazonaws.com",
+        pathname: "/108782064634-globalconnect-uploads/**",
       },
       {
         protocol: "https",
