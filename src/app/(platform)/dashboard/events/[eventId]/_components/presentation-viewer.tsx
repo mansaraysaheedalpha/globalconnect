@@ -88,8 +88,8 @@ export const PresentationViewer = ({
       // Start live presentation
       setIsLiveMode(true);
 
-      // Debug: Log connection state
-      console.log("[PresentationViewer] Starting live mode...", {
+      // Debug: Log connection state (using warn to appear in production)
+      console.warn("[PresentationViewer] Starting live mode...", {
         liveConnected,
         liveJoined,
         sessionId: session.id,
@@ -98,14 +98,14 @@ export const PresentationViewer = ({
 
       // Wait for connection and state sync then start
       setTimeout(async () => {
-        console.log("[PresentationViewer] After timeout - attempting startPresentation", {
+        console.warn("[PresentationViewer] After timeout - attempting startPresentation", {
           liveConnected,
           liveJoined,
         });
 
         const result = await startPresentation();
 
-        console.log("[PresentationViewer] startPresentation result:", result);
+        console.warn("[PresentationViewer] startPresentation result:", result);
 
         if (result.success) {
           toast.success("Live presentation started!", {
