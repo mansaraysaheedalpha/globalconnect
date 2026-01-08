@@ -1,7 +1,7 @@
 // src/app/(platform)/dashboard/events/[eventId]/_components/presentation-viewer.tsx
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,14 @@ export const PresentationViewer = ({
   const toggleFullscreen = () => setIsFullscreen((prev) => !prev);
   const fitToWidth = () => setZoom(1); // Reset to fit width
 
+  // Use a ref to always have the latest startPresentation function
+  const startPresentationRef = useRef(startPresentation);
+  startPresentationRef.current = startPresentation;
+
+  // Use a ref for connection state to avoid stale closures
+  const connectionStateRef = useRef({ liveConnected, liveJoined });
+  connectionStateRef.current = { liveConnected, liveJoined };
+
   // Toggle live presentation mode
   const toggleLiveMode = async () => {
     if (isLiveMode) {
@@ -98,12 +106,14 @@ export const PresentationViewer = ({
 
       // Wait for connection and state sync then start
       setTimeout(async () => {
+        const currentState = connectionStateRef.current;
         console.warn("[PresentationViewer] After timeout - attempting startPresentation", {
-          liveConnected,
-          liveJoined,
+          liveConnected: currentState.liveConnected,
+          liveJoined: currentState.liveJoined,
         });
 
-        const result = await startPresentation();
+        // Use ref to get the latest startPresentation function
+        const result = await startPresentationRef.current();
 
         console.warn("[PresentationViewer] startPresentation result:", result);
 
