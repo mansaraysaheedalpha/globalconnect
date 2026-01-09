@@ -6,7 +6,7 @@ import * as React from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
-import { GET_REGISTRATIONS_BY_EVENT_QUERY } from "@/graphql/registrations.graphql";
+import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/registrations.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -585,16 +585,16 @@ export default function AttendeeEventPage() {
     skip: !eventId,
   });
 
-  const { data: attendeesData } = useQuery(GET_REGISTRATIONS_BY_EVENT_QUERY, {
+  const { data: attendeesData } = useQuery(GET_EVENT_ATTENDEES_QUERY, {
     variables: { eventId },
     skip: !eventId,
   });
 
   const availableUsers = React.useMemo(() => {
-    if (!attendeesData?.registrationsByEvent) return [];
-    
-    return attendeesData.registrationsByEvent
-      .filter((reg: any) => reg.user) // Only users, not guests without accounts
+    if (!attendeesData?.eventAttendees) return [];
+
+    return attendeesData.eventAttendees
+      .filter((reg: any) => reg.user) // Only users with accounts
       .map((reg: any) => ({
         id: reg.user.id,
         firstName: reg.user.first_name,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Intervention } from '../types/intervention';
+import { getSocketUrl, getAgentServiceUrl } from '@/lib/env';
 
 interface UseInterventionsOptions {
   sessionId: string;
@@ -24,8 +25,10 @@ export const useInterventions = ({
   sessionId,
   eventId,
   enabled = true,
-  apiBaseUrl = 'http://localhost:8003',
+  apiBaseUrl,
 }: UseInterventionsOptions): UseInterventionsResult => {
+  // Use environment variable for agent service URL with optional override
+  const effectiveApiBaseUrl = apiBaseUrl || getAgentServiceUrl();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [pendingIntervention, setPendingIntervention] = useState<Intervention | null>(null);
   const [interventionHistory, setInterventionHistory] = useState<Intervention[]>([]);
@@ -39,7 +42,7 @@ export const useInterventions = ({
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${apiBaseUrl}/api/v1/interventions/history/${sessionId}?limit=20`);
+      const response = await fetch(`${effectiveApiBaseUrl}/api/v1/interventions/history/${sessionId}?limit=20`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch intervention history: ${response.statusText}`);
@@ -74,14 +77,14 @@ export const useInterventions = ({
     } finally {
       setIsLoading(false);
     }
-  }, [enabled, sessionId, apiBaseUrl]);
+  }, [enabled, sessionId, effectiveApiBaseUrl]);
 
   // Approve intervention (manual mode)
   const approveIntervention = useCallback(async (interventionId: string) => {
     try {
       // In Phase 3, interventions are auto-triggered, but we can still manually trigger
       // This would be used if we implement manual approval mode in future
-      const response = await fetch(`${apiBaseUrl}/api/v1/interventions/manual`, {
+      const response = await fetch(`${effectiveApiBaseUrl}/api/v1/interventions/manual`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +107,7 @@ export const useInterventions = ({
       console.error('Failed to approve intervention:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     }
-  }, [sessionId, eventId, pendingIntervention, apiBaseUrl, fetchHistory]);
+  }, [sessionId, eventId, pendingIntervention, effectiveApiBaseUrl, fetchHistory]);
 
   // Dismiss intervention
   const dismissIntervention = useCallback((interventionId: string) => {
@@ -115,7 +118,7 @@ export const useInterventions = ({
   useEffect(() => {
     if (!enabled || !sessionId) return;
 
-    const socketConnection = io('http://localhost:3002', {
+    const socketConnection = io(getSocketUrl(), {
       query: { sessionId },
       transports: ['websocket'],
       reconnection: true,

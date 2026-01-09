@@ -100,15 +100,25 @@ const httpLink = createHttpLink({
   credentials: "include", // Ensure cookies are sent
 });
 
-const authLink = setContext((_, { headers }) => {
+const authLink = setContext(async (_, { headers }) => {
   // Get both tokens from the store
-  const { token, onboardingToken } = useAuthStore.getState();
+  const authState = useAuthStore.getState();
+  let { token } = authState;
+  const { onboardingToken, isTokenExpired } = authState;
+
+  // Proactively refresh token if it's about to expire (within 60 seconds)
+  if (token && isTokenExpired()) {
+    console.log("[Apollo Auth] Token is expiring soon, proactively refreshing...");
+    try {
+      token = await getNewToken();
+    } catch (error) {
+      console.error("[Apollo Auth] Proactive token refresh failed:", error);
+      // Continue with expired token, the error handler will catch the 401
+    }
+  }
 
   // Prioritize the main token, but fall back to the onboarding token
   const tokenToUse = token || onboardingToken;
-
-  // Debug logging
-  console.log("[Apollo Auth] Token from store:", tokenToUse ? "Present" : "Missing");
 
   return {
     headers: {

@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSocket } from '@/lib/socket';
+import { getAgentServiceUrl } from '@/lib/env';
 import type { AgentMode } from '../components/AgentModeToggle';
 import type { AgentStatusType } from '../components/AgentStatus';
 import type { DecisionContext } from '../components/DecisionExplainer';
@@ -121,8 +122,8 @@ export function useAgentState({
   const setAgentMode = useCallback(async (mode: AgentMode) => {
     setIsChangingMode(true);
     try {
-      // Call backend API to change mode
-      const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8003';
+      // Call backend API to change mode using environment variable
+      const agentServiceUrl = getAgentServiceUrl();
       const response = await fetch(`${agentServiceUrl}/api/v1/agent/sessions/${sessionId}/mode`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

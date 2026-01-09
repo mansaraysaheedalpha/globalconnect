@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { EngagementData, Anomaly } from '../types';
+import { getSocketUrl } from '@/lib/env';
 
 interface UseEngagementStreamProps {
   sessionId: string;
@@ -29,8 +30,8 @@ export const useEngagementStream = ({
   useEffect(() => {
     if (!enabled || !sessionId) return;
 
-    // Connect to real-time service (adjust URL based on your setup)
-    const socketConnection = io('http://localhost:3002', {
+    // Connect to real-time service using environment variable
+    const socketConnection = io(getSocketUrl(), {
       query: { sessionId },
       transports: ['websocket'],
     });
