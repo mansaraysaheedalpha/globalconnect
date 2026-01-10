@@ -267,57 +267,56 @@ export const GET_MONETIZATION_ANALYTICS_QUERY = gql`
 `;
 
 // Waitlist Management Queries (Organizers Only)
-// Note: Backend uses snake_case for GraphQL field names
 export const GET_SESSION_WAITLIST_QUERY = gql`
   query GetSessionWaitlist($sessionId: ID!) {
-    session_waitlist(session_id: $sessionId) {
+    sessionWaitlist(sessionId: $sessionId) {
       id
       position
-      user_id
+      userId
       user {
         id
         email
-        first_name
-        last_name
-        image_url
+        firstName
+        lastName
+        imageUrl
       }
-      session_id
+      sessionId
       status
-      priority_tier
-      joined_at
-      offer_sent_at
-      offer_expires_at
-      offer_responded_at
-      left_at
+      priorityTier
+      joinedAt
+      offerSentAt
+      offerExpiresAt
+      offerRespondedAt
+      leftAt
     }
-    session_capacity(session_id: $sessionId) {
-      session_id
-      maximum_capacity
-      current_attendance
-      available_spots
-      is_available
-      waitlist_count
+    sessionCapacity(sessionId: $sessionId) {
+      sessionId
+      maximumCapacity
+      currentAttendance
+      availableSpots
+      isAvailable
+      waitlistCount
     }
   }
 `;
 
 export const GET_EVENT_WAITLIST_ANALYTICS_QUERY = gql`
   query GetEventWaitlistAnalytics($eventId: ID!) {
-    event_waitlist_analytics(event_id: $eventId) {
-      total_waitlist_entries
-      active_waitlist_count
-      total_offers_issued
-      total_offers_accepted
-      total_offers_declined
-      total_offers_expired
-      acceptance_rate
-      average_wait_time_minutes
-      by_session {
-        session_id
-        session_title
-        waitlist_count
-        offers_issued
-        acceptance_rate
+    eventWaitlistAnalytics(eventId: $eventId) {
+      totalWaitlistEntries
+      activeWaitlistCount
+      totalOffersIssued
+      totalOffersAccepted
+      totalOffersDeclined
+      totalOffersExpired
+      acceptanceRate
+      averageWaitTimeMinutes
+      bySession {
+        sessionId
+        sessionTitle
+        waitlistCount
+        offersIssued
+        acceptanceRate
       }
     }
   }
@@ -325,7 +324,7 @@ export const GET_EVENT_WAITLIST_ANALYTICS_QUERY = gql`
 
 export const REMOVE_FROM_WAITLIST_MUTATION = gql`
   mutation RemoveFromWaitlist($input: RemoveFromWaitlistInput!) {
-    remove_from_waitlist(input: $input) {
+    removeFromWaitlist(input: $input) {
       success
       message
     }
@@ -334,13 +333,13 @@ export const REMOVE_FROM_WAITLIST_MUTATION = gql`
 
 export const MANUALLY_ADD_TO_WAITLIST_MUTATION = gql`
   mutation ManuallyAddToWaitlist($input: JoinWaitlistInput!) {
-    join_waitlist(input: $input) {
+    joinWaitlist(input: $input) {
       success
       message
       entry {
         id
         position
-        joined_at
+        joinedAt
       }
     }
   }
@@ -348,35 +347,35 @@ export const MANUALLY_ADD_TO_WAITLIST_MUTATION = gql`
 
 export const UPDATE_SESSION_CAPACITY_MUTATION = gql`
   mutation UpdateSessionCapacity($input: UpdateCapacityInput!) {
-    update_session_capacity(input: $input) {
-      session_id
-      maximum_capacity
-      current_attendance
-      available_spots
-      is_available
-      offers_automatically_sent
+    updateSessionCapacity(input: $input) {
+      sessionId
+      maximumCapacity
+      currentAttendance
+      availableSpots
+      isAvailable
+      offersAutomaticallySent
     }
   }
 `;
 
 export const SEND_WAITLIST_OFFER_MUTATION = gql`
   mutation SendWaitlistOffer($input: SendOfferInput!) {
-    send_waitlist_offer(input: $input) {
+    sendWaitlistOffer(input: $input) {
       id
-      session_id
-      user_id
+      sessionId
+      userId
       status
-      offer_sent_at
-      offer_expires_at
+      offerSentAt
+      offerExpiresAt
     }
   }
 `;
 
 export const BULK_SEND_WAITLIST_OFFERS_MUTATION = gql`
   mutation BulkSendWaitlistOffers($input: BulkSendOffersInput!) {
-    bulk_send_waitlist_offers(input: $input) {
+    bulkSendWaitlistOffers(input: $input) {
       success
-      offers_sent
+      offersSent
       message
     }
   }

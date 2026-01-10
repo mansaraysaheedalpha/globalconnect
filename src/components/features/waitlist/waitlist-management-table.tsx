@@ -61,28 +61,27 @@ interface WaitlistManagementTableProps {
   sessionTitle?: string;
 }
 
-// Backend returns snake_case fields
 interface WaitlistUser {
   id: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  image_url?: string;
+  firstName: string;
+  lastName: string;
+  imageUrl?: string;
 }
 
 interface WaitlistEntry {
   id: string;
   position: number;
-  user_id: string;
+  userId: string;
   user?: WaitlistUser;
-  session_id: string;
+  sessionId: string;
   status: "WAITING" | "OFFERED" | "ACCEPTED" | "DECLINED" | "EXPIRED" | "LEFT";
-  priority_tier: "VIP" | "PREMIUM" | "STANDARD";
-  joined_at: string;
-  offer_sent_at?: string;
-  offer_expires_at?: string;
-  offer_responded_at?: string;
-  left_at?: string;
+  priorityTier: "VIP" | "PREMIUM" | "STANDARD";
+  joinedAt: string;
+  offerSentAt?: string;
+  offerExpiresAt?: string;
+  offerRespondedAt?: string;
+  leftAt?: string;
 }
 
 export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistManagementTableProps) {
@@ -113,10 +112,10 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
 
   const [sendOffer, { loading: sendingOffer }] = useMutation(SEND_WAITLIST_OFFER_MUTATION, {
     onCompleted: (data) => {
-      const offerData = data.send_waitlist_offer;
+      const offerData = data.sendWaitlistOffer;
       toast.success("Waitlist offer sent", {
-        description: offerData?.offer_expires_at
-          ? `Offer will expire at ${new Date(offerData.offer_expires_at).toLocaleTimeString()}`
+        description: offerData?.offerExpiresAt
+          ? `Offer will expire at ${new Date(offerData.offerExpiresAt).toLocaleTimeString()}`
           : undefined,
       });
       refetch();
@@ -130,8 +129,8 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
 
   const [bulkSendOffers, { loading: sendingBulk }] = useMutation(BULK_SEND_WAITLIST_OFFERS_MUTATION, {
     onCompleted: (data) => {
-      const result = data.bulk_send_waitlist_offers;
-      toast.success(`Sent ${result?.offers_sent || 0} offers`, {
+      const result = data.bulkSendWaitlistOffers;
+      toast.success(`Sent ${result?.offersSent || 0} offers`, {
         description: result?.message,
       });
       refetch();
@@ -202,8 +201,7 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     );
   }
 
-  // Backend uses snake_case: session_waitlist
-  const waitlist: WaitlistEntry[] = data?.session_waitlist || [];
+  const waitlist: WaitlistEntry[] = data?.sessionWaitlist || [];
 
   const handleRemove = (entry: WaitlistEntry) => {
     setSelectedEntry(entry);
@@ -216,8 +214,8 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     removeFromWaitlist({
       variables: {
         input: {
-          session_id: sessionId,
-          user_id: selectedEntry.user_id,
+          sessionId: sessionId,
+          userId: selectedEntry.userId,
         },
       },
     });
@@ -227,8 +225,8 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     sendOffer({
       variables: {
         input: {
-          session_id: sessionId,
-          user_id: entry.user_id,
+          sessionId: sessionId,
+          userId: entry.userId,
         },
       },
     });
@@ -238,7 +236,7 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     bulkSendOffers({
       variables: {
         input: {
-          session_id: sessionId,
+          sessionId: sessionId,
           count: bulkOfferCount,
         },
       },
@@ -322,10 +320,10 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
                 <TableBody>
                   {waitlist.map((entry) => {
                     // Get user display info with fallbacks
-                    const firstName = entry.user?.first_name || "User";
-                    const lastName = entry.user?.last_name || entry.user_id.slice(0, 8);
+                    const firstName = entry.user?.firstName || "User";
+                    const lastName = entry.user?.lastName || entry.userId.slice(0, 8);
                     const email = entry.user?.email || "";
-                    const imageUrl = entry.user?.image_url;
+                    const imageUrl = entry.user?.imageUrl;
                     const initials = `${firstName[0] || "U"}${lastName[0] || ""}`.toUpperCase();
 
                     return (
@@ -333,9 +331,9 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <span>{entry.position}</span>
-                            {entry.priority_tier !== "STANDARD" && (
+                            {entry.priorityTier !== "STANDARD" && (
                               <Badge variant="outline" className="text-xs">
-                                {entry.priority_tier}
+                                {entry.priorityTier}
                               </Badge>
                             )}
                           </div>
@@ -351,7 +349,7 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
                                 {firstName} {lastName}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {email || `ID: ${entry.user_id.slice(0, 8)}...`}
+                                {email || `ID: ${entry.userId.slice(0, 8)}...`}
                               </p>
                             </div>
                           </div>
@@ -359,9 +357,9 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
                         <TableCell>
                           <div className="space-y-1">
                             {getStatusBadge(entry.status)}
-                            {entry.offer_sent_at && (
+                            {entry.offerSentAt && (
                               <p className="text-xs text-muted-foreground">
-                                Sent {formatSafeDate(entry.offer_sent_at)}
+                                Sent {formatSafeDate(entry.offerSentAt)}
                               </p>
                             )}
                           </div>
@@ -369,7 +367,7 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <Clock className="h-3.5 w-3.5" />
-                            {formatSafeDate(entry.joined_at)}
+                            {formatSafeDate(entry.joinedAt)}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -413,8 +411,8 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
             <DialogDescription>
               Are you sure you want to remove{" "}
               <strong>
-                {selectedEntry?.user?.first_name || "User"}{" "}
-                {selectedEntry?.user?.last_name || selectedEntry?.user_id.slice(0, 8)}
+                {selectedEntry?.user?.firstName || "User"}{" "}
+                {selectedEntry?.user?.lastName || selectedEntry?.userId.slice(0, 8)}
               </strong>{" "}
               from the waitlist? This action cannot be undone.
             </DialogDescription>
