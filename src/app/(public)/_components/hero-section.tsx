@@ -5,8 +5,40 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
+import { useQuery } from "@apollo/client";
+import { GET_PLATFORM_STATS_QUERY } from "@/graphql/public.graphql";
+
+// Format large numbers with K/M suffix
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1).replace(/\.0$/, "")}M+`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1).replace(/\.0$/, "")}K+`;
+  }
+  return `${num}+`;
+};
 
 export function HeroSection() {
+  const { data } = useQuery(GET_PLATFORM_STATS_QUERY);
+
+  // Use real data with fallbacks
+  const stats = data?.platformStats;
+  const statsDisplay = [
+    {
+      value: stats ? formatNumber(stats.totalEvents) : "—",
+      label: "Events Created",
+    },
+    {
+      value: stats ? formatNumber(stats.totalAttendees) : "—",
+      label: "Attendees Served",
+    },
+    {
+      value: stats ? `${stats.uptimePercentage}%` : "—",
+      label: "Uptime",
+    },
+  ];
+
   return (
     <section className="relative min-h-[80vh] sm:min-h-screen flex items-center justify-center text-center text-white overflow-hidden pt-20 pb-16 sm:pt-24">
       {/* Video Background */}
@@ -130,18 +162,14 @@ export function HeroSection() {
           </Button>
         </motion.div>
 
-        {/* Stats Row - TODO: Update with real metrics */}
+        {/* Stats Row - Real platform metrics */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 md:gap-12 px-4"
         >
-          {[
-            { value: "10K+", label: "Events Created" },
-            { value: "500K+", label: "Attendees Served" },
-            { value: "99.9%", label: "Uptime" },
-          ].map((stat, index) => (
+          {statsDisplay.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, scale: 0.8 }}

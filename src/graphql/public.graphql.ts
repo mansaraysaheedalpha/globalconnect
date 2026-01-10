@@ -72,3 +72,15 @@ export const GET_PUBLIC_EVENT_DETAILS_QUERY = gql`
     }
   }
 `;
+
+// Platform-wide statistics for marketing display (public, no auth required)
+export const GET_PLATFORM_STATS_QUERY = gql`
+  query GetPlatformStats {
+    platformStats {
+      totalEvents
+      totalAttendees
+      totalOrganizations
+      uptimePercentage
+    }
+  }
+`;
