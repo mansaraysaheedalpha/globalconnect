@@ -2,69 +2,43 @@
 /**
  * CSRF Protection Utilities
  *
- * Provides client-side CSRF token management for form submissions
- * and state-changing requests. Works in conjunction with backend
- * CSRF validation.
+ * Uses double-submit cookie pattern:
+ * - Backend sets csrf_token cookie
+ * - Frontend reads cookie and sends in x-csrf-token header
+ * - Backend validates cookie matches header
  */
 
-import { safeStorage } from './safe-storage';
-
-const CSRF_TOKEN_KEY = 'csrf-token';
-const CSRF_HEADER_NAME = 'X-CSRF-Token';
-
-/**
- * Generate a cryptographically secure random token
- */
-function generateToken(): string {
-  if (typeof window !== 'undefined' && window.crypto) {
-    const array = new Uint8Array(32);
-    window.crypto.getRandomValues(array);
-    return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
-  }
-  // Fallback for environments without crypto
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-}
+// Must match backend constants in csrf.middleware.ts
+const CSRF_COOKIE_NAME = 'csrf_token';
+const CSRF_HEADER_NAME = 'x-csrf-token';
 
 /**
- * Get or create a CSRF token
- * Token is stored in sessionStorage and regenerated per session
+ * Get CSRF token from the cookie set by the backend
+ * Uses double-submit cookie pattern - read cookie and send in header
  */
 export function getCsrfToken(): string {
-  if (typeof window === 'undefined') {
+  if (typeof document === 'undefined') {
     return '';
   }
 
-  let token = sessionStorage.getItem(CSRF_TOKEN_KEY);
-
-  if (!token) {
-    token = generateToken();
-    sessionStorage.setItem(CSRF_TOKEN_KEY, token);
+  // Read the CSRF token from the cookie set by the backend
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === CSRF_COOKIE_NAME) {
+      return value || '';
+    }
   }
 
-  return token;
+  return '';
 }
 
 /**
- * Refresh the CSRF token
- * Call this after sensitive operations or on session refresh
- */
-export function refreshCsrfToken(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  const token = generateToken();
-  sessionStorage.setItem(CSRF_TOKEN_KEY, token);
-  return token;
-}
-
-/**
- * Clear the CSRF token
- * Call this on logout
+ * Clear the CSRF token cookie on logout
  */
 export function clearCsrfToken(): void {
-  if (typeof window !== 'undefined') {
-    sessionStorage.removeItem(CSRF_TOKEN_KEY);
+  if (typeof document !== 'undefined') {
+    document.cookie = `${CSRF_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   }
 }
 
@@ -73,8 +47,12 @@ export function clearCsrfToken(): void {
  * Use this for fetch requests to protected endpoints
  */
 export function getCsrfHeaders(): Record<string, string> {
+  const token = getCsrfToken();
+  if (!token) {
+    return {};
+  }
   return {
-    [CSRF_HEADER_NAME]: getCsrfToken(),
+    [CSRF_HEADER_NAME]: token,
   };
 }
 
@@ -83,6 +61,7 @@ export function getCsrfHeaders(): Record<string, string> {
  */
 export function addCsrfHeader(headers: Headers | Record<string, string>): void {
   const token = getCsrfToken();
+  if (!token) return;
 
   if (headers instanceof Headers) {
     headers.set(CSRF_HEADER_NAME, token);
@@ -92,65 +71,10 @@ export function addCsrfHeader(headers: Headers | Record<string, string>): void {
 }
 
 /**
- * Create a hidden input element with CSRF token for forms
- * Use this when submitting traditional HTML forms
- */
-export function createCsrfInput(): HTMLInputElement {
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = '_csrf';
-  input.value = getCsrfToken();
-  return input;
-}
-
-/**
- * Validate that a request origin matches the expected origin
- * Additional layer of CSRF protection
- */
-export function validateOrigin(requestOrigin: string | null): boolean {
-  if (!requestOrigin) {
-    return false;
-  }
-
-  const allowedOrigins = [
-    typeof window !== 'undefined' ? window.location.origin : '',
-    process.env.NEXT_PUBLIC_APP_URL,
-  ].filter(Boolean);
-
-  return allowedOrigins.includes(requestOrigin);
-}
-
-/**
- * CSRF token for Apollo Client
- * Add to Apollo Link context
+ * CSRF headers for Apollo Client
  */
 export function getApolloHeaders(): Record<string, string> {
-  return {
-    ...getCsrfHeaders(),
-  };
-}
-
-/**
- * Double Submit Cookie Pattern
- * Set CSRF token as both cookie and header
- */
-export function setDoubleSubmitCookie(): void {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  const token = getCsrfToken();
-
-  // Set cookie with SameSite=Strict for additional protection
-  document.cookie = `csrf-token=${token}; path=/; SameSite=Strict; Secure`;
-}
-
-/**
- * Verify double submit cookie matches header
- * Note: This is primarily validated server-side
- */
-export function verifyDoubleSubmit(cookieToken: string, headerToken: string): boolean {
-  return cookieToken === headerToken && cookieToken.length > 0;
+  return getCsrfHeaders();
 }
 
 export { CSRF_HEADER_NAME };

@@ -19,6 +19,7 @@ import {
   initializeTokenRefresh,
   cancelScheduledRefresh,
 } from "./token-refresh";
+import { getCsrfHeaders } from "./csrf";
 
 // --- 1. Type-Safe Environment Variable with validation ---
 const getApiUrl = () => {
@@ -108,6 +109,7 @@ const authLink = setContext(async (_, { headers }) => {
   return {
     headers: {
       ...headers,
+      ...getCsrfHeaders(), // Include CSRF token for double-submit cookie pattern
       authorization: tokenToUse ? `Bearer ${tokenToUse}` : "",
     },
   };

@@ -9,6 +9,7 @@
  */
 
 import { jwtDecode } from "jwt-decode";
+import { getCsrfHeaders } from "./csrf";
 
 interface JwtPayload {
   exp?: number;
@@ -117,6 +118,7 @@ export async function refreshToken(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...getCsrfHeaders(), // Include CSRF token from backend cookie
         },
         credentials: "include", // Send httpOnly refresh token cookie
         body: JSON.stringify({
