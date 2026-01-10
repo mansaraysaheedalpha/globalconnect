@@ -129,7 +129,7 @@ export function WaitlistCapacityManager({ sessionId, sessionTitle }: WaitlistCap
           Session Capacity Management
         </CardTitle>
         {sessionTitle && (
-          <CardDescription>{sessionTitle}</CardDescription>
+          <CardDescription className="truncate max-w-xs sm:max-w-md md:max-w-lg">{sessionTitle}</CardDescription>
         )}
       </CardHeader>
       <CardContent>

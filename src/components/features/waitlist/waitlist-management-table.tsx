@@ -277,7 +277,7 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
                   Real-time
                 </Badge>
               </CardTitle>
-              {sessionTitle && <CardDescription>{sessionTitle}</CardDescription>}
+              {sessionTitle && <CardDescription className="truncate max-w-xs sm:max-w-md md:max-w-lg">{sessionTitle}</CardDescription>}
             </div>
 
             {waitingEntries.length > 0 && (
