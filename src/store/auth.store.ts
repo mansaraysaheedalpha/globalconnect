@@ -22,12 +22,16 @@ interface AuthState {
   onboardingToken: string | null;
   user: User | null;
   orgId: string | null;
+  isRefreshing: boolean;
+  lastRefreshAttempt: number | null;
 
   setAuth: (token: string, user: User) => void;
   setOnboardingToken: (token: string | null) => void;
   logout: () => void;
   updateUser: (newUserData: Partial<User>) => void;
   isTokenExpired: () => boolean;
+  setIsRefreshing: (isRefreshing: boolean) => void;
+  getTokenExpiry: () => number | null;
 }
 
 /**
@@ -69,6 +73,8 @@ export const useAuthStore = create<AuthState>()(
       onboardingToken: null,
       user: null,
       orgId: null,
+      isRefreshing: false,
+      lastRefreshAttempt: null,
 
       updateUser: (newUserData) => {
         const currentUser = get().user;
@@ -82,14 +88,21 @@ export const useAuthStore = create<AuthState>()(
           const decodedPayload = jwtDecode<JwtPayload>(token);
           const orgId = decodedPayload.orgId || null;
 
-          set({ token, user, orgId, onboardingToken: null });
+          set({
+            token,
+            user,
+            orgId,
+            onboardingToken: null,
+            isRefreshing: false,
+            lastRefreshAttempt: Date.now()
+          });
 
           // Sync to cookie for middleware
           syncAuthToCookie({ token, orgId });
         } catch (error) {
           // Invalid token - clear auth state
           console.error('Failed to decode token:', error);
-          set({ token: null, user: null, orgId: null, onboardingToken: null });
+          set({ token: null, user: null, orgId: null, onboardingToken: null, isRefreshing: false });
           clearAuthCookie();
         }
       },
@@ -97,8 +110,22 @@ export const useAuthStore = create<AuthState>()(
       setOnboardingToken: (token) => set({ onboardingToken: token }),
 
       logout: () => {
-        set({ token: null, user: null, orgId: null, onboardingToken: null });
+        set({ token: null, user: null, orgId: null, onboardingToken: null, isRefreshing: false, lastRefreshAttempt: null });
         clearAuthCookie();
+      },
+
+      setIsRefreshing: (isRefreshing) => set({ isRefreshing }),
+
+      getTokenExpiry: () => {
+        const token = get().token;
+        if (!token) return null;
+
+        try {
+          const decoded = jwtDecode<JwtPayload>(token);
+          return decoded.exp ? decoded.exp * 1000 : null;
+        } catch {
+          return null;
+        }
       },
 
       isTokenExpired: () => {

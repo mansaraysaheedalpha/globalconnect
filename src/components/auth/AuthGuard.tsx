@@ -1,24 +1,84 @@
 // src/components/auth/AuthGuard.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter, usePathname } from "next/navigation";
 import { Loader } from "@/components/ui/loader";
+import { isTokenExpired, tokenNeedsRefresh, refreshToken } from "@/lib/token-refresh";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { token, onboardingToken, orgId } = useAuthStore((state) => ({
+  const { token, onboardingToken, orgId, setAuth, logout } = useAuthStore((state) => ({
     token: state.token,
     onboardingToken: state.onboardingToken,
     orgId: state.orgId,
+    setAuth: state.setAuth,
+    logout: state.logout,
   }));
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Handle token refresh
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      await refreshToken(
+        (newToken, user) => {
+          setAuth(newToken, {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: "",
+          });
+        },
+        () => {
+          logout();
+          router.push("/auth/login");
+        }
+      );
+    } catch (error) {
+      console.error("[AuthGuard] Token refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, setAuth, logout, router]);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Check token expiration on mount and periodically
+  useEffect(() => {
+    if (!isClient || !token) return;
+
+    // Check if token is completely expired
+    if (isTokenExpired(token)) {
+      console.log("[AuthGuard] Token is expired, attempting refresh...");
+      handleRefresh();
+      return;
+    }
+
+    // Check if token needs refresh soon
+    if (tokenNeedsRefresh(token)) {
+      console.log("[AuthGuard] Token needs refresh soon, refreshing...");
+      handleRefresh();
+    }
+
+    // Set up periodic check (every 30 seconds)
+    const interval = setInterval(() => {
+      const currentToken = useAuthStore.getState().token;
+      if (currentToken && tokenNeedsRefresh(currentToken)) {
+        console.log("[AuthGuard] Periodic check: token needs refresh");
+        handleRefresh();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isClient, token, handleRefresh]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -68,7 +128,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // The loading state should cover all checks before rendering the children.
   // It should wait for the client, and for one of the tokens to be definitively present.
-  const isLoading = !isClient || (!token && !onboardingToken);
+  // Also show loading while refreshing an expired token.
+  const isLoading = !isClient || (!token && !onboardingToken) || (isRefreshing && isTokenExpired(token));
 
   if (isLoading) {
     return (

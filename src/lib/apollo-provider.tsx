@@ -1,5 +1,6 @@
 // src/lib/apollo-provider.tsx
 "use client";
+import { useEffect, useRef } from "react";
 import {
   ApolloClient,
   InMemoryCache,
@@ -11,6 +12,13 @@ import { setContext } from "@apollo/client/link/context";
 import { onError } from "@apollo/client/link/error";
 import { useAuthStore } from "@/store/auth.store";
 import { Observable } from "@apollo/client/utilities";
+import {
+  refreshToken,
+  tokenNeedsRefresh,
+  isTokenExpired,
+  initializeTokenRefresh,
+  cancelScheduledRefresh,
+} from "./token-refresh";
 
 // --- 1. Type-Safe Environment Variable with validation ---
 const getApiUrl = () => {
@@ -24,75 +32,52 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
-let refreshTokenPromise: Promise<string> | null = null;
+// Track if we're currently refreshing to prevent multiple concurrent refreshes
+let isRefreshingToken = false;
+let pendingRefreshPromise: Promise<string> | null = null;
 
-const getNewToken = (): Promise<string> => {
-  if (refreshTokenPromise) {
-    return refreshTokenPromise;
+/**
+ * Get a new token, handling concurrent refresh requests
+ */
+const getNewToken = async (): Promise<string> => {
+  if (pendingRefreshPromise) {
+    return pendingRefreshPromise;
   }
 
-  refreshTokenPromise = (async () => {
-    try {
-      console.log("Attempting to refresh token...");
+  if (isRefreshingToken) {
+    // Wait a bit and check again
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (pendingRefreshPromise) {
+      return pendingRefreshPromise;
+    }
+  }
 
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          query: `
-            mutation RefreshToken {
-              refreshToken {
-                token
-                user { id email first_name }
-              }
-            }
-          `,
-        }),
+  isRefreshingToken = true;
+
+  pendingRefreshPromise = refreshToken(
+    // onSuccess
+    (token, user) => {
+      useAuthStore.getState().setAuth(token, {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: "",
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const responseData = await response.json();
-
-      if (responseData.errors) {
-        throw new Error(
-          responseData.errors[0].message || "Failed to refresh token"
-        );
-      }
-
-      if (!responseData.data?.refreshToken) {
-        throw new Error("Invalid refresh token response structure");
-      }
-
-      const { token, user } = responseData.data.refreshToken;
-
-      if (!token) {
-        throw new Error("No token received from refresh");
-      }
-
-      console.log("Token refreshed successfully");
-      useAuthStore.getState().setAuth(token, user);
-      return token;
-    } catch (e) {
-      console.error("Refresh token failed:", e);
+    },
+    // onFailure
+    () => {
+      console.log("[Apollo] Token refresh failed, logging out...");
       useAuthStore.getState().logout();
-
-      // Use router instead of direct window.location for better Next.js compatibility
       if (typeof window !== "undefined") {
         window.location.href = "/auth/login";
       }
-      throw e;
-    } finally {
-      refreshTokenPromise = null;
     }
-  })();
+  ).finally(() => {
+    isRefreshingToken = false;
+    pendingRefreshPromise = null;
+  });
 
-  return refreshTokenPromise;
+  return pendingRefreshPromise;
 };
 
 const httpLink = createHttpLink({
@@ -101,19 +86,19 @@ const httpLink = createHttpLink({
 });
 
 const authLink = setContext(async (_, { headers }) => {
-  // Get both tokens from the store
+  // Get auth state
   const authState = useAuthStore.getState();
   let { token } = authState;
-  const { onboardingToken, isTokenExpired } = authState;
+  const { onboardingToken } = authState;
 
-  // Proactively refresh token if it's about to expire (within 60 seconds)
-  if (token && isTokenExpired()) {
-    console.log("[Apollo Auth] Token is expiring soon, proactively refreshing...");
+  // Proactively refresh token if it's about to expire
+  if (token && tokenNeedsRefresh(token)) {
+    console.log("[Apollo Auth] Token needs refresh, refreshing proactively...");
     try {
       token = await getNewToken();
     } catch (error) {
       console.error("[Apollo Auth] Proactive token refresh failed:", error);
-      // Continue with expired token, the error handler will catch the 401
+      // Continue with the current token, error link will handle 401
     }
   }
 
@@ -132,7 +117,7 @@ const errorLink = onError(
   ({ graphQLErrors, networkError, operation, forward }) => {
     // Handle network errors
     if (networkError) {
-      console.error("Network error:", networkError);
+      console.error("[Apollo] Network error:", networkError);
 
       // Check if it's a network error with status 401
       if ("statusCode" in networkError && networkError.statusCode === 401) {
@@ -159,10 +144,7 @@ const errorLink = onError(
                 forward(operation).subscribe(subscriber);
               })
               .catch((error) => {
-                console.error(
-                  "Token refresh failed in network error handler:",
-                  error
-                );
+                console.error("[Apollo] Token refresh failed:", error);
                 observer.error(error);
               });
           });
@@ -173,15 +155,29 @@ const errorLink = onError(
     // Handle GraphQL errors
     if (graphQLErrors) {
       for (const err of graphQLErrors) {
-        console.error("GraphQL error:", err);
+        // Only log non-auth errors to avoid noise
+        if (err.extensions?.code !== "UNAUTHORIZED") {
+          console.error("[Apollo] GraphQL error:", err);
+        }
 
         const hasRetried = operation.getContext().hasRetried;
 
+        // Check for various auth error patterns
+        const isAuthError =
+          err.extensions?.code === "UNAUTHORIZED" ||
+          err.message?.toLowerCase().includes("unauthorized") ||
+          err.message?.toLowerCase().includes("not authenticated") ||
+          err.message?.toLowerCase().includes("jwt") ||
+          err.message?.toLowerCase().includes("token");
+
         if (
-          err.extensions?.code === "UNAUTHORIZED" &&
+          isAuthError &&
           operation.operationName !== "Login" &&
+          operation.operationName !== "RefreshToken" &&
           !hasRetried
         ) {
+          console.log("[Apollo] Auth error detected, attempting token refresh...");
+
           return new Observable((observer) => {
             getNewToken()
               .then((newAccessToken) => {
@@ -206,10 +202,7 @@ const errorLink = onError(
                 return () => subscription.unsubscribe();
               })
               .catch((error) => {
-                console.error(
-                  "Token refresh failed in GraphQL error handler:",
-                  error
-                );
+                console.error("[Apollo] Token refresh failed:", error);
                 observer.error(error);
               });
           });
@@ -232,6 +225,80 @@ const client = new ApolloClient({
   },
 });
 
+/**
+ * Token Refresh Initializer Component
+ * Runs once on mount to set up background token refresh
+ */
+function TokenRefreshInitializer() {
+  const initialized = useRef(false);
+  const token = useAuthStore((state) => state.token);
+
+  useEffect(() => {
+    // Only initialize once
+    if (initialized.current) return;
+    initialized.current = true;
+
+    if (token) {
+      console.log("[TokenRefresh] Initializing background token refresh...");
+      initializeTokenRefresh(
+        token,
+        // onSuccess
+        (newToken, user) => {
+          useAuthStore.getState().setAuth(newToken, {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: "",
+          });
+        },
+        // onFailure
+        () => {
+          console.log("[TokenRefresh] Background refresh failed, logging out...");
+          useAuthStore.getState().logout();
+          if (typeof window !== "undefined") {
+            window.location.href = "/auth/login";
+          }
+        }
+      );
+    }
+
+    // Cleanup on unmount
+    return () => {
+      cancelScheduledRefresh();
+    };
+  }, []); // Empty deps - only run once on mount
+
+  // Re-initialize when token changes (e.g., after login)
+  useEffect(() => {
+    if (token && initialized.current) {
+      initializeTokenRefresh(
+        token,
+        (newToken, user) => {
+          useAuthStore.getState().setAuth(newToken, {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: "",
+          });
+        },
+        () => {
+          useAuthStore.getState().logout();
+          if (typeof window !== "undefined") {
+            window.location.href = "/auth/login";
+          }
+        }
+      );
+    }
+  }, [token]);
+
+  return null;
+}
+
 export function ApolloProvider({ children }: { children: React.ReactNode }) {
-  return <Provider client={client}>{children}</Provider>;
+  return (
+    <Provider client={client}>
+      <TokenRefreshInitializer />
+      {children}
+    </Provider>
+  );
 }
