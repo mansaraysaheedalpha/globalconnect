@@ -3,6 +3,7 @@
 
 import { useEffect, useCallback } from "react";
 import { logger } from "./logger";
+import { clientEnv } from "./env";
 
 /**
  * Event types that can be tracked
@@ -48,6 +49,13 @@ class AnalyticsTracker {
   private flushInterval: ReturnType<typeof setInterval> | null = null;
   private isInitialized = false;
   private isFlushing = false;
+  private trackingEndpoint: string;
+
+  constructor() {
+    // Use the API base URL for the analytics endpoint
+    const baseUrl = clientEnv.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    this.trackingEndpoint = `${baseUrl}/api/v1/analytics/track`;
+  }
 
   /**
    * Initialize the tracker
@@ -121,7 +129,7 @@ class AnalyticsTracker {
     try {
       logger.info("Flushing analytics events", { count: eventsToSend.length });
 
-      const response = await fetch("/api/v1/analytics/track", {
+      const response = await fetch(this.trackingEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -205,11 +213,11 @@ class AnalyticsTracker {
           );
 
           if (navigator.sendBeacon) {
-            navigator.sendBeacon("/api/v1/analytics/track", blob);
+            navigator.sendBeacon(this.trackingEndpoint, blob);
             logger.info("Events sent via sendBeacon", { count: eventsToSend.length });
           } else {
             // Fallback: synchronous fetch
-            fetch("/api/v1/analytics/track", {
+            fetch(this.trackingEndpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ events: eventsToSend }),
