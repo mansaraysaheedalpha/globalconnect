@@ -189,8 +189,11 @@ export const useDirectMessages = (eventId?: string) => {
           (prev.activeConversation?.id.startsWith("temp-") &&
             prev.activeConversation?.recipientId === (message.senderId === user?.id ? prev.activeConversation.recipientId : message.senderId));
 
-        // Add message to messages list if in active conversation
-        const newMessages = isActiveConv
+        // Check if message already exists (prevents duplicates from optimistic updates + broadcast)
+        const messageExists = prev.messages.some((m) => m.id === message.id);
+
+        // Add message to messages list if in active conversation and not already present
+        const newMessages = isActiveConv && !messageExists
           ? [...prev.messages, message]
           : prev.messages;
 
