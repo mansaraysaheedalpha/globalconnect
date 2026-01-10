@@ -7,6 +7,7 @@ import { useAnalyticsTracker } from "@/lib/analytics-tracker";
 
 interface OfferTrackingOptions {
   offerId: string;
+  eventId?: string; // Event ID for proper backend routing
   placement?: string;
   price?: number;
   enabled?: boolean;
@@ -29,12 +30,13 @@ interface OfferTrackingOptions {
  * });
  */
 export function useOfferTracking(options: OfferTrackingOptions) {
-  const { offerId, placement = "unknown", price = 0, enabled = true } = options;
+  const { offerId, eventId, placement = "unknown", price = 0, enabled = true } = options;
 
   const elementRef = useRef<HTMLDivElement>(null);
   const hasTrackedView = useRef(false);
 
-  const { trackOfferView, trackOfferClick: trackClick } = useAnalyticsTracker();
+  // Pass eventId for proper backend routing
+  const { trackOfferView, trackOfferClick: trackClick } = useAnalyticsTracker(eventId);
 
   // Track offer view (impression) when visible
   useEffect(() => {

@@ -193,6 +193,7 @@ export const AdContainer = ({
       {currentAd.contentType === "VIDEO" ? (
         <VideoAd
           ad={currentAd}
+          eventId={eventId}
           onImpression={handleImpression}
           showSponsorLabel={showSponsorLabel}
           autoPlay={false}
@@ -200,6 +201,7 @@ export const AdContainer = ({
       ) : (
         <BannerAd
           ad={currentAd}
+          eventId={eventId}
           onImpression={handleImpression}
           showSponsorLabel={showSponsorLabel}
         />

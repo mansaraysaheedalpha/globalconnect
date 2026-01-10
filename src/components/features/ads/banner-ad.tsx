@@ -21,6 +21,7 @@ export interface Ad {
 
 interface BannerAdProps {
   ad: Ad;
+  eventId?: string; // Required for proper analytics tracking
   onImpression?: (adId: string, viewableData: {
     viewable_duration_ms: number;
     viewport_percentage: number;
@@ -31,6 +32,7 @@ interface BannerAdProps {
 
 export const BannerAd = ({
   ad,
+  eventId,
   onImpression,
   className = "",
   showSponsorLabel = true,
@@ -40,7 +42,8 @@ export const BannerAd = ({
   const [viewStartTime, setViewStartTime] = useState<number | null>(null);
   const [hasTrackedImpression, setHasTrackedImpression] = useState(false);
 
-  const { trackAdImpression, trackAdClick } = useAnalyticsTracker();
+  // Pass eventId to analytics tracker for proper backend routing
+  const { trackAdImpression, trackAdClick } = useAnalyticsTracker(eventId);
 
   // Intersection Observer for viewability tracking
   useEffect(() => {

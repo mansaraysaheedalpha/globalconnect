@@ -1,18 +1,28 @@
 // src/lib/analytics-tracker.ts
+/**
+ * Analytics Tracker
+ *
+ * Client-side analytics tracking with batching and reliable delivery.
+ * Events are buffered and sent in batches for efficiency.
+ *
+ * IMPORTANT: Always include eventId in the context for proper backend routing.
+ * Events without eventId will fall back to GraphQL mutations (less efficient).
+ */
 "use client";
 
 import { useEffect, useCallback } from "react";
 import { logger } from "./logger";
-import { clientEnv } from "./env";
 
 /**
  * Event types that can be tracked
  */
 export type EventType =
   | "OFFER_VIEW"
-  | "OFFER_PURCHASE"
   | "OFFER_CLICK"
+  | "OFFER_ADD_TO_CART"
+  | "OFFER_PURCHASE"
   | "AD_IMPRESSION"
+  | "AD_VIEWABLE_IMPRESSION"
   | "AD_CLICK"
   | "WAITLIST_JOIN"
   | "WAITLIST_OFFER_ACCEPT"
@@ -24,6 +34,16 @@ export type EventType =
 export type EntityType = "OFFER" | "AD" | "WAITLIST" | "SESSION";
 
 /**
+ * Base context that should always be included
+ */
+export interface TrackingContext {
+  eventId: string; // Required: The event (conference/meetup) ID
+  sessionId?: string; // Optional: Session within the event
+  page?: string; // Optional: Page where event occurred
+  [key: string]: unknown; // Additional custom context
+}
+
+/**
  * Tracking event structure
  */
 export interface TrackingEvent {
@@ -31,7 +51,7 @@ export interface TrackingEvent {
   entity_type: EntityType;
   entity_id: string;
   revenue_cents?: number;
-  context?: Record<string, any>;
+  context?: TrackingContext;
   timestamp?: string;
 }
 
@@ -41,29 +61,25 @@ export interface TrackingEvent {
  * Batches events and sends them to the backend in bulk.
  * - Flushes when queue reaches 10 events
  * - Flushes every 30 seconds automatically
- * - Retries failed events
- * - Flushes on page unload
+ * - Retries failed events (up to 100 in queue)
+ * - Flushes on page unload using sendBeacon
  */
 class AnalyticsTracker {
   private eventQueue: TrackingEvent[] = [];
   private flushInterval: ReturnType<typeof setInterval> | null = null;
   private isInitialized = false;
   private isFlushing = false;
-  private trackingEndpoint: string;
-
-  constructor() {
-    // Use the API base URL for the analytics endpoint
-    const baseUrl = clientEnv.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-    this.trackingEndpoint = `${baseUrl}/api/v1/analytics/track`;
-  }
+  private readonly trackingEndpoint = "/api/v1/analytics/track";
+  private readonly BATCH_SIZE = 10;
+  private readonly FLUSH_INTERVAL_MS = 30000;
+  private readonly MAX_QUEUE_SIZE = 100;
 
   /**
    * Initialize the tracker
    * Sets up automatic flushing and page unload handler
    */
-  initialize() {
+  initialize(): void {
     if (this.isInitialized) {
-      logger.info("Analytics Tracker already initialized");
       return;
     }
 
@@ -77,11 +93,20 @@ class AnalyticsTracker {
   /**
    * Track an event
    * Adds event to queue and flushes if threshold reached
+   *
+   * @param event - The tracking event to record
    */
   track(event: TrackingEvent): void {
     if (!this.isInitialized) {
-      logger.warn("Analytics Tracker not initialized, initializing now");
       this.initialize();
+    }
+
+    // Warn if eventId is missing (affects backend routing)
+    if (!event.context?.eventId) {
+      logger.warn("Analytics event missing eventId in context", {
+        eventType: event.event_type,
+        entityType: event.entity_type,
+      });
     }
 
     const eventWithTimestamp: TrackingEvent = {
@@ -91,33 +116,27 @@ class AnalyticsTracker {
 
     this.eventQueue.push(eventWithTimestamp);
 
-    logger.info("Event tracked", {
+    logger.debug("Event tracked", {
       eventType: event.event_type,
       entityType: event.entity_type,
       entityId: event.entity_id,
+      hasEventId: Boolean(event.context?.eventId),
       queueSize: this.eventQueue.length,
     });
 
-    // Flush immediately if queue reaches 10 events
-    if (this.eventQueue.length >= 10) {
-      logger.info("Queue threshold reached, flushing events");
+    // Flush immediately if queue reaches threshold
+    if (this.eventQueue.length >= this.BATCH_SIZE) {
       this.flush();
     }
   }
 
   /**
    * Flush events to backend
-   * Sends all queued events via GraphQL mutation
+   * Sends all queued events to the analytics API
    */
   async flush(): Promise<void> {
     // Prevent concurrent flushes
-    if (this.isFlushing) {
-      logger.info("Flush already in progress, skipping");
-      return;
-    }
-
-    // Nothing to flush
-    if (this.eventQueue.length === 0) {
+    if (this.isFlushing || this.eventQueue.length === 0) {
       return;
     }
 
@@ -127,8 +146,6 @@ class AnalyticsTracker {
     this.eventQueue = [];
 
     try {
-      logger.info("Flushing analytics events", { count: eventsToSend.length });
-
       const response = await fetch(this.trackingEndpoint, {
         method: "POST",
         headers: {
@@ -143,27 +160,24 @@ class AnalyticsTracker {
 
       const result = await response.json();
 
-      logger.info("Analytics events tracked successfully", {
-        count: eventsToSend.length,
-        status: result.status,
-        queued: result.queued,
+      logger.info("Analytics events sent", {
+        sent: eventsToSend.length,
+        processed: result.processed,
       });
     } catch (error) {
-      logger.error("Failed to track analytics events", error, {
-        count: eventsToSend.length,
-      });
+      logger.error("Failed to send analytics events", error);
 
-      // Re-queue failed events (max 100 to prevent memory issues)
-      if (this.eventQueue.length < 100) {
-        this.eventQueue.unshift(...eventsToSend);
-        logger.info("Re-queued failed events", {
-          requeuCount: eventsToSend.length,
-          totalQueueSize: this.eventQueue.length,
-        });
-      } else {
-        logger.warn("Queue full, dropping failed events", {
-          droppedCount: eventsToSend.length,
-        });
+      // Re-queue failed events (up to max queue size)
+      if (this.eventQueue.length < this.MAX_QUEUE_SIZE) {
+        const spaceAvailable = this.MAX_QUEUE_SIZE - this.eventQueue.length;
+        const eventsToRequeue = eventsToSend.slice(0, spaceAvailable);
+        this.eventQueue.unshift(...eventsToRequeue);
+
+        if (eventsToSend.length > spaceAvailable) {
+          logger.warn("Dropped events due to queue limit", {
+            dropped: eventsToSend.length - spaceAvailable,
+          });
+        }
       }
     } finally {
       this.isFlushing = false;
@@ -172,7 +186,6 @@ class AnalyticsTracker {
 
   /**
    * Start automatic flush interval
-   * Flushes events every 30 seconds
    */
   private startFlushInterval(): void {
     if (this.flushInterval) {
@@ -181,64 +194,51 @@ class AnalyticsTracker {
 
     this.flushInterval = setInterval(() => {
       if (this.eventQueue.length > 0) {
-        logger.info("Auto-flush triggered", { queueSize: this.eventQueue.length });
         this.flush();
       }
-    }, 30000); // 30 seconds
-
-    logger.info("Analytics auto-flush interval started (30s)");
+    }, this.FLUSH_INTERVAL_MS);
   }
 
   /**
    * Setup page unload handler
-   * Flushes remaining events when user leaves page
+   * Uses sendBeacon for reliable delivery when user leaves
    */
   private setupPageUnloadHandler(): void {
     if (typeof window === "undefined") return;
 
     const handleUnload = () => {
-      if (this.eventQueue.length > 0) {
-        logger.info("Page unloading, flushing remaining events", {
-          queueSize: this.eventQueue.length,
+      if (this.eventQueue.length === 0) return;
+
+      const eventsToSend = [...this.eventQueue];
+      this.eventQueue = [];
+
+      try {
+        const blob = new Blob([JSON.stringify({ events: eventsToSend })], {
+          type: "application/json",
         });
 
-        // Use sendBeacon for reliable delivery on page unload
-        const eventsToSend = [...this.eventQueue];
-        this.eventQueue = [];
-
-        try {
-          const blob = new Blob(
-            [JSON.stringify({ events: eventsToSend })],
-            { type: "application/json" }
-          );
-
-          if (navigator.sendBeacon) {
-            navigator.sendBeacon(this.trackingEndpoint, blob);
-            logger.info("Events sent via sendBeacon", { count: eventsToSend.length });
-          } else {
-            // Fallback: synchronous fetch
-            fetch(this.trackingEndpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ events: eventsToSend }),
-              keepalive: true,
-            });
-          }
-        } catch (error) {
-          logger.error("Failed to send events on unload", error);
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(this.trackingEndpoint, blob);
+        } else {
+          // Fallback for browsers without sendBeacon
+          fetch(this.trackingEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ events: eventsToSend }),
+            keepalive: true,
+          });
         }
+      } catch (error) {
+        logger.error("Failed to send events on unload", error);
       }
     };
 
     window.addEventListener("beforeunload", handleUnload);
     window.addEventListener("pagehide", handleUnload);
-
-    logger.info("Page unload handlers registered");
   }
 
   /**
    * Destroy the tracker
-   * Clears interval and flushes remaining events
    */
   destroy(): void {
     if (this.flushInterval) {
@@ -246,12 +246,8 @@ class AnalyticsTracker {
       this.flushInterval = null;
     }
 
-    // Flush remaining events
     this.flush();
-
     this.isInitialized = false;
-
-    logger.info("Analytics Tracker destroyed");
   }
 
   /**
@@ -266,118 +262,182 @@ class AnalyticsTracker {
 export const analyticsTracker = new AnalyticsTracker();
 
 /**
+ * Helper to create context with eventId
+ * Use this to ensure eventId is always included
+ */
+export function createContext(
+  eventId: string,
+  additionalContext?: Omit<TrackingContext, "eventId">
+): TrackingContext {
+  return {
+    eventId,
+    ...additionalContext,
+  };
+}
+
+/**
  * React Hook for Analytics Tracking
  *
- * Provides convenient tracking methods for components
- * Automatically initializes tracker on mount
+ * Provides convenient tracking methods for components.
+ * All methods require eventId for proper backend routing.
+ *
+ * @param eventId - The event (conference/meetup) ID for all tracked events
  *
  * @example
- * const { trackOfferView, trackOfferPurchase } = useAnalyticsTracker();
+ * const { trackOfferView, trackAdImpression } = useAnalyticsTracker("event-123");
  *
  * // Track offer view
- * trackOfferView(offerId, { page: "event-detail" });
+ * trackOfferView(offerId, { sessionId: "session-456" });
  *
- * // Track purchase
- * trackOfferPurchase(offerId, 29.99, { quantity: 1 });
+ * // Track ad impression
+ * trackAdImpression(adId);
  */
-export function useAnalyticsTracker() {
+export function useAnalyticsTracker(eventId?: string) {
   // Initialize tracker on mount
   useEffect(() => {
     analyticsTracker.initialize();
-
-    return () => {
-      // Don't destroy on unmount (tracker is singleton)
-      // Only destroy on final app unmount
-    };
   }, []);
 
-  const trackOfferView = useCallback((offerId: string, context?: Record<string, any>) => {
-    analyticsTracker.track({
-      event_type: "OFFER_VIEW",
-      entity_type: "OFFER",
-      entity_id: offerId,
-      context,
-    });
-  }, []);
+  // Helper to build context with eventId
+  const buildContext = useCallback(
+    (additionalContext?: Record<string, unknown>): TrackingContext | undefined => {
+      if (!eventId) return additionalContext as TrackingContext | undefined;
+      return {
+        eventId,
+        ...additionalContext,
+      };
+    },
+    [eventId]
+  );
 
-  const trackOfferClick = useCallback((offerId: string, context?: Record<string, any>) => {
-    analyticsTracker.track({
-      event_type: "OFFER_CLICK",
-      entity_type: "OFFER",
-      entity_id: offerId,
-      context,
-    });
-  }, []);
+  const trackOfferView = useCallback(
+    (offerId: string, context?: Record<string, unknown>) => {
+      analyticsTracker.track({
+        event_type: "OFFER_VIEW",
+        entity_type: "OFFER",
+        entity_id: offerId,
+        context: buildContext(context),
+      });
+    },
+    [buildContext]
+  );
+
+  const trackOfferClick = useCallback(
+    (offerId: string, context?: Record<string, unknown>) => {
+      analyticsTracker.track({
+        event_type: "OFFER_CLICK",
+        entity_type: "OFFER",
+        entity_id: offerId,
+        context: buildContext(context),
+      });
+    },
+    [buildContext]
+  );
+
+  const trackOfferAddToCart = useCallback(
+    (offerId: string, context?: Record<string, unknown>) => {
+      analyticsTracker.track({
+        event_type: "OFFER_ADD_TO_CART",
+        entity_type: "OFFER",
+        entity_id: offerId,
+        context: buildContext(context),
+      });
+    },
+    [buildContext]
+  );
 
   const trackOfferPurchase = useCallback(
-    (offerId: string, revenueAmount: number, context?: Record<string, any>) => {
+    (offerId: string, revenueAmount: number, context?: Record<string, unknown>) => {
       analyticsTracker.track({
         event_type: "OFFER_PURCHASE",
         entity_type: "OFFER",
         entity_id: offerId,
         revenue_cents: Math.round(revenueAmount * 100),
-        context,
+        context: buildContext(context),
       });
     },
-    []
+    [buildContext]
   );
 
-  const trackAdImpression = useCallback((adId: string, context?: Record<string, any>) => {
-    analyticsTracker.track({
-      event_type: "AD_IMPRESSION",
-      entity_type: "AD",
-      entity_id: adId,
-      context,
-    });
-  }, []);
+  const trackAdImpression = useCallback(
+    (adId: string, context?: Record<string, unknown>) => {
+      analyticsTracker.track({
+        event_type: "AD_IMPRESSION",
+        entity_type: "AD",
+        entity_id: adId,
+        context: buildContext(context),
+      });
+    },
+    [buildContext]
+  );
 
-  const trackAdClick = useCallback((adId: string, context?: Record<string, any>) => {
-    analyticsTracker.track({
-      event_type: "AD_CLICK",
-      entity_type: "AD",
-      entity_id: adId,
-      context,
-    });
-  }, []);
+  const trackAdViewableImpression = useCallback(
+    (adId: string, context?: Record<string, unknown>) => {
+      analyticsTracker.track({
+        event_type: "AD_VIEWABLE_IMPRESSION",
+        entity_type: "AD",
+        entity_id: adId,
+        context: buildContext(context),
+      });
+    },
+    [buildContext]
+  );
 
-  const trackWaitlistJoin = useCallback((sessionId: string, context?: Record<string, any>) => {
-    analyticsTracker.track({
-      event_type: "WAITLIST_JOIN",
-      entity_type: "WAITLIST",
-      entity_id: sessionId,
-      context,
-    });
-  }, []);
+  const trackAdClick = useCallback(
+    (adId: string, context?: Record<string, unknown>) => {
+      analyticsTracker.track({
+        event_type: "AD_CLICK",
+        entity_type: "AD",
+        entity_id: adId,
+        context: buildContext(context),
+      });
+    },
+    [buildContext]
+  );
+
+  const trackWaitlistJoin = useCallback(
+    (sessionId: string, context?: Record<string, unknown>) => {
+      analyticsTracker.track({
+        event_type: "WAITLIST_JOIN",
+        entity_type: "WAITLIST",
+        entity_id: sessionId,
+        context: buildContext(context),
+      });
+    },
+    [buildContext]
+  );
 
   const trackWaitlistOfferAccept = useCallback(
-    (sessionId: string, context?: Record<string, any>) => {
+    (sessionId: string, context?: Record<string, unknown>) => {
       analyticsTracker.track({
         event_type: "WAITLIST_OFFER_ACCEPT",
         entity_type: "WAITLIST",
         entity_id: sessionId,
-        context,
+        context: buildContext(context),
       });
     },
-    []
+    [buildContext]
   );
 
   const trackWaitlistOfferDecline = useCallback(
-    (sessionId: string, context?: Record<string, any>) => {
+    (sessionId: string, context?: Record<string, unknown>) => {
       analyticsTracker.track({
         event_type: "WAITLIST_OFFER_DECLINE",
         entity_type: "WAITLIST",
         entity_id: sessionId,
-        context,
+        context: buildContext(context),
       });
     },
-    []
+    [buildContext]
   );
 
   return {
     trackOfferView,
     trackOfferClick,
+    trackOfferAddToCart,
     trackOfferPurchase,
     trackAdImpression,
+    trackAdViewableImpression,
     trackAdClick,
     trackWaitlistJoin,
     trackWaitlistOfferAccept,
@@ -387,9 +447,14 @@ export function useAnalyticsTracker() {
 
 /**
  * Direct tracking functions (for non-React contexts)
+ *
+ * IMPORTANT: Always include eventId in the context parameter
+ *
+ * @example
+ * track.adImpression("ad-123", { eventId: "event-456" });
  */
 export const track = {
-  offerView: (offerId: string, context?: Record<string, any>) => {
+  offerView: (offerId: string, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "OFFER_VIEW",
       entity_type: "OFFER",
@@ -398,7 +463,7 @@ export const track = {
     });
   },
 
-  offerClick: (offerId: string, context?: Record<string, any>) => {
+  offerClick: (offerId: string, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "OFFER_CLICK",
       entity_type: "OFFER",
@@ -407,7 +472,16 @@ export const track = {
     });
   },
 
-  offerPurchase: (offerId: string, revenueAmount: number, context?: Record<string, any>) => {
+  offerAddToCart: (offerId: string, context?: TrackingContext) => {
+    analyticsTracker.track({
+      event_type: "OFFER_ADD_TO_CART",
+      entity_type: "OFFER",
+      entity_id: offerId,
+      context,
+    });
+  },
+
+  offerPurchase: (offerId: string, revenueAmount: number, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "OFFER_PURCHASE",
       entity_type: "OFFER",
@@ -417,7 +491,7 @@ export const track = {
     });
   },
 
-  adImpression: (adId: string, context?: Record<string, any>) => {
+  adImpression: (adId: string, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "AD_IMPRESSION",
       entity_type: "AD",
@@ -426,7 +500,16 @@ export const track = {
     });
   },
 
-  adClick: (adId: string, context?: Record<string, any>) => {
+  adViewableImpression: (adId: string, context?: TrackingContext) => {
+    analyticsTracker.track({
+      event_type: "AD_VIEWABLE_IMPRESSION",
+      entity_type: "AD",
+      entity_id: adId,
+      context,
+    });
+  },
+
+  adClick: (adId: string, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "AD_CLICK",
       entity_type: "AD",
@@ -435,7 +518,7 @@ export const track = {
     });
   },
 
-  waitlistJoin: (sessionId: string, context?: Record<string, any>) => {
+  waitlistJoin: (sessionId: string, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "WAITLIST_JOIN",
       entity_type: "WAITLIST",
@@ -444,7 +527,7 @@ export const track = {
     });
   },
 
-  waitlistOfferAccept: (sessionId: string, context?: Record<string, any>) => {
+  waitlistOfferAccept: (sessionId: string, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "WAITLIST_OFFER_ACCEPT",
       entity_type: "WAITLIST",
@@ -453,7 +536,7 @@ export const track = {
     });
   },
 
-  waitlistOfferDecline: (sessionId: string, context?: Record<string, any>) => {
+  waitlistOfferDecline: (sessionId: string, context?: TrackingContext) => {
     analyticsTracker.track({
       event_type: "WAITLIST_OFFER_DECLINE",
       entity_type: "WAITLIST",

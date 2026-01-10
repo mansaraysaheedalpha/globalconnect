@@ -22,6 +22,7 @@ export interface Ad {
 
 interface VideoAdProps {
   ad: Ad;
+  eventId?: string; // Required for proper analytics tracking
   onImpression?: (adId: string, viewableData: {
     viewable_duration_ms: number;
     viewport_percentage: number;
@@ -33,6 +34,7 @@ interface VideoAdProps {
 
 export const VideoAd = ({
   ad,
+  eventId,
   onImpression,
   className = "",
   autoPlay = false,
