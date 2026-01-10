@@ -155,6 +155,23 @@ export const useDirectMessages = (eventId?: string) => {
       // User is auto-joined to their private room (user:{userId})
       // DMs will be received there
       console.log("[DM] Connected and ready to receive DMs");
+
+      // Fetch existing conversations on connect
+      newSocket.emit(
+        "dm.conversations.get",
+        {},
+        (response: { success: boolean; conversations?: Conversation[]; error?: string }) => {
+          if (response.success && response.conversations) {
+            console.log("[DM] Loaded conversations:", response.conversations.length);
+            setState((prev) => ({
+              ...prev,
+              conversations: response.conversations || [],
+            }));
+          } else {
+            console.error("[DM] Failed to load conversations:", response.error);
+          }
+        }
+      );
     });
 
     newSocket.on("disconnect", () => {
@@ -166,27 +183,67 @@ export const useDirectMessages = (eventId?: string) => {
       console.log("[DM] New message received:", message.id);
 
       setState((prev) => {
-        // Add message to messages list if in active conversation
-        const newMessages =
-          prev.activeConversation?.id === message.conversationId
-            ? [...prev.messages, message]
-            : prev.messages;
+        // Check if this is the active conversation or a temp conversation that just got created
+        const isActiveConv =
+          prev.activeConversation?.id === message.conversationId ||
+          (prev.activeConversation?.id.startsWith("temp-") &&
+            prev.activeConversation?.recipientId === (message.senderId === user?.id ? prev.activeConversation.recipientId : message.senderId));
 
-        // Update conversation in list
-        const updatedConversations = prev.conversations.map((conv) => {
-          if (conv.id === message.conversationId) {
-            return {
-              ...conv,
+        // Add message to messages list if in active conversation
+        const newMessages = isActiveConv
+          ? [...prev.messages, message]
+          : prev.messages;
+
+        // Check if conversation exists
+        const existingConv = prev.conversations.find(
+          (conv) => conv.id === message.conversationId
+        );
+
+        let updatedConversations: Conversation[];
+
+        if (existingConv) {
+          // Update existing conversation
+          updatedConversations = prev.conversations.map((conv) => {
+            if (conv.id === message.conversationId) {
+              return {
+                ...conv,
+                lastMessage: message,
+                unreadCount: isActiveConv ? conv.unreadCount : conv.unreadCount + 1,
+                updatedAt: message.timestamp,
+              };
+            }
+            return conv;
+          });
+        } else {
+          // This is a new conversation - add it (or replace temp conversation)
+          const tempConv = prev.conversations.find(
+            (c) => c.id.startsWith("temp-") && c.recipientId === message.senderId
+          );
+
+          if (tempConv) {
+            // Replace temp conversation with real one
+            updatedConversations = prev.conversations.map((conv) =>
+              conv.id === tempConv.id
+                ? { ...conv, id: message.conversationId, lastMessage: message }
+                : conv
+            );
+          } else {
+            // Create new conversation entry (will need recipient info from message.sender)
+            const newConv: Conversation = {
+              id: message.conversationId,
+              recipientId: message.senderId,
+              recipient: {
+                id: message.senderId,
+                firstName: (message as any).sender?.firstName || "User",
+                lastName: (message as any).sender?.lastName || "",
+              },
               lastMessage: message,
-              unreadCount:
-                prev.activeConversation?.id === message.conversationId
-                  ? conv.unreadCount
-                  : conv.unreadCount + 1,
+              unreadCount: 1,
               updatedAt: message.timestamp,
             };
+            updatedConversations = [newConv, ...prev.conversations];
           }
-          return conv;
-        });
+        }
 
         // Sort conversations by most recent
         updatedConversations.sort(
@@ -194,15 +251,29 @@ export const useDirectMessages = (eventId?: string) => {
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
 
+        // Update active conversation ID if it was a temp
+        let updatedActiveConv = prev.activeConversation;
+        if (
+          prev.activeConversation?.id.startsWith("temp-") &&
+          prev.activeConversation.recipientId === message.senderId
+        ) {
+          updatedActiveConv = { ...prev.activeConversation, id: message.conversationId };
+        }
+
         return {
           ...prev,
           messages: newMessages,
           conversations: updatedConversations,
+          activeConversation: updatedActiveConv,
         };
       });
 
       // Send delivery receipt if conversation is open
-      if (state.activeConversation?.id === message.conversationId) {
+      if (
+        state.activeConversation?.id === message.conversationId ||
+        (state.activeConversation?.id.startsWith("temp-") &&
+          state.activeConversation?.recipientId === message.senderId)
+      ) {
         newSocket.emit("dm.delivered", {
           messageId: message.id,
           idempotencyKey: generateUUID(),
@@ -527,7 +598,7 @@ export const useDirectMessages = (eventId?: string) => {
     [state.isConnected]
   );
 
-  // Set active conversation
+  // Set active conversation and fetch messages
   const setActiveConversation = useCallback(
     (conversation: Conversation | null) => {
       setState((prev) => ({
@@ -536,8 +607,8 @@ export const useDirectMessages = (eventId?: string) => {
         messages: [], // Clear messages when switching conversations
       }));
 
-      // Mark unread messages as delivered when opening conversation
-      if (conversation) {
+      // Fetch messages and mark unread when opening conversation
+      if (conversation && socketRef.current) {
         // Reset unread count for this conversation
         setState((prev) => ({
           ...prev,
@@ -545,9 +616,38 @@ export const useDirectMessages = (eventId?: string) => {
             conv.id === conversation.id ? { ...conv, unreadCount: 0 } : conv
           ),
         }));
+
+        // Fetch messages for this conversation (skip for temp conversations)
+        if (!conversation.id.startsWith("temp-")) {
+          socketRef.current.emit(
+            "dm.messages.get",
+            { conversationId: conversation.id, limit: 50 },
+            (response: { success: boolean; messages?: DirectMessage[]; error?: string }) => {
+              if (response.success && response.messages) {
+                console.log("[DM] Loaded messages:", response.messages.length);
+                setState((prev) => ({
+                  ...prev,
+                  messages: response.messages || [],
+                }));
+
+                // Mark unread messages as read
+                response.messages?.forEach((msg) => {
+                  if (msg.senderId !== user?.id && !msg.isRead) {
+                    socketRef.current?.emit("dm.read", {
+                      messageId: msg.id,
+                      idempotencyKey: generateUUID(),
+                    });
+                  }
+                });
+              } else {
+                console.error("[DM] Failed to load messages:", response.error);
+              }
+            }
+          );
+        }
       }
     },
-    []
+    [user]
   );
 
   // Load conversation messages (would typically call REST API)
