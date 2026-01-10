@@ -856,7 +856,7 @@ export default function AttendeeEventPage() {
         {(liveSessions.length > 0 || upcomingSessions.length > 0) && (
           <AdContainer
             eventId={eventId}
-            placement="SESSION_LIST"
+            placement="SESSION_BREAK"
             limit={1}
             rotationInterval={30000}
             className="rounded-lg overflow-hidden"
