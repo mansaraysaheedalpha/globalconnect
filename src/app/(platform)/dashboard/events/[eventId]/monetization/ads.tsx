@@ -5,25 +5,27 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import Image from "next/image";
-import { 
-  Plus, 
-  Trash2, 
-  ExternalLink, 
+import {
+  Plus,
+  Trash2,
+  ExternalLink,
   Image as ImageIcon,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  BarChart3
 } from "lucide-react";
-import { 
-  GET_EVENT_MONETIZATION_QUERY, 
-  CREATE_AD_MUTATION, 
-  DELETE_AD_MUTATION 
+import {
+  GET_EVENT_MONETIZATION_QUERY,
+  CREATE_AD_MUTATION,
+  DELETE_AD_MUTATION,
+  GET_MONETIZATION_ANALYTICS_QUERY
 } from "@/graphql/monetization.graphql";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardFooter, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
   CardTitle,
   CardDescription
 } from "@/components/ui/card";
@@ -45,9 +47,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { AdCampaignAnalytics } from "@/app/(platform)/dashboard/events/[eventId]/analytics/_components/ad-campaign-analytics";
+import { addDays, format } from "date-fns";
 
 interface Ad {
   id: string;
@@ -70,9 +75,28 @@ export const Ads = () => {
   const [mediaUrl, setMediaUrl] = useState("");
   const [clickUrl, setClickUrl] = useState("");
 
+  // Date range for analytics (last 30 days)
+  const dateRange = {
+    from: format(addDays(new Date(), -30), "yyyy-MM-dd"),
+    to: format(new Date(), "yyyy-MM-dd"),
+  };
+
   const { data, loading, error, refetch } = useQuery(GET_EVENT_MONETIZATION_QUERY, {
     variables: { eventId },
   });
+
+  // Fetch analytics data
+  const { data: analyticsData, loading: analyticsLoading } = useQuery(
+    GET_MONETIZATION_ANALYTICS_QUERY,
+    {
+      variables: {
+        eventId,
+        dateFrom: dateRange.from,
+        dateTo: dateRange.to,
+      },
+      fetchPolicy: "cache-and-network",
+    }
+  );
 
   const [createAd, { loading: creating }] = useMutation(CREATE_AD_MUTATION, {
     onCompleted: () => {
@@ -152,6 +176,7 @@ export const Ads = () => {
   }
 
   const ads: Ad[] = data?.eventAds || [];
+  const adAnalytics = analyticsData?.monetizationAnalytics?.ads;
 
   return (
     <div className="space-y-6 pt-4">
@@ -159,10 +184,23 @@ export const Ads = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Advertisements</h2>
           <p className="text-muted-foreground">
-            Manage ads shown to attendees during the event.
+            Manage ads and track their performance.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      </div>
+
+      <Tabs defaultValue="manage" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="manage">Manage Ads</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="manage" className="space-y-6">
+          <div className="flex justify-end">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -304,15 +342,33 @@ export const Ads = () => {
           ))}
         </div>
       )}
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        onConfirm={handleDeleteConfirm}
-        title="Delete Ad?"
-        description={`Are you sure you want to delete "${adToDelete?.name}"? This action cannot be undone and the ad will be permanently removed.`}
-        confirmText="Delete Ad"
-        variant="destructive"
-      />
+          <ConfirmDialog
+            open={deleteConfirmOpen}
+            onOpenChange={setDeleteConfirmOpen}
+            onConfirm={handleDeleteConfirm}
+            title="Delete Ad?"
+            description={`Are you sure you want to delete "${adToDelete?.name}"? This action cannot be undone and the ad will be permanently removed.`}
+            confirmText="Delete Ad"
+            variant="destructive"
+          />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          {analyticsLoading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </CardContent>
+            </Card>
+          ) : (
+            <AdCampaignAnalytics
+              eventId={eventId}
+              data={adAnalytics}
+              dateRange={dateRange}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
