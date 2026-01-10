@@ -24,7 +24,7 @@ interface ImpressionData {
 interface AdContainerProps {
   eventId: string;
   sessionId?: string;
-  placement: "EVENT_HERO" | "SESSION_LIST" | "SIDEBAR" | "SESSION_DETAIL";
+  placement: "CHECKOUT" | "EMAIL" | "EVENT_HERO" | "IN_EVENT" | "POST_PURCHASE" | "SESSION_BREAK" | "SIDEBAR";
   limit?: number;
   rotationInterval?: number; // Milliseconds, default 30000 (30 seconds)
   className?: string;
