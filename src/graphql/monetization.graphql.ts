@@ -194,7 +194,7 @@ export const GET_ADS_FOR_CONTEXT_QUERY = gql`
 `;
 
 export const TRACK_AD_IMPRESSIONS_MUTATION = gql`
-  mutation TrackAdImpressions($impressions: [ImpressionInput!]!) {
+  mutation TrackAdImpressions($impressions: [AdImpressionInput!]!) {
     trackAdImpressions(impressions: $impressions) {
       success
       trackedCount
