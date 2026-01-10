@@ -58,7 +58,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https: http://localhost:*",
       "font-src 'self' data:",
-      "connect-src 'self' https://api.stripe.com https://apollo-gatway.onrender.com https://real-time-service.onrender.com https://event-lifecycle-service.onrender.com https://108782064634-globalconnect-uploads.s3.amazonaws.com https://108782064634-globalconnect-uploads.s3.eu-north-1.amazonaws.com https://s3.eu-north-1.amazonaws.com wss: ws: http://localhost:* https://localhost:*",
+      "connect-src 'self' https: wss: ws: http://localhost:* https://localhost:*",
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
       "object-src 'none'",
       "base-uri 'self'",

@@ -58,6 +58,7 @@ import { FloatingScheduleIndicator } from "@/components/features/agenda/live-age
 import { AgendaSession } from "@/hooks/use-agenda-updates";
 import { FloatingDMButton } from "@/components/features/dm";
 import { OfferGrid } from "@/components/features/offers";
+import { AdContainer } from "@/components/features/ads/ad-container";
 
 type Session = {
   id: string;
@@ -788,6 +789,16 @@ export default function AttendeeEventPage() {
         </div>
       </PremiumCard>
 
+      {/* Sponsored Content - Hero Banner Ad */}
+      <AdContainer
+        eventId={eventId}
+        placement="EVENT_HERO"
+        limit={1}
+        rotationInterval={45000}
+        className="mb-6 rounded-xl overflow-hidden"
+        showSponsorLabel={true}
+      />
+
       {/* Exclusive Offers */}
       <section className="mb-8">
         <SectionHeader
@@ -839,6 +850,18 @@ export default function AttendeeEventPage() {
               ))}
             </StaggerContainer>
           </section>
+        )}
+
+        {/* Session Break Ad */}
+        {(liveSessions.length > 0 || upcomingSessions.length > 0) && (
+          <AdContainer
+            eventId={eventId}
+            placement="SESSION_LIST"
+            limit={1}
+            rotationInterval={30000}
+            className="rounded-lg overflow-hidden"
+            showSponsorLabel={true}
+          />
         )}
 
         {/* Ended Sessions */}
