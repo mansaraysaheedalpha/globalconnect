@@ -55,10 +55,10 @@ import { cn } from "@/lib/utils";
 
 const incidentFormSchema = z.object({
   type: z.nativeEnum(IncidentType, {
-    required_error: "Please select an incident type",
+    message: "Please select an incident type",
   }),
   severity: z.nativeEnum(IncidentSeverity, {
-    required_error: "Please select a severity level",
+    message: "Please select a severity level",
   }),
   details: z
     .string()
