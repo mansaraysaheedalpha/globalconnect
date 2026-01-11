@@ -14,8 +14,8 @@ import {
 import { Globe } from "lucide-react";
 import { useSubtitleStore } from "@/store/subtitle.store";
 import {
-  SUPPORTED_LANGUAGES,
   getLanguagesByRegion,
+  getLanguageByCode,
   detectBrowserLanguage,
 } from "@/types/subtitles";
 import { cn } from "@/lib/utils";
@@ -48,12 +48,10 @@ export const LanguageSelector = memo(function LanguageSelector({
 
   const displayValue = useMemo(() => {
     if (!preferredLanguage) {
-      const detected = SUPPORTED_LANGUAGES.find(
-        (l) => l.code === detectedLanguage
-      );
+      const detected = getLanguageByCode(detectedLanguage);
       return `Auto (${detected?.name || "English"})`;
     }
-    const lang = SUPPORTED_LANGUAGES.find((l) => l.code === preferredLanguage);
+    const lang = getLanguageByCode(preferredLanguage);
     return lang?.nativeName || lang?.name || preferredLanguage;
   }, [preferredLanguage, detectedLanguage]);
 

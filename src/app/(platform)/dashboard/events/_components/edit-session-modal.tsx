@@ -93,15 +93,15 @@ const formSchema = z
     chatEnabled: z.boolean(),
     qaEnabled: z.boolean(),
     pollsEnabled: z.boolean(),
-    // Virtual Session Support
-    sessionType: z.enum(["MAINSTAGE", "BREAKOUT", "WORKSHOP", "NETWORKING", "EXPO"]).default("MAINSTAGE"),
+    // Virtual Session Support (required fields - defaults provided in useForm)
+    sessionType: z.enum(["MAINSTAGE", "BREAKOUT", "WORKSHOP", "NETWORKING", "EXPO"]),
     streamingUrl: z
       .string()
       .url("Please enter a valid streaming URL.")
       .optional()
       .or(z.literal("")),
-    isRecordable: z.boolean().default(true),
-    broadcastOnly: z.boolean().default(true),
+    isRecordable: z.boolean(),
+    broadcastOnly: z.boolean(),
     maxParticipants: z.number().min(1).max(10000).optional(),
   })
   .refine((data) => data.endTime > data.startTime, {

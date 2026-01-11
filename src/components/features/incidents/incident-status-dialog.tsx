@@ -248,7 +248,7 @@ export function IncidentStatusDialog({
                                   <span>
                                     {
                                       INCIDENT_STATUS_LABELS[
-                                        status as IncidentStatus
+                                        status as unknown as IncidentStatus
                                       ]
                                     }
                                   </span>

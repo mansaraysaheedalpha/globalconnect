@@ -85,17 +85,17 @@ const formSchema = z
       .url("Please enter a valid URL.")
       .optional()
       .or(z.literal("")),
-    // Virtual Event Support
-    eventType: z.enum(["IN_PERSON", "VIRTUAL", "HYBRID"]).default("IN_PERSON"),
+    // Virtual Event Support (required fields - defaults provided in useForm)
+    eventType: z.enum(["IN_PERSON", "VIRTUAL", "HYBRID"]),
     streamingProvider: z.string().optional(),
     streamingUrl: z
       .string()
       .url("Please enter a valid streaming URL.")
       .optional()
       .or(z.literal("")),
-    recordingEnabled: z.boolean().default(true),
-    autoCaptions: z.boolean().default(false),
-    lobbyEnabled: z.boolean().default(false),
+    recordingEnabled: z.boolean(),
+    autoCaptions: z.boolean(),
+    lobbyEnabled: z.boolean(),
     maxConcurrentViewers: z.number().min(1).max(1000000).optional(),
   })
   .refine((data) => data.endDate >= data.startDate, {
