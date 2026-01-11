@@ -81,6 +81,8 @@ async function trackAdImpressions(
  * Track ad click via GraphQL mutation
  */
 async function trackAdClick(adId: string, sessionContext?: string): Promise<boolean> {
+  console.log(`[Analytics] Tracking click for ad: ${adId}`);
+
   const mutation = `
     mutation TrackAdClick($adId: ID!, $sessionContext: String) {
       trackAdClick(adId: $adId, sessionContext: $sessionContext) {
@@ -91,6 +93,7 @@ async function trackAdClick(adId: string, sessionContext?: string): Promise<bool
   `;
 
   try {
+    console.log(`[Analytics] Calling GraphQL at: ${GRAPHQL_URL}`);
     const response = await fetch(GRAPHQL_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,13 +103,22 @@ async function trackAdClick(adId: string, sessionContext?: string): Promise<bool
       }),
     });
 
+    console.log(`[Analytics] GraphQL response status: ${response.status}`);
+
     if (response.ok) {
       const result = await response.json();
+      console.log(`[Analytics] GraphQL result:`, JSON.stringify(result));
+
       if (result.errors) {
         console.error("[Analytics] GraphQL errors tracking click:", result.errors);
         return false;
       }
-      return result.data?.trackAdClick?.success || false;
+      const success = result.data?.trackAdClick?.success || false;
+      console.log(`[Analytics] Click tracking success: ${success}`);
+      return success;
+    } else {
+      const errorText = await response.text();
+      console.error(`[Analytics] GraphQL request failed: ${response.status} - ${errorText}`);
     }
   } catch (error) {
     console.error("[Analytics] Error tracking ad click:", error);
@@ -179,11 +191,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Process ad clicks via GraphQL
+    console.log(`[Analytics] Processing ${adClicks.length} ad clicks`);
     for (const click of adClicks) {
+      console.log(`[Analytics] Processing click for ad: ${click.adId}`, click.context);
       const success = await trackAdClick(
         click.adId,
         click.context ? JSON.stringify(click.context) : undefined
       );
+      console.log(`[Analytics] Click result for ${click.adId}: ${success}`);
       if (success) results.tracked += 1;
     }
 

@@ -15,10 +15,7 @@ import {
   StaggerItem,
   PremiumCard,
 } from "@/components/ui/premium-components";
-import {
-  BarChart,
-  MiniStatsGrid,
-} from "@/components/ui/charts";
+import { MiniStatsGrid } from "@/components/ui/charts";
 import { CardSkeleton, ShimmerSkeleton } from "@/components/ui/skeleton-patterns";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,9 +51,6 @@ export default function DashboardPage() {
   const { data: dashboardData, loading: dashboardLoading } = useQuery<DashboardData>(
     GET_DASHBOARD_DATA_QUERY,
     {
-      variables: {
-        attendanceDays: 7,
-      },
       skip: !orgId,
     }
   );
@@ -67,7 +61,6 @@ export default function DashboardPage() {
 
   // Extract dashboard data with fallbacks (shows 0 when API not ready)
   const dashboardStats = dashboardData?.organizationDashboardStats;
-  const weeklyAttendance = dashboardData?.weeklyAttendance?.data;
 
   // Build stats array from real API data
   const stats = [
@@ -99,13 +92,6 @@ export default function DashboardPage() {
     },
   ];
 
-  // Transform attendance data for chart from API
-  const attendanceData =
-    weeklyAttendance?.map((item) => ({
-      label: item.label,
-      value: item.value,
-    })) || [];
-
   const loading = eventsLoading || dashboardLoading;
 
   if (loading) {
@@ -120,7 +106,6 @@ export default function DashboardPage() {
             <CardSkeleton key={i} lines={2} />
           ))}
         </div>
-        <CardSkeleton lines={6} />
       </div>
     );
   }
@@ -147,31 +132,6 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <MiniStatsGrid items={stats} columns={4} />
-
-      {/* Weekly Attendance Chart */}
-      <PremiumCard variant="elevated" padding="md">
-        <SectionHeader
-          title="Weekly Attendance"
-          subtitle="Attendee check-ins across all events"
-        />
-        {attendanceData.length > 0 ? (
-          <BarChart
-            data={attendanceData}
-            height={220}
-            showValues
-            showLabels
-            animate
-          />
-        ) : (
-          <div className="h-[220px] flex items-center justify-center text-muted-foreground">
-            <div className="text-center">
-              <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No attendance data yet</p>
-              <p className="text-xs mt-1">Data will appear once attendees check in</p>
-            </div>
-          </div>
-        )}
-      </PremiumCard>
 
       {/* Upcoming Events */}
       <div>

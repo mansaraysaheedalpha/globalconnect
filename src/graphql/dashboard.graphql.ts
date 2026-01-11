@@ -62,7 +62,7 @@ export const GET_ENGAGEMENT_BREAKDOWN_QUERY = gql`
 
 // Combined dashboard query for efficiency (single request)
 export const GET_DASHBOARD_DATA_QUERY = gql`
-  query GetDashboardData($attendanceDays: Int) {
+  query GetDashboardData {
     organizationDashboardStats {
       totalAttendees
       totalAttendeesChange
@@ -72,13 +72,6 @@ export const GET_DASHBOARD_DATA_QUERY = gql`
       avgEngagementChange
       totalEvents
       totalEventsChange
-    }
-    weeklyAttendance(days: $attendanceDays) {
-      data {
-        label
-        date
-        value
-      }
     }
   }
 `;
@@ -121,7 +114,4 @@ export interface EngagementBreakdown {
 
 export interface DashboardData {
   organizationDashboardStats: DashboardStats;
-  weeklyAttendance: {
-    data: AttendanceDataPoint[];
-  };
 }

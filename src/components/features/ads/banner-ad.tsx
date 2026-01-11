@@ -2,6 +2,8 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
+import { useMutation } from "@apollo/client";
+import { TRACK_AD_CLICK_MUTATION } from "@/graphql/monetization.graphql";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
@@ -42,8 +44,11 @@ export const BannerAd = ({
   const [viewStartTime, setViewStartTime] = useState<number | null>(null);
   const [hasTrackedImpression, setHasTrackedImpression] = useState(false);
 
-  // Pass eventId to analytics tracker for proper backend routing
-  const { trackAdImpression, trackAdClick } = useAnalyticsTracker(eventId);
+  // Pass eventId to analytics tracker for impressions (batching OK for impressions)
+  const { trackAdImpression } = useAnalyticsTracker(eventId);
+
+  // Use direct GraphQL mutation for clicks (immediate, not batched)
+  const [trackClickMutation] = useMutation(TRACK_AD_CLICK_MUTATION);
 
   // Intersection Observer for viewability tracking
   useEffect(() => {
@@ -104,24 +109,24 @@ export const BannerAd = ({
     e.preventDefault();
 
     try {
-      // Track click via analytics tracker
-      trackAdClick(ad.id, {
-        ad_name: ad.name,
-        content_type: ad.contentType,
-        click_url: ad.clickUrl,
-        session_context: window.location.pathname,
+      // Track click via direct GraphQL mutation (immediate, not batched)
+      const { data } = await trackClickMutation({
+        variables: {
+          adId: ad.id,
+          sessionContext: window.location.pathname,
+        },
       });
 
-      logger.info("Ad click tracked successfully", { adId: ad.id });
+      logger.info("Ad click tracked successfully", { adId: ad.id, success: data?.trackAdClick?.success });
 
-      // Open in new tab
-      window.open(ad.clickUrl, "_blank", "noopener,noreferrer");
+      // Open the redirect URL from backend or fallback to ad.clickUrl
+      window.open(data?.trackAdClick?.redirectUrl || ad.clickUrl, "_blank", "noopener,noreferrer");
     } catch (error) {
       logger.error("Failed to track ad click", error, {
         adId: ad.id,
         clickUrl: ad.clickUrl
       });
-      // Fallback: still open the link
+      // Fallback: still open the link even if tracking fails
       window.open(ad.clickUrl, "_blank", "noopener,noreferrer");
     }
   };
