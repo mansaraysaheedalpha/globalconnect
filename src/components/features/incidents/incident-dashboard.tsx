@@ -63,10 +63,13 @@ export function IncidentDashboard({
     criticalIncidentsCount,
     isUpdating,
     updateError,
+    isRetrying,
+    canRetry,
     updateIncidentStatus,
     acknowledgeIncident,
     startInvestigation,
     resolveIncident,
+    retryJoinStream,
     setFilters,
     clearFilters,
     clearUpdateError,
@@ -298,18 +301,43 @@ export function IncidentDashboard({
         </Card>
       )}
 
-      {/* Error display */}
+      {/* Error display with retry option */}
       {(error || updateError) && (
-        <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive flex items-center justify-between">
-          <span>{error || updateError}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => clearUpdateError()}
-            className="h-auto p-1"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="flex items-center justify-between">
+            <span>{error || updateError}</span>
+            <div className="flex items-center gap-2">
+              {error && canRetry && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => retryJoinStream()}
+                  disabled={isRetrying}
+                  className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                >
+                  {isRetrying ? (
+                    <>
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      Retrying...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3 w-3" />
+                      Retry
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => clearUpdateError()}
+                className="h-auto p-1"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

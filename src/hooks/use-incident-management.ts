@@ -28,6 +28,9 @@ export function useIncidentManagement(
   const socketRef = useRef<Socket | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [joinRetryCount, setJoinRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const maxJoinRetries = 3;
 
   const { token, user, orgId } = useAuthStore();
   const {
@@ -147,6 +150,8 @@ export function useIncidentManagement(
 
           if (response.success) {
             if (isDev) console.log("[IncidentManagement] Joined incidents stream");
+            setJoinRetryCount(0); // Reset retry count on success
+            setError(null);
           } else {
             if (isDev) {
               console.error(
@@ -162,6 +167,44 @@ export function useIncidentManagement(
       );
     });
   }, [setError, setIsLoading]);
+
+  // Retry joining incidents stream with exponential backoff
+  const retryJoinStream = useCallback(async (): Promise<JoinIncidentsResponse> => {
+    if (isRetrying) {
+      return { success: false, error: "Retry already in progress" };
+    }
+
+    if (joinRetryCount >= maxJoinRetries) {
+      setError(`Failed to join after ${maxJoinRetries} attempts. Please refresh the page.`);
+      return { success: false, error: "Max retries exceeded" };
+    }
+
+    setIsRetrying(true);
+    setError(null);
+
+    // Calculate delay with exponential backoff: 1s, 2s, 4s
+    const delayMs = 1000 * Math.pow(2, joinRetryCount);
+
+    if (isDev) {
+      console.log(
+        `[IncidentManagement] Retrying join (attempt ${joinRetryCount + 1}/${maxJoinRetries}) in ${delayMs}ms`
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+    setJoinRetryCount((prev: number) => prev + 1);
+    const result = await joinIncidentsStream();
+    setIsRetrying(false);
+
+    return result;
+  }, [isRetrying, joinRetryCount, maxJoinRetries, joinIncidentsStream]);
+
+  // Reset retry state (useful when connection is re-established)
+  const resetRetryState = useCallback(() => {
+    setJoinRetryCount(0);
+    setIsRetrying(false);
+  }, []);
 
   // Update incident status
   const updateIncidentStatus = useCallback(
@@ -295,6 +338,8 @@ export function useIncidentManagement(
     selectedIncidentId,
     isUpdating,
     updateError,
+    isRetrying,
+    canRetry: joinRetryCount < maxJoinRetries,
 
     // Computed (memoized)
     filteredIncidents,
@@ -303,6 +348,8 @@ export function useIncidentManagement(
 
     // Actions
     joinIncidentsStream,
+    retryJoinStream,
+    resetRetryState,
     updateIncidentStatus,
     acknowledgeIncident,
     startInvestigation,
