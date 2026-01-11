@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { v4 as uuidv4 } from "uuid";
 import { useAuthStore } from "@/store/auth.store";
 import { useIncidentStore } from "@/store/incident.store";
 import type {
@@ -63,19 +62,21 @@ export function useIncidentReporting({
 
     socketRef.current = newSocket;
 
+    const isDev = process.env.NODE_ENV === "development";
+
     newSocket.on("connect", () => {
-      console.log("[IncidentReporting] Connected to real-time service");
+      if (isDev) console.log("[IncidentReporting] Connected to real-time service");
       setIsConnected(true);
       setError(null);
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("[IncidentReporting] Disconnected:", reason);
+      if (isDev) console.log("[IncidentReporting] Disconnected:", reason);
       setIsConnected(false);
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("[IncidentReporting] Connection error:", err.message);
+      if (isDev) console.error("[IncidentReporting] Connection error:", err.message);
       setError("Failed to connect to incident reporting service");
       setIsConnected(false);
     });
@@ -106,7 +107,7 @@ export function useIncidentReporting({
         type: input.type,
         severity: input.severity,
         details: input.details,
-        idempotencyKey: uuidv4(),
+        idempotencyKey: crypto.randomUUID(),
       };
 
       return new Promise((resolve) => {

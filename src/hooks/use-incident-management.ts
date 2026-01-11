@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { io, Socket } from "socket.io-client";
-import { v4 as uuidv4 } from "uuid";
 import { useAuthStore } from "@/store/auth.store";
 import { useIncidentStore } from "@/store/incident.store";
 import type {
@@ -226,7 +225,7 @@ export function useIncidentManagement(
         incidentId,
         status,
         resolutionNotes,
-        idempotencyKey: uuidv4(),
+        idempotencyKey: crypto.randomUUID(),
       };
 
       return new Promise((resolve) => {
