@@ -44,7 +44,7 @@ export interface BackchannelMessage {
   sessionId: string;
   sender: BackchannelAuthor;
   isWhisper?: boolean;
-  whisperTarget?: string; // e.g., "Role: SPEAKER" or user name
+  whisperTarget?: string;
 }
 
 // Response types
@@ -99,7 +99,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     const newSocket = io(realtimeUrl, {
       auth: { token: `Bearer ${token}` },
       query: { sessionId, eventId },
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -108,11 +108,10 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
-      setState((prev) => ({ ...prev, isConnected: true, error: null }));
+      setState((prev: BackchannelState) => ({ ...prev, isConnected: true, error: null }));
     });
 
     newSocket.on("connectionAcknowledged", () => {
-      // Join the backchannel room for this session
       newSocket.emit("backchannel.join", {}, (response: {
         success: boolean;
         error?: { message: string; statusCode: number };
@@ -120,7 +119,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
         if (response?.success === false) {
           const errorMsg = response.error?.message || "Failed to join backchannel";
           const isAccessDenied = response.error?.statusCode === 403;
-          setState((prev) => ({
+          setState((prev: BackchannelState) => ({
             ...prev,
             isJoined: false,
             error: isAccessDenied ? "You don't have permission to access the backchannel" : errorMsg,
@@ -129,7 +128,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
           return;
         }
 
-        setState((prev) => ({
+        setState((prev: BackchannelState) => ({
           ...prev,
           isJoined: true,
           accessDenied: false,
@@ -137,10 +136,9 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
       });
     });
 
-    // Listen for backchannel history (if backend sends it after join)
     newSocket.on("backchannel.history", (data: { messages: BackchannelMessage[] }) => {
       if (data?.messages && Array.isArray(data.messages)) {
-        setState((prev) => ({
+        setState((prev: BackchannelState) => ({
           ...prev,
           messages: data.messages,
         }));
@@ -148,39 +146,32 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     });
 
     newSocket.on("disconnect", () => {
-      setState((prev) => ({ ...prev, isConnected: false, isJoined: false }));
+      setState((prev: BackchannelState) => ({ ...prev, isConnected: false, isJoined: false }));
     });
 
-    // New backchannel message received
     newSocket.on("backchannel.message.new", (message: BackchannelMessage) => {
-      setState((prev) => {
-        // Check if message with this ID already exists (prevent duplicates)
+      setState((prev: BackchannelState) => {
         const existingIndex = prev.messages.findIndex((m: OptimisticMessage) => m.id === message.id);
         if (existingIndex !== -1) {
-          // Message already exists, update it (in case of edits)
           const newMessages = [...prev.messages];
           newMessages[existingIndex] = message;
           return { ...prev, messages: newMessages };
         }
 
-        // Check if this message matches an optimistic message by idempotency
         const optimisticIndex = prev.messages.findIndex(
-          (m) =>
-            (m as OptimisticMessage).isOptimistic &&
+          (m: OptimisticMessage) =>
+            m.isOptimistic &&
             m.text === message.text &&
             m.senderId === message.senderId
         );
 
         if (optimisticIndex !== -1) {
-          // Replace optimistic message with real one
           const newMessages = [...prev.messages];
           newMessages[optimisticIndex] = message;
           return { ...prev, messages: newMessages };
         }
 
-        // No match, add the new message (with limit)
         const newMessages = [...prev.messages, message];
-        // Keep only the most recent messages to prevent memory issues
         if (newMessages.length > MAX_MESSAGES) {
           return { ...prev, messages: newMessages.slice(-MAX_MESSAGES) };
         }
@@ -188,18 +179,16 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
       });
     });
 
-    // Error handling
     newSocket.on("systemError", (error: { message: string; reason: string }) => {
       console.error("[Backchannel] System error:", error);
-      setState((prev) => ({ ...prev, error: error.message }));
+      setState((prev: BackchannelState) => ({ ...prev, error: error.message }));
     });
 
-    newSocket.on("connect_error", (error) => {
+    newSocket.on("connect_error", (error: Error) => {
       console.error("[Backchannel] Connection error:", error.message);
-      setState((prev) => ({ ...prev, error: error.message }));
+      setState((prev: BackchannelState) => ({ ...prev, error: error.message }));
     });
 
-    // Cleanup
     return () => {
       newSocket.off("connect");
       newSocket.off("connectionAcknowledged");
@@ -212,7 +201,6 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     };
   }, [sessionId, eventId, token]);
 
-  // Send a general backchannel message (to all staff)
   const sendMessage = useCallback(
     async (text: string): Promise<boolean> => {
       if (!socket || !state.isJoined) {
@@ -229,7 +217,6 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
       const optimisticId = generateUUID();
       const idempotencyKey = generateUUID();
 
-      // Create optimistic message for immediate UI feedback
       const optimisticMessage: OptimisticMessage = {
         id: optimisticId,
         text: trimmedText,
@@ -245,8 +232,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
         optimisticId,
       };
 
-      // Add optimistic message immediately
-      setState((prev) => ({
+      setState((prev: BackchannelState) => ({
         ...prev,
         messages: [...prev.messages, optimisticMessage],
       }));
@@ -257,15 +243,13 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
           idempotencyKey,
         };
 
-        // Add timeout in case backend doesn't call callback
         let callbackCalled = false;
         const timeoutId = setTimeout(() => {
           if (!callbackCalled) {
             setIsSending(false);
-            // Mark the optimistic message as "sent" (remove optimistic flag)
-            setState((prev) => ({
+            setState((prev: BackchannelState) => ({
               ...prev,
-              messages: prev.messages.map((m) =>
+              messages: prev.messages.map((m: OptimisticMessage) =>
                 m.id === optimisticId ? { ...m, isOptimistic: false } : m
               ),
             }));
@@ -284,10 +268,9 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
             const errorMsg = typeof response?.error === "string"
               ? response.error
               : response?.error?.message || "Failed to send message";
-            // Remove optimistic message on failure
-            setState((prev) => ({
+            setState((prev: BackchannelState) => ({
               ...prev,
-              messages: prev.messages.filter((m) => m.id !== optimisticId),
+              messages: prev.messages.filter((m: OptimisticMessage) => m.id !== optimisticId),
               error: errorMsg,
             }));
             resolve(false);
@@ -298,7 +281,6 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     [socket, state.isJoined, sessionId, user]
   );
 
-  // Send a whisper to a specific user
   const sendWhisperToUser = useCallback(
     async (text: string, targetUserId: string, targetUserName: string): Promise<boolean> => {
       if (!socket || !state.isJoined) {
@@ -315,7 +297,6 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
       const optimisticId = generateUUID();
       const idempotencyKey = generateUUID();
 
-      // Create optimistic message for immediate UI feedback
       const optimisticMessage: OptimisticMessage = {
         id: optimisticId,
         text: trimmedText,
@@ -333,8 +314,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
         optimisticId,
       };
 
-      // Add optimistic message immediately
-      setState((prev) => ({
+      setState((prev: BackchannelState) => ({
         ...prev,
         messages: [...prev.messages, optimisticMessage],
       }));
@@ -350,9 +330,9 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
         const timeoutId = setTimeout(() => {
           if (!callbackCalled) {
             setIsSending(false);
-            setState((prev) => ({
+            setState((prev: BackchannelState) => ({
               ...prev,
-              messages: prev.messages.map((m) =>
+              messages: prev.messages.map((m: OptimisticMessage) =>
                 m.id === optimisticId ? { ...m, isOptimistic: false } : m
               ),
             }));
@@ -371,9 +351,9 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
             const errorMsg = typeof response?.error === "string"
               ? response.error
               : response?.error?.message || "Failed to send whisper";
-            setState((prev) => ({
+            setState((prev: BackchannelState) => ({
               ...prev,
-              messages: prev.messages.filter((m) => m.id !== optimisticId),
+              messages: prev.messages.filter((m: OptimisticMessage) => m.id !== optimisticId),
               error: errorMsg,
             }));
             resolve(false);
@@ -384,7 +364,6 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     [socket, state.isJoined, sessionId, user]
   );
 
-  // Send a whisper to a specific role
   const sendWhisperToRole = useCallback(
     async (text: string, targetRole: TargetableRole): Promise<boolean> => {
       if (!socket || !state.isJoined) {
@@ -401,7 +380,6 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
       const optimisticId = generateUUID();
       const idempotencyKey = generateUUID();
 
-      // Create optimistic message for immediate UI feedback
       const optimisticMessage: OptimisticMessage = {
         id: optimisticId,
         text: trimmedText,
@@ -419,8 +397,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
         optimisticId,
       };
 
-      // Add optimistic message immediately
-      setState((prev) => ({
+      setState((prev: BackchannelState) => ({
         ...prev,
         messages: [...prev.messages, optimisticMessage],
       }));
@@ -436,9 +413,9 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
         const timeoutId = setTimeout(() => {
           if (!callbackCalled) {
             setIsSending(false);
-            setState((prev) => ({
+            setState((prev: BackchannelState) => ({
               ...prev,
-              messages: prev.messages.map((m) =>
+              messages: prev.messages.map((m: OptimisticMessage) =>
                 m.id === optimisticId ? { ...m, isOptimistic: false } : m
               ),
             }));
@@ -457,9 +434,9 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
             const errorMsg = typeof response?.error === "string"
               ? response.error
               : response?.error?.message || "Failed to send role whisper";
-            setState((prev) => ({
+            setState((prev: BackchannelState) => ({
               ...prev,
-              messages: prev.messages.filter((m) => m.id !== optimisticId),
+              messages: prev.messages.filter((m: OptimisticMessage) => m.id !== optimisticId),
               error: errorMsg,
             }));
             resolve(false);
@@ -470,9 +447,8 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     [socket, state.isJoined, sessionId, user]
   );
 
-  // Clear error
   const clearError = useCallback(() => {
-    setState((prev) => ({ ...prev, error: null }));
+    setState((prev: BackchannelState) => ({ ...prev, error: null }));
   }, []);
 
   return {

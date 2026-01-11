@@ -1,13 +1,15 @@
 // src/app/(platform)/dashboard/events/[eventId]/_components/backchannel-panel.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useQuery } from "@apollo/client";
 import {
   useBackchannel,
   BackchannelMessage,
   TargetableRole,
   StaffMember,
 } from "@/hooks/use-backchannel";
+import { TEAM_DATA_QUERY } from "@/components/features/Auth/auth.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,7 +167,7 @@ export const BackchannelPanel = ({
   sessionId,
   eventId,
   className,
-  staffMembers = [],
+  staffMembers: propStaffMembers = [],
 }: BackchannelPanelProps) => {
   const {
     messages,
@@ -180,6 +182,34 @@ export const BackchannelPanel = ({
     sendWhisperToRole,
     clearError,
   } = useBackchannel(sessionId, eventId);
+
+  // Fetch organization team members for whisper targeting
+  const { data: teamData } = useQuery(TEAM_DATA_QUERY, {
+    fetchPolicy: "cache-first",
+  });
+
+  // Transform team data into staff members format
+  const staffMembers = useMemo((): StaffMember[] => {
+    // If prop staff members are provided, use those
+    if (propStaffMembers.length > 0) {
+      return propStaffMembers;
+    }
+
+    // Otherwise, use team data from GraphQL
+    if (!teamData?.organizationMembers) {
+      return [];
+    }
+
+    return teamData.organizationMembers.map((member: {
+      user: { id: string; first_name?: string; last_name?: string };
+      role?: { name?: string };
+    }) => ({
+      id: member.user.id,
+      firstName: member.user.first_name || "",
+      lastName: member.user.last_name || "",
+      role: member.role?.name,
+    }));
+  }, [teamData, propStaffMembers]);
 
   const [inputValue, setInputValue] = useState("");
   const [target, setTarget] = useState<MessageTarget>({ type: "all" });
