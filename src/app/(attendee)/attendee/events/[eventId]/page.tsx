@@ -571,6 +571,18 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                   livePresentationActive={livePresentationActive}
                 />
               )}
+
+              {/* Report Issue Button - Always available for live/upcoming sessions */}
+              <IncidentReportForm
+                sessionId={session.id}
+                eventId={eventId}
+                trigger={
+                  <Button variant="outline" size="sm" className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
+                    <AlertTriangle className="h-4 w-4" />
+                    Report Issue
+                  </Button>
+                }
+              />
             </div>
           )}
         </div>

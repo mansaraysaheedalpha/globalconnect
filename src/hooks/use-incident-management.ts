@@ -1,7 +1,7 @@
 // src/hooks/use-incident-management.ts
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import { useAuthStore } from "@/store/auth.store";
@@ -13,6 +13,8 @@ import type {
   UpdateIncidentResponse,
   JoinIncidentsResponse,
 } from "@/types/incident.types";
+
+const isDev = process.env.NODE_ENV === "development";
 
 interface UseIncidentManagementOptions {
   autoJoin?: boolean;
@@ -72,7 +74,7 @@ export function useIncidentManagement(
     socketRef.current = newSocket;
 
     newSocket.on("connect", () => {
-      console.log("[IncidentManagement] Connected to real-time service");
+      if (isDev) console.log("[IncidentManagement] Connected to real-time service");
       setIsConnected(true);
       setError(null);
 
@@ -83,12 +85,12 @@ export function useIncidentManagement(
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("[IncidentManagement] Disconnected:", reason);
+      if (isDev) console.log("[IncidentManagement] Disconnected:", reason);
       setIsConnected(false);
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("[IncidentManagement] Connection error:", err.message);
+      if (isDev) console.error("[IncidentManagement] Connection error:", err.message);
       setError("Failed to connect to incident management service");
       setIsConnected(false);
       setIsLoading(false);
@@ -96,13 +98,13 @@ export function useIncidentManagement(
 
     // Listen for new incidents
     newSocket.on("incident.new", (incident: Incident) => {
-      console.log("[IncidentManagement] New incident received:", incident.id);
+      if (isDev) console.log("[IncidentManagement] New incident received:", incident.id);
       addIncident(incident);
     });
 
     // Listen for incident updates
     newSocket.on("incident.updated", (incident: Incident) => {
-      console.log("[IncidentManagement] Incident updated:", incident.id);
+      if (isDev) console.log("[IncidentManagement] Incident updated:", incident.id);
       updateIncident(incident);
     });
 
@@ -144,12 +146,14 @@ export function useIncidentManagement(
           setIsLoading(false);
 
           if (response.success) {
-            console.log("[IncidentManagement] Joined incidents stream");
+            if (isDev) console.log("[IncidentManagement] Joined incidents stream");
           } else {
-            console.error(
-              "[IncidentManagement] Failed to join stream:",
-              response.error
-            );
+            if (isDev) {
+              console.error(
+                "[IncidentManagement] Failed to join stream:",
+                response.error
+              );
+            }
             setError(response.error || "Failed to join incidents stream");
           }
 
@@ -183,40 +187,56 @@ export function useIncidentManagement(
       };
 
       return new Promise((resolve) => {
+        // Track if we've already resolved to prevent double resolution
+        let hasResolved = false;
+        let timeoutId: NodeJS.Timeout;
+
         socketRef.current!.emit(
           "incident.update_status",
           payload,
           (response: UpdateIncidentResponse) => {
+            // Prevent double resolution
+            if (hasResolved) return;
+            hasResolved = true;
+
+            // Clear the timeout since we got a response
+            clearTimeout(timeoutId);
+
             setIsUpdating(false);
 
             if (response.success) {
-              console.log(
-                "[IncidentManagement] Incident status updated:",
-                incidentId
-              );
+              if (isDev) {
+                console.log(
+                  "[IncidentManagement] Incident status updated:",
+                  incidentId
+                );
+              }
             } else {
               setUpdateError(response.error || "Failed to update incident");
-              console.error(
-                "[IncidentManagement] Update failed:",
-                response.error
-              );
+              if (isDev) {
+                console.error(
+                  "[IncidentManagement] Update failed:",
+                  response.error
+                );
+              }
             }
 
             resolve(response);
           }
         );
 
-        // Timeout handling
-        setTimeout(() => {
-          if (isUpdating) {
-            setIsUpdating(false);
-            setUpdateError("Request timed out. Please try again.");
-            resolve({ success: false, error: "Request timed out" });
-          }
+        // Timeout handling - use local flag instead of stale closure
+        timeoutId = setTimeout(() => {
+          if (hasResolved) return;
+          hasResolved = true;
+
+          setIsUpdating(false);
+          setUpdateError("Request timed out. Please try again.");
+          resolve({ success: false, error: "Request timed out" });
         }, 10000);
       });
     },
-    [isUpdating]
+    [] // No dependencies needed - uses refs and local state setters
   );
 
   // Acknowledge an incident
@@ -249,6 +269,22 @@ export function useIncidentManagement(
     setUpdateError(null);
   }, []);
 
+  // Memoize computed values to avoid recalculation on every render
+  const filteredIncidents = useMemo(
+    () => getFilteredIncidents(),
+    [incidents, filters, getFilteredIncidents]
+  );
+
+  const activeIncidentsCount = useMemo(
+    () => getActiveIncidentsCount(),
+    [incidents, getActiveIncidentsCount]
+  );
+
+  const criticalIncidentsCount = useMemo(
+    () => getCriticalIncidentsCount(),
+    [incidents, getCriticalIncidentsCount]
+  );
+
   return {
     // State
     incidents,
@@ -260,10 +296,10 @@ export function useIncidentManagement(
     isUpdating,
     updateError,
 
-    // Computed
-    filteredIncidents: getFilteredIncidents(),
-    activeIncidentsCount: getActiveIncidentsCount(),
-    criticalIncidentsCount: getCriticalIncidentsCount(),
+    // Computed (memoized)
+    filteredIncidents,
+    activeIncidentsCount,
+    criticalIncidentsCount,
 
     // Actions
     joinIncidentsStream,

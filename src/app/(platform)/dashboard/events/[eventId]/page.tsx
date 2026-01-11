@@ -29,6 +29,7 @@ import { ErrorState, QueryErrorHandler } from "@/components/ui/error-boundary";
 import { EventHistoryTimeline } from "./_components/event-history-timeline";
 import { LiveAgendaContainer } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
+import { IncidentDashboard } from "@/components/features/incidents";
 import LeaderboardPage from "./leaderboard/page";
 import MonetizationPage from "./monetization/page";
 import EngagementConductorPage from "./engagement/page";
@@ -145,6 +146,7 @@ export default function EventDetailPage() {
               <TabsTrigger value="attendees">Attendees</TabsTrigger>
               <TabsTrigger value="tickets">Tickets</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="incidents">Incidents</TabsTrigger>
               <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
               <TabsTrigger value="monetization">Monetization</TabsTrigger>
             </TabsList>
@@ -169,6 +171,9 @@ export default function EventDetailPage() {
             </TabsContent>
             <TabsContent value="history" className="mt-4 sm:mt-6">
               <EventHistoryTimeline eventId={event.id} />
+            </TabsContent>
+            <TabsContent value="incidents" className="mt-4 sm:mt-6">
+              <IncidentDashboard eventId={event.id} />
             </TabsContent>
             <TabsContent value="leaderboard" className="mt-4 sm:mt-6">
               <LeaderboardPage />

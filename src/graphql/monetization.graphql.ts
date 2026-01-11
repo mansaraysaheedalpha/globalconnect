@@ -217,11 +217,13 @@ export const GET_MONETIZATION_ANALYTICS_QUERY = gql`
     $eventId: ID!
     $dateFrom: String
     $dateTo: String
+    $includeArchived: Boolean = false
   ) {
     monetizationAnalytics(
       eventId: $eventId
       dateFrom: $dateFrom
       dateTo: $dateTo
+      includeArchived: $includeArchived
     ) {
       revenue {
         total
@@ -248,12 +250,25 @@ export const GET_MONETIZATION_ANALYTICS_QUERY = gql`
         totalImpressions
         totalClicks
         averageCTR
+        activeAdsCount
+        archivedAdsCount
         topPerformers {
           adId
           name
           impressions
           clicks
           ctr
+          isArchived
+          contentType
+        }
+        allAdsPerformance {
+          adId
+          name
+          impressions
+          clicks
+          ctr
+          isArchived
+          contentType
         }
       }
       waitlist {

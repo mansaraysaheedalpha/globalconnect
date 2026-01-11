@@ -65,10 +65,25 @@ export function useLiveSubtitles({
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Translation cache to avoid re-translating same content
+  // Limit cache size to prevent memory leaks
+  const MAX_CACHE_SIZE = 500;
   const translationCacheRef = useRef<Map<string, string>>(new Map());
 
   // Pending translations queue
   const pendingTranslationsRef = useRef<Set<string>>(new Set());
+
+  // Refs to avoid stale closures in event handlers
+  const enabledRef = useRef(enabled);
+  const isPausedRef = useRef(state.isPaused);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  useEffect(() => {
+    isPausedRef.current = state.isPaused;
+  }, [state.isPaused]);
 
   /**
    * Request translation for a subtitle chunk
@@ -85,6 +100,13 @@ export function useLiveSubtitles({
       // Check cache first
       const cacheKey = `${text}:${targetLanguage}`;
       const cached = translationCacheRef.current.get(cacheKey);
+
+      // Evict oldest entries if cache is full
+      if (translationCacheRef.current.size >= MAX_CACHE_SIZE) {
+        const firstKey = translationCacheRef.current.keys().next().value;
+        if (firstKey) translationCacheRef.current.delete(firstKey);
+      }
+
       if (cached) {
         setState((prev) => ({
           ...prev,
@@ -100,14 +122,11 @@ export function useLiveSubtitles({
       pendingTranslationsRef.current.add(cacheKey);
 
       // Request translation via WebSocket
-      // Note: For subtitle translation, we generate a temporary messageId
-      // The backend will translate the text directly
       socket.emit(
         "translation.request",
         {
           messageId: subtitleId,
           targetLanguage,
-          // Extended payload for subtitle translation (backend may support)
           text,
           sourceLanguage,
         },
@@ -225,7 +244,8 @@ export function useLiveSubtitles({
       if (chunk.sessionId !== sessionId) return;
 
       // Only add if subtitles are enabled and not paused
-      if (enabled && !state.isPaused) {
+      // Use refs to avoid stale closure issues
+      if (enabledRef.current && !isPausedRef.current) {
         addSubtitle(chunk);
       }
     };
@@ -257,7 +277,8 @@ export function useLiveSubtitles({
       timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
       timeoutsRef.current.clear();
     };
-  }, [socket, sessionId, enabled, state.isPaused, addSubtitle]);
+    // Note: enabled and isPaused are tracked via refs to avoid stale closures
+  }, [socket, sessionId, addSubtitle]);
 
   // Clear subtitles when disabled
   useEffect(() => {

@@ -39,6 +39,8 @@ export function useTranslation({ socket }: UseTranslationOptions) {
   const { getEffectiveLanguage } = useSubtitleStore();
 
   // Cache reference for persistence across renders
+  // Limit cache size to prevent memory leaks
+  const MAX_CACHE_SIZE = 500;
   const cacheRef = useRef<Map<string, TranslatedMessage>>(new Map());
 
   // Sync state translations with cache
@@ -130,6 +132,9 @@ export function useTranslation({ socket }: UseTranslationOptions) {
       });
 
       return new Promise((resolve) => {
+        let resolved = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
         socket.emit(
           "translation.request",
           {
@@ -137,6 +142,13 @@ export function useTranslation({ socket }: UseTranslationOptions) {
             targetLanguage: lang,
           },
           (response: TranslationResponse) => {
+            // Prevent double resolution
+            if (resolved) return;
+            resolved = true;
+
+            // Clear timeout since we got a response
+            if (timeoutId) clearTimeout(timeoutId);
+
             // Remove from pending
             setState((prev) => {
               const newPending = new Set(prev.pendingRequests);
@@ -152,9 +164,16 @@ export function useTranslation({ socket }: UseTranslationOptions) {
                 timestamp: Date.now(),
               };
 
-              // Add to cache
+              // Add to cache with size limit
               setState((prev) => {
                 const newTranslations = new Map(prev.translations);
+
+                // Evict oldest entries if cache is full
+                if (newTranslations.size >= MAX_CACHE_SIZE) {
+                  const firstKey = newTranslations.keys().next().value;
+                  if (firstKey) newTranslations.delete(firstKey);
+                }
+
                 newTranslations.set(cacheKey, translation);
                 return { ...prev, translations: newTranslations };
               });
@@ -169,7 +188,11 @@ export function useTranslation({ socket }: UseTranslationOptions) {
         );
 
         // Timeout after 10 seconds
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
+          // Prevent double resolution
+          if (resolved) return;
+          resolved = true;
+
           setState((prev) => {
             if (prev.pendingRequests.has(cacheKey)) {
               const newPending = new Set(prev.pendingRequests);

@@ -12,7 +12,10 @@ import {
   Image as ImageIcon,
   Loader2,
   AlertCircle,
-  BarChart3
+  BarChart3,
+  Eye,
+  MousePointer,
+  TrendingUp
 } from "lucide-react";
 import {
   GET_EVENT_MONETIZATION_QUERY,
@@ -62,6 +65,16 @@ interface Ad {
   clickUrl: string;
 }
 
+interface AdPerformance {
+  adId: string;
+  name: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  isArchived?: boolean;
+  contentType?: string;
+}
+
 export const Ads = () => {
   const params = useParams();
   const eventId = params.eventId as string;
@@ -81,22 +94,38 @@ export const Ads = () => {
     to: format(new Date(), "yyyy-MM-dd"),
   };
 
+  // State for historical data toggle
+  const [includeArchived, setIncludeArchived] = useState(false);
+
   const { data, loading, error, refetch } = useQuery(GET_EVENT_MONETIZATION_QUERY, {
     variables: { eventId },
   });
 
-  // Fetch analytics data
-  const { data: analyticsData, loading: analyticsLoading } = useQuery(
+  // Fetch analytics data with includeArchived parameter
+  const { data: analyticsData, loading: analyticsLoading, refetch: refetchAnalytics } = useQuery(
     GET_MONETIZATION_ANALYTICS_QUERY,
     {
       variables: {
         eventId,
         dateFrom: dateRange.from,
         dateTo: dateRange.to,
+        includeArchived,
       },
       fetchPolicy: "cache-and-network",
     }
   );
+
+  // Handle includeArchived toggle
+  const handleIncludeArchivedChange = (value: boolean) => {
+    setIncludeArchived(value);
+    // Refetch with new parameter
+    refetchAnalytics({
+      eventId,
+      dateFrom: dateRange.from,
+      dateTo: dateRange.to,
+      includeArchived: value,
+    });
+  };
 
   const [createAd, { loading: creating }] = useMutation(CREATE_AD_MUTATION, {
     onCompleted: () => {
@@ -177,6 +206,18 @@ export const Ads = () => {
 
   const ads: Ad[] = data?.eventAds || [];
   const adAnalytics = analyticsData?.monetizationAnalytics?.ads;
+
+  // Create a map of ad performance for quick lookup
+  const adPerformanceMap = new Map<string, { impressions: number; clicks: number; ctr: number }>();
+  if (adAnalytics?.allAdsPerformance) {
+    adAnalytics.allAdsPerformance.forEach((perf: AdPerformance) => {
+      adPerformanceMap.set(perf.adId, {
+        impressions: perf.impressions,
+        clicks: perf.clicks,
+        ctr: perf.ctr,
+      });
+    });
+  }
 
   return (
     <div className="space-y-6 pt-4">
@@ -290,56 +331,92 @@ export const Ads = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ads.map((ad) => (
-            <Card key={ad.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <div className="aspect-video relative bg-muted">
-                {ad.mediaUrl ? (
-                  <img
-                    src={ad.mediaUrl}
-                    alt={ad.name}
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+          {ads.map((ad) => {
+            const performance = adPerformanceMap.get(ad.id);
+            return (
+              <Card key={ad.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300">
+                <div className="aspect-video relative bg-muted">
+                  {ad.mediaUrl ? (
+                    <img
+                      src={ad.mediaUrl}
+                      alt={ad.name}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <Badge variant="secondary" className="bg-background/80 backdrop-blur">
+                      {ad.contentType}
+                    </Badge>
                   </div>
-                )}
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <Badge variant="secondary" className="bg-background/80 backdrop-blur">
-                    {ad.contentType}
-                  </Badge>
                 </div>
-              </div>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-lg line-clamp-1">{ad.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                <div className="flex flex-col gap-2">
-                   <div className="flex items-center gap-2 truncate">
-                      <ExternalLink className="h-3 w-3" />
-                      <span className="truncate">{ad.clickUrl}</span>
-                   </div>
-                </div>
-              </CardContent>
-              <CardFooter className="p-4 pt-0 flex justify-end gap-2 border-t mt-4 pt-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDeleteClick(ad)}
-                  disabled={deleting}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={ad.clickUrl} target="_blank" rel="noopener noreferrer">
-                    Test Link
-                  </a>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                <CardHeader className="p-4 pb-2">
+                  <CardTitle className="text-lg line-clamp-1">{ad.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  {/* Performance Metrics */}
+                  <div className="grid grid-cols-3 gap-2 mb-3 p-2 bg-muted/50 rounded-lg">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                        <Eye className="h-3 w-3" />
+                        <span className="text-xs">Views</span>
+                      </div>
+                      <span className="font-semibold text-sm">
+                        {performance?.impressions?.toLocaleString() ?? 0}
+                      </span>
+                    </div>
+                    <div className="text-center border-x border-border">
+                      <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                        <MousePointer className="h-3 w-3" />
+                        <span className="text-xs">Clicks</span>
+                      </div>
+                      <span className="font-semibold text-sm">
+                        {performance?.clicks?.toLocaleString() ?? 0}
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                        <TrendingUp className="h-3 w-3" />
+                        <span className="text-xs">CTR</span>
+                      </div>
+                      <span className={`font-semibold text-sm ${
+                        (performance?.ctr ?? 0) >= 2 ? "text-green-600" :
+                        (performance?.ctr ?? 0) >= 1 ? "text-blue-600" :
+                        (performance?.ctr ?? 0) >= 0.5 ? "text-yellow-600" :
+                        "text-muted-foreground"
+                      }`}>
+                        {(performance?.ctr ?? 0).toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 truncate text-sm text-muted-foreground">
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{ad.clickUrl}</span>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-4 pt-0 flex justify-end gap-2 border-t mt-4 pt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDeleteClick(ad)}
+                    disabled={deleting}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={ad.clickUrl} target="_blank" rel="noopener noreferrer">
+                      Test Link
+                    </a>
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       )}
           <ConfirmDialog
@@ -365,6 +442,8 @@ export const Ads = () => {
               eventId={eventId}
               data={adAnalytics}
               dateRange={dateRange}
+              includeArchived={includeArchived}
+              onIncludeArchivedChange={handleIncludeArchivedChange}
             />
           )}
         </TabsContent>

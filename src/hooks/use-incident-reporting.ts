@@ -110,41 +110,57 @@ export function useIncidentReporting({
       };
 
       return new Promise((resolve) => {
+        // Track if we've already resolved to prevent double resolution
+        let hasResolved = false;
+        let timeoutId: NodeJS.Timeout;
+
         socketRef.current!.emit(
           "incident.report",
           payload,
           (response: ReportIncidentResponse) => {
+            // Prevent double resolution
+            if (hasResolved) return;
+            hasResolved = true;
+
+            // Clear the timeout since we got a response
+            clearTimeout(timeoutId);
+
             setIsReporting(false);
 
             if (response.success) {
               setReportSuccess(true);
-              console.log(
-                "[IncidentReporting] Incident reported:",
-                response.incidentId
-              );
+              if (process.env.NODE_ENV === "development") {
+                console.log(
+                  "[IncidentReporting] Incident reported:",
+                  response.incidentId
+                );
+              }
             } else {
               setReportError(response.error || "Failed to report incident");
-              console.error(
-                "[IncidentReporting] Report failed:",
-                response.error
-              );
+              if (process.env.NODE_ENV === "development") {
+                console.error(
+                  "[IncidentReporting] Report failed:",
+                  response.error
+                );
+              }
             }
 
             resolve(response);
           }
         );
 
-        // Timeout handling
-        setTimeout(() => {
-          if (isReporting) {
-            setIsReporting(false);
-            setReportError("Request timed out. Please try again.");
-            resolve({ success: false, error: "Request timed out" });
-          }
+        // Timeout handling - use local flag instead of stale closure
+        timeoutId = setTimeout(() => {
+          if (hasResolved) return;
+          hasResolved = true;
+
+          setIsReporting(false);
+          setReportError("Request timed out. Please try again.");
+          resolve({ success: false, error: "Request timed out" });
         }, 10000);
       });
     },
-    [isReporting, setIsReporting, setReportError, setReportSuccess]
+    [setIsReporting, setReportError, setReportSuccess]
   );
 
   // Reset the report state (useful after showing success message)

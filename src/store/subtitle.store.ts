@@ -9,6 +9,30 @@ import {
   detectBrowserLanguage,
 } from "@/types/subtitles";
 
+/**
+ * Validate and sanitize color values to prevent XSS attacks
+ * Only allows safe CSS color formats
+ */
+function sanitizeColor(color: string, fallback: string): string {
+  // Allow hex colors: #RGB, #RRGGBB, #RRGGBBAA
+  const hexPattern = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/;
+  if (hexPattern.test(color)) return color;
+
+  // Allow rgb/rgba with only numbers and commas
+  const rgbPattern = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*(0|1|0?\.\d+))?\s*\)$/;
+  if (rgbPattern.test(color)) return color;
+
+  // Allow named colors (common safe colors only)
+  const safeNamedColors = [
+    "black", "white", "red", "green", "blue", "yellow", "cyan", "magenta",
+    "gray", "grey", "orange", "purple", "pink", "brown", "transparent",
+  ];
+  if (safeNamedColors.includes(color.toLowerCase())) return color;
+
+  // Return fallback for invalid colors
+  return fallback;
+}
+
 interface SubtitleState extends SubtitlePreferences {
   // Actions
   setEnabled: (enabled: boolean) => void;
@@ -38,9 +62,21 @@ export const useSubtitleStore = create<SubtitleState>()(
 
       setFontSize: (fontSize) => set({ fontSize }),
 
-      setBackgroundColor: (backgroundColor) => set({ backgroundColor }),
+      setBackgroundColor: (backgroundColor) =>
+        set({
+          backgroundColor: sanitizeColor(
+            backgroundColor,
+            DEFAULT_SUBTITLE_PREFERENCES.backgroundColor
+          ),
+        }),
 
-      setTextColor: (textColor) => set({ textColor }),
+      setTextColor: (textColor) =>
+        set({
+          textColor: sanitizeColor(
+            textColor,
+            DEFAULT_SUBTITLE_PREFERENCES.textColor
+          ),
+        }),
 
       setPosition: (position) => set({ position }),
 
@@ -70,6 +106,27 @@ export const useSubtitleStore = create<SubtitleState>()(
         preferredLanguage: state.preferredLanguage,
         showOriginalWithTranslation: state.showOriginalWithTranslation,
       }),
+      // Sanitize values when loading from localStorage to prevent XSS
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<SubtitlePreferences>;
+        return {
+          ...currentState,
+          ...persisted,
+          // Sanitize color values from storage
+          backgroundColor: persisted?.backgroundColor
+            ? sanitizeColor(
+                persisted.backgroundColor,
+                DEFAULT_SUBTITLE_PREFERENCES.backgroundColor
+              )
+            : currentState.backgroundColor,
+          textColor: persisted?.textColor
+            ? sanitizeColor(
+                persisted.textColor,
+                DEFAULT_SUBTITLE_PREFERENCES.textColor
+              )
+            : currentState.textColor,
+        };
+      },
     }
   )
 );
