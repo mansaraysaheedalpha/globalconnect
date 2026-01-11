@@ -17,8 +17,6 @@ import {
 } from "@/components/ui/premium-components";
 import {
   BarChart,
-  Sparkline,
-  ProgressStat,
   MiniStatsGrid,
 } from "@/components/ui/charts";
 import { CardSkeleton, ShimmerSkeleton } from "@/components/ui/skeleton-patterns";
@@ -58,7 +56,6 @@ export default function DashboardPage() {
     {
       variables: {
         attendanceDays: 7,
-        trendPeriods: 12,
       },
       skip: !orgId,
     }
@@ -71,8 +68,6 @@ export default function DashboardPage() {
   // Extract dashboard data with fallbacks (shows 0 when API not ready)
   const dashboardStats = dashboardData?.organizationDashboardStats;
   const weeklyAttendance = dashboardData?.weeklyAttendance?.data;
-  const engagementTrend = dashboardData?.engagementTrend?.data;
-  const engagementBreakdown = dashboardData?.engagementBreakdown;
 
   // Build stats array from real API data
   const stats = [
@@ -111,15 +106,6 @@ export default function DashboardPage() {
       value: item.value,
     })) || [];
 
-  // Transform sparkline data from API
-  const sparklineData = engagementTrend?.map((item) => item.value) || [];
-
-  // Get engagement breakdown values from API
-  const qaParticipation = engagementBreakdown?.qaParticipation ?? 0;
-  const pollResponseRate = engagementBreakdown?.pollResponseRate ?? 0;
-  const chatActivityRate = engagementBreakdown?.chatActivityRate ?? 0;
-  const avgEngagementRate = dashboardStats?.avgEngagementRate ?? 0;
-
   const loading = eventsLoading || dashboardLoading;
 
   if (loading) {
@@ -134,10 +120,7 @@ export default function DashboardPage() {
             <CardSkeleton key={i} lines={2} />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <CardSkeleton className="lg:col-span-2" lines={6} />
-          <CardSkeleton lines={4} />
-        </div>
+        <CardSkeleton lines={6} />
       </div>
     );
   }
@@ -165,75 +148,30 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <MiniStatsGrid items={stats} columns={4} />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-        {/* Attendance Chart */}
-        <PremiumCard variant="elevated" padding="md" className="lg:col-span-2">
-          <SectionHeader
-            title="Weekly Attendance"
-            subtitle="Attendee check-ins across all events"
+      {/* Weekly Attendance Chart */}
+      <PremiumCard variant="elevated" padding="md">
+        <SectionHeader
+          title="Weekly Attendance"
+          subtitle="Attendee check-ins across all events"
+        />
+        {attendanceData.length > 0 ? (
+          <BarChart
+            data={attendanceData}
+            height={220}
+            showValues
+            showLabels
+            animate
           />
-          {attendanceData.length > 0 ? (
-            <BarChart
-              data={attendanceData}
-              height={220}
-              showValues
-              showLabels
-              animate
-            />
-          ) : (
-            <div className="h-[220px] flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No attendance data yet</p>
-                <p className="text-xs mt-1">Data will appear once attendees check in</p>
-              </div>
+        ) : (
+          <div className="h-[220px] flex items-center justify-center text-muted-foreground">
+            <div className="text-center">
+              <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No attendance data yet</p>
+              <p className="text-xs mt-1">Data will appear once attendees check in</p>
             </div>
-          )}
-        </PremiumCard>
-
-        {/* Engagement Trends */}
-        <PremiumCard variant="elevated" padding="md">
-          <SectionHeader title="Engagement Trend" />
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-3xl font-bold">
-                {Math.round(avgEngagementRate)}%
-              </p>
-              <p className="text-sm text-muted-foreground">Average rate</p>
-            </div>
-            {sparklineData.length > 0 ? (
-              <Sparkline
-                data={sparklineData}
-                width={100}
-                height={40}
-                animate
-              />
-            ) : (
-              <div className="w-[100px] h-[40px] bg-muted/30 rounded flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">No data</span>
-              </div>
-            )}
           </div>
-          <div className="space-y-4 pt-4 border-t">
-            <ProgressStat
-              label="Q&A Participation"
-              value={Math.round(qaParticipation)}
-              color="bg-primary"
-            />
-            <ProgressStat
-              label="Poll Responses"
-              value={Math.round(pollResponseRate)}
-              color="bg-blue-500"
-            />
-            <ProgressStat
-              label="Chat Activity"
-              value={Math.round(chatActivityRate)}
-              color="bg-green-500"
-            />
-          </div>
-        </PremiumCard>
-      </div>
+        )}
+      </PremiumCard>
 
       {/* Upcoming Events */}
       <div>

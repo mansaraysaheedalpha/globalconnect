@@ -62,7 +62,7 @@ export const GET_ENGAGEMENT_BREAKDOWN_QUERY = gql`
 
 // Combined dashboard query for efficiency (single request)
 export const GET_DASHBOARD_DATA_QUERY = gql`
-  query GetDashboardData($attendanceDays: Int, $trendPeriods: Int) {
+  query GetDashboardData($attendanceDays: Int) {
     organizationDashboardStats {
       totalAttendees
       totalAttendeesChange
@@ -79,17 +79,6 @@ export const GET_DASHBOARD_DATA_QUERY = gql`
         date
         value
       }
-    }
-    engagementTrend(periods: $trendPeriods) {
-      data {
-        period
-        value
-      }
-    }
-    engagementBreakdown {
-      qaParticipation
-      pollResponseRate
-      chatActivityRate
     }
   }
 `;
@@ -135,8 +124,4 @@ export interface DashboardData {
   weeklyAttendance: {
     data: AttendanceDataPoint[];
   };
-  engagementTrend: {
-    data: EngagementTrendPoint[];
-  };
-  engagementBreakdown: EngagementBreakdown;
 }
