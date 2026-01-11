@@ -3,6 +3,7 @@
 
 import { useParams } from "next/navigation";
 import { EngagementDashboard } from "@/features/engagement-conductor/components/EngagementDashboard";
+import { EngagementSocketProvider } from "@/features/engagement-conductor/context/SocketContext";
 
 /**
  * Engagement Conductor Page
@@ -26,13 +27,18 @@ export default function EngagementConductorPage() {
   // or aggregate across all sessions in the event
   const sessionId = `event_${eventId}_main`;
 
+  // Get auth token from localStorage (adjust based on your auth implementation)
+  const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') || undefined : undefined;
+
   return (
     <div className="container mx-auto p-6">
-      <EngagementDashboard
-        sessionId={sessionId}
-        eventId={eventId}
-        enabled={true}
-      />
+      <EngagementSocketProvider sessionId={sessionId} authToken={authToken}>
+        <EngagementDashboard
+          sessionId={sessionId}
+          eventId={eventId}
+          enabled={true}
+        />
+      </EngagementSocketProvider>
     </div>
   );
 }
