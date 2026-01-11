@@ -9,6 +9,14 @@ export const CREATE_EVENT_MUTATION = gql`
       startDate
       registrationsCount
       imageUrl
+      eventType
+      virtualSettings {
+        streamingProvider
+        streamingUrl
+        recordingEnabled
+        autoCaptions
+        lobbyEnabled
+      }
     }
   }
 `;
@@ -27,6 +35,18 @@ export const GET_EVENT_BY_ID_QUERY = gql`
       isPublic
       imageUrl
       registrationsCount
+      eventType
+      virtualSettings {
+        streamingProvider
+        streamingUrl
+        recordingEnabled
+        autoCaptions
+        timezoneDisplay
+        lobbyEnabled
+        lobbyVideoUrl
+        maxConcurrentViewers
+        geoRestrictions
+      }
       venue {
         id
         name
@@ -55,6 +75,14 @@ export const UPDATE_EVENT_MUTATION = gql`
       endDate
       status
       isPublic
+      eventType
+      virtualSettings {
+        streamingProvider
+        streamingUrl
+        recordingEnabled
+        autoCaptions
+        lobbyEnabled
+      }
     }
   }
 `;
@@ -102,6 +130,11 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       chatOpen
       qaOpen
       pollsOpen
+      sessionType
+      streamingUrl
+      recordingUrl
+      broadcastOnly
+      maxParticipants
       speakers {
         id
         name
@@ -120,6 +153,10 @@ export const CREATE_SESSION_MUTATION = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      sessionType
+      streamingUrl
+      broadcastOnly
+      maxParticipants
       speakers {
         id
         name
@@ -138,6 +175,11 @@ export const UPDATE_SESSION_MUTATION = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      sessionType
+      streamingUrl
+      recordingUrl
+      broadcastOnly
+      maxParticipants
       speakers {
         id
         name

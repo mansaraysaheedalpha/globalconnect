@@ -32,8 +32,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Switch } from "@/components/ui/switch";
-import { Loader, MessageSquare, HelpCircle, BarChart3 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store } from "lucide-react";
 import { SpeakerMultiSelect } from "@/components/ui/speaker-multi-select";
+
+// Session type options for virtual session support
+const SESSION_TYPES = [
+  { value: "MAINSTAGE", label: "Mainstage", icon: Presentation, description: "Main keynote/general session" },
+  { value: "BREAKOUT", label: "Breakout", icon: Users, description: "Smaller focused session" },
+  { value: "WORKSHOP", label: "Workshop", icon: Users, description: "Hands-on interactive session" },
+  { value: "NETWORKING", label: "Networking", icon: Coffee, description: "Networking/social session" },
+  { value: "EXPO", label: "Expo", icon: Store, description: "Exhibition/booth session" },
+] as const;
+
+type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 
 interface AddSessionModalProps {
   isOpen: boolean;
@@ -55,7 +73,6 @@ type SessionsQueryData = {
   sessionsByEvent: Session[];
 };
 
-// --- CORRECTED ZOD SCHEMA ---
 const formSchema = z
   .object({
     title: z.string().min(3, "Session title must be at least 3 characters."),
@@ -78,6 +95,16 @@ const formSchema = z
     chatEnabled: z.boolean(),
     qaEnabled: z.boolean(),
     pollsEnabled: z.boolean(),
+    // Virtual Session Support
+    sessionType: z.enum(["MAINSTAGE", "BREAKOUT", "WORKSHOP", "NETWORKING", "EXPO"]).default("MAINSTAGE"),
+    streamingUrl: z
+      .string()
+      .url("Please enter a valid streaming URL.")
+      .optional()
+      .or(z.literal("")),
+    isRecordable: z.boolean().default(true),
+    broadcastOnly: z.boolean().default(true),
+    maxParticipants: z.number().min(1).max(10000).optional(),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: "End time must be after the start time.",
@@ -105,6 +132,10 @@ export const AddSessionModal = ({
       chatEnabled: true,
       qaEnabled: true,
       pollsEnabled: true,
+      sessionType: "MAINSTAGE",
+      streamingUrl: "",
+      isRecordable: true,
+      broadcastOnly: true,
     },
   });
 
@@ -148,6 +179,12 @@ export const AddSessionModal = ({
           chatEnabled: values.chatEnabled,
           qaEnabled: values.qaEnabled,
           pollsEnabled: values.pollsEnabled,
+          // Virtual Session fields
+          sessionType: values.sessionType,
+          streamingUrl: values.streamingUrl || null,
+          isRecordable: values.isRecordable,
+          broadcastOnly: values.broadcastOnly,
+          maxParticipants: values.maxParticipants || null,
         },
       },
     });
@@ -242,6 +279,107 @@ export const AddSessionModal = ({
                 </FormItem>
               )}
             />
+
+            {/* Session Type Selector */}
+            <FormField
+              control={form.control}
+              name="sessionType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Session Type</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={loading}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select session type..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {SESSION_TYPES.map((type) => {
+                        const Icon = type.icon;
+                        return (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              <span>{type.label}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {SESSION_TYPES.find((t) => t.value === field.value)?.description}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Virtual Session Settings */}
+            <div className="space-y-3 pt-2 border-t">
+              <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Video className="h-4 w-4" />
+                Virtual Session Settings
+              </p>
+
+              <FormField
+                control={form.control}
+                name="streamingUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Streaming URL (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://stream.example.com/..."
+                        {...field}
+                        disabled={loading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="isRecordable"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <FormLabel className="font-normal cursor-pointer">Recordable</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={loading}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="broadcastOnly"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <FormLabel className="font-normal cursor-pointer">Broadcast Only</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={loading}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             {/* Interactive Features */}
             <div className="space-y-3 pt-2 border-t">

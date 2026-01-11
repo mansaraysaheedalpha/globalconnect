@@ -60,7 +60,7 @@ import { cn } from "@/lib/utils";
 
 const updateStatusSchema = z.object({
   status: z.nativeEnum(IncidentUpdateStatus, {
-    required_error: "Please select a status",
+    message: "Please select a status",
   }),
   resolutionNotes: z
     .string()
