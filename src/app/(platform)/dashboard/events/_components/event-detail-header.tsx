@@ -265,36 +265,41 @@ export const EventDetailHeader = ({
         eventName={event.name}
       />
 
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">{event.name}</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words">{event.name}</h1>
+          <p className="mt-2 text-sm sm:text-base lg:text-lg text-muted-foreground line-clamp-2 sm:line-clamp-none">
             {event.description}
           </p>
         </div>
         {isOwnerOrAdmin && (
-          <div className="flex gap-2 flex-shrink-0">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+          <div className="flex gap-2 flex-shrink-0 self-start">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="h-10 sm:h-9"
+            >
+              <Edit className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Edit</span>
             </Button>
             {/* --- Actions are now in a Dropdown Menu --- */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" className="h-10 w-10 sm:h-9 sm:w-9">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
                   onSelect={() => setIsBlueprintModalOpen(true)}
+                  className="py-3 sm:py-2"
                 >
                   <BookCopy className="h-4 w-4 mr-2" />
                   Save as Blueprint
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => setIsDeleteDialogOpen(true)}
-                  className="text-red-500"
+                  className="text-red-500 py-3 sm:py-2"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Event
@@ -309,51 +314,64 @@ export const EventDetailHeader = ({
         <Alert
           className={
             event.isPublic
-              ? "border-green-500 bg-green-50"
-              : "border-blue-500 bg-blue-50"
+              ? "border-green-500 bg-green-50 dark:bg-green-950/30 dark:border-green-700"
+              : "border-blue-500 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-700"
           }
         >
           <Globe
-            className={event.isPublic ? "text-green-600" : "text-blue-600"}
+            className={event.isPublic ? "text-green-600 dark:text-green-400 hidden sm:block" : "text-blue-600 dark:text-blue-400 hidden sm:block"}
           />
-          <AlertTitle className="font-bold">
+          <AlertTitle className="font-bold text-sm sm:text-base">
             {event.isPublic ? "This event is LIVE" : "This event is a Draft"}
           </AlertTitle>
-          <AlertDescription className="flex justify-between items-center mt-2">
-            {event.isPublic
-              ? "Your event is public and ready for registrations."
-              : "Publish this event to make it visible to the public."}
+          <AlertDescription className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-2">
+            <span className="text-xs sm:text-sm">
+              {event.isPublic
+                ? "Your event is public and ready for registrations."
+                : "Publish this event to make it visible to the public."}
+            </span>
             {event.isPublic ? (
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={handleCopyLink}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Link
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyLink}
+                  className="h-9 sm:h-8 text-xs sm:text-sm flex-1 sm:flex-none"
+                >
+                  <Copy className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Copy Link</span>
                 </Button>
-                <Link href={publicUrl} rel="noopener noreferrer">
-                  <Button size="sm">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View Public Page
+                <Link href={publicUrl} rel="noopener noreferrer" className="flex-1 sm:flex-none">
+                  <Button size="sm" className="h-9 sm:h-8 text-xs sm:text-sm w-full">
+                    <ExternalLink className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">View Public Page</span>
+                    <span className="sm:hidden">View</span>
                   </Button>
                 </Link>
                 {event.status === "published" && (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                    className="h-9 sm:h-8 text-xs sm:text-sm text-destructive border-destructive/40 hover:bg-destructive/10 flex-1 sm:flex-none"
                     onClick={() => setIsUnpublishDialogOpen(true)}
                     disabled={isUnpublishing}
                   >
                     {isUnpublishing ? (
-                      <Loader className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader className="h-4 w-4 sm:mr-2 animate-spin" />
                     ) : (
-                      <Globe className="h-4 w-4 mr-2" />
+                      <Globe className="h-4 w-4 sm:mr-2" />
                     )}
-                    Unpublish
+                    <span className="hidden sm:inline">Unpublish</span>
                   </Button>
                 )}
               </div>
             ) : (
-              <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
+              <Button
+                size="sm"
+                onClick={handlePublish}
+                disabled={isPublishing}
+                className="h-9 sm:h-8 w-full sm:w-auto"
+              >
                 {isPublishing ? (
                   <Loader className="animate-spin mr-2 h-4 w-4" />
                 ) : (

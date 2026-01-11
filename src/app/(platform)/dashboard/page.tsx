@@ -113,17 +113,17 @@ export default function DashboardPage() {
   return (
     <PageTransition className="px-4 sm:px-6 py-6 space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
             Welcome back, {user?.first_name || "Organizer"}
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Here&apos;s what&apos;s happening with your events today.
           </p>
         </div>
-        <Link href="/dashboard/events">
-          <Button variant="premium" size="lg">
+        <Link href="/dashboard/events" className="flex-shrink-0">
+          <Button variant="premium" size="lg" className="w-full sm:w-auto h-11 sm:h-12">
             <Plus className="h-4 w-4 mr-2" />
             Create Event
           </Button>

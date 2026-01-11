@@ -29,7 +29,8 @@ import { PresentationStatus, PresentationState } from "./presentation-status";
 import { SessionChat } from "./session-chat";
 import { SessionQA } from "./session-qa";
 import { SessionPolls } from "./session-polls";
-import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, X } from "lucide-react";
+import { BackchannelPanel } from "./backchannel-panel";
+import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, X, Radio } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION } from "@/graphql/events.graphql";
 import { cn } from "@/lib/utils";
@@ -83,6 +84,7 @@ export const SessionItem = ({
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
   const [qaDialogOpen, setQaDialogOpen] = useState(false);
   const [pollsDialogOpen, setPollsDialogOpen] = useState(false);
+  const [backchannelDialogOpen, setBackchannelDialogOpen] = useState(false);
 
   // Sync local state with props when they change (e.g., from refetch)
   useEffect(() => {
@@ -529,6 +531,54 @@ export const SessionItem = ({
                       </Dialog>
                     </>
                   )}
+
+                  {/* Backchannel Button - Staff Communication */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 sm:px-3 gap-1.5 transition-colors text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        onClick={() => setBackchannelDialogOpen(true)}
+                      >
+                        <Radio className="h-4 w-4" />
+                        <span className="hidden sm:inline text-xs">Staff</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="sm:hidden">
+                      <p>Staff Backchannel</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Dialog open={backchannelDialogOpen} onOpenChange={setBackchannelDialogOpen}>
+                    <DialogContent className="!max-w-[95vw] !w-[95vw] md:!max-w-[85vw] md:!w-[85vw] lg:!max-w-[75vw] lg:!w-[75vw] !h-[85vh] p-0 gap-0 flex flex-col">
+                      {/* Header */}
+                      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+                        <div className="flex items-center gap-3">
+                          <Radio className="h-5 w-5 text-amber-500" />
+                          <span className="font-medium truncate">{session.title} - Staff Backchannel</span>
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                            Staff Only
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setBackchannelDialogOpen(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {/* Backchannel Content */}
+                      <div className="flex-1 min-h-0 overflow-hidden">
+                        <BackchannelPanel
+                          sessionId={session.id}
+                          eventId={event.id}
+                          className="h-full border-0 shadow-none rounded-none"
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </TooltipProvider>
             )}

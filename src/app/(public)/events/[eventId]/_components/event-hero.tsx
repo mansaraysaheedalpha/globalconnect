@@ -41,7 +41,7 @@ export const EventHero = ({
   const isMultiDay = start.toDateString() !== end.toDateString();
 
   return (
-    <header className="relative w-full min-h-[50vh] md:min-h-[70vh] flex items-end">
+    <header className="relative w-full min-h-[45vh] sm:min-h-[50vh] md:min-h-[70vh] flex items-end">
       {/* Background Image */}
       <Image
         src={imageSrc}
@@ -49,6 +49,7 @@ export const EventHero = ({
         fill
         className="object-cover"
         priority
+        sizes="100vw"
       />
 
       {/* Gradient Overlays */}
@@ -57,26 +58,26 @@ export const EventHero = ({
 
       {/* Content */}
       <div className="relative w-full">
-        <div className="container mx-auto max-w-6xl px-4 md:px-6 pb-12 md:pb-16">
+        <div className="container mx-auto max-w-6xl px-4 sm:px-6 pb-8 sm:pb-12 md:pb-16">
           {/* Event Badge */}
-          <Badge className="mb-4 bg-primary/90 hover:bg-primary text-primary-foreground">
+          <Badge className="mb-3 sm:mb-4 bg-primary/90 hover:bg-primary text-primary-foreground text-xs sm:text-sm">
             Upcoming Event
           </Badge>
 
           {/* Event Title */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight max-w-4xl leading-tight">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight max-w-4xl leading-tight">
             {name}
           </h1>
 
-          {/* Event Meta */}
-          <div className="mt-6 flex flex-wrap gap-6 text-white/90">
+          {/* Event Meta - Stacks on mobile */}
+          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-6 text-white/90">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-full bg-white/10 backdrop-blur-sm">
-                <CalendarDays className="h-5 w-5" />
+              <div className="p-1.5 sm:p-2 rounded-full bg-white/10 backdrop-blur-sm">
+                <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <p className="text-sm text-white/70">Date</p>
-                <p className="font-medium">
+                <p className="text-xs sm:text-sm text-white/70">Date</p>
+                <p className="font-medium text-sm sm:text-base">
                   {formattedDate}
                   {isMultiDay && (
                     <span className="text-white/70">
@@ -93,23 +94,23 @@ export const EventHero = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-full bg-white/10 backdrop-blur-sm">
-                <Clock className="h-5 w-5" />
+              <div className="p-1.5 sm:p-2 rounded-full bg-white/10 backdrop-blur-sm">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <p className="text-sm text-white/70">Time</p>
-                <p className="font-medium">{formattedTime}</p>
+                <p className="text-xs sm:text-sm text-white/70">Time</p>
+                <p className="font-medium text-sm sm:text-base">{formattedTime}</p>
               </div>
             </div>
 
             {venueName && (
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-full bg-white/10 backdrop-blur-sm">
-                  <MapPin className="h-5 w-5" />
+                <div className="p-1.5 sm:p-2 rounded-full bg-white/10 backdrop-blur-sm">
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-white/70">Location</p>
-                  <p className="font-medium">{venueName}</p>
+                  <p className="text-xs sm:text-sm text-white/70">Location</p>
+                  <p className="font-medium text-sm sm:text-base">{venueName}</p>
                 </div>
               </div>
             )}

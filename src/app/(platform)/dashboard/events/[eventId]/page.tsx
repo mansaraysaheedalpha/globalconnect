@@ -127,15 +127,20 @@ export default function EventDetailPage() {
   });
 
   return (
-    <div className="px-4 sm:px-6 py-6">
+    <div className="px-4 sm:px-6 py-4 sm:py-6">
       <EventDetailHeader event={event} refetch={refetchEvent} />
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="live">
-            <TabsList className="w-full flex gap-2 overflow-x-auto scrollbar-hide">
-              <TabsTrigger value="live">Live Dashboard</TabsTrigger>
-              <TabsTrigger value="engagement">🤖 AI Conductor</TabsTrigger>
+      {/* Mobile: Show key stats at top */}
+      <div className="mt-4 lg:hidden">
+        <EventDetailsCard event={event} />
+      </div>
+
+      <div className="mt-6 lg:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="lg:col-span-2 min-w-0">
+          <Tabs defaultValue="live" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="live">Live</TabsTrigger>
+              <TabsTrigger value="engagement">AI Conductor</TabsTrigger>
               <TabsTrigger value="agenda">Agenda</TabsTrigger>
               <TabsTrigger value="attendees">Attendees</TabsTrigger>
               <TabsTrigger value="tickets">Tickets</TabsTrigger>
@@ -143,38 +148,39 @@ export default function EventDetailPage() {
               <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
               <TabsTrigger value="monetization">Monetization</TabsTrigger>
             </TabsList>
-            <TabsContent value="live" className="mt-6">
+            <TabsContent value="live" className="mt-4 sm:mt-6">
               <LiveDashboard eventId={event.id} />
             </TabsContent>
-            <TabsContent value="engagement" className="mt-6">
+            <TabsContent value="engagement" className="mt-4 sm:mt-6">
               <EngagementConductorPage />
             </TabsContent>
-            <TabsContent value="agenda">
+            <TabsContent value="agenda" className="mt-4 sm:mt-6">
               <SessionList
                 sessions={sessions}
                 event={event}
                 refetchSessions={refetchSessions}
               />
             </TabsContent>
-            <TabsContent value="attendees">
+            <TabsContent value="attendees" className="mt-4 sm:mt-6">
               <AttendeeList attendees={attendees} />
             </TabsContent>
-            <TabsContent value="tickets" className="mt-6">
+            <TabsContent value="tickets" className="mt-4 sm:mt-6">
               <TicketManagement eventId={event.id} />
             </TabsContent>
-            <TabsContent value="history" className="mt-6">
+            <TabsContent value="history" className="mt-4 sm:mt-6">
               <EventHistoryTimeline eventId={event.id} />
             </TabsContent>
-            <TabsContent value="leaderboard" className="mt-6">
+            <TabsContent value="leaderboard" className="mt-4 sm:mt-6">
               <LeaderboardPage />
             </TabsContent>
-            <TabsContent value="monetization" className="mt-6">
+            <TabsContent value="monetization" className="mt-4 sm:mt-6">
               <MonetizationPage />
             </TabsContent>
           </Tabs>
         </div>
 
-        <div className="lg:col-span-1">
+        {/* Desktop sidebar - hidden on mobile since we show stats at top */}
+        <div className="hidden lg:block lg:col-span-1">
           <div className="sticky top-24 space-y-6">
             <EventDetailsCard event={event} />
 

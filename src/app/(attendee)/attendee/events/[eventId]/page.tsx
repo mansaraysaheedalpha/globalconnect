@@ -59,6 +59,7 @@ import { AgendaSession } from "@/hooks/use-agenda-updates";
 import { FloatingDMButton } from "@/components/features/dm";
 import { OfferGrid } from "@/components/features/offers";
 import { AdContainer } from "@/components/features/ads/ad-container";
+import { ProximityContainer } from "@/components/features/proximity";
 
 type Session = {
   id: string;
@@ -930,6 +931,13 @@ export default function AttendeeEventPage() {
           className="right-4 sm:right-6"
         />
       )}
+
+      {/* Proximity Networking - Discover nearby attendees */}
+      <ProximityContainer
+        eventId={eventId}
+        position="bottom-right"
+        className="right-20 sm:right-24"
+      />
 
       {/* Floating Direct Messages Button */}
       <FloatingDMButton
