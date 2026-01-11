@@ -71,16 +71,36 @@ export function IncidentCard({
 
   const isCritical = incident.severity === IncidentSeverity.CRITICAL;
   const isResolved = incident.status === IncidentStatus.RESOLVED;
+  const isClickable = !!onClick;
+
+  // Handle keyboard navigation for accessibility
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!onClick) return;
+
+    // Activate on Enter or Space
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick(incident);
+    }
+  };
 
   return (
     <Card
       className={cn(
         "transition-all duration-200",
-        onClick && "cursor-pointer hover:shadow-md",
+        isClickable && "cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         isCritical && !isResolved && "border-red-300 dark:border-red-800",
         className
       )}
       onClick={() => onClick?.(incident)}
+      onKeyDown={handleKeyDown}
+      tabIndex={isClickable ? 0 : undefined}
+      role={isClickable ? "button" : undefined}
+      aria-label={
+        isClickable
+          ? `${INCIDENT_TYPE_LABELS[incident.type]} incident, ${INCIDENT_SEVERITY_LABELS[incident.severity]} severity, ${INCIDENT_STATUS_LABELS[incident.status]}. Click to view details.`
+          : undefined
+      }
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-4">
