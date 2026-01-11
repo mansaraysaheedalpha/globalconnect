@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { EngagementData, Anomaly } from '../types';
-import { getSocketUrl } from '@/lib/env';
+import { useEngagementSocket } from '../context/SocketContext';
 
 interface UseEngagementStreamProps {
   sessionId: string;
@@ -16,66 +15,49 @@ interface UseEngagementStreamReturn {
   error: string | null;
 }
 
+/**
+ * Hook for streaming real-time engagement data.
+ * Uses the shared socket connection from EngagementSocketProvider.
+ */
 export const useEngagementStream = ({
   sessionId,
   enabled = true,
 }: UseEngagementStreamProps): UseEngagementStreamReturn => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const { socket, isConnected, error, subscribeToSession, unsubscribeFromSession } = useEngagementSocket();
   const [currentEngagement, setCurrentEngagement] = useState<number>(0);
   const [engagementHistory, setEngagementHistory] = useState<EngagementData[]>([]);
   const [latestAnomaly, setLatestAnomaly] = useState<Anomaly | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !sessionId) return;
+    if (!enabled || !sessionId || !socket) return;
 
-    // Connect to real-time service using environment variable
-    const socketConnection = io(getSocketUrl(), {
-      query: { sessionId },
-      transports: ['websocket'],
-    });
-
-    socketConnection.on('connect', () => {
-      console.log('✅ Connected to engagement stream');
-      setIsConnected(true);
-      setError(null);
-
-      // Subscribe to engagement updates
-      socketConnection.emit('subscribe:engagement', { sessionId });
-    });
-
-    socketConnection.on('disconnect', () => {
-      console.log('❌ Disconnected from engagement stream');
-      setIsConnected(false);
-    });
-
-    socketConnection.on('connect_error', (err) => {
-      console.error('Connection error:', err);
-      setError(err.message);
-    });
+    // Subscribe to session events
+    subscribeToSession(sessionId);
 
     // Listen for engagement updates (every 5 seconds)
-    socketConnection.on('engagement:update', (data: EngagementData) => {
+    const handleEngagementUpdate = (data: EngagementData) => {
       setCurrentEngagement(data.score);
       setEngagementHistory((prev) => {
         const updated = [...prev, data];
         // Keep last 5 minutes (60 data points at 5s intervals)
         return updated.slice(-60);
       });
-    });
+    };
 
     // Listen for anomaly detections
-    socketConnection.on('anomaly:detected', (anomaly: Anomaly) => {
+    const handleAnomalyDetected = (anomaly: Anomaly) => {
       setLatestAnomaly(anomaly);
-    });
+    };
 
-    setSocket(socketConnection);
+    socket.on('engagement:update', handleEngagementUpdate);
+    socket.on('anomaly:detected', handleAnomalyDetected);
 
     return () => {
-      socketConnection.disconnect();
+      socket.off('engagement:update', handleEngagementUpdate);
+      socket.off('anomaly:detected', handleAnomalyDetected);
+      // Note: Don't unsubscribe here - other hooks may still be using the session
     };
-  }, [sessionId, enabled]);
+  }, [sessionId, enabled, socket, subscribeToSession]);
 
   return {
     currentEngagement,

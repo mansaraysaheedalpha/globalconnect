@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { Intervention } from '../types/intervention';
-import { getSocketUrl, getAgentServiceUrl } from '@/lib/env';
+import { getAgentServiceUrl } from '@/lib/env';
+import { useEngagementSocket } from '../context/SocketContext';
 
 interface UseInterventionsOptions {
   sessionId: string;
@@ -21,6 +21,10 @@ interface UseInterventionsResult {
   refreshHistory: () => Promise<void>;
 }
 
+/**
+ * Hook for managing interventions.
+ * Uses the shared socket connection from EngagementSocketProvider.
+ */
 export const useInterventions = ({
   sessionId,
   eventId,
@@ -29,10 +33,9 @@ export const useInterventions = ({
 }: UseInterventionsOptions): UseInterventionsResult => {
   // Use environment variable for agent service URL with optional override
   const effectiveApiBaseUrl = apiBaseUrl || getAgentServiceUrl();
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const { socket, isConnected, error: socketError, subscribeToSession } = useEngagementSocket();
   const [pendingIntervention, setPendingIntervention] = useState<Intervention | null>(null);
   const [interventionHistory, setInterventionHistory] = useState<Intervention[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,36 +119,14 @@ export const useInterventions = ({
 
   // Connect to WebSocket and listen for intervention events
   useEffect(() => {
-    if (!enabled || !sessionId) return;
+    if (!enabled || !sessionId || !socket) return;
 
-    const socketConnection = io(getSocketUrl(), {
-      query: { sessionId },
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-    });
-
-    socketConnection.on('connect', () => {
-      console.log('✅ Connected to intervention stream');
-      setIsConnected(true);
-      setError(null);
-    });
-
-    socketConnection.on('disconnect', () => {
-      console.log('❌ Disconnected from intervention stream');
-      setIsConnected(false);
-    });
-
-    socketConnection.on('connect_error', (err) => {
-      console.error('Connection error:', err);
-      setError('Failed to connect to real-time service');
-      setIsConnected(false);
-    });
+    // Subscribe to session events (uses shared socket)
+    subscribeToSession(sessionId);
 
     // Listen for intervention suggestions
-    socketConnection.on('agent.intervention', (data: any) => {
-      console.log('🎯 Intervention suggested:', data);
+    const handleInterventionSuggested = (data: any) => {
+      console.log('[useInterventions] Intervention suggested:', data);
 
       // Transform to our Intervention type
       const intervention: Intervention = {
@@ -160,32 +141,36 @@ export const useInterventions = ({
       };
 
       setPendingIntervention(intervention);
-    });
+    };
 
     // Listen for intervention executed (auto-triggered)
-    socketConnection.on('agent.intervention.executed', (data: any) => {
-      console.log('✅ Intervention executed:', data);
-
+    const handleInterventionExecuted = (data: any) => {
+      console.log('[useInterventions] Intervention executed:', data);
       // Refresh history to show the new intervention
       fetchHistory();
-    });
+    };
 
-    setSocket(socketConnection);
+    socket.on('agent.intervention', handleInterventionSuggested);
+    socket.on('agent.intervention.executed', handleInterventionExecuted);
 
     // Initial history fetch
     fetchHistory();
 
     return () => {
-      socketConnection.disconnect();
+      socket.off('agent.intervention', handleInterventionSuggested);
+      socket.off('agent.intervention.executed', handleInterventionExecuted);
     };
-  }, [enabled, sessionId, fetchHistory]);
+  }, [enabled, sessionId, socket, subscribeToSession, fetchHistory]);
+
+  // Combine socket error with local error
+  const combinedError = error || socketError;
 
   return {
     pendingIntervention,
     interventionHistory,
     isConnected,
     isLoading,
-    error,
+    error: combinedError,
     approveIntervention,
     dismissIntervention,
     refreshHistory: fetchHistory,

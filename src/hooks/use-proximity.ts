@@ -39,7 +39,6 @@ interface UseProximityOptions {
 }
 
 export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<ProximityState>({
     nearbyUsers: [],
     receivedPings: [],
@@ -55,10 +54,11 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
   const locationWatchId = useRef<number | null>(null);
   const updateIntervalId = useRef<NodeJS.Timeout | null>(null);
   const lastLocationRef = useRef<LocationCoordinates | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
-  // Check if geolocation is available
+  // Check if geolocation is available (SSR safe)
   const checkGeolocationSupport = useCallback(() => {
-    if (!navigator.geolocation) {
+    if (typeof window === "undefined" || !navigator.geolocation) {
       setState((prev) => ({
         ...prev,
         locationPermission: "unavailable",
@@ -69,9 +69,9 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     return true;
   }, []);
 
-  // Check current permission status
+  // Check current permission status (SSR safe)
   const checkPermission = useCallback(async () => {
-    if (!navigator.permissions) {
+    if (typeof window === "undefined" || !navigator.permissions) {
       return "prompt" as const;
     }
 
@@ -101,7 +101,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
       reconnectionDelay: 1000,
     });
 
-    setSocket(newSocket);
+    socketRef.current = newSocket;
 
     newSocket.on("connect", () => {
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
@@ -122,7 +122,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     // Listen for roster updates (nearby users)
     newSocket.on("proximity.roster.updated", (data: RosterUpdate) => {
       if (isAdvancedRosterUpdate(data)) {
-        // Advanced format with full user details
+        // Advanced format from AI service includes full user details
         const nearbyUsers: NearbyUser[] = data.nearbyUsers.map((nu) => ({
           id: nu.user.id,
           name: nu.user.name,
@@ -132,11 +132,12 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
         }));
         setState((prev) => ({ ...prev, nearbyUsers }));
       } else {
-        // Simple format - just user IDs
-        // We'll need to fetch user details separately or show IDs
-        const nearbyUsers: NearbyUser[] = data.nearbyUserIds.map((id) => ({
+        // Simple format from basic proximity search - only user IDs available
+        // Backend sends this format from Redis GEO search before AI enrichment
+        // Display as "Nearby Attendee" until AI service provides enriched data
+        const nearbyUsers: NearbyUser[] = data.nearbyUserIds.map((id, index) => ({
           id,
-          name: "Attendee", // Will be enriched by UI if needed
+          name: `Nearby Attendee ${index + 1}`,
         }));
         setState((prev) => ({ ...prev, nearbyUsers }));
       }
@@ -180,37 +181,36 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
       newSocket.off("systemError");
       newSocket.off("connect_error");
       newSocket.disconnect();
+      socketRef.current = null;
     };
   }, [eventId, token]);
 
-  // Send location update to server
-  const sendLocationUpdate = useCallback(
-    (coords: LocationCoordinates) => {
-      if (!socket || !state.isConnected) {
-        return;
-      }
+  // Send location update to server (uses ref to avoid stale closures)
+  const sendLocationUpdate = useCallback((coords: LocationCoordinates) => {
+    const currentSocket = socketRef.current;
+    if (!currentSocket?.connected) {
+      return;
+    }
 
-      const payload = {
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        idempotencyKey: generateUUID(),
-      };
+    const payload = {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      idempotencyKey: generateUUID(),
+    };
 
-      socket.emit(
-        "proximity.location.update",
-        payload,
-        (response: ProximityResponse) => {
-          if (!response?.success) {
-            console.error("[Proximity] Location update failed:", response?.error);
-          }
+    currentSocket.emit(
+      "proximity.location.update",
+      payload,
+      (response: ProximityResponse) => {
+        if (!response?.success) {
+          console.error("[Proximity] Location update failed:", response?.error);
         }
-      );
+      }
+    );
 
-      lastLocationRef.current = coords;
-      setState((prev) => ({ ...prev, lastLocation: coords }));
-    },
-    [socket, state.isConnected]
-  );
+    lastLocationRef.current = coords;
+    setState((prev) => ({ ...prev, lastLocation: coords }));
+  }, []);
 
   // Handle geolocation position update
   const handlePositionUpdate = useCallback(
@@ -328,9 +328,9 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     sendLocationUpdate,
   ]);
 
-  // Stop tracking location
+  // Stop tracking location (SSR safe)
   const stopTracking = useCallback(() => {
-    if (locationWatchId.current !== null) {
+    if (locationWatchId.current !== null && typeof window !== "undefined") {
       navigator.geolocation.clearWatch(locationWatchId.current);
       locationWatchId.current = null;
     }
@@ -347,10 +347,11 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     }));
   }, []);
 
-  // Send a ping to another user
+  // Send a ping to another user (uses ref to avoid stale closures)
   const sendPing = useCallback(
     async (targetUserId: string, message?: string): Promise<boolean> => {
-      if (!socket || !state.isConnected) {
+      const currentSocket = socketRef.current;
+      if (!currentSocket?.connected) {
         return false;
       }
 
@@ -361,7 +362,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
           idempotencyKey: generateUUID(),
         };
 
-        socket.emit("proximity.ping", payload, (response: ProximityResponse) => {
+        currentSocket.emit("proximity.ping", payload, (response: ProximityResponse) => {
           if (response?.success) {
             resolve(true);
           } else {
@@ -374,7 +375,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
         });
       });
     },
-    [socket, state.isConnected]
+    []
   );
 
   // Dismiss a ping notification

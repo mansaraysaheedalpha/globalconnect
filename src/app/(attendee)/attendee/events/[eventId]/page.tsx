@@ -60,6 +60,7 @@ import { FloatingDMButton } from "@/components/features/dm";
 import { OfferGrid } from "@/components/features/offers";
 import { AdContainer } from "@/components/features/ads/ad-container";
 import { ProximityContainer } from "@/components/features/proximity";
+import { IncidentReportForm } from "@/components/features/incidents";
 
 type Session = {
   id: string;

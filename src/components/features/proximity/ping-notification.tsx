@@ -1,7 +1,7 @@
 // src/components/features/proximity/ping-notification.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ProximityPing } from "@/types/proximity";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,15 +24,21 @@ export const PingNotification = ({
   className = "",
 }: PingNotificationProps) => {
   const [isExiting, setIsExiting] = useState(false);
+  const onDismissRef = useRef(onDismiss);
+
+  // Keep ref updated without triggering effect
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsExiting(true);
-      setTimeout(onDismiss, 300);
+      setTimeout(() => onDismissRef.current(), 300);
     }, autoDismissMs);
 
     return () => clearTimeout(timer);
-  }, [autoDismissMs, onDismiss]);
+  }, [autoDismissMs]);
 
   const handleDismiss = () => {
     setIsExiting(true);
