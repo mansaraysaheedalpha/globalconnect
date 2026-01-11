@@ -5,6 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
 
+// Maximum messages to keep in memory to prevent unbounded growth
+const MAX_MESSAGES = 500;
+
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -152,7 +155,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
     newSocket.on("backchannel.message.new", (message: BackchannelMessage) => {
       setState((prev) => {
         // Check if message with this ID already exists (prevent duplicates)
-        const existingIndex = prev.messages.findIndex((m) => m.id === message.id);
+        const existingIndex = prev.messages.findIndex((m: OptimisticMessage) => m.id === message.id);
         if (existingIndex !== -1) {
           // Message already exists, update it (in case of edits)
           const newMessages = [...prev.messages];
@@ -175,8 +178,13 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
           return { ...prev, messages: newMessages };
         }
 
-        // No match, add the new message
-        return { ...prev, messages: [...prev.messages, message] };
+        // No match, add the new message (with limit)
+        const newMessages = [...prev.messages, message];
+        // Keep only the most recent messages to prevent memory issues
+        if (newMessages.length > MAX_MESSAGES) {
+          return { ...prev, messages: newMessages.slice(-MAX_MESSAGES) };
+        }
+        return { ...prev, messages: newMessages };
       });
     });
 

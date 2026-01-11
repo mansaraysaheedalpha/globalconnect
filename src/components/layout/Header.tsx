@@ -1,6 +1,7 @@
 // src/components/layout/Header.tsx
 "use client";
 
+import React from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,17 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   const currentUserRole = teamData?.organizationMembers?.find(
     (member: any) => member.user.id === user?.id
   )?.role?.name;
+
+  // Transform team members to availableUsers format for DM feature
+  const availableUsers = React.useMemo(() => {
+    if (!teamData?.organizationMembers) return [];
+    return teamData.organizationMembers.map((member: any) => ({
+      id: member.user.id,
+      firstName: member.user.first_name,
+      lastName: member.user.last_name,
+      avatar: member.user.imageUrl,
+    }));
+  }, [teamData?.organizationMembers]);
 
   const [logoutUser] = useMutation(LOGOUT_MUTATION, {
     onCompleted: () => {
@@ -73,7 +85,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
       {user ? (
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Direct Messages */}
-          <HeaderDMButton />
+          <HeaderDMButton availableUsers={availableUsers} />
 
           {/* Notifications Bell */}
           <NotificationBellOnly />

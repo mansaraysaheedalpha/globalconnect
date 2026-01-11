@@ -30,24 +30,11 @@ import {
   AlertCircle,
   ShieldX,
   X,
-  ChevronDown,
   Eye,
   Mic,
   Shield,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-
-// Helper to get display name
-const getDisplayName = (
-  author: { firstName?: string; lastName?: string } | undefined | null
-): string => {
-  if (!author) return "Someone";
-  const firstName = author.firstName?.trim();
-  const lastName = author.lastName?.trim();
-  if (firstName) return firstName;
-  if (lastName) return lastName;
-  return "Someone";
-};
 
 // Helper to get full display name
 const getFullDisplayName = (
@@ -227,6 +214,8 @@ export const BackchannelPanel = ({
 
     if (success) {
       setInputValue("");
+      // Refocus input after sending
+      inputRef.current?.focus();
     }
   };
 
