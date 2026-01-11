@@ -54,7 +54,18 @@ function AlertDialogContent({
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          // Base styles
+          "bg-background fixed z-50 grid w-full gap-4 border shadow-lg",
+          // Mobile: nearly full width with margin
+          "max-w-[calc(100%-2rem)] rounded-xl p-4 sm:p-6",
+          // Desktop: centered with max width
+          "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
+          "sm:max-w-lg sm:rounded-lg",
+          // Animations
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+          "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "duration-200",
           className
         )}
         {...props}
@@ -70,7 +81,11 @@ function AlertDialogHeader({
   return (
     <div
       data-slot="alert-dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn(
+        "flex flex-col gap-2 text-center sm:text-left",
+        "min-w-0",
+        className
+      )}
       {...props}
     />
   )
@@ -85,6 +100,7 @@ function AlertDialogFooter({
       data-slot="alert-dialog-footer"
       className={cn(
         "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        "pt-2",
         className
       )}
       {...props}
@@ -99,7 +115,11 @@ function AlertDialogTitle({
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
-      className={cn("text-lg font-semibold", className)}
+      className={cn(
+        "text-base sm:text-lg font-semibold leading-tight",
+        "break-words",
+        className
+      )}
       {...props}
     />
   )

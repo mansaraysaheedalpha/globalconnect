@@ -1,7 +1,7 @@
 // src/hooks/use-backchannel.ts
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -84,12 +84,6 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
   });
   const [isSending, setIsSending] = useState(false);
   const { token, user } = useAuthStore();
-  const messagesRef = useRef<BackchannelMessage[]>([]);
-
-  // Keep messagesRef in sync
-  useEffect(() => {
-    messagesRef.current = state.messages;
-  }, [state.messages]);
 
   useEffect(() => {
     if (!sessionId || !eventId || !token) {
@@ -150,14 +144,23 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
       }
     });
 
-    newSocket.on("disconnect", (reason) => {
+    newSocket.on("disconnect", () => {
       setState((prev) => ({ ...prev, isConnected: false, isJoined: false }));
     });
 
     // New backchannel message received
     newSocket.on("backchannel.message.new", (message: BackchannelMessage) => {
       setState((prev) => {
-        // Check if this message matches an optimistic message
+        // Check if message with this ID already exists (prevent duplicates)
+        const existingIndex = prev.messages.findIndex((m) => m.id === message.id);
+        if (existingIndex !== -1) {
+          // Message already exists, update it (in case of edits)
+          const newMessages = [...prev.messages];
+          newMessages[existingIndex] = message;
+          return { ...prev, messages: newMessages };
+        }
+
+        // Check if this message matches an optimistic message by idempotency
         const optimisticIndex = prev.messages.findIndex(
           (m) =>
             (m as OptimisticMessage).isOptimistic &&
@@ -172,7 +175,7 @@ export const useBackchannel = (sessionId: string, eventId: string) => {
           return { ...prev, messages: newMessages };
         }
 
-        // No optimistic match, just add the new message
+        // No match, add the new message
         return { ...prev, messages: [...prev.messages, message] };
       });
     });

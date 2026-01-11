@@ -136,7 +136,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn(
-        "flex flex-col gap-1.5 text-center sm:text-left pr-8",
+        "flex flex-col gap-1.5 text-center sm:text-left",
+        // Account for close button - more padding on mobile due to larger button
+        "pr-12 sm:pr-10",
+        "min-w-0",
         className
       )}
       {...props}
@@ -166,7 +169,9 @@ function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "text-lg font-semibold leading-none tracking-tight",
+        "text-base sm:text-lg font-semibold leading-tight tracking-tight",
+        // Prevent overflow - wrap on multiple lines if needed
+        "break-words",
         className
       )}
       {...props}

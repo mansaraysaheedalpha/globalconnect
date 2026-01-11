@@ -124,7 +124,10 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col gap-1.5 text-center sm:text-left pr-8",
+      "flex flex-col gap-1.5 text-center sm:text-left",
+      // Account for close button - more padding on mobile due to larger button
+      "pr-12 sm:pr-10",
+      "min-w-0",
       className
     )}
     {...props}
@@ -153,7 +156,12 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold text-foreground tracking-tight", className)}
+    className={cn(
+      "text-base sm:text-lg font-semibold text-foreground leading-tight tracking-tight",
+      // Prevent overflow - wrap on multiple lines if needed
+      "break-words",
+      className
+    )}
     {...props}
   />
 ));
