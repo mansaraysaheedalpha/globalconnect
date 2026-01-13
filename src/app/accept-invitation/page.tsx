@@ -59,7 +59,10 @@ function AcceptInvitationComponent() {
 
     try {
       const apiBaseUrl = clientEnv.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-      const response = await fetch(`${apiBaseUrl}/auth/invitations/${token}/accept`, {
+      const url = `${apiBaseUrl}/auth/invitations/${token}/accept`;
+      console.log("[AcceptInvitation] Calling:", url);
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,8 +76,13 @@ function AcceptInvitationComponent() {
       });
 
       const data = await response.json();
+      console.log("[AcceptInvitation] Response:", response.status, data);
 
       if (!response.ok) {
+        // Handle validation errors array from NestJS
+        if (data.message && Array.isArray(data.message)) {
+          throw new Error(data.message.join(". "));
+        }
         throw new Error(data.message || "Failed to accept invitation");
       }
 
@@ -86,7 +94,12 @@ function AcceptInvitationComponent() {
       setSuccess(true);
       setTimeout(() => router.push("/dashboard"), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("[AcceptInvitation] Error:", err);
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("Unable to connect to server. Please check your internet connection.");
+      } else {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -151,6 +164,9 @@ function AcceptInvitationComponent() {
               required
               className="h-11"
             />
+            <p className="text-xs text-muted-foreground">
+              Min 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
