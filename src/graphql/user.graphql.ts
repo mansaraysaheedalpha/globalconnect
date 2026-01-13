@@ -9,17 +9,6 @@ export const GET_MY_PROFILE_QUERY = gql`
       last_name
       email
       imageUrl
-      currentOrgRole
-      currentMembership {
-        role {
-          id
-          name
-        }
-        organization {
-          id
-          name
-        }
-      }
     }
   }
 `;
