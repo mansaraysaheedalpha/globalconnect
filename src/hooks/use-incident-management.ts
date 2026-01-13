@@ -144,13 +144,23 @@ export function useIncidentManagement(
       socketRef.current!.emit(
         "incidents.join",
         {},
-        (response: JoinIncidentsResponse) => {
+        (response: JoinIncidentsResponse & { incidents?: Incident[] }) => {
           setIsLoading(false);
 
           if (response.success) {
             if (isDev) console.log("[IncidentManagement] Joined incidents stream");
             setJoinRetryCount(0); // Reset retry count on success
             setError(null);
+
+            // Load existing incidents from the response
+            if (response.incidents && response.incidents.length > 0) {
+              setIncidents(response.incidents);
+              if (isDev) {
+                console.log(
+                  `[IncidentManagement] Loaded ${response.incidents.length} existing incidents`
+                );
+              }
+            }
           } else {
             if (isDev) {
               console.error(
@@ -165,7 +175,7 @@ export function useIncidentManagement(
         }
       );
     });
-  }, [setError, setIsLoading]);
+  }, [setError, setIsLoading, setIncidents]);
 
   // Retry joining incidents stream with exponential backoff
   const retryJoinStream = useCallback(async (): Promise<JoinIncidentsResponse> => {
