@@ -33,6 +33,34 @@ const LOCATION_UPDATE_INTERVAL = 10000;
 // Max pings to keep in history
 const MAX_PINGS_HISTORY = 10;
 
+// Play a notification sound using Web Audio API (no external file needed)
+const playPingSound = () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+
+    // Create a pleasant notification tone
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Two-tone notification sound
+    oscillator.frequency.setValueAtTime(587.33, audioContext.currentTime); // D5
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime + 0.1); // A5
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch {
+    // Audio not supported or blocked - fail silently
+  }
+};
+
 interface UseProximityOptions {
   eventId: string;
   autoStart?: boolean;
@@ -135,6 +163,9 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     newSocket.on(
       "proximity.ping.received",
       (data: { fromUser: { id: string; name: string }; message: string }) => {
+        // Play notification sound
+        playPingSound();
+
         const ping: ProximityPing = {
           fromUser: data.fromUser,
           message: data.message,

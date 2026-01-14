@@ -92,6 +92,7 @@ export const ProximityContainer = ({
       {/* Floating widget button with sheet */}
       <FloatingProximityWidget
         nearbyUsers={nearbyUsers}
+        unreadPingCount={receivedPings.length}
         isTracking={isTracking}
         isConnected={isConnected}
         error={error}

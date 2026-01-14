@@ -20,7 +20,7 @@ export const PingNotification = ({
   ping,
   onDismiss,
   onReply,
-  autoDismissMs = 8000,
+  autoDismissMs = 20000, // 20 seconds - gives user more time to notice
   className = "",
 }: PingNotificationProps) => {
   const [isExiting, setIsExiting] = useState(false);

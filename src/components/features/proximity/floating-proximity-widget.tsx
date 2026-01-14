@@ -27,6 +27,7 @@ import { NearbyUsersPanel } from "./nearby-users-panel";
 
 interface FloatingProximityWidgetProps {
   nearbyUsers: NearbyUser[];
+  unreadPingCount?: number;
   isTracking: boolean;
   isConnected: boolean;
   isLoading?: boolean;
@@ -55,6 +56,9 @@ export const FloatingProximityWidget = ({
   className = "",
 }: FloatingProximityWidgetProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // Count of unread pings (resets when sheet is opened)
+  const unreadCount = unreadPingCount ?? 0;
 
   const handleToggleTracking = async () => {
     if (isTracking) {
@@ -89,14 +93,23 @@ export const FloatingProximityWidget = ({
             ) : (
               <Radar className={cn("h-6 w-6", isTracking && "animate-pulse")} />
             )}
-            {/* Nearby count badge */}
-            {isTracking && nearbyCount > 0 && (
+            {/* Unread pings badge - takes priority over nearby count */}
+            {unreadCount > 0 ? (
               <Badge
-                variant="destructive"
-                className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center"
+                className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center bg-amber-500 hover:bg-amber-500 text-white animate-pulse"
               >
-                {nearbyCount > 99 ? "99+" : nearbyCount}
+                {unreadCount > 9 ? "9+" : unreadCount}
               </Badge>
+            ) : (
+              /* Nearby count badge - only show when no unread pings */
+              isTracking && nearbyCount > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center"
+                >
+                  {nearbyCount > 99 ? "99+" : nearbyCount}
+                </Badge>
+              )
             )}
             {/* Tracking indicator */}
             {isTracking && (
@@ -107,9 +120,9 @@ export const FloatingProximityWidget = ({
 
         <SheetContent side="right" className="w-full sm:max-w-md p-0">
           <div className="h-full flex flex-col">
-            {/* Header */}
-            <SheetHeader className="px-4 pt-3 pb-2 border-b">
-              <SheetTitle className="flex items-center gap-2 pr-8">
+            {/* Header - title only, no controls near X button */}
+            <SheetHeader className="px-4 pt-3 pb-3 border-b">
+              <SheetTitle className="flex items-center gap-2">
                 <Radar className="h-5 w-5" />
                 Nearby Attendees
                 {isConnected && (
@@ -119,23 +132,27 @@ export const FloatingProximityWidget = ({
               <SheetDescription className="text-left">
                 Discover and connect with people around you
               </SheetDescription>
-              {/* Toggle moved below title - away from X button */}
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm text-muted-foreground">
-                  Location Tracking
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">
-                    {isTracking ? "On" : "Off"}
-                  </span>
-                  <Switch
-                    checked={isTracking}
-                    onCheckedChange={handleToggleTracking}
-                    disabled={locationPermission === "denied" || locationPermission === "unavailable"}
-                  />
-                </div>
-              </div>
             </SheetHeader>
+
+            {/* Toggle control - separate section below header, away from X button */}
+            <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between">
+              <span className="text-sm font-medium">
+                Location Tracking
+              </span>
+              <div className="flex items-center gap-3">
+                <span className={cn(
+                  "text-sm font-medium",
+                  isTracking ? "text-green-600" : "text-muted-foreground"
+                )}>
+                  {isTracking ? "On" : "Off"}
+                </span>
+                <Switch
+                  checked={isTracking}
+                  onCheckedChange={handleToggleTracking}
+                  disabled={locationPermission === "denied" || locationPermission === "unavailable"}
+                />
+              </div>
+            </div>
 
             {/* Error message */}
             {error && (
