@@ -98,6 +98,14 @@ export function useIncidentManagement(
       setIsLoading(false);
     });
 
+    // Listen for WebSocket exceptions (e.g., permission denied)
+    newSocket.on("exception", (error: { message?: string; status?: string }) => {
+      if (isDev) console.error("[IncidentManagement] Exception:", error);
+      const errorMsg = error?.message || "An error occurred";
+      setError(errorMsg);
+      setIsLoading(false);
+    });
+
     // Listen for new incidents
     newSocket.on("incident.new", (incident: Incident) => {
       if (isDev) console.log("[IncidentManagement] New incident received:", incident.id);
@@ -114,6 +122,7 @@ export function useIncidentManagement(
       newSocket.off("connect");
       newSocket.off("disconnect");
       newSocket.off("connect_error");
+      newSocket.off("exception");
       newSocket.off("incident.new");
       newSocket.off("incident.updated");
       newSocket.disconnect();
