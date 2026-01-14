@@ -61,6 +61,14 @@ import {
 } from "@/components/features/Auth/auth.graphql";
 import { OrganizationMember } from "@/types";
 
+// Role descriptions for the invite dialog
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  ADMIN: "Full access to manage events, team members, and organization settings.",
+  MODERATOR: "Can moderate Q&A and chat, view live dashboard, and access staff backchannel. Cannot manage team or org settings.",
+  SPEAKER: "Can present at events, control their own presentations, and receive speaker-targeted backchannel messages.",
+  MEMBER: "Basic team access. Can participate in events but cannot moderate or manage settings.",
+};
+
 export default function TeamPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
@@ -198,15 +206,20 @@ export default function TeamPage() {
 
                     <DropdownMenuContent
                       sideOffset={5}
-                      className="min-w-[200px] rounded-md border bg-white p-1 shadow-md dark:bg-neutral-900"
+                      className="min-w-[320px] rounded-md border bg-white p-1 shadow-md dark:bg-neutral-900"
                     >
                       {data?.listRolesForOrg.map((orgRole: { id: string; name: string }) => (
                         <DropdownMenuItem
                           key={orgRole.id}
                           onSelect={() => setRole(orgRole.name)}
-                          className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-800"
+                          className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-800 flex flex-col items-start"
                         >
-                          {orgRole.name}
+                          <span className="font-medium">{orgRole.name}</span>
+                          {ROLE_DESCRIPTIONS[orgRole.name] && (
+                            <span className="text-xs text-muted-foreground mt-0.5">
+                              {ROLE_DESCRIPTIONS[orgRole.name]}
+                            </span>
+                          )}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -284,7 +297,7 @@ export default function TeamPage() {
                                       Change Role
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuPortal>
-                                      <DropdownMenuSubContent>
+                                      <DropdownMenuSubContent className="min-w-[280px]">
                                         {data?.listRolesForOrg.map(
                                           (orgRole: {
                                             id: string;
@@ -299,8 +312,14 @@ export default function TeamPage() {
                                                   orgRole.id
                                                 )
                                               }
+                                              className="flex flex-col items-start"
                                             >
-                                              {orgRole.name}
+                                              <span className="font-medium">{orgRole.name}</span>
+                                              {ROLE_DESCRIPTIONS[orgRole.name] && (
+                                                <span className="text-xs text-muted-foreground mt-0.5">
+                                                  {ROLE_DESCRIPTIONS[orgRole.name]}
+                                                </span>
+                                              )}
                                             </DropdownMenuItem>
                                           )
                                         )}

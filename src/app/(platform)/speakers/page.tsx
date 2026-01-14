@@ -1,16 +1,23 @@
 // src/app/(platform)/dashboard/speakers/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useMutation, useQuery } from "@apollo/client";
 import {
   ARCHIVE_SPEAKER_MUTATION,
   GET_ORGANIZATION_SPEAKERS_QUERY,
 } from "@/graphql/speakers.graphql";
+import { TEAM_DATA_QUERY } from "@/components/features/Auth/auth.graphql";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +49,8 @@ import {
   Pencil,
   Trash2,
   Mic2,
+  Link2,
+  UserCircle,
 } from "lucide-react";
 import { AddSpeakerModal } from "./_components/add-speaker-modal";
 import { EditSpeakerModal } from "./_components/edit-speaker-modal";
@@ -51,10 +60,24 @@ type Speaker = {
   name: string;
   bio?: string | null;
   expertise?: string[] | null;
+  userId?: string | null;
 };
 
 type SpeakersQueryData = {
   organizationSpeakers: Speaker[];
+};
+
+type TeamMember = {
+  user: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  role: {
+    id: string;
+    name: string;
+  };
 };
 
 const SpeakersPage = () => {
@@ -65,6 +88,22 @@ const SpeakersPage = () => {
   const { data, loading, error } = useQuery<SpeakersQueryData>(
     GET_ORGANIZATION_SPEAKERS_QUERY
   );
+
+  // Fetch team members to display linked user info
+  const { data: teamData } = useQuery(TEAM_DATA_QUERY, {
+    fetchPolicy: "cache-first",
+  });
+
+  const teamMembers: TeamMember[] = teamData?.organizationMembers || [];
+
+  // Create a map of user IDs to team member info for quick lookup
+  const userMap = useMemo(() => {
+    const map = new Map<string, TeamMember>();
+    teamMembers.forEach((member) => {
+      map.set(member.user.id, member);
+    });
+    return map;
+  }, [teamMembers]);
 
   const [archiveSpeaker] = useMutation(ARCHIVE_SPEAKER_MUTATION, {
     onCompleted: () => toast.success("Speaker deleted."),
@@ -123,7 +162,7 @@ const SpeakersPage = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Speakers</h1>
             <p className="text-muted-foreground">
-              Manage your organization's speaker directory.
+              Manage your organization&apos;s speaker directory.
             </p>
           </div>
           <Button onClick={() => setIsAddModalOpen(true)}>
@@ -143,59 +182,105 @@ const SpeakersPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {/* --- CHANGE: Added a new column for Title/Bio and adjusted widths --- */}
                   <TableHead className="w-[25%]">Speaker</TableHead>
-                  <TableHead className="w-[35%]">Title / Bio</TableHead>
+                  <TableHead className="w-[30%]">Title / Bio</TableHead>
                   <TableHead>Expertise</TableHead>
+                  <TableHead className="w-[15%]">Linked Account</TableHead>
                   <TableHead className="text-right w-[10%]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {speakers.map((speaker) => (
-                  <TableRow key={speaker.id}>
-                    {/* --- CHANGE: This cell now only contains the name --- */}
-                    <TableCell className="font-medium">
-                      {speaker.name}
-                    </TableCell>
-                    {/* --- CHANGE: New cell specifically for the bio --- */}
-                    <TableCell className="text-sm text-muted-foreground">
-                      {speaker.bio}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {(speaker.expertise || []).map((tag) => (
-                          <Badge key={tag} variant="secondary">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-5 w-5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={() => setSpeakerToEdit(speaker)}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onSelect={() => setSpeakerToDelete(speaker)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {speakers.map((speaker) => {
+                  const linkedUser = speaker.userId
+                    ? userMap.get(speaker.userId)
+                    : null;
+
+                  return (
+                    <TableRow key={speaker.id}>
+                      <TableCell className="font-medium">
+                        {speaker.name}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {speaker.bio}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {(speaker.expertise || []).map((tag) => (
+                            <Badge key={tag} variant="secondary">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {linkedUser ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Link2 className="h-4 w-4 text-green-600" />
+                                  <span className="text-green-600 font-medium">
+                                    {linkedUser.user.first_name}{" "}
+                                    {linkedUser.user.last_name}
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>
+                                  Linked to {linkedUser.user.email}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Can receive backchannel messages
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <UserCircle className="h-4 w-4" />
+                                  <span>Not linked</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>No platform account linked</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Edit speaker to link an account
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-5 w-5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onSelect={() => setSpeakerToEdit(speaker)}
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => setSpeakerToDelete(speaker)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (
@@ -222,7 +307,7 @@ const SpeakersPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the speaker "{speakerToDelete?.name}". This
+              This will delete the speaker &quot;{speakerToDelete?.name}&quot;. This
               action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

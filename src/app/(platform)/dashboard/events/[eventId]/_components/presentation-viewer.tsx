@@ -14,6 +14,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Loader,
   AlertTriangle,
   ZoomIn,
@@ -40,6 +46,8 @@ interface PresentationViewerProps {
   onClose: () => void;
   event: { id: string; organizationId: string };
   session: { id: string; title: string };
+  /** Only speakers linked to their platform account can control the live presentation */
+  canPresent?: boolean;
 }
 
 export const PresentationViewer = ({
@@ -47,6 +55,7 @@ export const PresentationViewer = ({
   onClose,
   event,
   session,
+  canPresent = false,
 }: PresentationViewerProps) => {
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -352,25 +361,40 @@ export const PresentationViewer = ({
 
             {/* Right: Live toggle & Fullscreen */}
             <div className="flex items-center gap-1">
-              <Button
-                variant={isLiveMode ? "destructive" : "default"}
-                size="sm"
-                onClick={toggleLiveMode}
-                title={isLiveMode ? "Stop live presentation" : "Start live presentation"}
-                className="gap-1 md:gap-1.5 text-xs md:text-sm h-7 md:h-8 px-2 md:px-3"
-              >
-                {isLiveMode ? (
-                  <>
-                    <StopCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">End Live</span>
-                  </>
-                ) : (
-                  <>
-                    <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Present Live</span>
-                  </>
-                )}
-              </Button>
+              {canPresent ? (
+                <Button
+                  variant={isLiveMode ? "destructive" : "default"}
+                  size="sm"
+                  onClick={toggleLiveMode}
+                  title={isLiveMode ? "Stop live presentation" : "Start live presentation"}
+                  className="gap-1 md:gap-1.5 text-xs md:text-sm h-7 md:h-8 px-2 md:px-3"
+                >
+                  {isLiveMode ? (
+                    <>
+                      <StopCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      <span className="hidden sm:inline">End Live</span>
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      <span className="hidden sm:inline">Present Live</span>
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="text-xs h-7 md:h-8 px-2 md:px-3">
+                        View Only
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Only assigned speakers can control the live presentation</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

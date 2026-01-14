@@ -7,6 +7,7 @@ export const GET_ORGANIZATION_SPEAKERS_QUERY = gql`
       name
       bio
       expertise
+      userId
     }
   }
 `;
@@ -18,6 +19,7 @@ export const CREATE_SPEAKER_MUTATION = gql`
       name
       bio
       expertise
+      userId
     }
   }
 `;
@@ -29,6 +31,7 @@ export const UPDATE_SPEAKER_MUTATION = gql`
       name
       bio
       expertise
+      userId
     }
   }
 `;

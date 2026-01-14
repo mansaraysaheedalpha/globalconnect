@@ -32,8 +32,9 @@ import {
   GET_SESSIONS_BY_EVENT_QUERY,
 } from "@/graphql/events.graphql";
 import { PlusCircle } from "lucide-react";
+import { useAuthStore } from "@/store/auth.store";
 
-type Speaker = { id: string; name: string };
+type Speaker = { id: string; name: string; userId?: string | null };
 type Session = {
   id: string;
   title: string;
@@ -71,6 +72,14 @@ export const SessionList = ({
     null
   );
   const [sessionToView, setSessionToView] = useState<Session | null>(null);
+
+  // Get current user ID to check if they are a speaker for the session
+  const { user } = useAuthStore();
+
+  // Check if current user is a speaker for the session being viewed
+  const isCurrentUserSpeaker = sessionToView?.speakers?.some(
+    (speaker) => speaker.userId && speaker.userId === user?.sub
+  ) ?? false;
 
   const [archiveSession] = useMutation(ARCHIVE_SESSION_MUTATION, {
     refetchQueries: [
@@ -137,6 +146,7 @@ export const SessionList = ({
           onClose={() => setIsViewerOpen(false)}
           event={event}
           session={sessionToView}
+          canPresent={isCurrentUserSpeaker}
         />
       )}
 
