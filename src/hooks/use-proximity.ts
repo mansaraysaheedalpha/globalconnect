@@ -90,19 +90,26 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     socketRef.current = newSocket;
 
     newSocket.on("connect", () => {
+      console.warn("[Proximity] Socket connected!");
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
     });
 
     newSocket.on("connectionAcknowledged", () => {
+      console.warn("[Proximity] Connection acknowledged by server");
       setState((prev) => ({ ...prev, isJoined: true }));
     });
 
-    newSocket.on("disconnect", () => {
+    newSocket.on("disconnect", (reason) => {
+      console.warn("[Proximity] Socket disconnected:", reason);
       setState((prev) => ({
         ...prev,
         isConnected: false,
         isJoined: false,
       }));
+    });
+
+    newSocket.on("connect_error", (error) => {
+      console.error("[Proximity] Socket connection error:", error.message);
     });
 
     // Listen for roster updates (nearby users)
