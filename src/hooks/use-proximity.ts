@@ -69,20 +69,6 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     return true;
   }, []);
 
-  // Check current permission status (SSR safe)
-  const checkPermission = useCallback(async () => {
-    if (typeof window === "undefined" || !navigator.permissions) {
-      return "prompt" as const;
-    }
-
-    try {
-      const result = await navigator.permissions.query({ name: "geolocation" });
-      return result.state as "granted" | "denied" | "prompt";
-    } catch {
-      return "prompt" as const;
-    }
-  }, []);
-
   // Initialize socket connection
   useEffect(() => {
     if (!eventId || !token) {
@@ -240,21 +226,25 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
 
   // Handle geolocation error
   const handlePositionError = useCallback((error: GeolocationPositionError) => {
-    let errorMessage = "Failed to get location";
-    let permission: ProximityState["locationPermission"] = "denied";
+    // For permission denied/unavailable, we use dedicated UI - no need for error message
+    // Only set error for transient issues like timeout
+    let errorMessage: string | null = null;
+    let permission: ProximityState["locationPermission"] = "prompt";
 
     switch (error.code) {
       case error.PERMISSION_DENIED:
-        errorMessage = "Location permission denied";
         permission = "denied";
+        // No error message - UI shows dedicated permission denied warning
         break;
       case error.POSITION_UNAVAILABLE:
-        errorMessage = "Location unavailable";
         permission = "unavailable";
+        // No error message - UI shows dedicated unavailable warning
         break;
       case error.TIMEOUT:
-        errorMessage = "Location request timed out";
+        errorMessage = "Location request timed out. Please try again.";
         break;
+      default:
+        errorMessage = "Failed to get location";
     }
 
     setState((prev) => ({
@@ -277,18 +267,15 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
       return false;
     }
 
-    const permission = await checkPermission();
-    setState((prev) => ({ ...prev, locationPermission: permission }));
-
-    if (permission === "denied") {
-      setState((prev) => ({
-        ...prev,
-        error: "Location permission was denied. Please enable it in your browser settings.",
-      }));
-      return false;
-    }
-
-    setState((prev) => ({ ...prev, isTracking: true, error: null }));
+    // Reset permission state and error before trying
+    // Don't preemptively block based on Permissions API - it can return stale data
+    // Instead, let the actual geolocation request determine the real permission state
+    setState((prev) => ({
+      ...prev,
+      isTracking: true,
+      error: null,
+      locationPermission: "prompt" // Reset to prompt, let geolocation API determine actual state
+    }));
 
     // Get initial position
     navigator.geolocation.getCurrentPosition(
@@ -322,7 +309,6 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     return true;
   }, [
     checkGeolocationSupport,
-    checkPermission,
     handlePositionUpdate,
     handlePositionError,
     sendLocationUpdate,
