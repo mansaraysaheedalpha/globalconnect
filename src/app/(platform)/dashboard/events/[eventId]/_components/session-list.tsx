@@ -78,7 +78,7 @@ export const SessionList = ({
 
   // Check if current user is a speaker for the session being viewed
   const isCurrentUserSpeaker = sessionToView?.speakers?.some(
-    (speaker) => speaker.userId && speaker.userId === user?.sub
+    (speaker) => speaker.userId && speaker.userId === user?.id
   ) ?? false;
 
   const [archiveSession] = useMutation(ARCHIVE_SESSION_MUTATION, {

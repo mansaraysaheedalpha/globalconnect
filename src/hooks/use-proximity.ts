@@ -142,6 +142,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     newSocket.on(
       "proximity.ping.received",
       (data: { fromUser: { id: string; name: string }; message: string }) => {
+        console.warn("[Proximity] Received ping from:", data.fromUser.name, "Message:", data.message);
         const ping: ProximityPing = {
           fromUser: data.fromUser,
           message: data.message,
@@ -361,10 +362,13 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
           idempotencyKey: generateUUID(),
         };
 
+        console.warn("[Proximity] Sending ping to:", targetUserId, "Message:", message);
         currentSocket.emit("proximity.ping", payload, (response: ProximityResponse) => {
           if (response?.success) {
+            console.warn("[Proximity] Ping sent successfully to:", targetUserId);
             resolve(true);
           } else {
+            console.error("[Proximity] Ping failed:", response?.error);
             setState((prev) => ({
               ...prev,
               error: response?.error || "Failed to send ping",
