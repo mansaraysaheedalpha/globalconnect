@@ -108,17 +108,24 @@ export const FloatingProximityWidget = ({
         <SheetContent side="right" className="w-full sm:max-w-md p-0">
           <div className="h-full flex flex-col">
             {/* Header */}
-            <SheetHeader className="px-4 py-3 border-b">
-              <SheetTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Radar className="h-5 w-5" />
-                  Nearby Attendees
-                  {isConnected && (
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                  )}
+            <SheetHeader className="px-4 pt-3 pb-2 border-b">
+              <SheetTitle className="flex items-center gap-2 pr-8">
+                <Radar className="h-5 w-5" />
+                Nearby Attendees
+                {isConnected && (
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                )}
+              </SheetTitle>
+              <SheetDescription className="text-left">
+                Discover and connect with people around you
+              </SheetDescription>
+              {/* Toggle moved below title - away from X button */}
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-sm text-muted-foreground">
+                  Location Tracking
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-normal text-muted-foreground">
+                  <span className="text-sm font-medium">
                     {isTracking ? "On" : "Off"}
                   </span>
                   <Switch
@@ -127,10 +134,7 @@ export const FloatingProximityWidget = ({
                     disabled={locationPermission === "denied" || locationPermission === "unavailable"}
                   />
                 </div>
-              </SheetTitle>
-              <SheetDescription className="text-left">
-                Discover and connect with people around you
-              </SheetDescription>
+              </div>
             </SheetHeader>
 
             {/* Error message */}
