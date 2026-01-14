@@ -109,6 +109,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     newSocket.on("proximity.roster.updated", (data: RosterUpdate) => {
       if (isAdvancedRosterUpdate(data)) {
         // Advanced format from AI service includes full user details
+        console.warn("[Proximity] Received advanced roster:", data.nearbyUsers.length, "nearby users");
         const nearbyUsers: NearbyUser[] = data.nearbyUsers.map((nu) => ({
           id: nu.user.id,
           name: nu.user.name,
@@ -121,6 +122,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
         // Simple format from basic proximity search - only user IDs available
         // Backend sends this format from Redis GEO search before AI enrichment
         // Display as "Nearby Attendee" until AI service provides enriched data
+        console.warn("[Proximity] Received roster update:", data.nearbyUserIds.length, "nearby users");
         const nearbyUsers: NearbyUser[] = data.nearbyUserIds.map((id, index) => ({
           id,
           name: `Nearby Attendee ${index + 1}`,
@@ -184,11 +186,15 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
       idempotencyKey: generateUUID(),
     };
 
+    console.warn("[Proximity] Sending location:", payload.latitude.toFixed(6), payload.longitude.toFixed(6));
+
     currentSocket.emit(
       "proximity.location.update",
       payload,
       (response: ProximityResponse) => {
-        if (!response?.success) {
+        if (response?.success) {
+          console.warn("[Proximity] Location sent successfully");
+        } else {
           console.error("[Proximity] Location update failed:", response?.error);
         }
       }
