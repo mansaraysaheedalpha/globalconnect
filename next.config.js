@@ -44,10 +44,11 @@ const securityHeaders = [
     key: 'Referrer-Policy',
     value: 'strict-origin-when-cross-origin',
   },
-  // Permissions policy - disable unnecessary browser features
+  // Permissions policy - configure browser features
+  // geolocation=(self) allows geolocation for proximity networking feature
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    value: 'camera=(), microphone=(), geolocation=(self), interest-cohort=()',
   },
   // Content Security Policy - adjust based on your needs
   {
