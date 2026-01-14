@@ -141,7 +141,7 @@ export const PingNotificationsContainer = ({
   return (
     <div
       className={cn(
-        "fixed z-50 space-y-2",
+        "fixed z-[100] space-y-2",
         positionClasses[position],
         className
       )}

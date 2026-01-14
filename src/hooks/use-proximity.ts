@@ -90,17 +90,14 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     socketRef.current = newSocket;
 
     newSocket.on("connect", () => {
-      console.warn("[Proximity] Socket connected!");
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
     });
 
     newSocket.on("connectionAcknowledged", () => {
-      console.warn("[Proximity] Connection acknowledged by server");
       setState((prev) => ({ ...prev, isJoined: true }));
     });
 
-    newSocket.on("disconnect", (reason) => {
-      console.warn("[Proximity] Socket disconnected:", reason);
+    newSocket.on("disconnect", () => {
       setState((prev) => ({
         ...prev,
         isConnected: false,
@@ -109,14 +106,13 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     });
 
     newSocket.on("connect_error", (error) => {
-      console.error("[Proximity] Socket connection error:", error.message);
+      console.error("[Proximity] Connection error:", error.message);
     });
 
     // Listen for roster updates (nearby users)
     newSocket.on("proximity.roster.updated", (data: RosterUpdate) => {
       if (isAdvancedRosterUpdate(data)) {
         // Advanced format from AI service includes full user details
-        console.warn("[Proximity] Received advanced roster:", data.nearbyUsers.length, "nearby users");
         const nearbyUsers: NearbyUser[] = data.nearbyUsers.map((nu) => ({
           id: nu.user.id,
           name: nu.user.name,
@@ -127,9 +123,6 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
         setState((prev) => ({ ...prev, nearbyUsers }));
       } else {
         // Simple format from basic proximity search - only user IDs available
-        // Backend sends this format from Redis GEO search before AI enrichment
-        // Display as "Nearby Attendee" until AI service provides enriched data
-        console.warn("[Proximity] Received roster update:", data.nearbyUserIds.length, "nearby users");
         const nearbyUsers: NearbyUser[] = data.nearbyUserIds.map((id, index) => ({
           id,
           name: `Nearby Attendee ${index + 1}`,
@@ -142,7 +135,6 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     newSocket.on(
       "proximity.ping.received",
       (data: { fromUser: { id: string; name: string }; message: string }) => {
-        console.warn("[Proximity] Received ping from:", data.fromUser.name, "Message:", data.message);
         const ping: ProximityPing = {
           fromUser: data.fromUser,
           message: data.message,
@@ -194,15 +186,11 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
       idempotencyKey: generateUUID(),
     };
 
-    console.warn("[Proximity] Sending location:", payload.latitude.toFixed(6), payload.longitude.toFixed(6));
-
     currentSocket.emit(
       "proximity.location.update",
       payload,
       (response: ProximityResponse) => {
-        if (response?.success) {
-          console.warn("[Proximity] Location sent successfully");
-        } else {
+        if (!response?.success) {
           console.error("[Proximity] Location update failed:", response?.error);
         }
       }
@@ -362,10 +350,8 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
           idempotencyKey: generateUUID(),
         };
 
-        console.warn("[Proximity] Sending ping to:", targetUserId, "Message:", message);
         currentSocket.emit("proximity.ping", payload, (response: ProximityResponse) => {
           if (response?.success) {
-            console.warn("[Proximity] Ping sent successfully to:", targetUserId);
             resolve(true);
           } else {
             console.error("[Proximity] Ping failed:", response?.error);
