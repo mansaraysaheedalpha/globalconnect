@@ -291,7 +291,7 @@ export const ConnectionFeedbackModal = ({
                   value={
                     willFollowUp === null ? "" : willFollowUp ? "yes" : "no"
                   }
-                  onValueChange={(v) => setWillFollowUp(v === "yes")}
+                  onValueChange={(v: string) => setWillFollowUp(v === "yes")}
                 >
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">

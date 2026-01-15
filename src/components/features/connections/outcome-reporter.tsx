@@ -80,42 +80,73 @@ const outcomeOptions: OutcomeOption[] = [
   },
 ];
 
+export interface OutcomeData {
+  outcomeType: OutcomeType;
+  outcomeNotes?: string;
+  meetingScheduled?: boolean;
+  meetingDate?: string;
+}
+
 interface OutcomeReporterProps {
   connectionId: string;
   otherUserName: string;
-  onReportOutcome: (
+  /** Controlled mode: external open state */
+  open?: boolean;
+  /** Controlled mode: callback when dialog wants to close */
+  onOpenChange?: (open: boolean) => void;
+  /** Callback when outcome is submitted (controlled mode) */
+  onSubmit?: (outcome: OutcomeData) => void;
+  /** Legacy callback - use onSubmit instead for controlled mode */
+  onReportOutcome?: (
     connectionId: string,
-    outcome: {
-      outcomeType: OutcomeType;
-      outcomeNotes?: string;
-      meetingScheduled?: boolean;
-      meetingDate?: string;
-    }
+    outcome: OutcomeData
   ) => Promise<void>;
 }
 
 export const OutcomeReporter = ({
   connectionId,
   otherUserName,
+  open: controlledOpen,
+  onOpenChange,
+  onSubmit,
   onReportOutcome,
 }: OutcomeReporterProps) => {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState<OutcomeType | null>(null);
   const [notes, setNotes] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined;
+  const isOpen = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(value);
+    }
+    if (!isControlled) {
+      setInternalOpen(value);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!selectedOutcome) return;
 
+    const outcomeData: OutcomeData = {
+      outcomeType: selectedOutcome,
+      outcomeNotes: notes || undefined,
+      meetingScheduled: selectedOutcome === "MEETING_HELD",
+      meetingDate: meetingDate || undefined,
+    };
+
     setIsSubmitting(true);
     try {
-      await onReportOutcome(connectionId, {
-        outcomeType: selectedOutcome,
-        outcomeNotes: notes || undefined,
-        meetingScheduled: selectedOutcome === "MEETING_HELD",
-        meetingDate: meetingDate || undefined,
-      });
+      // Support both callback patterns
+      if (onSubmit) {
+        onSubmit(outcomeData);
+      } else if (onReportOutcome) {
+        await onReportOutcome(connectionId, outcomeData);
+      }
       setOpen(false);
       // Reset form
       setSelectedOutcome(null);
@@ -127,13 +158,16 @@ export const OutcomeReporter = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Trophy className="h-4 w-4 mr-1" />
-          Report Outcome
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {/* Only show trigger when in uncontrolled mode */}
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Trophy className="h-4 w-4 mr-1" />
+            Report Outcome
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Did this connection lead to something?</DialogTitle>

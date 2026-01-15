@@ -60,6 +60,29 @@ export const LOGIN_2FA_MUTATION = gql`
   }
 `;
 
+// Request email backup code for 2FA (when authenticator app unavailable)
+export const SEND_2FA_EMAIL_CODE_MUTATION = gql`
+  mutation Send2FAEmailBackupCode($input: Send2FAEmailCodeInput!) {
+    send2FAEmailBackupCode(input: $input) {
+      message
+    }
+  }
+`;
+
+// Login with email backup code instead of authenticator
+export const LOGIN_2FA_WITH_EMAIL_MUTATION = gql`
+  mutation Login2FAWithEmailCode($input: Login2FAEmailInput!) {
+    login2FAWithEmailCode(input: $input) {
+      token
+      user {
+        id
+        email
+        first_name
+      }
+    }
+  }
+`;
+
 export const LOGOUT_MUTATION = gql`
   mutation Logout {
     logout

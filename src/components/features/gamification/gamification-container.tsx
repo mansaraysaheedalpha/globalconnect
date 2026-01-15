@@ -352,11 +352,13 @@ const CompactGamification = ({
  */
 interface FloatingScoreWidgetProps {
   sessionId: string;
+  eventId?: string;
   className?: string;
 }
 
 export const FloatingScoreWidget = ({
   sessionId,
+  eventId: _eventId,
   className = "",
 }: FloatingScoreWidgetProps) => {
   const {

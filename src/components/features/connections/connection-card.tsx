@@ -32,13 +32,13 @@ import {
   getOtherUser,
   formatUserName,
 } from "@/types/connection";
-import { OutcomeReporter } from "./outcome-reporter";
+import { OutcomeReporter, OutcomeData } from "./outcome-reporter";
 
 interface ConnectionCardProps {
   connection: Connection;
   currentUserId: string;
   onSendFollowUp?: (connectionId: string) => void;
-  onReportOutcome?: (connectionId: string, outcome: { outcomeType: string; outcomeNotes?: string }) => void;
+  onReportOutcome?: (connectionId: string, outcome: OutcomeData) => void;
   onStartDm?: (userId: string) => void;
 }
 
