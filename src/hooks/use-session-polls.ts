@@ -183,6 +183,11 @@ export const useSessionPolls = (
     pollsRef.current = state.polls;
   }, [state.polls]);
 
+  // Sync initialPollsOpen prop changes to state (when organizer toggles via mutation)
+  useEffect(() => {
+    setState((prev) => ({ ...prev, pollsOpen: initialPollsOpen }));
+  }, [initialPollsOpen]);
+
   useEffect(() => {
     if (!sessionId || !eventId || !token) {
       console.log("[Polls] Missing required params", {
