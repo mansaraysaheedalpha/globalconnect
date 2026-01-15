@@ -418,7 +418,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
   const isChatClosed = !chatOpen;
 
   return (
-    <Card className={cn("flex flex-col overflow-hidden", className)}>
+    <Card className={cn("flex flex-col overflow-hidden max-h-full", className)}>
       <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -444,7 +444,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
       <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
         {/* Error banner */}
         {error && (
-          <div className="mx-4 mb-2 px-3 py-2 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center justify-between">
+          <div className="mx-4 mb-2 px-3 py-2 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center justify-between flex-shrink-0">
             <span className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
               {error}
@@ -458,7 +458,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
         {/* Messages area */}
         <div
           ref={scrollAreaRef}
-          className="flex-1 px-4 overflow-y-auto min-h-0"
+          className="flex-1 h-0 px-4 overflow-y-auto"
         >
           <div className="space-y-4 py-4">
             {messages.length === 0 ? (
@@ -485,7 +485,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
 
         {/* Reply/Edit indicator */}
         {(replyingTo || editingMessage) && (
-          <div className="mx-4 px-3 py-2 bg-muted rounded-t-lg border-b flex items-center justify-between">
+          <div className="mx-4 px-3 py-2 bg-muted rounded-t-lg border-b flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2 text-sm">
               {replyingTo ? (
                 <>
