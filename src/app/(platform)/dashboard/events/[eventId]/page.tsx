@@ -33,6 +33,8 @@ import { IncidentDashboard } from "@/components/features/incidents";
 import LeaderboardPage from "./leaderboard/page";
 import MonetizationPage from "./monetization/page";
 import EngagementConductorPage from "./engagement/page";
+import NetworkingAnalyticsPage from "./networking/page";
+import { SponsorLeadsDashboard } from "@/components/features/sponsors/sponsor-leads-dashboard";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -139,7 +141,7 @@ export default function EventDetailPage() {
       <div className="mt-6 lg:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         <div className="lg:col-span-2 min-w-0">
           <Tabs defaultValue="live" className="w-full">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="live">Live</TabsTrigger>
               <TabsTrigger value="engagement">AI Conductor</TabsTrigger>
               <TabsTrigger value="agenda">Agenda</TabsTrigger>
@@ -149,6 +151,8 @@ export default function EventDetailPage() {
               <TabsTrigger value="incidents">Incidents</TabsTrigger>
               <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
               <TabsTrigger value="monetization">Monetization</TabsTrigger>
+              <TabsTrigger value="networking">Networking</TabsTrigger>
+              <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
             </TabsList>
             <TabsContent value="live" className="mt-4 sm:mt-6">
               <LiveDashboard eventId={event.id} />
@@ -180,6 +184,12 @@ export default function EventDetailPage() {
             </TabsContent>
             <TabsContent value="monetization" className="mt-4 sm:mt-6">
               <MonetizationPage />
+            </TabsContent>
+            <TabsContent value="networking" className="mt-4 sm:mt-6">
+              <NetworkingAnalyticsPage />
+            </TabsContent>
+            <TabsContent value="sponsors" className="mt-4 sm:mt-6">
+              <SponsorLeadsDashboard eventId={event.id} />
             </TabsContent>
           </Tabs>
         </div>
