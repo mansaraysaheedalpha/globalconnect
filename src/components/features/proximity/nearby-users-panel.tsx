@@ -24,7 +24,11 @@ import {
   Loader2,
   MapPinOff,
   Sparkles,
+  Calendar,
+  MessageSquare,
+  CheckCircle2,
 } from "lucide-react";
+import { ConnectionContextItem } from "@/types/proximity";
 
 interface NearbyUsersPanelProps {
   users: NearbyUser[];
@@ -90,6 +94,44 @@ export const NearbyUsersPanel = ({
     return `~${Math.round(meters)}m away`;
   };
 
+  const getContextIcon = (contextType: string) => {
+    switch (contextType) {
+      case "SHARED_SESSION":
+        return <Calendar className="h-3 w-3" />;
+      case "QA_INTERACTION":
+        return <MessageSquare className="h-3 w-3" />;
+      case "MUTUAL_CONNECTION":
+        return <Users className="h-3 w-3" />;
+      case "SHARED_INTEREST":
+        return <Sparkles className="h-3 w-3" />;
+      default:
+        return null;
+    }
+  };
+
+  const ConnectionContextBadges = ({ contexts }: { contexts?: ConnectionContextItem[] }) => {
+    if (!contexts || contexts.length === 0) return null;
+
+    return (
+      <div className="mt-1.5">
+        <p className="text-[10px] text-muted-foreground mb-1">Why connect:</p>
+        <div className="flex flex-wrap gap-1">
+          {contexts.slice(0, 2).map((ctx, i) => (
+            <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
+              {getContextIcon(ctx.contextType)}
+              <span className="truncate max-w-[100px]">{ctx.contextValue}</span>
+            </Badge>
+          ))}
+          {contexts.length > 2 && (
+            <span className="text-[10px] text-muted-foreground">
+              +{contexts.length - 2} more
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Not tracking state
   if (!isTracking) {
     return (
@@ -137,19 +179,37 @@ export const NearbyUsersPanel = ({
           {users.map((user) => (
             <div
               key={user.id}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors",
+                user.alreadyConnected && "bg-green-50/50 dark:bg-green-900/10"
+              )}
             >
               {/* Avatar */}
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {getInitials(user.name)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user.avatarUrl} alt={user.name} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
+                </Avatar>
+                {user.matchScore && user.matchScore >= 50 && (
+                  <div className="absolute -top-1 -right-1 bg-amber-500 text-white text-[8px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {user.matchScore}
+                  </div>
+                )}
+              </div>
 
               {/* User Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{user.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm truncate">{user.name}</p>
+                  {user.alreadyConnected && (
+                    <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 border-green-200">
+                      <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+                      Connected
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 mt-0.5">
                   {user.distance && (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -158,8 +218,13 @@ export const NearbyUsersPanel = ({
                     </span>
                   )}
                 </div>
-                {/* Shared interests */}
-                {user.sharedInterests && user.sharedInterests.length > 0 && (
+
+                {/* Connection context badges (why connect) */}
+                <ConnectionContextBadges contexts={user.connectionContexts} />
+
+                {/* Shared interests (fallback for legacy) */}
+                {(!user.connectionContexts || user.connectionContexts.length === 0) &&
+                  user.sharedInterests && user.sharedInterests.length > 0 && (
                   <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                     <Sparkles className="h-3 w-3 text-amber-500" />
                     {user.sharedInterests.slice(0, 2).map((interest) => (
@@ -182,7 +247,7 @@ export const NearbyUsersPanel = ({
 
               {/* Ping Button */}
               <Button
-                variant="outline"
+                variant={user.alreadyConnected ? "secondary" : "outline"}
                 size="sm"
                 onClick={() => handlePingClick(user)}
                 disabled={pingingUserId === user.id}
@@ -193,7 +258,7 @@ export const NearbyUsersPanel = ({
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-1" />
-                    Ping
+                    {user.alreadyConnected ? "Ping again" : "Ping"}
                   </>
                 )}
               </Button>

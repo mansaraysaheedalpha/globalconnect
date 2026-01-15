@@ -61,6 +61,7 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       endDate
       status
       imageUrl
+      organizationId
       venue {
         id
         name

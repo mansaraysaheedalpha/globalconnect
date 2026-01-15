@@ -21,6 +21,7 @@ interface ProximityContainerProps {
   eventId: string;
   position?: "bottom-left" | "bottom-right";
   onReplyToPing?: (userId: string) => void;
+  onStartChat?: (userId: string, userName: string) => void;
   className?: string;
 }
 
@@ -32,6 +33,7 @@ export const ProximityContainer = ({
   eventId,
   position = "bottom-right",
   onReplyToPing,
+  onStartChat,
   className = "",
 }: ProximityContainerProps) => {
   const {
@@ -91,8 +93,9 @@ export const ProximityContainer = ({
     <>
       {/* Floating widget button with sheet */}
       <FloatingProximityWidget
+        eventId={eventId}
         nearbyUsers={nearbyUsers}
-        unreadPingCount={receivedPings.length}
+        receivedPings={receivedPings}
         isTracking={isTracking}
         isConnected={isConnected}
         error={error}
@@ -100,6 +103,8 @@ export const ProximityContainer = ({
         onStartTracking={startTracking}
         onStopTracking={stopTracking}
         onSendPing={sendPing}
+        onDismissPing={dismissPing}
+        onStartChat={onStartChat}
         onClearError={clearError}
         position={position}
         className={className}
@@ -110,6 +115,7 @@ export const ProximityContainer = ({
         pings={receivedPings}
         onDismiss={dismissPing}
         onReply={handleReplyToPing}
+        onStartChat={onStartChat}
         position="top-right"
         maxVisible={3}
       />
@@ -179,6 +185,7 @@ export const ProximityWidget = ({
 }: Omit<ProximityContainerProps, "onReplyToPing">) => {
   const {
     nearbyUsers,
+    receivedPings,
     isTracking,
     isConnected,
     error,
@@ -186,12 +193,15 @@ export const ProximityWidget = ({
     startTracking,
     stopTracking,
     sendPing,
+    dismissPing,
     clearError,
   } = useProximity({ eventId });
 
   return (
     <FloatingProximityWidget
+      eventId={eventId}
       nearbyUsers={nearbyUsers}
+      receivedPings={receivedPings}
       isTracking={isTracking}
       isConnected={isConnected}
       error={error}
@@ -199,6 +209,7 @@ export const ProximityWidget = ({
       onStartTracking={startTracking}
       onStopTracking={stopTracking}
       onSendPing={sendPing}
+      onDismissPing={dismissPing}
       onClearError={clearError}
       position={position}
       className={className}

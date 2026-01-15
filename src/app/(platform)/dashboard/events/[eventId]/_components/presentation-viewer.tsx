@@ -32,13 +32,18 @@ import {
   Radio,
   StopCircle,
   Users,
+  Download,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { usePresentationControl } from "@/hooks/use-presentation-control";
 
 type Presentation = {
   id: string;
   session_id: string;
   slide_urls: string[];
+  download_enabled?: boolean;
+  original_filename?: string;
 };
 
 interface PresentationViewerProps {
@@ -64,6 +69,8 @@ export const PresentationViewer = ({
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLiveMode, setIsLiveMode] = useState(false);
+  const [downloadEnabled, setDownloadEnabled] = useState(false);
+  const [isTogglingDownload, setIsTogglingDownload] = useState(false);
   const { token } = useAuthStore();
 
   // Live presentation control hook (only active when in live mode)
@@ -141,6 +148,44 @@ export const PresentationViewer = ({
     }
   };
 
+  // Toggle download availability for attendees
+  const toggleDownload = async (enabled: boolean) => {
+    setIsTogglingDownload(true);
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation/download/toggle`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enabled }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDownloadEnabled(data.download_enabled);
+        toast.success(
+          enabled ? "Download enabled" : "Download disabled",
+          {
+            description: enabled
+              ? "Attendees can now download the presentation"
+              : "Attendees can no longer download the presentation",
+          }
+        );
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to toggle download");
+      }
+    } catch (err: any) {
+      toast.error("Error", { description: err.message });
+      // Revert the switch on error
+      setDownloadEnabled(!enabled);
+    } finally {
+      setIsTogglingDownload(false);
+    }
+  };
+
   const fetchPresentation = useCallback(async () => {
     const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
     try {
@@ -150,6 +195,7 @@ export const PresentationViewer = ({
       if (response.ok) {
         const data = await response.json();
         setPresentation(data);
+        setDownloadEnabled(data.download_enabled || false);
         setError(null);
         if (data.status === "failed") {
           setError(
@@ -359,8 +405,35 @@ export const PresentationViewer = ({
               )}
             </div>
 
-            {/* Right: Live toggle & Fullscreen */}
-            <div className="flex items-center gap-1">
+            {/* Right: Download toggle, Live toggle & Fullscreen */}
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Download toggle for organizers */}
+              {canPresent && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <Download className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+                        <Switch
+                          id="download-toggle"
+                          checked={downloadEnabled}
+                          onCheckedChange={toggleDownload}
+                          disabled={isTogglingDownload}
+                          className="data-[state=checked]:bg-green-600"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>
+                        {downloadEnabled
+                          ? "Click to disable attendee downloads"
+                          : "Click to allow attendees to download"}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
               {canPresent ? (
                 <Button
                   variant={isLiveMode ? "destructive" : "default"}

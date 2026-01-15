@@ -414,6 +414,16 @@ export const useDirectMessages = (eventId?: string) => {
         return { success: false };
       }
 
+      // eventId is required for DMs to ensure both users are registered for the same event
+      if (!eventId) {
+        console.warn("[DM] Cannot send - eventId is required");
+        setState((prev) => ({
+          ...prev,
+          error: "Event context is required to send messages.",
+        }));
+        return { success: false };
+      }
+
       // Validate text
       if (!text.trim() || text.length > 2000) {
         console.warn("[DM] Invalid message text");
@@ -455,12 +465,13 @@ export const useDirectMessages = (eventId?: string) => {
         error: null,
       }));
 
-      // Send via socket
+      // Send via socket with eventId for event-scoped validation
       socketRef.current.emit(
         "dm.send",
         {
           recipientId,
           text,
+          eventId,
           idempotencyKey,
         },
         (response: {
@@ -505,7 +516,7 @@ export const useDirectMessages = (eventId?: string) => {
 
       return { success: true, messageId: optimisticId };
     },
-    [state.isConnected, user, canSendMessage, recordMessageSent]
+    [state.isConnected, user, eventId, canSendMessage, recordMessageSent]
   );
 
   // Mark message as delivered (when opening a conversation)

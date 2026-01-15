@@ -1,3 +1,5 @@
+// Leaderboard components for gamification
+"use client";
 
 import {
   Table,
@@ -8,16 +10,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGamification } from "@/hooks/use-gamification";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Crown } from "lucide-react";
-import { useAuthStore } from "@/store/auth.store";
+import { Crown, AlertCircle } from "lucide-react";
 
-export const Leaderboard = () => {
+interface LeaderboardProps {
+  sessionId?: string;
+}
+
+export const Leaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {}) => {
   const params = useParams();
-  const eventId = params.eventId as string;
-  const { user } = useAuthStore();
-  const { leaderboard } = useGamification(eventId, user?.id || "");
+  const searchParams = useSearchParams();
+  // Use prop sessionId, or query param, or fallback to eventId
+  const sessionId = propSessionId || searchParams.get("sessionId") || (params.eventId as string);
+
+  const { leaderboard, isConnected, error } = useGamification({ sessionId });
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 p-4 text-red-600">
+        <AlertCircle className="h-5 w-5" />
+        <span>Failed to load leaderboard: {error}</span>
+      </div>
+    );
+  }
 
   return (
     <Table>
@@ -61,11 +77,21 @@ export const Leaderboard = () => {
   );
 };
 
-export const TeamLeaderboard = () => {
+export const TeamLeaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {}) => {
     const params = useParams();
-    const eventId = params.eventId as string;
-    const { user } = useAuthStore();
-    const { teamLeaderboard } = useGamification(eventId, user?.id || "");
+    const searchParams = useSearchParams();
+    const sessionId = propSessionId || searchParams.get("sessionId") || (params.eventId as string);
+
+    const { teamLeaderboard, error } = useGamification({ sessionId });
+
+    if (error) {
+      return (
+        <div className="flex items-center gap-2 p-4 text-red-600">
+          <AlertCircle className="h-5 w-5" />
+          <span>Failed to load team leaderboard: {error}</span>
+        </div>
+      );
+    }
 
     return (
         <Table>

@@ -1,7 +1,7 @@
 // src/components/features/dm/dm-container.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDirectMessages, Conversation } from "@/hooks/use-direct-messages";
 import { ConversationList, UserSelector } from "./conversation-list";
 import { MessageThread, EmptyConversationState } from "./message-thread";
@@ -203,12 +203,55 @@ export const FloatingDMButton = ({
     getTotalUnreadCount,
   } = useDirectMessages(eventId);
 
+  const [isOpen, setIsOpen] = useState(false);
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
   const unreadCount = getTotalUnreadCount();
   const filteredUsers = availableUsers.filter((u) => u.id !== user?.id);
   const existingPartnerIds = conversations.map((c) => c.recipientId);
+
+  // Handle opening chat with a specific user (from proximity or other features)
+  const handleStartChatWith = useCallback((userId: string, userName: string) => {
+    // Check if user exists in availableUsers
+    const selectedUser = availableUsers.find((u) => u.id === userId);
+
+    // Check if conversation already exists
+    const existingConv = conversations.find((c) => c.recipientId === userId);
+
+    if (existingConv) {
+      setActiveConversation(existingConv);
+    } else {
+      // Create a temporary conversation
+      const nameParts = userName.split(" ");
+      const newConv: Conversation = {
+        id: `temp-${userId}`,
+        recipientId: userId,
+        recipient: {
+          id: userId,
+          firstName: selectedUser?.firstName || nameParts[0] || userName,
+          lastName: selectedUser?.lastName || nameParts.slice(1).join(" ") || "",
+          avatar: selectedUser?.avatar,
+        },
+        unreadCount: 0,
+        updatedAt: new Date().toISOString(),
+      };
+      setActiveConversation(newConv);
+    }
+
+    // Open the sheet
+    setIsOpen(true);
+  }, [availableUsers, conversations, setActiveConversation]);
+
+  // Listen for custom event to start chat from other components (e.g., proximity)
+  useEffect(() => {
+    const handleEvent = (e: CustomEvent<{ userId: string; userName: string }>) => {
+      handleStartChatWith(e.detail.userId, e.detail.userName);
+    };
+
+    window.addEventListener("start-dm-chat", handleEvent as EventListener);
+    return () => window.removeEventListener("start-dm-chat", handleEvent as EventListener);
+  }, [handleStartChatWith]);
 
   const handleSelectUser = (userId: string) => {
     const selectedUser = availableUsers.find((u) => u.id === userId);
@@ -252,7 +295,7 @@ export const FloatingDMButton = ({
   return (
     <>
       <div className={cn("fixed z-40", positionClasses, className)}>
-        <Sheet>
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
               size="icon"

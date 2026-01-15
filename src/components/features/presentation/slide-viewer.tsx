@@ -32,6 +32,8 @@ interface SlideViewerProps {
   onPrevSlide?: () => void;
   onNextSlide?: () => void;
   onGoToSlide?: (slide: number) => void;
+  onDownload?: () => void;  // Callback when attendee clicks download
+  isDownloading?: boolean;  // Loading state for download button
   className?: string;
 }
 
@@ -45,6 +47,8 @@ export const SlideViewer = ({
   onPrevSlide,
   onNextSlide,
   onGoToSlide,
+  onDownload,
+  isDownloading = false,
   className = "",
 }: SlideViewerProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -214,8 +218,29 @@ export const SlideViewer = ({
           </Badge>
         </div>
 
-        {/* Right: Expand/Fullscreen */}
+        {/* Right: Download & Fullscreen */}
         <div className="flex items-center gap-2">
+          {/* Download button - visible for attendees when download is enabled */}
+          {!isPresenter && slideState?.downloadEnabled && onDownload && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDownload}
+              disabled={isDownloading}
+              title="Download presentation"
+              className="text-white/70 hover:text-white hover:bg-white/10 gap-1.5"
+            >
+              {isDownloading ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline text-xs">
+                {isDownloading ? "Downloading..." : "Download"}
+              </span>
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="sm"

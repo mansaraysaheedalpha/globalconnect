@@ -17,3 +17,6 @@ export interface OrganizationMember {
   user: User;
   role: Role;
 }
+
+// Re-export connection types
+export * from "./connection";

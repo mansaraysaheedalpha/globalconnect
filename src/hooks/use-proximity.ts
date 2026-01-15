@@ -83,6 +83,12 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
   const updateIntervalId = useRef<NodeJS.Timeout | null>(null);
   const lastLocationRef = useRef<LocationCoordinates | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const eventIdRef = useRef(eventId);
+
+  // Keep eventIdRef in sync with eventId prop
+  useEffect(() => {
+    eventIdRef.current = eventId;
+  }, [eventId]);
 
   // Check if geolocation is available (SSR safe)
   const checkGeolocationSupport = useCallback(() => {
@@ -140,13 +146,16 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
     // Listen for roster updates (nearby users)
     newSocket.on("proximity.roster.updated", (data: RosterUpdate) => {
       if (isAdvancedRosterUpdate(data)) {
-        // Advanced format from AI service includes full user details
+        // Advanced format from AI/matching service includes full user details
         const nearbyUsers: NearbyUser[] = data.nearbyUsers.map((nu) => ({
           id: nu.user.id,
           name: nu.user.name,
           avatarUrl: nu.user.avatarUrl,
           distance: nu.distance,
           sharedInterests: nu.sharedInterests,
+          connectionContexts: nu.connectionContexts,
+          matchScore: nu.matchScore,
+          alreadyConnected: nu.alreadyConnected,
         }));
         setState((prev) => ({ ...prev, nearbyUsers }));
       } else {
@@ -215,6 +224,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
       latitude: coords.latitude,
       longitude: coords.longitude,
       idempotencyKey: generateUUID(),
+      eventId: eventIdRef.current, // Include eventId for context-rich matching
     };
 
     currentSocket.emit(
@@ -378,6 +388,7 @@ export const useProximity = ({ eventId, autoStart = false }: UseProximityOptions
         const payload = {
           targetUserId,
           message,
+          eventId: eventIdRef.current,
           idempotencyKey: generateUUID(),
         };
 

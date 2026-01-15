@@ -1,8 +1,9 @@
+// src/hooks/use-gamification.ts
+"use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-
-const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+import { useAuthStore } from "@/store/auth.store";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -57,102 +58,154 @@ export interface Achievement {
     unlockedAt: string;
 }
 
-export const useGamification = (sessionId: string, userId: string) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+interface UseGamificationOptions {
+  sessionId: string;
+  autoConnect?: boolean;
+}
+
+export const useGamification = ({
+  sessionId,
+  autoConnect = true,
+}: UseGamificationOptions) => {
+  const { token, user } = useAuthStore();
+  const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [teamLeaderboard, setTeamLeaderboard] = useState<
-    TeamLeaderboardEntry[]
-  >([]);
+  const [teamLeaderboard, setTeamLeaderboard] = useState<TeamLeaderboardEntry[]>([]);
   const [currentScore, setCurrentScore] = useState(0);
   const [currentRank, setCurrentRank] = useState<number | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [recentPointEvents, setRecentPointEvents] = useState<RecentPointEvent[]>([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const requestLeaderboard = useCallback(() => {
+    if (!socketRef.current?.connected) return;
     setIsLoadingLeaderboard(true);
-    socket?.emit("leaderboard.request");
-  }, [socket]);
+    socketRef.current.emit("leaderboard.request");
+  }, []);
 
-  const clearRecentAchievements = (achievementIds: string[]) => {
-    setAchievements(prev => prev.filter(ach => !achievementIds.includes(ach.id)));
-  };
+  const clearRecentAchievements = useCallback((achievementIds: string[]) => {
+    setAchievements((prev) => prev.filter((ach) => !achievementIds.includes(ach.id)));
+  }, []);
 
-  const getReasonText = (reason: PointReason): string => {
+  const getReasonText = useCallback((reason: PointReason): string => {
     return reason.replace(/_/g, " ").toLowerCase();
-  }
+  }, []);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Initialize socket connection with proper authentication
   useEffect(() => {
-    const newSocket = io(SOCKET_SERVER_URL, {
+    if (!sessionId || !token || !autoConnect) {
+      return;
+    }
+
+    const realtimeUrl =
+      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+
+    const newSocket = io(realtimeUrl, {
+      auth: { token: `Bearer ${token}` },
       query: { sessionId },
-      withCredentials: true,
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
-    setSocket(newSocket);
+
+    socketRef.current = newSocket;
 
     newSocket.on("connect", () => {
-      console.log("Connected to gamification socket");
       setIsConnected(true);
-      newSocket.emit("join", { userId });
+      setError(null);
+      // Join the session room for receiving broadcasts
+      newSocket.emit("session.join", { sessionId });
     });
 
-    newSocket.on("joined", () => {
-        setIsJoined(true);
-    });
-
-    newSocket.on("leaderboard.data", (data) => {
-      setLeaderboard(data.topEntries);
-      setIsLoadingLeaderboard(false);
-    });
-
-    newSocket.on("leaderboard.updated", (data) => {
-      setLeaderboard(data.topEntries);
-    });
-
-    newSocket.on("team.leaderboard.updated", (data) => {
-      setTeamLeaderboard(data.teamScores);
-    });
-
-    newSocket.on("point.event", (data: RecentPointEvent) => {
-        setRecentPointEvents(prev => [...prev, data]);
-        setCurrentScore(prev => prev + data.points);
-        setTimeout(() => {
-            setRecentPointEvents(prev => prev.filter(event => event.id !== data.id));
-        }, 5000);
-    });
-
-    newSocket.on("achievement.unlocked", (data: Achievement) => {
-        setAchievements(prev => [...prev, data]);
+    newSocket.on("connectionAcknowledged", () => {
+      setIsJoined(true);
+      // Request initial leaderboard data
+      newSocket.emit("leaderboard.request");
     });
 
     newSocket.on("disconnect", () => {
-        setIsConnected(false);
-        setIsJoined(false);
-    })
+      setIsConnected(false);
+      setIsJoined(false);
+    });
 
+    newSocket.on("connect_error", (err) => {
+      setError(err.message);
+    });
+
+    // Leaderboard events
+    newSocket.on("leaderboard.data", (data: { topEntries: LeaderboardEntry[] }) => {
+      if (data?.topEntries) {
+        setLeaderboard(data.topEntries);
+      }
+      setIsLoadingLeaderboard(false);
+    });
+
+    newSocket.on("leaderboard.updated", (data: { topEntries: LeaderboardEntry[] }) => {
+      if (data?.topEntries) {
+        setLeaderboard(data.topEntries);
+      }
+    });
+
+    // Team leaderboard events
+    newSocket.on("team.leaderboard.updated", (data: { teamScores: TeamLeaderboardEntry[] }) => {
+      if (data?.teamScores) {
+        setTeamLeaderboard(data.teamScores);
+      }
+    });
+
+    // Points awarded event (private to user)
+    newSocket.on("gamification.points.awarded", (data: RecentPointEvent) => {
+      if (!data) return;
+      setRecentPointEvents((prev) => [...prev, data]);
+      setCurrentScore((prev) => prev + (data.points || 0));
+      // Auto-clear after 5 seconds
+      setTimeout(() => {
+        setRecentPointEvents((prev) => prev.filter((event) => event.id !== data.id));
+      }, 5000);
+    });
+
+    // Achievement unlocked event (private to user)
+    newSocket.on("achievement.unlocked", (data: Achievement) => {
+      if (!data) return;
+      setAchievements((prev) => [...prev, data]);
+    });
+
+    // Cleanup
     return () => {
       newSocket.off("connect");
-      newSocket.off("joined");
+      newSocket.off("connectionAcknowledged");
+      newSocket.off("disconnect");
+      newSocket.off("connect_error");
       newSocket.off("leaderboard.data");
       newSocket.off("leaderboard.updated");
       newSocket.off("team.leaderboard.updated");
-      newSocket.off("point.event");
+      newSocket.off("gamification.points.awarded");
       newSocket.off("achievement.unlocked");
-      newSocket.off("disconnect");
       newSocket.disconnect();
+      socketRef.current = null;
     };
-  }, [sessionId, userId]);
+  }, [sessionId, token, autoConnect]);
 
+  // Update current user's rank and score from leaderboard
   useEffect(() => {
-    const currentUser = leaderboard.find(entry => entry.user.id === userId);
+    if (!user?.id) return;
+    const currentUser = leaderboard.find((entry) => entry.user.id === user.id);
     if (currentUser) {
       setCurrentRank(currentUser.rank);
       setCurrentScore(currentUser.score);
     }
-  }, [leaderboard, userId]);
+  }, [leaderboard, user?.id]);
 
   return {
+    // State
     isConnected,
     isJoined,
     leaderboard,
@@ -162,9 +215,15 @@ export const useGamification = (sessionId: string, userId: string) => {
     achievements,
     recentPointEvents,
     isLoadingLeaderboard,
-    currentUserId: userId,
+    error,
+    currentUserId: user?.id,
+
+    // Actions
     requestLeaderboard,
     clearRecentAchievements,
+    clearError,
+
+    // Helpers
     getReasonText,
   };
 };

@@ -5,13 +5,14 @@ import React, { useEffect, useState, useRef } from "react";
 import { ProximityPing } from "@/types/proximity";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { X, Bell, MessageCircle } from "lucide-react";
+import { X, Bell, MessageCircle, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface PingNotificationProps {
   ping: ProximityPing;
   onDismiss: () => void;
   onReply?: (userId: string) => void;
+  onStartChat?: (userId: string, userName: string) => void;
   autoDismissMs?: number;
   className?: string;
 }
@@ -20,6 +21,7 @@ export const PingNotification = ({
   ping,
   onDismiss,
   onReply,
+  onStartChat,
   autoDismissMs = 20000, // 20 seconds - gives user more time to notice
   className = "",
 }: PingNotificationProps) => {
@@ -48,6 +50,13 @@ export const PingNotification = ({
   const handleReply = () => {
     if (onReply) {
       onReply(ping.fromUser.id);
+    }
+    handleDismiss();
+  };
+
+  const handleStartChat = () => {
+    if (onStartChat) {
+      onStartChat(ping.fromUser.id, ping.fromUser.name);
     }
     handleDismiss();
   };
@@ -89,17 +98,30 @@ export const PingNotification = ({
                 addSuffix: true,
               })}
             </span>
-            {onReply && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReply}
-                className="h-7"
-              >
-                <MessageCircle className="h-3 w-3 mr-1" />
-                Reply
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              {onReply && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReply}
+                  className="h-7"
+                >
+                  <MessageCircle className="h-3 w-3 mr-1" />
+                  Reply
+                </Button>
+              )}
+              {onStartChat && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleStartChat}
+                  className="h-7"
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Chat
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -114,6 +136,7 @@ interface PingNotificationsContainerProps {
   pings: ProximityPing[];
   onDismiss: (index: number) => void;
   onReply?: (userId: string) => void;
+  onStartChat?: (userId: string, userName: string) => void;
   position?: "top-right" | "bottom-right";
   maxVisible?: number;
   className?: string;
@@ -123,6 +146,7 @@ export const PingNotificationsContainer = ({
   pings,
   onDismiss,
   onReply,
+  onStartChat,
   position = "top-right",
   maxVisible = 3,
   className = "",
@@ -152,6 +176,7 @@ export const PingNotificationsContainer = ({
           ping={ping}
           onDismiss={() => onDismiss(index)}
           onReply={onReply}
+          onStartChat={onStartChat}
         />
       ))}
       {pings.length > maxVisible && (

@@ -22,6 +22,8 @@ export interface SlideState {
   totalSlides: number;     // Total number of slides
   isActive: boolean;       // true = live, false = ended/not started
   slideUrls: string[];     // Array of slide image URLs (always provided by backend)
+  downloadEnabled?: boolean;  // Whether attendees can download the presentation
+  originalFilename?: string;  // Original filename for download
 }
 
 // Dropped content from presenter
@@ -209,6 +211,25 @@ export const usePresentationControl = (
       }
     );
 
+    // Presentation download availability toggle (from organizer)
+    newSocket.on(
+      "presentation.download.available",
+      (data: { sessionId: string; downloadEnabled: boolean; filename?: string }) => {
+        if (data.sessionId === sessionId) {
+          setState((prev) => ({
+            ...prev,
+            slideState: prev.slideState
+              ? {
+                  ...prev.slideState,
+                  downloadEnabled: data.downloadEnabled,
+                  originalFilename: data.filename,
+                }
+              : null,
+          }));
+        }
+      }
+    );
+
     // Error handling
     newSocket.on("systemError", (error: { message: string }) => {
       setState((prev) => ({ ...prev, error: error.message }));
@@ -227,6 +248,7 @@ export const usePresentationControl = (
       newSocket.off("slide.update");
       newSocket.off("content.dropped");
       newSocket.off("presentation.status.update");
+      newSocket.off("presentation.download.available");
       newSocket.off("systemError");
       newSocket.off("connect_error");
       newSocket.disconnect();

@@ -1,5 +1,15 @@
 // src/types/proximity.ts
 
+import { ContextType } from "./connection";
+
+/**
+ * Connection context for why two users should connect
+ */
+export interface ConnectionContextItem {
+  contextType: ContextType;
+  contextValue: string;
+}
+
 /**
  * User info for a nearby attendee
  */
@@ -9,6 +19,9 @@ export interface NearbyUser {
   avatarUrl?: string;
   distance?: number; // Distance in meters (from advanced AI matching)
   sharedInterests?: string[]; // Common interests (from advanced AI matching)
+  connectionContexts?: ConnectionContextItem[]; // Why connect reasons
+  matchScore?: number; // 0-100 score based on context
+  alreadyConnected?: boolean; // Whether already connected at this event
 }
 
 /**
@@ -19,18 +32,21 @@ export interface SimpleRosterUpdate {
 }
 
 /**
- * Advanced roster update from AI service
+ * Advanced roster update from AI service or matching service
  */
 export interface AdvancedRosterUpdate {
-  userId: string;
+  userId?: string;
   nearbyUsers: {
     user: {
       id: string;
       name: string;
       avatarUrl?: string;
     };
-    distance: number;
+    distance?: number;
     sharedInterests: string[];
+    connectionContexts?: ConnectionContextItem[];
+    matchScore?: number;
+    alreadyConnected?: boolean;
   }[];
 }
 
@@ -64,6 +80,7 @@ export interface LocationCoordinates {
  */
 export interface LocationUpdatePayload extends LocationCoordinates {
   idempotencyKey: string;
+  eventId?: string; // For context-rich matching
 }
 
 /**

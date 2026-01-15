@@ -3,7 +3,7 @@
 
 import React from "react";
 import { useAuthStore } from "@/store/auth.store";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { useMutation, useQuery } from "@apollo/client";
@@ -30,7 +30,12 @@ type HeaderProps = {
 export function Header({ onOpenSidebar }: HeaderProps) {
   const { user, orgId, logout } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
   const { data, loading } = useQuery(GET_MY_ORGS_QUERY);
+
+  // Extract eventId from pathname if on an event page
+  const eventIdMatch = pathname.match(/\/dashboard\/events\/([^/]+)/);
+  const eventId = eventIdMatch ? eventIdMatch[1] : undefined;
   const { data: teamData } = useQuery(TEAM_DATA_QUERY);
   const currentOrg = data?.myOrganizations.find((org: any) => org.id === orgId);
 
@@ -88,7 +93,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           <HeaderDMButton availableUsers={availableUsers} />
 
           {/* Notifications Bell */}
-          <NotificationBellOnly />
+          <NotificationBellOnly eventId={eventId} />
 
           {/* User Menu */}
           <DropdownMenu>

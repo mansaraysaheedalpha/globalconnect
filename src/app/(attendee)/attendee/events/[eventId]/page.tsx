@@ -52,6 +52,8 @@ import { SessionQA } from "@/app/(platform)/dashboard/events/[eventId]/_componen
 import { SessionPolls } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-polls";
 import { SlideViewer, DroppedContentNotification } from "@/components/features/presentation/slide-viewer";
 import { usePresentationControl, DroppedContent } from "@/hooks/use-presentation-control";
+import { useAuthStore } from "@/store/auth.store";
+import { toast } from "sonner";
 import { LiveReactionsFull } from "@/components/features/live-reactions-overlay";
 import { FloatingScoreWidget } from "@/components/features/gamification/gamification-container";
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
@@ -94,6 +96,7 @@ type Event = {
   endDate: string;
   status: string;
   imageUrl: string | null;
+  organizationId?: string;
   venue: {
     id: string;
     name: string;
@@ -345,10 +348,12 @@ const AttendeePollsDialog = ({
 const AttendeePresentationDialog = ({
   session,
   eventId,
+  organizationId,
   livePresentationActive,
 }: {
   session: Session;
   eventId: string;
+  organizationId?: string;
   livePresentationActive: boolean;
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -400,6 +405,7 @@ const AttendeePresentationDialog = ({
             sessionId={session.id}
             eventId={eventId}
             sessionTitle={session.title}
+            organizationId={organizationId}
           />
         </div>
       </DialogContent>
@@ -408,10 +414,11 @@ const AttendeePresentationDialog = ({
 };
 
 // Separate component for attendee presentation viewer (hooks need stable component)
-const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
+const AttendeePresentation = ({ sessionId, eventId, sessionTitle, organizationId }: {
   sessionId: string;
   eventId: string;
   sessionTitle: string;
+  organizationId?: string;
 }) => {
   const {
     slideState,
@@ -420,6 +427,40 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
     error,
     clearDroppedContent,
   } = usePresentationControl(sessionId, eventId, false); // canControl = false for attendees
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const { token } = useAuthStore();
+
+  // Handle download request
+  const handleDownload = async () => {
+    if (!organizationId) {
+      toast.error("Cannot download", { description: "Organization information not available" });
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organizationId}/events/${eventId}/sessions/${sessionId}/presentation/download-url`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Open the signed download URL in a new tab
+        window.open(data.url, "_blank");
+        toast.success("Download started", {
+          description: `Downloading ${data.filename}`,
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to get download link");
+      }
+    } catch (err: any) {
+      toast.error("Download failed", { description: err.message });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -443,6 +484,8 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
           slideState={slideState}
           slideUrls={slideState?.slideUrls}
           isPresenter={false} // Attendees can only view, not control
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
           className="h-full"
         />
       </div>
@@ -463,7 +506,7 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle }: {
   );
 };
 
-const SessionCard = ({ session, eventId }: { session: Session; eventId: string }) => {
+const SessionCard = ({ session, eventId, organizationId }: { session: Session; eventId: string; organizationId?: string }) => {
   const isLive = session.status === "LIVE";
   const isEnded = session.status === "ENDED";
 
@@ -568,6 +611,7 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                 <AttendeePresentationDialog
                   session={session}
                   eventId={eventId}
+                  organizationId={organizationId}
                   livePresentationActive={livePresentationActive}
                 />
               )}
@@ -841,7 +885,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {liveSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -859,7 +903,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {upcomingSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -889,7 +933,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {endedSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -950,6 +994,12 @@ export default function AttendeeEventPage() {
         eventId={eventId}
         position="bottom-right"
         className="right-20 sm:right-24"
+        onStartChat={(userId, userName) => {
+          // Dispatch custom event to open DM with this user
+          window.dispatchEvent(
+            new CustomEvent("start-dm-chat", { detail: { userId, userName } })
+          );
+        }}
       />
 
       {/* Floating Direct Messages Button */}

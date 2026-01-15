@@ -1,7 +1,8 @@
 // src/hooks/use-sync-bundle.ts
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
 import {
   storeItem,
@@ -70,6 +71,23 @@ export interface SyncBundle {
   venue: SyncBundleVenue | null;
 }
 
+// Types for real-time sync updates from WebSocket
+export type SyncUpdateType =
+  | "EVENT_UPDATED"
+  | "SESSION_UPDATED"
+  | "SESSION_ADDED"
+  | "SESSION_DELETED"
+  | "SPEAKER_UPDATED"
+  | "VENUE_UPDATED"
+  | "SCHEDULE_CHANGED";
+
+export interface SyncUpdatePayload {
+  type: SyncUpdateType;
+  eventId: string;
+  data?: unknown;
+  timestamp: string;
+}
+
 interface UseSyncBundleOptions {
   organizationId: string;
   eventId: string;
@@ -81,6 +99,10 @@ interface UseSyncBundleOptions {
    * Minimum time between syncs in milliseconds (default: 5 minutes)
    */
   syncInterval?: number;
+  /**
+   * Enable WebSocket for real-time sync updates (default: true)
+   */
+  enableRealtime?: boolean;
 }
 
 export function useSyncBundle({
@@ -88,13 +110,17 @@ export function useSyncBundle({
   eventId,
   autoSync = true,
   syncInterval = 5 * 60 * 1000, // 5 minutes
+  enableRealtime = true,
 }: UseSyncBundleOptions) {
   const { token } = useAuthStore();
+  const socketRef = useRef<Socket | null>(null);
   const [bundle, setBundle] = useState<SyncBundle | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(!isOffline());
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [pendingUpdates, setPendingUpdates] = useState<SyncUpdatePayload[]>([]);
 
   /**
    * Fetch sync bundle from the API
@@ -165,11 +191,6 @@ export function useSyncBundle({
 
       // Update sync metadata
       await setLastSyncTime(data.event.id);
-
-      console.log(
-        "[useSyncBundle] Stored bundle locally for event:",
-        data.event.id
-      );
     } catch (err) {
       console.error("[useSyncBundle] Failed to store bundle locally:", err);
     }
@@ -210,7 +231,6 @@ export function useSyncBundle({
    */
   const sync = useCallback(async (): Promise<boolean> => {
     if (isOffline()) {
-      console.log("[useSyncBundle] Offline - skipping sync");
       // Try to load from local storage instead
       const localBundle = await loadFromLocal();
       if (localBundle) {
@@ -246,7 +266,6 @@ export function useSyncBundle({
   const smartSync = useCallback(async (): Promise<boolean> => {
     const needsSync = await shouldSync();
     if (!needsSync) {
-      console.log("[useSyncBundle] Skipping sync - recently synced");
       // Load from local if we have no data
       if (!bundle) {
         const localBundle = await loadFromLocal();
@@ -279,10 +298,88 @@ export function useSyncBundle({
     [getLocalVersion]
   );
 
+  /**
+   * Handle incoming sync update from WebSocket
+   */
+  const handleSyncUpdate = useCallback(
+    (payload: SyncUpdatePayload) => {
+      // Only process updates for this event
+      if (payload.eventId !== eventId) return;
+
+      // Track pending update for UI feedback
+      setPendingUpdates((prev) => [...prev, payload]);
+
+      // Trigger a sync to get latest data
+      sync().then(() => {
+        // Clear this update from pending after sync completes
+        setPendingUpdates((prev) =>
+          prev.filter((u) => u.timestamp !== payload.timestamp)
+        );
+      });
+    },
+    [eventId, sync]
+  );
+
+  /**
+   * Clear pending updates
+   */
+  const clearPendingUpdates = useCallback(() => {
+    setPendingUpdates([]);
+  }, []);
+
+  // WebSocket connection for real-time sync updates
+  useEffect(() => {
+    if (!token || !enableRealtime || !eventId) {
+      return;
+    }
+
+    const realtimeUrl =
+      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+
+    const socket = io(realtimeUrl, {
+      auth: { token: `Bearer ${token}` },
+      query: { eventId },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      setIsRealtimeConnected(true);
+      // Join the event room for event-wide sync updates
+      socket.emit("event.join", { eventId });
+    });
+
+    socket.on("disconnect", () => {
+      setIsRealtimeConnected(false);
+    });
+
+    // Listen for sync updates pushed from the server
+    socket.on("sync.update", (payload: SyncUpdatePayload) => {
+      handleSyncUpdate(payload);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("[useSyncBundle] WebSocket connection error:", err.message);
+    });
+
+    return () => {
+      socket.emit("event.leave", { eventId });
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("sync.update");
+      socket.off("connect_error");
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [token, enableRealtime, eventId, handleSyncUpdate]);
+
   // Listen for online/offline status changes
   useEffect(() => {
     const handleOnline = () => {
-      console.log("[useSyncBundle] Online - triggering sync");
       setIsOnline(true);
       if (autoSync) {
         sync();
@@ -290,7 +387,6 @@ export function useSyncBundle({
     };
 
     const handleOffline = () => {
-      console.log("[useSyncBundle] Offline");
       setIsOnline(false);
     };
 
@@ -324,14 +420,27 @@ export function useSyncBundle({
   }, [eventId, organizationId, autoSync, loadFromLocal, smartSync]);
 
   return {
+    // Data
     bundle,
     loading,
     error,
     lastSynced,
+
+    // Connection state
     isOnline,
+    isRealtimeConnected,
+
+    // Real-time updates
+    pendingUpdates,
+    hasPendingUpdates: pendingUpdates.length > 0,
+
+    // Actions
     sync,
     smartSync,
     loadFromLocal,
+    clearPendingUpdates,
+
+    // Helpers
     getLocalVersion,
     hasNewerVersion,
   };
