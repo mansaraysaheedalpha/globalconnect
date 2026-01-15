@@ -186,7 +186,7 @@ const AttendeeChatDialog = ({
         </div>
 
         {/* Chat Content - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 h-0 overflow-hidden">
           <SessionChat
             sessionId={session.id}
             eventId={eventId}
