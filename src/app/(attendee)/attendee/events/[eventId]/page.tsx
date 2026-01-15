@@ -165,7 +165,7 @@ const AttendeeChatDialog = ({
           </Badge>
         )}
       </Button>
-      <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] max-h-[92vh] sm:max-h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
+      <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] h-[92vh] sm:h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
         {/* Header - Fixed */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
           <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ const AttendeeChatDialog = ({
         </div>
 
         {/* Chat Content - Scrollable */}
-        <div className="flex-1 h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <SessionChat
             sessionId={session.id}
             eventId={eventId}

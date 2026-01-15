@@ -418,10 +418,11 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
   const isChatClosed = !chatOpen;
 
   return (
-    <Card className={cn("flex flex-col overflow-hidden max-h-full", className)}>
-      <CardHeader className="pb-3 flex-shrink-0">
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
+    <div className={cn("flex flex-col overflow-hidden", className)}>
+      {/* Header */}
+      <div className="pb-3 pt-4 px-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2 font-semibold">
             <MessageSquare className="h-5 w-5" />
             Session Chat
           </span>
@@ -438,10 +439,11 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
               </>
             )}
           </span>
-        </CardTitle>
-      </CardHeader>
+        </div>
+      </div>
 
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
+      {/* Content area - relative container for absolute positioning */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Error banner */}
         {error && (
           <div className="mx-4 mb-2 px-3 py-2 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center justify-between flex-shrink-0">
@@ -455,10 +457,11 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
           </div>
         )}
 
-        {/* Messages area */}
+        {/* Messages area - scrollable */}
         <div
           ref={scrollAreaRef}
-          className="flex-1 h-0 px-4 overflow-y-auto"
+          className="flex-1 px-4 overflow-y-auto"
+          style={{ minHeight: 0 }}
         >
           <div className="space-y-4 py-4">
             {messages.length === 0 ? (
@@ -556,7 +559,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
             </>
           )}
         </div>
-      </CardContent>
+      </div>
 
       {/* Delete confirmation dialog */}
       <AlertDialog
@@ -578,6 +581,6 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 };
