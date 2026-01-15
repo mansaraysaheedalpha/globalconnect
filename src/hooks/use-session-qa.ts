@@ -83,7 +83,12 @@ interface SessionQAState {
   qaOpen: boolean; // True when Q&A is accepting questions (runtime state)
 }
 
-export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: boolean = false) => {
+export const useSessionQA = (
+  sessionId: string,
+  eventId: string,
+  initialQaOpen: boolean = false,
+  sessionName?: string // Optional session title for heatmap display
+) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionQAState>({
     questions: [],
@@ -299,11 +304,21 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
 
       return new Promise((resolve) => {
         // Note: sessionId is NOT included - backend gets it from the joined session room
-        const payload = {
+        const payload: {
+          text: string;
+          isAnonymous: boolean;
+          idempotencyKey: string;
+          sessionName?: string;
+        } = {
           text: trimmedText,
           isAnonymous,
           idempotencyKey,
         };
+
+        // Include session name for proper heatmap display
+        if (sessionName) {
+          payload.sessionName = sessionName;
+        }
 
         // Add timeout in case backend doesn't call callback
         let callbackCalled = false;
@@ -344,7 +359,7 @@ export const useSessionQA = (sessionId: string, eventId: string, initialQaOpen: 
         });
       });
     },
-    [socket, state.isJoined, sessionId, user]
+    [socket, state.isJoined, sessionId, sessionName, user]
   );
 
   // Upvote a question (toggle) with optimistic update

@@ -62,6 +62,7 @@ const getFullDisplayName = (author: { firstName?: string; lastName?: string } | 
 interface SessionQAProps {
   sessionId: string;
   eventId: string;
+  sessionName?: string; // Session title for heatmap display (e.g., "Opening Keynote")
   className?: string;
   isOrganizer?: boolean;
   isSpeaker?: boolean;
@@ -243,6 +244,7 @@ const QuestionCard = ({
 export const SessionQA = ({
   sessionId,
   eventId,
+  sessionName,
   className,
   isOrganizer = false,
   isSpeaker = false,
@@ -265,7 +267,7 @@ export const SessionQA = ({
     moderateQuestion,
     answerQuestion,
     clearError,
-  } = useSessionQA(sessionId, eventId, initialQaOpen);
+  } = useSessionQA(sessionId, eventId, initialQaOpen, sessionName);
 
   // Notify parent when Q&A open status changes via WebSocket
   useEffect(() => {

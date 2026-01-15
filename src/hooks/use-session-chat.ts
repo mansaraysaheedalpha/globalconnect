@@ -68,7 +68,12 @@ interface SessionChatState {
   chatOpen: boolean; // True when chat is accepting messages (runtime state)
 }
 
-export const useSessionChat = (sessionId: string, eventId: string, initialChatOpen: boolean = false) => {
+export const useSessionChat = (
+  sessionId: string,
+  eventId: string,
+  initialChatOpen: boolean = false,
+  sessionName?: string // Optional session title for heatmap display
+) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionChatState>({
     messages: [],
@@ -292,6 +297,7 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
           text: string;
           idempotencyKey: string;
           replyingToMessageId?: string;
+          sessionName?: string;
         } = {
           sessionId,
           text: trimmedText,
@@ -300,6 +306,11 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
 
         if (replyingToMessageId) {
           payload.replyingToMessageId = replyingToMessageId;
+        }
+
+        // Include session name for proper heatmap display
+        if (sessionName) {
+          payload.sessionName = sessionName;
         }
 
         // Add timeout in case backend doesn't call callback
@@ -340,7 +351,7 @@ export const useSessionChat = (sessionId: string, eventId: string, initialChatOp
         });
       });
     },
-    [socket, state.isJoined, sessionId, user]
+    [socket, state.isJoined, sessionId, sessionName, user]
   );
 
   // Edit a message (with optimistic update)

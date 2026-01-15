@@ -62,6 +62,7 @@ const getFullDisplayName = (author: { firstName?: string; lastName?: string } | 
 interface SessionChatProps {
   sessionId: string;
   eventId: string;
+  sessionName?: string; // Session title for heatmap display (e.g., "Opening Keynote")
   className?: string;
   initialChatOpen?: boolean; // Initial state from GraphQL query
   isOrganizer?: boolean; // Organizers can send messages even when chat is closed
@@ -254,7 +255,7 @@ const MessageBubble = ({
   );
 };
 
-export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = true, isOrganizer = false, onStatusChange }: SessionChatProps) => {
+export const SessionChat = ({ sessionId, eventId, sessionName, className, initialChatOpen = true, isOrganizer = false, onStatusChange }: SessionChatProps) => {
   const {
     messages,
     isConnected,
@@ -269,7 +270,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
     deleteMessage,
     reactToMessage,
     clearError,
-  } = useSessionChat(sessionId, eventId, initialChatOpen);
+  } = useSessionChat(sessionId, eventId, initialChatOpen, sessionName);
 
   // Notify parent when chat open status changes via WebSocket
   useEffect(() => {
