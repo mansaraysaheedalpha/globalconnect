@@ -418,8 +418,8 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
   const isChatClosed = !chatOpen;
 
   return (
-    <Card className={cn("flex flex-col", className)}>
-      <CardHeader className="pb-3">
+    <Card className={cn("flex flex-col overflow-hidden", className)}>
+      <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
@@ -441,7 +441,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
         {/* Error banner */}
         {error && (
           <div className="mx-4 mb-2 px-3 py-2 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center justify-between">
@@ -507,7 +507,7 @@ export const SessionChat = ({ sessionId, eventId, className, initialChatOpen = t
         )}
 
         {/* Input area */}
-        <div className="p-4 pt-2 border-t">
+        <div className="p-4 pt-2 border-t flex-shrink-0">
           {isChatClosed && !isOrganizer ? (
             <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
               <Lock className="h-4 w-4" />
