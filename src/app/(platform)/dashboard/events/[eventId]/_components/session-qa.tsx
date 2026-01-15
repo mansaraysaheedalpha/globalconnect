@@ -408,10 +408,11 @@ export const SessionQA = ({
   const isQaClosed = !qaOpen;
 
   return (
-    <Card className={cn("flex flex-col h-full overflow-hidden", className)}>
-      <CardHeader className="pb-3 flex-shrink-0">
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
+    <div className={cn("flex flex-col overflow-hidden", className)}>
+      {/* Header */}
+      <div className="pb-3 pt-4 px-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2 font-semibold">
             <HelpCircle className="h-5 w-5" />
             Q&A
           </span>
@@ -433,10 +434,11 @@ export const SessionQA = ({
               </Badge>
             )}
           </span>
-        </CardTitle>
-      </CardHeader>
+        </div>
+      </div>
 
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
+      {/* Content area */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Error banner */}
         {error && (
           <div className="mx-4 mb-2 px-3 py-2 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center justify-between">
@@ -472,7 +474,8 @@ export const SessionQA = ({
         {/* Questions list - scrollable area */}
         <div
           ref={scrollAreaRef}
-          className="flex-1 px-4 overflow-y-auto min-h-0"
+          className="flex-1 px-4 overflow-y-auto"
+          style={{ minHeight: 0 }}
         >
           <div className="space-y-3 py-4">
             {sortedQuestions.length === 0 ? (
@@ -552,7 +555,7 @@ export const SessionQA = ({
             </div>
           )}
         </div>
-      </CardContent>
+      </div>
 
       {/* Answer dialog */}
       <AlertDialog
@@ -591,6 +594,6 @@ export const SessionQA = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 };
