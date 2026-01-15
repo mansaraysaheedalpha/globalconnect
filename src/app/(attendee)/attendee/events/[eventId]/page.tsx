@@ -439,7 +439,7 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle, organizationId
 
     setIsDownloading(true);
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organizationId}/events/${eventId}/sessions/${sessionId}/presentation/download-url`;
+      const url = `${process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organizationId}/events/${eventId}/sessions/${sessionId}/presentation/download-url`;
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });

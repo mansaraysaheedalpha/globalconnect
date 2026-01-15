@@ -61,7 +61,7 @@ export const UploadPresentationModal = ({
     try {
       setStatusText("Requesting upload permission...");
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
       const requestUrl = `${baseUrl}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation/upload-request`;
 
       const presignResponse = await fetch(requestUrl, {

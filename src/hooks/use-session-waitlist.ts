@@ -83,7 +83,7 @@ export function useSessionWaitlist({
     setError(null);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
       const response = await fetch(
         `${baseUrl}/api/v1/sessions/${sessionId}/waitlist`,
         {
@@ -136,7 +136,7 @@ export function useSessionWaitlist({
     setError(null);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
       const response = await fetch(
         `${baseUrl}/api/v1/sessions/${sessionId}/waitlist`,
         {
@@ -180,7 +180,7 @@ export function useSessionWaitlist({
     }
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
       const response = await fetch(
         `${baseUrl}/api/v1/sessions/${sessionId}/waitlist/position`,
         {
@@ -231,7 +231,7 @@ export function useSessionWaitlist({
       setLoading(true);
 
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
         const response = await fetch(
           `${baseUrl}/api/v1/sessions/${sessionId}/join`,
           {

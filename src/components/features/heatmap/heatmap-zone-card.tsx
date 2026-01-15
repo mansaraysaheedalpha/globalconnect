@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Activity, MessageSquare, HelpCircle, MapPin } from "lucide-react";
+import { Activity, MessageSquare, HelpCircle, MapPin, Users } from "lucide-react";
 import { HeatmapZone, ActivityLevel } from "@/types/heatmap";
 import { ActivityIndicator, ActivityDot } from "./activity-indicator";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,15 @@ export function HeatmapZoneCard({
             value={occupancyPercent}
             className={cn("h-2", PROGRESS_COLORS[zone.activityLevel])}
           />
+        </div>
+
+        {/* Unique Engagers */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Users className="h-4 w-4" />
+            Unique Participants
+          </span>
+          <span className="font-medium">{zone.uniqueEngagers}</span>
         </div>
 
         {/* Activity Metrics */}

@@ -47,7 +47,7 @@ export function useSpeakerAvailability({
       setError(null);
 
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
         const params = new URLSearchParams({
           available_from: startTime.toISOString(),
           available_to: endTime.toISOString(),

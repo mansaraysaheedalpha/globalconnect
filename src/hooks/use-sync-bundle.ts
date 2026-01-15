@@ -135,7 +135,7 @@ export function useSyncBundle({
     setError(null);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
       const response = await fetch(
         `${baseUrl}/api/v1/organizations/${organizationId}/events/${eventId}/sync-bundle`,
         {

@@ -64,12 +64,15 @@ export const useHeatmap = ({
           const heat = data?.heat ?? 0;
           const chatVelocity = data?.chatVelocity ?? 0;
           const qnaVelocity = data?.qnaVelocity ?? 0;
+          const uniqueEngagers = data?.uniqueEngagers ?? 0;
+          const sessionName = data?.sessionName ?? `Session ${sessionId?.slice(0, 8) || "Unknown"}`;
 
           return {
             zoneId: sessionId,
-            zoneName: `Session ${sessionId?.slice(0, 8) || "Unknown"}`,
+            zoneName: sessionName,
             activityLevel: getActivityLevel(heat),
-            attendeeCount: Math.round(heat),
+            attendeeCount: Math.round(heat), // Total engagement count (kept for backwards compat)
+            uniqueEngagers, // Number of unique users who engaged
             heatScore: heat,
             chatVelocity,
             qnaVelocity,

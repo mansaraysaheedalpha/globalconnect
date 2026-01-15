@@ -167,7 +167,7 @@ export const SessionItem = ({
   };
 
   const checkPresentationStatus = useCallback(async () => {
-    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
+    const url = `${process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
     try {
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -195,7 +195,7 @@ export const SessionItem = ({
 
     const startPolling = () => {
       intervalId = setInterval(async () => {
-        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
+        const url = `${process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${event.organizationId}/events/${event.id}/sessions/${session.id}/presentation`;
         try {
           const response = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` },

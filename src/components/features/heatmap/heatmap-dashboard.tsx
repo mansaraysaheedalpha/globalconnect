@@ -109,11 +109,11 @@ export function HeatmapDashboard({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Map className="h-5 w-5" />
-                Venue Heatmap
+                <Activity className="h-5 w-5" />
+                Session Engagement
               </CardTitle>
               <CardDescription>
-                Real-time activity monitoring across all zones
+                Real-time engagement monitoring across all sessions
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function HeatmapDashboard({
               <AlertTriangle className="h-5 w-5 text-red-600 animate-pulse" />
               <div>
                 <p className="font-medium text-red-700">
-                  {criticalZones.length} zone(s) with high activity
+                  {criticalZones.length} session(s) with high activity
                 </p>
                 <p className="text-sm text-red-600">
                   {criticalZones.map((z) => z.zoneName).join(", ")}
@@ -217,7 +217,7 @@ export function HeatmapDashboard({
               <Activity className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold">{zones.length}</p>
-                <p className="text-xs text-muted-foreground">Active Zones</p>
+                <p className="text-xs text-muted-foreground">Active Sessions</p>
               </div>
             </div>
           </CardContent>
@@ -256,7 +256,7 @@ export function HeatmapDashboard({
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Zone Distribution
+              Session Distribution
             </p>
           </CardContent>
         </Card>
@@ -266,7 +266,7 @@ export function HeatmapDashboard({
       <Card>
         <CardHeader className="pb-2">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <h3 className="font-semibold">Zone Activity</h3>
+            <h3 className="font-semibold">Session Activity</h3>
             <div className="flex gap-2">
               <Select
                 value={filterLevel}
@@ -304,12 +304,12 @@ export function HeatmapDashboard({
         <CardContent>
           {filteredZones.length === 0 ? (
             <div className="text-center py-12">
-              <Map className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Zones Available</h3>
+              <Activity className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Sessions Yet</h3>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 {isJoined
-                  ? "Zone data will appear here as attendees move through the venue."
-                  : "Connect to the heatmap to start receiving zone activity data."}
+                  ? "Session engagement data will appear here as attendees interact."
+                  : "Connect to start receiving session engagement data."}
               </p>
             </div>
           ) : (

@@ -10,8 +10,10 @@ export type ActivityLevel = "low" | "medium" | "high" | "critical";
  */
 export interface SessionHeatData {
   heat: number;
+  uniqueEngagers: number;
   chatVelocity: number;
   qnaVelocity: number;
+  sessionName: string;
 }
 
 /**
@@ -29,7 +31,8 @@ export interface HeatmapZone {
   zoneId: string;
   zoneName: string;
   activityLevel: ActivityLevel;
-  attendeeCount: number;
+  attendeeCount: number; // This is actually engagement count (kept for backwards compat)
+  uniqueEngagers: number; // Number of unique users who engaged
   heatScore: number;
   chatVelocity: number;
   qnaVelocity: number;
