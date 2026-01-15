@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Users, MessageSquare, HelpCircle, MapPin } from "lucide-react";
+import { Activity, MessageSquare, HelpCircle, MapPin } from "lucide-react";
 import { HeatmapZone, ActivityLevel } from "@/types/heatmap";
 import { ActivityIndicator, ActivityDot } from "./activity-indicator";
 import { cn } from "@/lib/utils";
@@ -67,12 +67,12 @@ export function HeatmapZoneCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Attendee Count */}
+        {/* Engagement Score */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-1 text-muted-foreground">
-              <Users className="h-4 w-4" />
-              Attendees
+              <Activity className="h-4 w-4" />
+              Engagement
             </span>
             <span className="font-medium">{zone.attendeeCount}</span>
           </div>

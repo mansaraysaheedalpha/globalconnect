@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/select";
 import {
   Map,
-  Users,
   Activity,
   RefreshCw,
   Wifi,
@@ -44,7 +43,7 @@ interface HeatmapDashboardProps {
   onZoneClick?: (zone: HeatmapZone) => void;
 }
 
-type SortOption = "activity" | "attendees" | "name";
+type SortOption = "activity" | "engagement" | "name";
 
 export function HeatmapDashboard({
   eventId,
@@ -73,8 +72,8 @@ export function HeatmapDashboard({
     switch (sortBy) {
       case "activity":
         return b.heatScore - a.heatScore;
-      case "attendees":
-        return b.attendeeCount - a.attendeeCount;
+      case "engagement":
+        return b.heatScore - a.heatScore;
       case "name":
         return a.zoneName.localeCompare(b.zoneName);
       default:
@@ -201,10 +200,12 @@ export function HeatmapDashboard({
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-muted-foreground" />
+              <Activity className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
                 <p className="text-2xl font-bold">{totalAttendees}</p>
-                <p className="text-xs text-muted-foreground">Total Attendees</p>
+                <p className="text-xs text-muted-foreground">
+                  Total Engagement
+                </p>
                 <Progress value={occupancyPercent} className="h-1.5 mt-2" />
               </div>
             </div>
@@ -293,7 +294,7 @@ export function HeatmapDashboard({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="activity">By Activity</SelectItem>
-                  <SelectItem value="attendees">By Attendees</SelectItem>
+                  <SelectItem value="engagement">By Engagement</SelectItem>
                   <SelectItem value="name">By Name</SelectItem>
                 </SelectContent>
               </Select>
