@@ -1,11 +1,10 @@
 // src/components/features/heatmap/heatmap-zone-card.tsx
 "use client";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Activity, MessageSquare, HelpCircle, MapPin, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { MessageSquare, HelpCircle, Users, Zap } from "lucide-react";
 import { HeatmapZone, ActivityLevel } from "@/types/heatmap";
-import { ActivityIndicator, ActivityDot } from "./activity-indicator";
+import { ActivityDot } from "./activity-indicator";
 import { cn } from "@/lib/utils";
 
 interface HeatmapZoneCardProps {
@@ -15,96 +14,105 @@ interface HeatmapZoneCardProps {
   className?: string;
 }
 
-const BORDER_COLORS: Record<ActivityLevel, string> = {
-  low: "border-green-200",
-  medium: "border-yellow-200",
-  high: "border-orange-200",
-  critical: "border-red-200",
+const ACTIVITY_COLORS: Record<ActivityLevel, { border: string; bg: string; text: string }> = {
+  low: {
+    border: "border-emerald-200",
+    bg: "bg-emerald-50",
+    text: "text-emerald-600",
+  },
+  medium: {
+    border: "border-amber-200",
+    bg: "bg-amber-50",
+    text: "text-amber-600",
+  },
+  high: {
+    border: "border-orange-200",
+    bg: "bg-orange-50",
+    text: "text-orange-600",
+  },
+  critical: {
+    border: "border-rose-200",
+    bg: "bg-rose-50",
+    text: "text-rose-600",
+  },
 };
 
-const BG_COLORS: Record<ActivityLevel, string> = {
-  low: "bg-green-50/30",
-  medium: "bg-yellow-50/30",
-  high: "bg-orange-50/30",
-  critical: "bg-red-50/30",
-};
-
-const PROGRESS_COLORS: Record<ActivityLevel, string> = {
-  low: "[&>div]:bg-green-500",
-  medium: "[&>div]:bg-yellow-500",
-  high: "[&>div]:bg-orange-500",
-  critical: "[&>div]:bg-red-500",
+const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
+  low: "Quiet",
+  medium: "Active",
+  high: "Busy",
+  critical: "Peak",
 };
 
 export function HeatmapZoneCard({
   zone,
-  maxAttendees = 100,
   onClick,
   className,
 }: HeatmapZoneCardProps) {
-  const occupancyPercent = Math.min(
-    (zone.attendeeCount / maxAttendees) * 100,
-    100
-  );
+  const colors = ACTIVITY_COLORS[zone.activityLevel];
 
   return (
     <Card
       className={cn(
-        "transition-all hover:shadow-md cursor-pointer",
-        BORDER_COLORS[zone.activityLevel],
-        BG_COLORS[zone.activityLevel],
+        "transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden",
+        colors.border,
         className
       )}
       onClick={() => onClick?.(zone)}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-semibold text-sm">{zone.zoneName}</h3>
-          </div>
+      {/* Header with activity status */}
+      <div className={cn("px-4 py-2 flex items-center justify-between", colors.bg)}>
+        <h3 className="font-semibold text-sm truncate">{zone.zoneName}</h3>
+        <div className="flex items-center gap-1.5">
           <ActivityDot level={zone.activityLevel} pulse />
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Engagement Score */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <Activity className="h-4 w-4" />
-              Engagement
-            </span>
-            <span className="font-medium">{zone.attendeeCount}</span>
-          </div>
-          <Progress
-            value={occupancyPercent}
-            className={cn("h-2", PROGRESS_COLORS[zone.activityLevel])}
-          />
-        </div>
-
-        {/* Unique Engagers */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <Users className="h-4 w-4" />
-            Unique Participants
+          <span className={cn("text-xs font-medium", colors.text)}>
+            {ACTIVITY_LABELS[zone.activityLevel]}
           </span>
-          <span className="font-medium">{zone.uniqueEngagers}</span>
+        </div>
+      </div>
+
+      <CardContent className="p-4 space-y-3">
+        {/* Main stats */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="text-center">
+              <p className="text-2xl font-bold">{zone.attendeeCount}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                Interactions
+              </p>
+            </div>
+            <div className="h-8 w-px bg-border" />
+            <div className="text-center">
+              <p className="text-2xl font-bold">{zone.uniqueEngagers}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                Participants
+              </p>
+            </div>
+          </div>
+          <div className={cn("p-2 rounded-full", colors.bg)}>
+            <Zap className={cn("h-5 w-5", colors.text)} />
+          </div>
         </div>
 
-        {/* Activity Metrics */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+        {/* Activity rates */}
+        <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
             <MessageSquare className="h-3.5 w-3.5" />
-            <span>Chat: {zone.chatVelocity.toFixed(1)}/min</span>
+            <span>{zone.chatVelocity.toFixed(1)}/min</span>
           </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+          <div className="flex items-center gap-1">
             <HelpCircle className="h-3.5 w-3.5" />
-            <span>Q&A: {zone.qnaVelocity.toFixed(1)}/min</span>
+            <span>{zone.qnaVelocity.toFixed(1)}/min</span>
+          </div>
+          <div className="flex items-center gap-1 ml-auto">
+            <Users className="h-3.5 w-3.5" />
+            <span>
+              {zone.uniqueEngagers > 0
+                ? (zone.attendeeCount / zone.uniqueEngagers).toFixed(1)
+                : "0"} avg
+            </span>
           </div>
         </div>
-
-        {/* Activity Badge */}
-        <ActivityIndicator level={zone.activityLevel} size="sm" />
       </CardContent>
     </Card>
   );
