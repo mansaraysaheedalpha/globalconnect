@@ -190,6 +190,7 @@ const AttendeeChatDialog = ({
           <SessionChat
             sessionId={session.id}
             eventId={eventId}
+            sessionName={session.title}
             className="h-full border-0 shadow-none rounded-none"
             initialChatOpen={liveChatOpen}
             onStatusChange={setLiveChatOpen}
@@ -260,6 +261,7 @@ const AttendeeQADialog = ({
           <SessionQA
             sessionId={session.id}
             eventId={eventId}
+            sessionName={session.title}
             isOrganizer={false}
             isSpeaker={false}
             className="h-full border-0 shadow-none rounded-none"

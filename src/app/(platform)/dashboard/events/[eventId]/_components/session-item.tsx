@@ -378,6 +378,7 @@ export const SessionItem = ({
                             <SessionChat
                               sessionId={session.id}
                               eventId={event.id}
+                              sessionName={session.title}
                               className="h-full border-0 shadow-none rounded-none"
                               initialChatOpen={isChatOpen}
                               isOrganizer={true}
@@ -449,6 +450,7 @@ export const SessionItem = ({
                             <SessionQA
                               sessionId={session.id}
                               eventId={event.id}
+                              sessionName={session.title}
                               isOrganizer={true}
                               isSpeaker={false}
                               className="h-full border-0 shadow-none rounded-none"
