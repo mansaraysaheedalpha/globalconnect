@@ -1,9 +1,10 @@
 // src/components/features/proximity/floating-proximity-widget.tsx
 "use client";
 
-import React from "react";
-import { NearbyUser } from "@/types/proximity";
+import React, { useState } from "react";
+import { NearbyUser, ProximityPing } from "@/types/proximity";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -14,6 +15,7 @@ import {
   SheetTrigger,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   Radar,
@@ -22,12 +24,21 @@ import {
   Loader2,
   AlertCircle,
   ShieldAlert,
+  Bell,
+  MessageCircle,
+  MessageSquare,
+  Send,
+  X,
+  Sparkles,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { NearbyUsersPanel } from "./nearby-users-panel";
+import { RecommendationsPanel } from "../recommendations/recommendations-panel";
 
 interface FloatingProximityWidgetProps {
+  eventId: string;
   nearbyUsers: NearbyUser[];
-  unreadPingCount?: number;
+  receivedPings: ProximityPing[];
   isTracking: boolean;
   isConnected: boolean;
   isLoading?: boolean;
@@ -36,13 +47,17 @@ interface FloatingProximityWidgetProps {
   onStartTracking: () => Promise<boolean>;
   onStopTracking: () => void;
   onSendPing: (userId: string, message?: string) => Promise<boolean>;
+  onDismissPing: (index: number) => void;
+  onStartChat?: (userId: string, userName: string) => void;
   onClearError: () => void;
   position?: "bottom-left" | "bottom-right";
   className?: string;
 }
 
 export const FloatingProximityWidget = ({
+  eventId,
   nearbyUsers,
+  receivedPings,
   isTracking,
   isConnected,
   isLoading = false,
@@ -51,14 +66,19 @@ export const FloatingProximityWidget = ({
   onStartTracking,
   onStopTracking,
   onSendPing,
+  onDismissPing,
+  onStartChat,
   onClearError,
   position = "bottom-right",
   className = "",
 }: FloatingProximityWidgetProps) => {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"nearby" | "for-you">("nearby");
+  const [replyingTo, setReplyingTo] = useState<{ index: number; ping: ProximityPing } | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
+  const [isSendingReply, setIsSendingReply] = useState(false);
 
-  // Count of unread pings (resets when sheet is opened)
-  const unreadCount = unreadPingCount ?? 0;
+  const unreadCount = receivedPings.length;
 
   const handleToggleTracking = async () => {
     if (isTracking) {
@@ -66,6 +86,30 @@ export const FloatingProximityWidget = ({
     } else {
       await onStartTracking();
     }
+  };
+
+  const handleStartReply = (index: number, ping: ProximityPing) => {
+    setReplyingTo({ index, ping });
+    setReplyMessage("");
+  };
+
+  const handleSendReply = async () => {
+    if (!replyingTo) return;
+
+    setIsSendingReply(true);
+    const success = await onSendPing(replyingTo.ping.fromUser.id, replyMessage.trim() || undefined);
+    setIsSendingReply(false);
+
+    if (success) {
+      onDismissPing(replyingTo.index);
+      setReplyingTo(null);
+      setReplyMessage("");
+    }
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+    setReplyMessage("");
   };
 
   const positionClasses =
@@ -200,7 +244,7 @@ export const FloatingProximityWidget = ({
             )}
 
             {/* Tracking status indicator */}
-            {isTracking && (
+            {isTracking && activeTab === "nearby" && (
               <div className="px-4 py-2 bg-primary/5 border-b flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
@@ -212,29 +256,169 @@ export const FloatingProximityWidget = ({
               </div>
             )}
 
-            {/* Nearby Users Panel */}
-            <div className="flex-1 overflow-hidden">
-              <NearbyUsersPanel
-                users={nearbyUsers}
-                isTracking={isTracking}
-                isLoading={isLoading}
-                onSendPing={onSendPing}
-                className="h-full"
-              />
-            </div>
+            {/* Tabs for Nearby / Recommendations */}
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "nearby" | "for-you")}
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              <TabsList className="grid w-full grid-cols-2 mx-4 mt-2 mb-0 w-[calc(100%-2rem)]">
+                <TabsTrigger value="nearby" className="flex items-center gap-1.5">
+                  <Radar className="h-4 w-4" />
+                  Nearby
+                  {isTracking && nearbyUsers.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                      {nearbyUsers.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="for-you" className="flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4" />
+                  For You
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Footer with stats */}
-            {isTracking && nearbyCount > 0 && (
-              <div className="px-4 py-3 border-t bg-muted/30">
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>
-                    {nearbyCount} attendee{nearbyCount !== 1 ? "s" : ""} within
-                    100m
+              <TabsContent value="nearby" className="flex-1 flex flex-col overflow-hidden mt-0 data-[state=active]:flex data-[state=inactive]:hidden">
+                {/* Received Pings Section */}
+            {receivedPings.length > 0 && (
+              <div className="border-b">
+                <div className="px-4 py-2 bg-amber-500/10 flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-700">
+                    {receivedPings.length} new ping{receivedPings.length !== 1 ? "s" : ""}
                   </span>
                 </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {receivedPings.map((ping, index) => (
+                    <div
+                      key={`${ping.fromUser.id}-${ping.receivedAt}`}
+                      className="px-4 py-3 border-b last:border-b-0 bg-background"
+                    >
+                      {replyingTo?.index === index ? (
+                        /* Reply input mode */
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Reply to {ping.fromUser.name}</p>
+                          <Input
+                            placeholder="Type your reply... (optional)"
+                            value={replyMessage}
+                            onChange={(e) => setReplyMessage(e.target.value)}
+                            maxLength={255}
+                            autoFocus
+                            className="h-9"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCancelReply}
+                              disabled={isSendingReply}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={handleSendReply}
+                              disabled={isSendingReply}
+                            >
+                              {isSendingReply ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Send className="h-3 w-3 mr-1" />
+                                  Send
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Normal ping display */
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm">{ping.fromUser.name}</p>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(ping.receivedAt), { addSuffix: true })}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-0.5 break-words">
+                              {ping.message}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStartReply(index, ping)}
+                              className="h-7 px-2"
+                            >
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              Reply
+                            </Button>
+                            {onStartChat && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => {
+                                  onStartChat(ping.fromUser.id, ping.fromUser.name);
+                                  onDismissPing(index);
+                                }}
+                                className="h-7 px-2"
+                              >
+                                <MessageSquare className="h-3 w-3 mr-1" />
+                                Chat
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onDismissPing(index)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+                )}
+
+                {/* Nearby Users Panel */}
+                <div className="flex-1 overflow-hidden">
+                  <NearbyUsersPanel
+                    users={nearbyUsers}
+                    isTracking={isTracking}
+                    isLoading={isLoading}
+                    onSendPing={onSendPing}
+                    className="h-full"
+                  />
+                </div>
+
+                {/* Footer with stats */}
+                {isTracking && nearbyCount > 0 && (
+                  <div className="px-4 py-3 border-t bg-muted/30">
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>
+                        {nearbyCount} attendee{nearbyCount !== 1 ? "s" : ""} within
+                        100m
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="for-you" className="flex-1 overflow-auto mt-0 p-4">
+                <RecommendationsPanel
+                  eventId={eventId}
+                  onPing={(userId, message) => onSendPing(userId, message)}
+                  onStartChat={onStartChat || (() => {})}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </SheetContent>
       </Sheet>
