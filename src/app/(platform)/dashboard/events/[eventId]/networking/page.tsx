@@ -1,6 +1,7 @@
 // src/app/(platform)/dashboard/events/[eventId]/networking/page.tsx
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useNetworkingStats } from "@/hooks/use-networking-stats";
 import {
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users,
   Mail,
@@ -27,8 +29,10 @@ import {
   Handshake,
   DollarSign,
   GraduationCap,
+  Map,
 } from "lucide-react";
 import { NetworkGraph } from "@/components/features/connections/network-graph";
+import { HeatmapDashboard } from "@/components/features/heatmap";
 
 const outcomeIcons: Record<string, React.ElementType> = {
   MEETING_HELD: Calendar,
@@ -51,16 +55,63 @@ const outcomeLabels: Record<string, string> = {
 export default function NetworkingAnalyticsPage() {
   const params = useParams();
   const eventId = params.eventId as string;
+  const [activeTab, setActiveTab] = useState("analytics");
   const { eventAnalytics, connectionGraph, isLoading, error } =
     useNetworkingStats(eventId);
 
+  return (
+    <div className="p-6 space-y-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Networking & Venue</h1>
+        <p className="text-muted-foreground">
+          Track connections, venue activity, and networking outcomes
+        </p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="heatmap" className="flex items-center gap-2">
+            <Map className="h-4 w-4" />
+            Heatmap
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="heatmap" className="mt-6">
+          <HeatmapDashboard eventId={eventId} venueCapacity={500} />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-6">
+          <NetworkingAnalyticsContent
+            eventAnalytics={eventAnalytics}
+            connectionGraph={connectionGraph}
+            isLoading={isLoading}
+            error={error}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// Extracted analytics content into separate component
+function NetworkingAnalyticsContent({
+  eventAnalytics,
+  connectionGraph,
+  isLoading,
+  error,
+}: {
+  eventAnalytics: ReturnType<typeof useNetworkingStats>["eventAnalytics"];
+  connectionGraph: ReturnType<typeof useNetworkingStats>["connectionGraph"];
+  isLoading: boolean;
+  error: string | null;
+}) {
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="mb-6">
-          <Skeleton className="h-8 w-64 mb-2" />
-          <Skeleton className="h-4 w-96" />
-        </div>
+      <div className="space-y-6">
         <div className="grid grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-32" />
@@ -73,41 +124,31 @@ export default function NetworkingAnalyticsPage() {
 
   if (error) {
     return (
-      <div className="p-6">
-        <Card className="border-destructive">
-          <CardContent className="py-6 text-center">
-            <p className="text-destructive">{error}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-destructive">
+        <CardContent className="py-6 text-center">
+          <p className="text-destructive">{error}</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!eventAnalytics) {
     return (
-      <div className="p-6">
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold">No Networking Data</h3>
-            <p className="text-muted-foreground mt-2">
-              Networking analytics will appear here once attendees start
-              connecting at your event.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-dashed">
+        <CardContent className="py-12 text-center">
+          <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-semibold">No Networking Data</h3>
+          <p className="text-muted-foreground mt-2">
+            Networking analytics will appear here once attendees start
+            connecting at your event.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Networking Analytics</h1>
-        <p className="text-muted-foreground">
-          Track connections, follow-ups, and outcomes from your event
-        </p>
-      </div>
+    <div className="space-y-6">
 
       {/* Networking Score */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
@@ -399,3 +440,6 @@ export default function NetworkingAnalyticsPage() {
     </div>
   );
 }
+
+// Re-export type for clarity
+export type { NetworkingAnalyticsPage };
