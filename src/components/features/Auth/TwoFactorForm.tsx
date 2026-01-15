@@ -60,11 +60,18 @@ export function TwoFactorForm({ userId }: TwoFactorFormProps) {
     LOGIN_2FA_WITH_EMAIL_MUTATION,
     {
       onCompleted: (data) => {
+        console.log('[2FA Email] Mutation completed, data:', data);
         const { token, user } = data.login2FAWithEmailCode;
         if (token && user) {
+          console.log('[2FA Email] Setting auth and redirecting...');
           setAuth(token, user);
           router.push('/dashboard');
+        } else {
+          console.error('[2FA Email] Missing token or user in response:', { token: !!token, user: !!user });
         }
+      },
+      onError: (error) => {
+        console.error('[2FA Email] Mutation error:', error.message, error.graphQLErrors);
       },
     }
   );
