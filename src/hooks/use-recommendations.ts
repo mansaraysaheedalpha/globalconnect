@@ -111,10 +111,10 @@ export const useRecommendations = ({
   const fetchedRef = useRef<boolean>(false);
   const lastFetchTimeRef = useRef<number>(0);
 
-  // Get the API base URL
+  // Get the API base URL (includes /events path)
   const getApiUrl = useCallback(() => {
     return (
-      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002"
+      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events"
     );
   }, []);
 
@@ -176,8 +176,8 @@ export const useRecommendations = ({
       try {
         const baseUrl = getApiUrl();
         const url = refresh
-          ? `${baseUrl}/events/${eventId}/recommendations?refresh=true`
-          : `${baseUrl}/events/${eventId}/recommendations`;
+          ? `${baseUrl}/${eventId}/recommendations?refresh=true`
+          : `${baseUrl}/${eventId}/recommendations`;
 
         const data = await fetchWithAuth<RecommendationsResponse>(url);
 
@@ -230,7 +230,7 @@ export const useRecommendations = ({
       try {
         const baseUrl = getApiUrl();
         await fetchWithAuth(
-          `${baseUrl}/events/${eventId}/recommendations/${recommendationId}/viewed`,
+          `${baseUrl}/${eventId}/recommendations/${recommendationId}/viewed`,
           { method: "POST" }
         );
 
@@ -259,7 +259,7 @@ export const useRecommendations = ({
       try {
         const baseUrl = getApiUrl();
         await fetchWithAuth(
-          `${baseUrl}/events/${eventId}/recommendations/${recommendationId}/pinged`,
+          `${baseUrl}/${eventId}/recommendations/${recommendationId}/pinged`,
           { method: "POST" }
         );
 
@@ -288,7 +288,7 @@ export const useRecommendations = ({
       try {
         const baseUrl = getApiUrl();
         await fetchWithAuth(
-          `${baseUrl}/events/${eventId}/recommendations/${recommendationId}/connected`,
+          `${baseUrl}/${eventId}/recommendations/${recommendationId}/connected`,
           { method: "POST" }
         );
 
