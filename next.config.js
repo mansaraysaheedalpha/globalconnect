@@ -60,7 +60,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https: http://localhost:*",
       "font-src 'self' data:",
       "connect-src 'self' https: wss: ws: http://localhost:* https://localhost:*",
-      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vimeo.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
