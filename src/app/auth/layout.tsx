@@ -124,11 +124,11 @@ export default function AuthLayout({
         <Link href="/" className="flex items-center gap-3 lg:hidden mb-4">
           <Image
             src="/logo.png"
-            alt="GlobalConnect Logo"
+            alt="Event Dynamics Logo"
             width={40}
             height={40}
           />
-          <span className="text-xl font-bold">GlobalConnect</span>
+          <span className="text-xl font-bold">Event Dynamics</span>
         </Link>
         <div className="w-full max-w-md">{children}</div>
       </motion.div>
@@ -156,13 +156,13 @@ export default function AuthLayout({
             >
               <Image
                 src="/logo.png"
-                alt="GlobalConnect Logo"
+                alt="Event Dynamics Logo"
                 width={44}
                 height={44}
               />
             </motion.div>
             <span className="text-2xl font-bold group-hover:text-purple-300 transition-colors">
-              GlobalConnect
+              Event Dynamics
             </span>
           </Link>
 

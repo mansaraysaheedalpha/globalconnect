@@ -125,7 +125,7 @@ export function PaymentForm({
                   defaultCollapsed: false,
                 },
                 business: {
-                  name: 'GlobalConnect',
+                  name: 'Event Dynamics',
                 },
               }}
             />

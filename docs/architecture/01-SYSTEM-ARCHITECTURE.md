@@ -16,7 +16,7 @@
 
 ## Overview
 
-GlobalConnect follows a **cloud-native, microservices architecture** designed for:
+Event Dynamics follows a **cloud-native, microservices architecture** designed for:
 - **High Availability** (99.9% uptime SLA)
 - **Horizontal Scalability** (100,000+ concurrent users)
 - **Real-Time Performance** (< 100ms latency)

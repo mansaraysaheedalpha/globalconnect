@@ -1,6 +1,6 @@
 # Backend Security Requirements for Production
 
-This document outlines the backend changes required for a fully secure production deployment of GlobalConnect.
+This document outlines the backend changes required for a fully secure production deployment of Event Dynamics.
 
 ## 1. HttpOnly Cookie Authentication (Critical)
 

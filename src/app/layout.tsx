@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'GlobalConnect',
+  title: 'Event Dynamics',
   description: 'The Intelligent Event Platform',
   manifest: '/site.webmanifest',
   icons: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'GlobalConnect',
+    title: 'Event Dynamics',
   },
 };
 

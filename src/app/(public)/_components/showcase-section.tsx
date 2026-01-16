@@ -200,7 +200,7 @@ export function VisualShowcaseSection() {
             Experience the Future of Events
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            See how GlobalConnect empowers you to create, manage, and attend
+            See how Event Dynamics empowers you to create, manage, and attend
             events like never before.
           </p>
         </motion.div>

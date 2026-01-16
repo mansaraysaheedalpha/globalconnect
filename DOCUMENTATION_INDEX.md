@@ -1,15 +1,15 @@
-# GlobalConnect - Complete Documentation Index
+# Event Dynamics - Complete Documentation Index
 
 ![Documentation Status](https://img.shields.io/badge/docs-complete-brightgreen)
 ![Last Updated](https://img.shields.io/badge/updated-January%202026-blue)
 
-Welcome to the **GlobalConnect Documentation Hub**. This index provides a comprehensive overview of all available documentation for the platform.
+Welcome to the **Event Dynamics Documentation Hub**. This index provides a comprehensive overview of all available documentation for the platform.
 
 ---
 
 ## 📚 Documentation Overview
 
-GlobalConnect documentation is organized into **10 major categories** covering everything from quick start guides to advanced architecture deep-dives.
+Event Dynamics documentation is organized into **10 major categories** covering everything from quick start guides to advanced architecture deep-dives.
 
 ### Total Documentation
 - **Main Documents:** 50+ comprehensive guides
@@ -23,7 +23,7 @@ GlobalConnect documentation is organized into **10 major categories** covering e
 ## 🚀 Start Here
 
 ### For New Users
-1. **[Platform Overview](./docs/01-PLATFORM-OVERVIEW.md)** - Understand what GlobalConnect is
+1. **[Platform Overview](./docs/01-PLATFORM-OVERVIEW.md)** - Understand what Event Dynamics is
 2. **[Quick Start](./docs/02-QUICK-START.md)** - Get running in 10 minutes
 3. **[Organizer Guide](./docs/user-guides/01-ORGANIZER-GUIDE.md)** - Create your first event
 
@@ -276,7 +276,7 @@ Start ──► Platform Overview ──► Feature Docs ──► Analytics
 ### Training
 - **Video Courses:** [training.globalconnect.com](https://training.globalconnect.com)
 - **Webinars:** Monthly live sessions
-- **Certification:** GlobalConnect Certified Professional
+- **Certification:** Event Dynamics Certified Professional
 - **Workshops:** Hands-on training events
 
 ---
@@ -340,7 +340,7 @@ See [Contributing Guide](./docs/development/08-CONTRIBUTING.md#documentation)
 ## 📄 License & Legal
 
 ### Documentation License
-This documentation is Copyright © 2024-2026 GlobalConnect Inc.
+This documentation is Copyright © 2024-2026 Event Dynamics Inc.
 
 **All Rights Reserved.** This documentation is proprietary and confidential. Distribution or reproduction without written permission is prohibited.
 
@@ -348,7 +348,7 @@ This documentation is Copyright © 2024-2026 GlobalConnect Inc.
 See [LICENSE](../LICENSE) file in repository root.
 
 ### Trademarks
-GlobalConnect and the GlobalConnect logo are trademarks of GlobalConnect Inc.
+Event Dynamics and the Event Dynamics logo are trademarks of Event Dynamics Inc.
 
 ---
 
@@ -380,7 +380,7 @@ GlobalConnect and the GlobalConnect logo are trademarks of GlobalConnect Inc.
 ## 🚀 Start Exploring!
 
 Choose your path:
-- **New to GlobalConnect?** → [Platform Overview](./docs/01-PLATFORM-OVERVIEW.md)
+- **New to Event Dynamics?** → [Platform Overview](./docs/01-PLATFORM-OVERVIEW.md)
 - **Ready to build?** → [Quick Start](./docs/02-QUICK-START.md)
 - **Need help?** → [Troubleshooting](./docs/operations/10-TROUBLESHOOTING.md)
 - **Looking for APIs?** → [API Reference](./docs/api/)

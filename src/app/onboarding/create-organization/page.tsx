@@ -149,13 +149,13 @@ export default function CreateOrganizationPage() {
             >
               <Image
                 src="/logo.png"
-                alt="GlobalConnect Logo"
+                alt="Event Dynamics Logo"
                 width={56}
                 height={56}
               />
             </motion.div>
             <span className="text-2xl font-bold group-hover:text-primary transition-colors">
-              GlobalConnect
+              Event Dynamics
             </span>
           </Link>
         </motion.div>

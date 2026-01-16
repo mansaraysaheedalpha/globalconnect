@@ -52,13 +52,13 @@ export function Footer() {
               <div className="relative transition-transform duration-300 group-hover:scale-105">
                 <Image
                   src="/logo.png"
-                  alt="GlobalConnect Logo"
+                  alt="Event Dynamics Logo"
                   width={40}
                   height={40}
                   className="drop-shadow-md"
                 />
               </div>
-              <span className="text-xl font-bold">GlobalConnect</span>
+              <span className="text-xl font-bold">Event Dynamics</span>
             </Link>
             <p className="text-muted-foreground leading-relaxed max-w-sm">
               The Intelligent Unified OS for World-Class Events. Create, manage, and experience events like never before.
@@ -142,7 +142,7 @@ export function Footer() {
         <div className="mt-16 pt-8 border-t border-border/50">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} GlobalConnect. All rights reserved.
+              © {new Date().getFullYear()} Event Dynamics. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               {footerLinks.legal.map((link) => (

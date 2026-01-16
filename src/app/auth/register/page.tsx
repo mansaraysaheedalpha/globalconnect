@@ -199,7 +199,7 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
             >
-              Join GlobalConnect
+              Join Event Dynamics
             </motion.h1>
             <motion.p
               className="text-muted-foreground mt-2"
@@ -207,7 +207,7 @@ export default function RegisterPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              How would you like to use GlobalConnect?
+              How would you like to use Event Dynamics?
             </motion.p>
           </div>
 

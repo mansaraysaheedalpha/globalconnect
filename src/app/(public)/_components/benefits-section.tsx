@@ -106,10 +106,10 @@ export function BenefitsSection() {
             viewport={{ once: true }}
             className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full"
           >
-            Why GlobalConnect
+            Why Event Dynamics
           </motion.span>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            The GlobalConnect{" "}
+            The Event Dynamics{" "}
             <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               Advantage
             </span>

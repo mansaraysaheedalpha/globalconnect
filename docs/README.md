@@ -1,10 +1,10 @@
-# GlobalConnect Documentation
+# Event Dynamics Documentation
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![Status](https://img.shields.io/badge/status-production-green)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey)
 
-**GlobalConnect** is a comprehensive, enterprise-grade event management platform that enables organizations to create, manage, and scale virtual and hybrid events with advanced engagement features, real-time interactions, and powerful monetization capabilities.
+**Event Dynamics** is a comprehensive, enterprise-grade event management platform that enables organizations to create, manage, and scale virtual and hybrid events with advanced engagement features, real-time interactions, and powerful monetization capabilities.
 
 ---
 
@@ -22,7 +22,7 @@
 
 ## Platform Overview
 
-GlobalConnect is an all-in-one event management solution built for modern organizations:
+Event Dynamics is an all-in-one event management solution built for modern organizations:
 
 - **Scalability** - Handle events from 10 to 100,000+ attendees
 - **Real-Time** - WebSocket-powered live interactions across all features

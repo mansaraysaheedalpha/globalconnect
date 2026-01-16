@@ -98,7 +98,7 @@ export function PublicHeader() {
             )}>
               <Image
                 src={logoSrc}
-                alt="GlobalConnect Logo"
+                alt="Event Dynamics Logo"
                 width={52}
                 height={52}
                 className="transition-all"
@@ -112,7 +112,7 @@ export function PublicHeader() {
                   : "text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
               )}
             >
-              GlobalConnect
+              Event Dynamics
             </span>
           </Link>
 
@@ -280,11 +280,11 @@ export function PublicHeader() {
               <SheetTitle className="flex items-center gap-2">
                 <Image
                   src={logoSrc}
-                  alt="GlobalConnect"
+                  alt="Event Dynamics"
                   width={32}
                   height={32}
                 />
-                GlobalConnect
+                Event Dynamics
               </SheetTitle>
             </SheetHeader>
 

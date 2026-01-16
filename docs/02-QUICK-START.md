@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get GlobalConnect running on your local machine in **10 minutes** or less.
+Get Event Dynamics running on your local machine in **10 minutes** or less.
 
 ---
 
@@ -114,7 +114,7 @@ docker-compose logs -f
 docker-compose logs -f frontend
 ```
 
-**🎉 That's it! You're running GlobalConnect locally.**
+**🎉 That's it! You're running Event Dynamics locally.**
 
 ---
 
@@ -554,7 +554,7 @@ wscat -c ws://localhost:3002
 
 ## Congratulations! 🎉
 
-You now have GlobalConnect running locally. Time to build amazing events!
+You now have Event Dynamics running locally. Time to build amazing events!
 
 **Pro Tip:** Join our Discord community to connect with other developers and get real-time help.
 

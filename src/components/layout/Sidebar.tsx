@@ -80,7 +80,7 @@ export function Sidebar({
           href="/dashboard"
           onClick={onNavigate}
           className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
-          aria-label="GlobalConnect - Go to dashboard"
+          aria-label="Event Dynamics - Go to dashboard"
         >
           <Image
             src="/logo.png"
@@ -90,7 +90,7 @@ export function Sidebar({
             aria-hidden="true"
           />
           <span className="text-xl font-bold text-foreground">
-            GlobalConnect
+            Event Dynamics
           </span>
         </Link>
       </div>

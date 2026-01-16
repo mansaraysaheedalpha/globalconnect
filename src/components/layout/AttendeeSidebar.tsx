@@ -63,7 +63,7 @@ export function AttendeeSidebar({ className }: { className?: string }) {
         <Link
           href="/attendee"
           className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
-          aria-label="GlobalConnect - Go to home"
+          aria-label="Event Dynamics - Go to home"
         >
           <Image
             src="/logo.png"
@@ -73,7 +73,7 @@ export function AttendeeSidebar({ className }: { className?: string }) {
             aria-hidden="true"
           />
           <span className="text-xl font-bold text-foreground">
-            GlobalConnect
+            Event Dynamics
           </span>
         </Link>
       </div>

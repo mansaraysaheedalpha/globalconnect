@@ -1,8 +1,8 @@
-# GlobalConnect Platform Overview
+# Event Dynamics Platform Overview
 
 ## Executive Summary
 
-**GlobalConnect** is an enterprise-grade, full-stack event management platform designed to power virtual, hybrid, and in-person events at scale. Built on modern cloud-native architecture with real-time capabilities, the platform serves thousands of organizations worldwide, handling millions of attendees across tens of thousands of events annually.
+**Event Dynamics** is an enterprise-grade, full-stack event management platform designed to power virtual, hybrid, and in-person events at scale. Built on modern cloud-native architecture with real-time capabilities, the platform serves thousands of organizations worldwide, handling millions of attendees across tens of thousands of events annually.
 
 ---
 
@@ -401,7 +401,7 @@ Empower organizations to create engaging, monetizable, and data-driven events th
 ## Competitive Advantages
 
 ### 1. Real-Time First Architecture
-Unlike competitors who retrofit real-time features, GlobalConnect is built from the ground up with WebSocket-first architecture, ensuring sub-100ms latency for all interactive features.
+Unlike competitors who retrofit real-time features, Event Dynamics is built from the ground up with WebSocket-first architecture, ensuring sub-100ms latency for all interactive features.
 
 ### 2. Comprehensive Monetization
 Integrated ticketing, advertising, offers, and sponsorship management in a single platform—no need for third-party tools.
@@ -444,9 +444,9 @@ Multi-region deployment with automatic failover ensures consistent performance w
 
 ## Conclusion
 
-GlobalConnect represents the future of event management—a platform that combines cutting-edge technology, exceptional user experience, and enterprise-grade reliability to enable organizations to create unforgettable events at global scale.
+Event Dynamics represents the future of event management—a platform that combines cutting-edge technology, exceptional user experience, and enterprise-grade reliability to enable organizations to create unforgettable events at global scale.
 
-With a foundation built on modern cloud-native architecture, real-time capabilities, and comprehensive monetization features, GlobalConnect is positioned to lead the next generation of digital and hybrid events.
+With a foundation built on modern cloud-native architecture, real-time capabilities, and comprehensive monetization features, Event Dynamics is positioned to lead the next generation of digital and hybrid events.
 
 ---
 

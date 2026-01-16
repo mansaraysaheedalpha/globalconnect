@@ -1,6 +1,6 @@
 # Environment Variables Setup Guide
 
-This guide explains how to obtain all the required environment variables for GlobalConnect.
+This guide explains how to obtain all the required environment variables for Event Dynamics.
 
 ---
 

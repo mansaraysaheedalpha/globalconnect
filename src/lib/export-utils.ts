@@ -334,7 +334,7 @@ export function generateHTMLReport(data: ExportData): string {
 
   html += `
   <div class="footer">
-    Generated with GlobalConnect Event Platform • ${new Date().getFullYear()}
+    Generated with Event Dynamics Event Platform • ${new Date().getFullYear()}
   </div>
 </body>
 </html>
