@@ -8,10 +8,10 @@ import { useAuthStore } from "@/store/auth.store";
 export default function SponsorsPage() {
   const params = useParams();
   const eventId = params.eventId as string;
-  const { user } = useAuthStore();
+  const { orgId } = useAuthStore();
 
-  // Get organization ID from user context
-  const organizationId = user?.orgId || "";
+  // Get organization ID from auth store
+  const organizationId = orgId || "";
 
   return (
     <div className="p-6">
