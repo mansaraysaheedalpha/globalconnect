@@ -63,7 +63,15 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       imageUrl
       organizationId
       eventType
-      virtualSettings
+      virtualSettings {
+        streamingProvider
+        streamingUrl
+        recordingEnabled
+        autoCaptions
+        lobbyEnabled
+        lobbyVideoUrl
+        maxConcurrentViewers
+      }
       venue {
         id
         name
