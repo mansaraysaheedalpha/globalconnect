@@ -56,8 +56,6 @@ import { SlideViewer, DroppedContentNotification } from "@/components/features/p
 import { usePresentationControl, DroppedContent } from "@/hooks/use-presentation-control";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
-import { LiveReactionsFull } from "@/components/features/live-reactions-overlay";
-import { FloatingScoreWidget } from "@/components/features/gamification/gamification-container";
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
 import { FloatingDMButton } from "@/components/features/dm";
@@ -1100,23 +1098,7 @@ export default function AttendeeEventPage() {
         )}
       </div>
 
-      {/* Live Reactions Overlay - Shows when there are live sessions */}
-      {liveSessions.length > 0 && (
-        <>
-          <LiveReactionsFull
-            sessionId={liveSessions[0].id}
-            eventId={eventId}
-            showMoodIndicator={true}
-            reactionBarPosition="bottom-right"
-          />
-          {/* Floating Score Widget - Gamification */}
-          <FloatingScoreWidget
-            sessionId={liveSessions[0].id}
-            eventId={eventId}
-            className="right-4 sm:right-6"
-          />
-        </>
-      )}
+      {/* Note: LiveReactionsFull and FloatingScoreWidget removed for cleaner virtual event experience */}
 
       {/* Floating Schedule Indicator - Real-time agenda updates */}
       {sessions.length > 0 && (

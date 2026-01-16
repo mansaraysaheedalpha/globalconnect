@@ -30,7 +30,6 @@ import { SessionChat } from "@/app/(platform)/dashboard/events/[eventId]/_compon
 import { SessionQA } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-qa";
 import { SessionPolls } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-polls";
 import { IncidentReportForm } from "@/components/features/incidents";
-import { LiveReactionsFull } from "@/components/features/live-reactions-overlay";
 
 export interface VirtualSession {
   id: string;
@@ -147,11 +146,12 @@ function SessionEnded({ session }: { session: VirtualSession }) {
 
   if (hasRecording) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         <StreamPlayer
           url={session.recordingUrl!}
           sessionId={session.id}
           autoPlay={false}
+          fillHeight={true}
           className="flex-1"
         />
       </div>
@@ -361,12 +361,13 @@ export function VirtualSessionView({
           {isUpcoming && <SessionNotStarted session={session} />}
 
           {isLive && hasStream && (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               <StreamPlayer
                 url={session.streamingUrl!}
                 sessionId={session.id}
                 autoPlay={true}
                 muted={false}
+                fillHeight={true}
                 className="flex-1"
               />
             </div>
@@ -388,16 +389,6 @@ export function VirtualSessionView({
           )}
 
           {isEnded && <SessionEnded session={session} />}
-
-          {/* Live Reactions Overlay - Only for live sessions */}
-          {isLive && (
-            <LiveReactionsFull
-              sessionId={session.id}
-              eventId={eventId}
-              showMoodIndicator={false}
-              reactionBarPosition="bottom-right"
-            />
-          )}
         </div>
 
         {/* Interactive Features Bar */}

@@ -18,6 +18,8 @@ interface StreamPlayerProps {
   autoPlay?: boolean;
   muted?: boolean;
   className?: string;
+  /** If true, fills the container height instead of using 16:9 aspect ratio */
+  fillHeight?: boolean;
   onPlay?: () => void;
   onPause?: () => void;
   onError?: (error: string) => void;
@@ -323,6 +325,7 @@ export function StreamPlayer({
   autoPlay = false,
   muted = false,
   className,
+  fillHeight = false,
   onPlay,
   onPause,
   onError,
@@ -330,9 +333,10 @@ export function StreamPlayer({
 }: StreamPlayerProps) {
   const streamType = useMemo(() => getStreamType(url), [url]);
 
-  // Container class for aspect ratio
+  // Container class - use aspect-video unless fillHeight is true
   const containerClass = cn(
-    "w-full aspect-video rounded-lg overflow-hidden",
+    "w-full overflow-hidden",
+    fillHeight ? "h-full" : "aspect-video rounded-lg",
     className
   );
 
