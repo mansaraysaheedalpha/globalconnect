@@ -2,22 +2,20 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { SponsorLeadsDashboard } from "@/components/features/sponsors/sponsor-leads-dashboard";
+import { SponsorManagement } from "@/components/features/sponsors/sponsor-management";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function SponsorsPage() {
   const params = useParams();
   const eventId = params.eventId as string;
+  const { user } = useAuthStore();
+
+  // Get organization ID from user context
+  const organizationId = user?.orgId || "";
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Sponsor Leads</h1>
-        <p className="text-muted-foreground">
-          Track and manage leads captured from sponsor interactions
-        </p>
-      </div>
-
-      <SponsorLeadsDashboard eventId={eventId} />
+    <div className="p-6">
+      <SponsorManagement eventId={eventId} organizationId={organizationId} />
     </div>
   );
 }

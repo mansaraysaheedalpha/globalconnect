@@ -1,0 +1,131 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { usePathname, useParams } from "next/navigation";
+import {
+  LayoutDashboard,
+  Users,
+  QrCode,
+  BarChart3,
+  MessageSquare,
+  Settings,
+  Building2,
+  FileDown,
+  Star,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface SponsorSidebarProps {
+  className?: string;
+}
+
+const navItems = [
+  {
+    label: "Dashboard",
+    href: "/sponsor",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Lead Capture",
+    href: "/sponsor/leads",
+    icon: QrCode,
+    badge: "Live",
+  },
+  {
+    label: "All Leads",
+    href: "/sponsor/leads/all",
+    icon: Users,
+  },
+  {
+    label: "Starred Leads",
+    href: "/sponsor/leads/starred",
+    icon: Star,
+  },
+  {
+    label: "Analytics",
+    href: "/sponsor/analytics",
+    icon: BarChart3,
+  },
+  {
+    label: "Export Data",
+    href: "/sponsor/export",
+    icon: FileDown,
+  },
+  {
+    label: "Messages",
+    href: "/sponsor/messages",
+    icon: MessageSquare,
+  },
+  {
+    label: "Booth Settings",
+    href: "/sponsor/booth",
+    icon: Building2,
+  },
+  {
+    label: "Settings",
+    href: "/sponsor/settings",
+    icon: Settings,
+  },
+];
+
+export function SponsorSidebar({ className }: SponsorSidebarProps) {
+  const pathname = usePathname();
+
+  return (
+    <aside
+      className={cn(
+        "flex h-full w-64 flex-col border-r bg-background",
+        className
+      )}
+    >
+      <div className="flex h-16 items-center border-b px-6">
+        <Link href="/sponsor" className="flex items-center gap-2">
+          <Building2 className="h-6 w-6 text-primary" />
+          <span className="text-lg font-semibold">Sponsor Portal</span>
+        </Link>
+      </div>
+
+      <nav className="flex-1 space-y-1 p-4">
+        {navItems.map((item) => {
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/sponsor" && pathname.startsWith(item.href));
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              <span className="flex-1">{item.label}</span>
+              {item.badge && (
+                <Badge
+                  variant={isActive ? "secondary" : "outline"}
+                  className="text-xs"
+                >
+                  {item.badge}
+                </Badge>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t p-4">
+        <div className="rounded-lg bg-muted p-4">
+          <h4 className="text-sm font-semibold">Need Help?</h4>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Contact the event organizer for assistance with your sponsor booth.
+          </p>
+        </div>
+      </div>
+    </aside>
+  );
+}
