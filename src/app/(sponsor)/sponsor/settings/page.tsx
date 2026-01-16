@@ -16,13 +16,14 @@ import {
   LogOut,
   Camera,
 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function SponsorSettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthStore();
 
-  const initials = user?.name
-    ? user.name
+  const fullName = user ? `${user.first_name} ${user.last_name}` : "";
+  const initials = fullName
+    ? fullName
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -57,7 +58,7 @@ export default function SponsorSettingsPage() {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user?.avatar} />
+                  <AvatarImage src={user?.imageUrl || undefined} />
                   <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
@@ -74,7 +75,7 @@ export default function SponsorSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" defaultValue={user?.name || ""} />
+                  <Input id="name" defaultValue={fullName} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -206,7 +207,7 @@ export default function SponsorSettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-sm">
-                <p className="font-medium">{user?.name}</p>
+                <p className="font-medium">{fullName}</p>
                 <p className="text-muted-foreground">{user?.email}</p>
               </div>
               <Separator />

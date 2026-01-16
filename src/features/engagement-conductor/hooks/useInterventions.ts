@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Intervention } from '../types/intervention';
 import { getAgentServiceUrl } from '@/lib/env';
 import { useEngagementSocket } from '../context/SocketContext';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface UseInterventionsOptions {
   sessionId: string;
@@ -45,7 +46,12 @@ export const useInterventions = ({
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${effectiveApiBaseUrl}/api/v1/interventions/history/${sessionId}?limit=20`);
+      const token = useAuthStore.getState().token;
+      const response = await fetch(`${effectiveApiBaseUrl}/api/v1/interventions/history/${sessionId}?limit=20`, {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch intervention history: ${response.statusText}`);
@@ -87,9 +93,13 @@ export const useInterventions = ({
     try {
       // In Phase 3, interventions are auto-triggered, but we can still manually trigger
       // This would be used if we implement manual approval mode in future
+      const token = useAuthStore.getState().token;
       const response = await fetch(`${effectiveApiBaseUrl}/api/v1/interventions/manual`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({
           session_id: sessionId,
           event_id: eventId,
