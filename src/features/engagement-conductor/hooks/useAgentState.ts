@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSocket } from '@/lib/socket';
 import { getAgentServiceUrl } from '@/lib/env';
+import { useAuthStore } from '@/stores/auth.store';
 import type { AgentMode } from '../components/AgentModeToggle';
 import type { AgentStatusType } from '../components/AgentStatus';
 import type { DecisionContext } from '../components/DecisionExplainer';
@@ -124,9 +125,13 @@ export function useAgentState({
     try {
       // Call backend API to change mode using environment variable
       const agentServiceUrl = getAgentServiceUrl();
+      const token = useAuthStore.getState().token;
       const response = await fetch(`${agentServiceUrl}/api/v1/agent/sessions/${sessionId}/mode`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ mode })
       });
 
