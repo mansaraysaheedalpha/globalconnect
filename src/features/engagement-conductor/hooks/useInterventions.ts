@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Intervention } from '../types/intervention';
 import { getAgentServiceUrl } from '@/lib/env';
 import { useEngagementSocket } from '../context/SocketContext';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/store/auth.store';
 
 interface UseInterventionsOptions {
   sessionId: string;

@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSocket } from '@/lib/socket';
 import { getAgentServiceUrl } from '@/lib/env';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/store/auth.store';
 import type { AgentMode } from '../components/AgentModeToggle';
 import type { AgentStatusType } from '../components/AgentStatus';
 import type { DecisionContext } from '../components/DecisionExplainer';
