@@ -44,7 +44,7 @@ export const GET_MY_REGISTRATION_FOR_EVENT_QUERY = gql`
   }
 `;
 
-// Get attendee event details with sessions (includes session status)
+// Get attendee event details with sessions (includes session status and virtual fields)
 export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
   query GetAttendeeEventDetails($eventId: ID!) {
     myRegistrationForEvent(eventId: $eventId) {
@@ -62,6 +62,8 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       status
       imageUrl
       organizationId
+      eventType
+      virtualSettings
       venue {
         id
         name
@@ -80,6 +82,11 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       chatOpen
       qaOpen
       pollsOpen
+      sessionType
+      streamingUrl
+      recordingUrl
+      broadcastOnly
+      virtualRoomId
       speakers {
         id
         name

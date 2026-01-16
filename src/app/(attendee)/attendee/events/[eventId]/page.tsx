@@ -43,6 +43,8 @@ import {
   Unlock,
   Presentation,
   X,
+  Video,
+  PlayCircle,
 } from "lucide-react";
 import { format, isWithinInterval, isFuture } from "date-fns";
 import Link from "next/link";
@@ -63,6 +65,10 @@ import { OfferGrid } from "@/components/features/offers";
 import { AdContainer } from "@/components/features/ads/ad-container";
 import { ProximityContainer } from "@/components/features/proximity";
 import { IncidentReportForm } from "@/components/features/incidents";
+import { VirtualSessionView, VirtualSession } from "@/components/features/virtual-session";
+
+type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
+type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
 
 type Session = {
   id: string;
@@ -78,6 +84,12 @@ type Session = {
   qaOpen?: boolean;    // Runtime state: organizer controls when Q&A is open
   pollsOpen?: boolean; // Runtime state: organizer controls when polls are open
   presentationActive?: boolean; // Runtime state: presentation is currently being shown
+  // Virtual session fields
+  sessionType?: SessionType;
+  streamingUrl?: string | null;
+  recordingUrl?: string | null;
+  broadcastOnly?: boolean;
+  virtualRoomId?: string | null;
   speakers: { id: string; name: string }[];
 };
 
@@ -86,6 +98,16 @@ type Registration = {
   status: string;
   ticketCode: string;
   checkedInAt: string | null;
+};
+
+type VirtualSettings = {
+  streamingProvider?: string;
+  streamingUrl?: string;
+  recordingEnabled?: boolean;
+  autoCaptions?: boolean;
+  lobbyEnabled?: boolean;
+  lobbyVideoUrl?: string;
+  maxConcurrentViewers?: number;
 };
 
 type Event = {
@@ -97,6 +119,8 @@ type Event = {
   status: string;
   imageUrl: string | null;
   organizationId?: string;
+  eventType?: EventType;
+  virtualSettings?: VirtualSettings | null;
   venue: {
     id: string;
     name: string;
@@ -511,6 +535,7 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle, organizationId
 const SessionCard = ({ session, eventId, organizationId }: { session: Session; eventId: string; organizationId?: string }) => {
   const isLive = session.status === "LIVE";
   const isEnded = session.status === "ENDED";
+  const isUpcoming = session.status === "UPCOMING";
 
   // Check if features are enabled (default to true for backwards compatibility)
   const chatEnabled = session.chatEnabled !== false;
@@ -518,6 +543,13 @@ const SessionCard = ({ session, eventId, organizationId }: { session: Session; e
   const pollsEnabled = session.pollsEnabled !== false;
   const presentationEnabled = session.presentationEnabled !== false;
   const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled || presentationEnabled;
+
+  // Virtual session detection
+  const isVirtualSession = !!(session.streamingUrl || session.sessionType);
+  const hasRecording = isEnded && !!session.recordingUrl;
+
+  // State for virtual session viewer
+  const [showVirtualSession, setShowVirtualSession] = React.useState(false);
 
   // Local state for live status tracking (updated via WebSocket events from child components)
   const [liveChatOpen, setLiveChatOpen] = React.useState(session.chatOpen ?? false);
@@ -541,99 +573,179 @@ const SessionCard = ({ session, eventId, organizationId }: { session: Session; e
     setLivePollsOpen(session.pollsOpen ?? false);
   }, [session.pollsOpen]);
 
+  // Convert Session to VirtualSession for the viewer
+  const virtualSession: VirtualSession = {
+    id: session.id,
+    title: session.title,
+    startTime: session.startTime,
+    endTime: session.endTime,
+    status: session.status,
+    sessionType: session.sessionType,
+    streamingUrl: session.streamingUrl,
+    recordingUrl: session.recordingUrl,
+    broadcastOnly: session.broadcastOnly,
+    chatEnabled: session.chatEnabled,
+    qaEnabled: session.qaEnabled,
+    pollsEnabled: session.pollsEnabled,
+    chatOpen: liveChatOpen,
+    qaOpen: liveQaOpen,
+    pollsOpen: livePollsOpen,
+    speakers: session.speakers,
+  };
+
+  // Get session type badge
+  const getSessionTypeBadge = () => {
+    if (!session.sessionType) return null;
+    const types: Record<string, { label: string; className: string }> = {
+      MAINSTAGE: { label: "Mainstage", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+      BREAKOUT: { label: "Breakout", className: "bg-green-500/10 text-green-600 border-green-500/20" },
+      WORKSHOP: { label: "Workshop", className: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
+      NETWORKING: { label: "Networking", className: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20" },
+      EXPO: { label: "Expo", className: "bg-pink-500/10 text-pink-600 border-pink-500/20" },
+    };
+    const type = types[session.sessionType];
+    if (!type) return null;
+    return <Badge variant="outline" className={type.className}>{type.label}</Badge>;
+  };
+
   return (
-    <PremiumCard
-      variant={isLive ? "glow" : "elevated"}
-      padding="none"
-      hover={!isEnded ? "lift" : "none"}
-      className={`overflow-hidden ${isLive ? "ring-2 ring-green-500/20 border-green-500/30" : ""}`}
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              {getSessionStatusBadge(session.status)}
-            </div>
-
-            <h3 className="font-semibold text-foreground">{session.title}</h3>
-
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>
-                  {format(new Date(session.startTime), "h:mm a")} -{" "}
-                  {format(new Date(session.endTime), "h:mm a")}
-                </span>
+    <>
+      <PremiumCard
+        variant={isLive ? "glow" : "elevated"}
+        padding="none"
+        hover={!isEnded ? "lift" : "none"}
+        className={`overflow-hidden ${isLive ? "ring-2 ring-green-500/20 border-green-500/30" : ""}`}
+      >
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                {getSessionStatusBadge(session.status)}
+                {getSessionTypeBadge()}
+                {isVirtualSession && (
+                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                    <Video className="h-3 w-3 mr-1" />
+                    Virtual
+                  </Badge>
+                )}
               </div>
 
-              {session.speakers.length > 0 && (
+              <h3 className="font-semibold text-foreground">{session.title}</h3>
+
+              <div className="mt-2 space-y-1">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mic2 className="h-4 w-4" />
-                  <span>{session.speakers.map((s) => s.name).join(", ")}</span>
+                  <Clock className="h-4 w-4" />
+                  <span>
+                    {format(new Date(session.startTime), "h:mm a")} -{" "}
+                    {format(new Date(session.endTime), "h:mm a")}
+                  </span>
+                </div>
+
+                {session.speakers.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mic2 className="h-4 w-4" />
+                    <span>{session.speakers.map((s) => s.name).join(", ")}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Watch Live / Watch Recording buttons for virtual sessions */}
+              {isVirtualSession && (isLive || hasRecording) && (
+                <div className="mt-3">
+                  {isLive && session.streamingUrl && (
+                    <Button
+                      variant="premium"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setShowVirtualSession(true)}
+                    >
+                      <Video className="h-4 w-4" />
+                      Watch Live
+                    </Button>
+                  )}
+                  {hasRecording && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setShowVirtualSession(true)}
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                      Watch Recording
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
+
+            {/* Interactive Features - show if features are enabled (not ended sessions) */}
+            {!isEnded && hasInteractiveFeatures && (
+              <div className="flex flex-col gap-2">
+                {/* Session Chat */}
+                {chatEnabled && (
+                  <AttendeeChatDialog
+                    session={session}
+                    eventId={eventId}
+                    liveChatOpen={liveChatOpen}
+                    setLiveChatOpen={setLiveChatOpen}
+                  />
+                )}
+
+                {/* Session Q&A */}
+                {qaEnabled && (
+                  <AttendeeQADialog
+                    session={session}
+                    eventId={eventId}
+                    liveQaOpen={liveQaOpen}
+                    setLiveQaOpen={setLiveQaOpen}
+                  />
+                )}
+
+                {/* Session Polls */}
+                {pollsEnabled && (
+                  <AttendeePollsDialog
+                    session={session}
+                    eventId={eventId}
+                    livePollsOpen={livePollsOpen}
+                    setLivePollsOpen={setLivePollsOpen}
+                  />
+                )}
+
+                {/* Session Presentation */}
+                {presentationEnabled && (
+                  <AttendeePresentationDialog
+                    session={session}
+                    eventId={eventId}
+                    organizationId={organizationId}
+                    livePresentationActive={livePresentationActive}
+                  />
+                )}
+
+                {/* Report Issue Button - Always available for live/upcoming sessions */}
+                <IncidentReportForm
+                  sessionId={session.id}
+                  eventId={eventId}
+                  trigger={
+                    <Button variant="outline" size="sm" className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
+                      <AlertTriangle className="h-4 w-4" />
+                      Report Issue
+                    </Button>
+                  }
+                />
+              </div>
+            )}
           </div>
-
-          {/* Interactive Features - show if features are enabled (not ended sessions) */}
-          {!isEnded && hasInteractiveFeatures && (
-            <div className="flex flex-col gap-2">
-              {/* Session Chat */}
-              {chatEnabled && (
-                <AttendeeChatDialog
-                  session={session}
-                  eventId={eventId}
-                  liveChatOpen={liveChatOpen}
-                  setLiveChatOpen={setLiveChatOpen}
-                />
-              )}
-
-              {/* Session Q&A */}
-              {qaEnabled && (
-                <AttendeeQADialog
-                  session={session}
-                  eventId={eventId}
-                  liveQaOpen={liveQaOpen}
-                  setLiveQaOpen={setLiveQaOpen}
-                />
-              )}
-
-              {/* Session Polls */}
-              {pollsEnabled && (
-                <AttendeePollsDialog
-                  session={session}
-                  eventId={eventId}
-                  livePollsOpen={livePollsOpen}
-                  setLivePollsOpen={setLivePollsOpen}
-                />
-              )}
-
-              {/* Session Presentation */}
-              {presentationEnabled && (
-                <AttendeePresentationDialog
-                  session={session}
-                  eventId={eventId}
-                  organizationId={organizationId}
-                  livePresentationActive={livePresentationActive}
-                />
-              )}
-
-              {/* Report Issue Button - Always available for live/upcoming sessions */}
-              <IncidentReportForm
-                sessionId={session.id}
-                eventId={eventId}
-                trigger={
-                  <Button variant="outline" size="sm" className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
-                    <AlertTriangle className="h-4 w-4" />
-                    Report Issue
-                  </Button>
-                }
-              />
-            </div>
-          )}
         </div>
-      </div>
-    </PremiumCard>
+      </PremiumCard>
+
+      {/* Virtual Session Viewer Dialog */}
+      <VirtualSessionView
+        session={virtualSession}
+        eventId={eventId}
+        isOpen={showVirtualSession}
+        onClose={() => setShowVirtualSession(false)}
+      />
+    </>
   );
 };
 
@@ -785,6 +897,20 @@ export default function AttendeeEventPage() {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
+            <div className="flex items-center gap-2 mb-2">
+              {event.eventType === "VIRTUAL" && (
+                <Badge className="bg-blue-500 text-white">
+                  <Video className="h-3 w-3 mr-1" />
+                  Virtual Event
+                </Badge>
+              )}
+              {event.eventType === "HYBRID" && (
+                <Badge className="bg-purple-500 text-white">
+                  <Video className="h-3 w-3 mr-1" />
+                  Hybrid Event
+                </Badge>
+              )}
+            </div>
             <h1 className="text-2xl md:text-3xl font-bold text-white">{event.name}</h1>
           </div>
         </div>
@@ -815,7 +941,7 @@ export default function AttendeeEventPage() {
               </div>
             </StaggerItem>
 
-            {event.venue && (
+            {event.venue ? (
               <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <MapPin className="h-5 w-5 text-primary" />
@@ -825,7 +951,17 @@ export default function AttendeeEventPage() {
                   <p className="font-semibold">{event.venue.name}</p>
                 </div>
               </StaggerItem>
-            )}
+            ) : event.eventType === "VIRTUAL" ? (
+              <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Video className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Location</p>
+                  <p className="font-semibold">Online Event</p>
+                </div>
+              </StaggerItem>
+            ) : null}
 
             <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
               <div className="p-2 rounded-lg bg-primary/10">
