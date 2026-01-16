@@ -532,7 +532,17 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle, organizationId
   );
 };
 
-const SessionCard = ({ session, eventId, organizationId }: { session: Session; eventId: string; organizationId?: string }) => {
+const SessionCard = ({
+  session,
+  eventId,
+  organizationId,
+  eventVirtualSettings,
+}: {
+  session: Session;
+  eventId: string;
+  organizationId?: string;
+  eventVirtualSettings?: VirtualSettings | null;
+}) => {
   const isLive = session.status === "LIVE";
   const isEnded = session.status === "ENDED";
   const isUpcoming = session.status === "UPCOMING";
@@ -544,8 +554,9 @@ const SessionCard = ({ session, eventId, organizationId }: { session: Session; e
   const presentationEnabled = session.presentationEnabled !== false;
   const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled || presentationEnabled;
 
-  // Virtual session detection
-  const isVirtualSession = !!(session.streamingUrl || session.sessionType);
+  // Virtual session detection - use session's URL or fall back to event-level URL
+  const effectiveStreamingUrl = session.streamingUrl || eventVirtualSettings?.streamingUrl;
+  const isVirtualSession = !!(effectiveStreamingUrl || session.sessionType);
   const hasRecording = isEnded && !!session.recordingUrl;
 
   // State for virtual session viewer
@@ -573,7 +584,7 @@ const SessionCard = ({ session, eventId, organizationId }: { session: Session; e
     setLivePollsOpen(session.pollsOpen ?? false);
   }, [session.pollsOpen]);
 
-  // Convert Session to VirtualSession for the viewer
+  // Convert Session to VirtualSession for the viewer (using effective streaming URL)
   const virtualSession: VirtualSession = {
     id: session.id,
     title: session.title,
@@ -581,7 +592,7 @@ const SessionCard = ({ session, eventId, organizationId }: { session: Session; e
     endTime: session.endTime,
     status: session.status,
     sessionType: session.sessionType,
-    streamingUrl: session.streamingUrl,
+    streamingUrl: effectiveStreamingUrl,
     recordingUrl: session.recordingUrl,
     broadcastOnly: session.broadcastOnly,
     chatEnabled: session.chatEnabled,
@@ -652,7 +663,7 @@ const SessionCard = ({ session, eventId, organizationId }: { session: Session; e
               {/* Watch Live / Watch Recording buttons for virtual sessions */}
               {isVirtualSession && (isLive || hasRecording) && (
                 <div className="mt-3">
-                  {isLive && session.streamingUrl && (
+                  {isLive && effectiveStreamingUrl && (
                     <Button
                       variant="premium"
                       size="sm"
@@ -1023,7 +1034,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {liveSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -1041,7 +1052,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {upcomingSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -1071,7 +1082,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {endedSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
