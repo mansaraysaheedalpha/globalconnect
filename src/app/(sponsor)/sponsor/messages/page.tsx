@@ -26,7 +26,7 @@ import {
   Mail,
   Zap,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface MessageHistory {
   id: string;
@@ -65,7 +65,6 @@ const mockMessageHistory: MessageHistory[] = [
 ];
 
 export default function MessagesPage() {
-  const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [audience, setAudience] = useState("all");
   const [message, setMessage] = useState({
@@ -75,11 +74,7 @@ export default function MessagesPage() {
 
   const handleSend = async () => {
     if (!message.subject || !message.body) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in both subject and message body.",
-        variant: "destructive",
-      });
+      toast.error("Please fill in both subject and message body.");
       return;
     }
 
@@ -87,10 +82,7 @@ export default function MessagesPage() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
     setIsSending(false);
 
-    toast({
-      title: "Message sent",
-      description: "Your message has been sent to the selected recipients.",
-    });
+    toast.success("Your message has been sent to the selected recipients.");
 
     setMessage({ subject: "", body: "" });
   };

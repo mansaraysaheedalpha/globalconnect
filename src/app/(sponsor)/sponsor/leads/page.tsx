@@ -34,7 +34,7 @@ import {
   Star,
   MessageSquare,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface CapturedLead {
   id: string;
@@ -53,7 +53,6 @@ export default function LeadCapturePage() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [lastCapturedLead, setLastCapturedLead] = useState<CapturedLead | null>(null);
   const [recentCaptures, setRecentCaptures] = useState<CapturedLead[]>([]);
-  const { toast } = useToast();
 
   // Manual entry form state
   const [manualForm, setManualForm] = useState({
@@ -86,12 +85,9 @@ export default function LeadCapturePage() {
       setShowSuccessDialog(true);
       setIsCapturing(false);
 
-      toast({
-        title: "Lead captured!",
-        description: `${mockLead.name} from ${mockLead.company}`,
-      });
+      toast.success(`Lead captured: ${mockLead.name} from ${mockLead.company}`);
     }, 2000);
-  }, [toast]);
+  }, []);
 
   const handleManualSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -121,11 +117,8 @@ export default function LeadCapturePage() {
       notes: "",
     });
 
-    toast({
-      title: "Lead captured!",
-      description: `${lead.name} from ${lead.company}`,
-    });
-  }, [manualForm, toast]);
+    toast.success(`Lead captured: ${lead.name} from ${lead.company}`);
+  }, [manualForm]);
 
   const handleRateLead = (intentLevel: "hot" | "warm" | "cold") => {
     if (lastCapturedLead) {

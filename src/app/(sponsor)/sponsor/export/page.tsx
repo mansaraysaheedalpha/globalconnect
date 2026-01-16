@@ -21,10 +21,9 @@ import {
   Filter,
   CheckCircle2,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export default function ExportPage() {
-  const { toast } = useToast();
   const [exportFormat, setExportFormat] = useState("csv");
   const [intentFilter, setIntentFilter] = useState("all");
   const [isExporting, setIsExporting] = useState(false);
@@ -33,12 +32,14 @@ export default function ExportPage() {
     email: true,
     company: true,
     title: true,
-    intentLevel: true,
     intentScore: true,
+    intentLevel: true,
     interactions: true,
-    notes: true,
-    capturedAt: true,
+    contactRequested: true,
     followUpStatus: true,
+    tags: true,
+    firstInteraction: true,
+    lastInteraction: true,
   });
 
   const handleExport = async () => {
@@ -46,245 +47,183 @@ export default function ExportPage() {
     // Simulate export
     await new Promise((resolve) => setTimeout(resolve, 2000));
     setIsExporting(false);
-    toast({
-      title: "Export complete",
-      description: "Your leads have been exported successfully.",
-    });
+    toast.success("Your leads have been exported successfully.");
   };
 
   const toggleField = (field: keyof typeof selectedFields) => {
     setSelectedFields((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const fieldLabels: Record<keyof typeof selectedFields, string> = {
-    name: "Full Name",
-    email: "Email Address",
-    company: "Company",
-    title: "Job Title",
-    intentLevel: "Intent Level",
-    intentScore: "Intent Score",
-    interactions: "Interaction History",
-    notes: "Notes",
-    capturedAt: "Capture Date/Time",
-    followUpStatus: "Follow-up Status",
-  };
+  const selectedCount = Object.values(selectedFields).filter(Boolean).length;
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Export Leads</h1>
+        <h1 className="text-2xl font-bold">Export Leads</h1>
         <p className="text-muted-foreground">
-          Download your captured leads for use in your CRM or other tools
+          Download your lead data in various formats
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Export Options */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Format Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Export Format</CardTitle>
-              <CardDescription>
-                Choose the file format for your export
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    exportFormat === "csv"
-                      ? "border-primary bg-primary/5"
-                      : "border-muted hover:border-muted-foreground/50"
-                  }`}
-                  onClick={() => setExportFormat("csv")}
-                >
-                  <FileSpreadsheet className="h-8 w-8 mb-2 text-green-600" />
-                  <p className="font-medium">CSV</p>
-                  <p className="text-xs text-muted-foreground">
-                    Compatible with Excel, Google Sheets
-                  </p>
-                </div>
-                <div
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    exportFormat === "xlsx"
-                      ? "border-primary bg-primary/5"
-                      : "border-muted hover:border-muted-foreground/50"
-                  }`}
-                  onClick={() => setExportFormat("xlsx")}
-                >
-                  <FileSpreadsheet className="h-8 w-8 mb-2 text-blue-600" />
-                  <p className="font-medium">Excel</p>
-                  <p className="text-xs text-muted-foreground">
-                    Native Excel format (.xlsx)
-                  </p>
-                </div>
-                <div
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    exportFormat === "json"
-                      ? "border-primary bg-primary/5"
-                      : "border-muted hover:border-muted-foreground/50"
-                  }`}
-                  onClick={() => setExportFormat("json")}
-                >
-                  <FileText className="h-8 w-8 mb-2 text-orange-600" />
-                  <p className="font-medium">JSON</p>
-                  <p className="text-xs text-muted-foreground">
-                    For developers and APIs
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileDown className="h-5 w-5" />
+              Export Options
+            </CardTitle>
+            <CardDescription>
+              Choose your export format and filters
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Export Format</Label>
+              <Select value={exportFormat} onValueChange={setExportFormat}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="csv">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      CSV (.csv)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="xlsx">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Excel (.xlsx)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="json">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      JSON (.json)
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Field Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Fields</CardTitle>
-              <CardDescription>
-                Choose which fields to include in your export
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {Object.entries(fieldLabels).map(([field, label]) => (
-                  <div key={field} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={field}
-                      checked={selectedFields[field as keyof typeof selectedFields]}
-                      onCheckedChange={() =>
-                        toggleField(field as keyof typeof selectedFields)
-                      }
-                    />
-                    <Label
-                      htmlFor={field}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+            <div className="space-y-2">
+              <Label>Filter by Intent</Label>
+              <Select value={intentFilter} onValueChange={setIntentFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Leads</SelectItem>
+                  <SelectItem value="hot">Hot Leads Only</SelectItem>
+                  <SelectItem value="warm">Warm Leads Only</SelectItem>
+                  <SelectItem value="cold">Cold Leads Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Filter Options */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filters
-              </CardTitle>
-              <CardDescription>
-                Filter which leads to include in the export
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Intent Level</Label>
-                <Select value={intentFilter} onValueChange={setIntentFilter}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Leads</SelectItem>
-                    <SelectItem value="hot">Hot Leads Only</SelectItem>
-                    <SelectItem value="warm">Warm Leads Only</SelectItem>
-                    <SelectItem value="cold">Cold Leads Only</SelectItem>
-                    <SelectItem value="hot-warm">Hot & Warm Leads</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="pt-4">
+              <Button
+                className="w-full"
+                onClick={handleExport}
+                disabled={isExporting || selectedCount === 0}
+              >
+                {isExporting ? (
+                  <>Exporting...</>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export {selectedCount} Fields
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Summary & Export */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Export Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Leads</span>
-                <span className="font-medium">147</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">After Filters</span>
-                <span className="font-medium">
-                  {intentFilter === "all"
-                    ? "147"
-                    : intentFilter === "hot"
-                    ? "23"
-                    : intentFilter === "warm"
-                    ? "58"
-                    : intentFilter === "cold"
-                    ? "66"
-                    : "81"}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Fields Selected</span>
-                <span className="font-medium">
-                  {Object.values(selectedFields).filter(Boolean).length}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Format</span>
-                <span className="font-medium uppercase">{exportFormat}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <>
-                <Download className="mr-2 h-4 w-4 animate-bounce" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <FileDown className="mr-2 h-4 w-4" />
-                Export Leads
-              </>
-            )}
-          </Button>
-
-          {/* Recent Exports */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Recent Exports</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>leads_2024-01-15.csv</span>
+        {/* Field Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Select Fields
+            </CardTitle>
+            <CardDescription>
+              Choose which fields to include in your export
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(selectedFields).map(([field, checked]) => (
+                <div key={field} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={field}
+                    checked={checked}
+                    onCheckedChange={() => toggleField(field as keyof typeof selectedFields)}
+                  />
+                  <Label htmlFor={field} className="text-sm capitalize cursor-pointer">
+                    {field.replace(/([A-Z])/g, " $1").trim()}
+                  </Label>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>leads_2024-01-14.xlsx</span>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-4 border-t flex justify-between text-sm text-muted-foreground">
+              <span>{selectedCount} fields selected</span>
+              <button
+                className="text-primary hover:underline"
+                onClick={() =>
+                  setSelectedFields(
+                    Object.fromEntries(
+                      Object.keys(selectedFields).map((k) => [k, true])
+                    ) as typeof selectedFields
+                  )
+                }
+              >
+                Select All
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Export History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Exports</CardTitle>
+          <CardDescription>Your export history from this event</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              { date: "Jan 15, 2024", format: "CSV", records: 127, status: "completed" },
+              { date: "Jan 14, 2024", format: "Excel", records: 98, status: "completed" },
+              { date: "Jan 12, 2024", format: "CSV", records: 45, status: "completed" },
+            ].map((export_, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{export_.format} Export</p>
+                    <p className="text-sm text-muted-foreground">
+                      {export_.date} • {export_.records} records
+                    </p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

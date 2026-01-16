@@ -22,10 +22,9 @@ import {
   Save,
   Eye,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export default function BoothSettingsPage() {
-  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
   // Mock booth data
@@ -48,10 +47,7 @@ export default function BoothSettingsPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsSaving(false);
-    toast({
-      title: "Settings saved",
-      description: "Your booth settings have been updated.",
-    });
+    toast.success("Your booth settings have been updated.");
   };
 
   return (
