@@ -85,10 +85,10 @@ export function BreakoutRoomCard({
                   Start
                 </Button>
               )}
-              {room.status !== "CLOSED" && (
-                <Button size="sm" variant="outline" onClick={onView} className="flex-1">
-                  View
-                </Button>
+              {room.status === "ACTIVE" && (
+                <Badge variant="outline" className="flex-1 justify-center bg-green-500/10 text-green-600 border-green-500/20">
+                  In Progress
+                </Badge>
               )}
               {room.status !== "CLOSED" && (
                 <Button size="sm" variant="destructive" onClick={onClose}>

@@ -45,6 +45,7 @@ import {
   X,
   Video,
   PlayCircle,
+  DoorOpen,
 } from "lucide-react";
 import { format, isWithinInterval, isFuture } from "date-fns";
 import Link from "next/link";
@@ -64,6 +65,7 @@ import { AdContainer } from "@/components/features/ads/ad-container";
 import { ProximityContainer } from "@/components/features/proximity";
 import { IncidentReportForm } from "@/components/features/incidents";
 import { VirtualSessionView, VirtualSession } from "@/components/features/virtual-session";
+import { BreakoutRoomList } from "@/components/features/breakout";
 
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
@@ -530,16 +532,86 @@ const AttendeePresentation = ({ sessionId, eventId, sessionTitle, organizationId
   );
 };
 
+// Dialog wrapper for Breakout Rooms (full-screen modal)
+const AttendeeBreakoutRoomsDialog = ({
+  session,
+  eventId,
+  userId,
+}: {
+  session: Session;
+  eventId: string;
+  userId?: string;
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [activeRoomCount, setActiveRoomCount] = React.useState(0);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+        onClick={() => setIsOpen(true)}
+      >
+        <DoorOpen className="h-4 w-4" />
+        Breakout
+        {activeRoomCount > 0 && (
+          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+            {activeRoomCount}
+          </Badge>
+        )}
+      </Button>
+      <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[85vw] lg:!w-[85vw] h-[92vh] sm:h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
+          <div className="flex items-center gap-3">
+            <DoorOpen className="h-5 w-5 text-primary" />
+            <span className="font-medium">{session.title} - Breakout Rooms</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Breakout Rooms Content - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-auto p-4">
+          <div className="mb-4 p-4 bg-muted/30 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              Join a breakout room to participate in smaller group discussions.
+              You can leave and rejoin rooms at any time.
+            </p>
+          </div>
+          <BreakoutRoomList
+            sessionId={session.id}
+            eventId={eventId}
+            userId={userId}
+            isOrganizer={false}
+            onJoinRoom={() => toast.success("Joined breakout room")}
+            onLeaveRoom={() => toast.success("Left breakout room")}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const SessionCard = ({
   session,
   eventId,
   organizationId,
   eventVirtualSettings,
+  userId,
 }: {
   session: Session;
   eventId: string;
   organizationId?: string;
   eventVirtualSettings?: VirtualSettings | null;
+  userId?: string;
 }) => {
   const isLive = session.status === "LIVE";
   const isEnded = session.status === "ENDED";
@@ -730,6 +802,15 @@ const SessionCard = ({
                   />
                 )}
 
+                {/* Breakout Rooms - available for live sessions */}
+                {isLive && (
+                  <AttendeeBreakoutRoomsDialog
+                    session={session}
+                    eventId={eventId}
+                    userId={userId}
+                  />
+                )}
+
                 {/* Report Issue Button - Always available for live/upcoming sessions */}
                 <IncidentReportForm
                   sessionId={session.id}
@@ -761,6 +842,7 @@ const SessionCard = ({
 export default function AttendeeEventPage() {
   const params = useParams();
   const eventId = params.eventId as string;
+  const { user } = useAuthStore();
 
   const { data, loading, error } = useQuery(GET_ATTENDEE_EVENT_DETAILS_QUERY, {
     variables: { eventId },
@@ -1032,7 +1114,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {liveSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -1050,7 +1132,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {upcomingSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -1080,7 +1162,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {endedSessions.map((session, index) => (
                 <StaggerItem key={session.id}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} />
+                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
             </StaggerContainer>

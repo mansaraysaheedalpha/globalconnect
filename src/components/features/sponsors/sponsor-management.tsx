@@ -70,6 +70,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
   const {
     tiers,
     sponsors,
+    sponsorCounts,
     isLoading,
     error,
     createDefaultTiers,
@@ -167,12 +168,15 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
     };
   };
 
-  // Map API response to display format
-  const displaySponsors = sponsors.map((s) => ({
-    ...s,
-    representativeCount: 0, // TODO: Get from API
-    leadCount: 0, // TODO: Get from API
-  }));
+  // Map API response to display format with counts
+  const displaySponsors = sponsors.map((s) => {
+    const counts = sponsorCounts.get(s.id) || { representativeCount: 0, leadCount: 0 };
+    return {
+      ...s,
+      representativeCount: counts.representativeCount,
+      leadCount: counts.leadCount,
+    };
+  });
 
   return (
     <div className="space-y-6">

@@ -138,10 +138,16 @@ interface UseSponsorManagementOptions {
   organizationId: string;
 }
 
+export interface SponsorCounts {
+  representativeCount: number;
+  leadCount: number;
+}
+
 export function useSponsorManagement({ eventId, organizationId }: UseSponsorManagementOptions) {
   const { token } = useAuthStore();
   const [tiers, setTiers] = useState<SponsorTier[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [sponsorCounts, setSponsorCounts] = useState<Map<string, SponsorCounts>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -459,6 +465,59 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
     }
   }, [token, organizationId]);
 
+  // Fetch counts for all sponsors
+  const fetchSponsorCounts = useCallback(async (sponsorList: Sponsor[]) => {
+    if (!token || !organizationId || sponsorList.length === 0) return;
+
+    const countsMap = new Map<string, SponsorCounts>();
+
+    // Fetch counts for each sponsor in parallel
+    await Promise.all(
+      sponsorList.map(async (sponsor) => {
+        try {
+          // Fetch representative count
+          const usersResponse = await fetch(
+            `${API_BASE_URL}/sponsors/organizations/${organizationId}/sponsors/${sponsor.id}/users`,
+            { headers }
+          );
+          const users = usersResponse.ok ? await usersResponse.json() : [];
+
+          // Fetch lead stats (this might fail if organizer doesn't have sponsor rep permissions)
+          let leadCount = 0;
+          try {
+            const statsResponse = await fetch(
+              `${API_BASE_URL}/sponsors/sponsors/${sponsor.id}/leads/stats`,
+              { headers }
+            );
+            if (statsResponse.ok) {
+              const stats = await statsResponse.json();
+              leadCount = stats.total_leads || 0;
+            }
+          } catch {
+            // Ignore lead stats errors
+          }
+
+          countsMap.set(sponsor.id, {
+            representativeCount: users.length,
+            leadCount,
+          });
+        } catch (err) {
+          console.error(`Failed to fetch counts for sponsor ${sponsor.id}:`, err);
+          countsMap.set(sponsor.id, { representativeCount: 0, leadCount: 0 });
+        }
+      })
+    );
+
+    setSponsorCounts(countsMap);
+  }, [token, organizationId]);
+
+  // Fetch counts when sponsors change
+  useEffect(() => {
+    if (sponsors.length > 0) {
+      fetchSponsorCounts(sponsors);
+    }
+  }, [sponsors, fetchSponsorCounts]);
+
   // Clear error
   const clearError = useCallback(() => {
     setError(null);
@@ -475,6 +534,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
     // Data
     tiers,
     sponsors,
+    sponsorCounts,
     isLoading,
     error,
 

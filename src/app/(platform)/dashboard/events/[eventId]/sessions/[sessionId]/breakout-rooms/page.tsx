@@ -200,13 +200,8 @@ export default function BreakoutRoomsManagementPage() {
         sessionId={sessionId}
         eventId={eventId}
         isOrganizer={true}
-        onStartRoom={(roomId) => toast.success(`Room ${roomId} started`)}
-        onCloseRoom={(roomId) => toast.success(`Room ${roomId} closed`)}
-        onViewRoom={(roomId) =>
-          router.push(
-            `/dashboard/events/${eventId}/sessions/${sessionId}/breakout-rooms/${roomId}`
-          )
-        }
+        onStartRoom={(roomId) => toast.success(`Room started`)}
+        onCloseRoom={(roomId) => toast.success(`Room closed`)}
       />
 
       {/* Create Room Modal */}
