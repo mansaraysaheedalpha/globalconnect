@@ -34,11 +34,13 @@ import LeaderboardPage from "./leaderboard/page";
 import MonetizationPage from "./monetization/page";
 import EngagementConductorPage from "./engagement/page";
 import NetworkingAnalyticsPage from "./networking/page";
-import { SponsorLeadsDashboard } from "@/components/features/sponsors/sponsor-leads-dashboard";
+import { SponsorManagement } from "@/components/features/sponsors/sponsor-management";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function EventDetailPage() {
   const params = useParams();
   const eventId = params.eventId as string;
+  const { orgId } = useAuthStore();
 
   // Debug: Log URL param vs event.id
   console.log("[EventDetailPage] URL eventId from params:", eventId);
@@ -189,7 +191,7 @@ export default function EventDetailPage() {
               <NetworkingAnalyticsPage />
             </TabsContent>
             <TabsContent value="sponsors" className="mt-4 sm:mt-6">
-              <SponsorLeadsDashboard eventId={event.id} />
+              <SponsorManagement eventId={event.id} organizationId={orgId || ""} />
             </TabsContent>
           </Tabs>
         </div>
