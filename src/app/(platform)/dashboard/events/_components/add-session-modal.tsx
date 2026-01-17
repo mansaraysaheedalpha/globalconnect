@@ -30,6 +30,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -39,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store } from "lucide-react";
+import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store, DoorOpen } from "lucide-react";
 import { SpeakerMultiSelect } from "@/components/ui/speaker-multi-select";
 
 // Session type options for virtual session support
@@ -105,6 +106,10 @@ const formSchema = z
     isRecordable: z.boolean(),
     broadcastOnly: z.boolean(),
     maxParticipants: z.number().min(1).max(10000).optional(),
+    // Green Room settings
+    greenRoomEnabled: z.boolean(),
+    greenRoomOpensMinutesBefore: z.number().min(5).max(60),
+    greenRoomNotes: z.string().max(1000).optional().or(z.literal("")),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: "End time must be after the start time.",
@@ -136,6 +141,10 @@ export const AddSessionModal = ({
       streamingUrl: "",
       isRecordable: true,
       broadcastOnly: true,
+      // Green Room defaults
+      greenRoomEnabled: true,
+      greenRoomOpensMinutesBefore: 15,
+      greenRoomNotes: "",
     },
   });
 
@@ -185,6 +194,10 @@ export const AddSessionModal = ({
           isRecordable: values.isRecordable,
           broadcastOnly: values.broadcastOnly,
           maxParticipants: values.maxParticipants || null,
+          // Green Room fields
+          greenRoomEnabled: values.greenRoomEnabled,
+          greenRoomOpensMinutesBefore: values.greenRoomOpensMinutesBefore,
+          greenRoomNotes: values.greenRoomNotes || null,
         },
       },
     });
@@ -379,6 +392,93 @@ export const AddSessionModal = ({
                   )}
                 />
               </div>
+            </div>
+
+            {/* Green Room Settings */}
+            <div className="space-y-3 pt-2 border-t">
+              <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <DoorOpen className="h-4 w-4" />
+                Green Room Settings
+              </p>
+
+              <FormField
+                control={form.control}
+                name="greenRoomEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <FormLabel className="font-normal cursor-pointer">Enable Green Room</FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Backstage area for speakers to prepare before going live
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={loading}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch("greenRoomEnabled") && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="greenRoomOpensMinutesBefore"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Opens Before Session (minutes)</FormLabel>
+                        <Select
+                          onValueChange={(val) => field.onChange(parseInt(val))}
+                          value={field.value?.toString()}
+                          disabled={loading}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select time..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="5">5 minutes</SelectItem>
+                            <SelectItem value="10">10 minutes</SelectItem>
+                            <SelectItem value="15">15 minutes (default)</SelectItem>
+                            <SelectItem value="30">30 minutes</SelectItem>
+                            <SelectItem value="45">45 minutes</SelectItem>
+                            <SelectItem value="60">60 minutes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="greenRoomNotes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Producer Notes for Speakers</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Instructions for speakers (e.g., 'Please join 10 mins early for sound check. Have your slides ready.')"
+                            className="resize-none"
+                            rows={3}
+                            {...field}
+                            disabled={loading}
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          These notes will be visible to speakers in the Green Room
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
             </div>
 
             {/* Interactive Features */}

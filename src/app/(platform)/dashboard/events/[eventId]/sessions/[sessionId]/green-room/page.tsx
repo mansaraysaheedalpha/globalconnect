@@ -1,11 +1,12 @@
 // src/app/(platform)/dashboard/events/[eventId]/sessions/[sessionId]/green-room/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_SESSION_BY_ID_QUERY, GET_EVENT_BY_ID_QUERY } from "@/graphql/events.graphql";
 import { useAuthStore } from "@/store/auth.store";
+import { useSocket } from "@/hooks/use-socket";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,10 @@ export default function GreenRoomPage() {
     microphone: false,
     network: false,
   });
+  const [onlineSpeakers, setOnlineSpeakers] = useState<Set<string>>(new Set());
+
+  // Socket for real-time presence
+  const { socket, isConnected } = useSocket();
 
   const { data: sessionData, loading: sessionLoading } = useQuery(
     GET_SESSION_BY_ID_QUERY,
@@ -141,6 +146,65 @@ export default function GreenRoomPage() {
       (avChecks.microphone || !session?.requiresMicrophone);
     setIsReady(allChecksPass);
   }, [avChecks, session?.requiresCamera, session?.requiresMicrophone]);
+
+  // Green Room presence tracking - ONLY for assigned speakers
+  // Organizers can view the green room but aren't tracked as "online presenters"
+  useEffect(() => {
+    if (!socket || !isConnected || !sessionId || !user?.id) return;
+
+    // Handle initial presence list when joining (all users receive this)
+    const handlePresenceList = (data: { users: Array<{ userId: string; firstName: string; lastName: string }> }) => {
+      if (data?.users && Array.isArray(data.users)) {
+        setOnlineSpeakers(new Set(data.users.map((u) => u.userId)));
+      }
+    };
+
+    // Handle user joined green room
+    const handleUserJoined = (data: { userId: string; firstName: string; lastName: string }) => {
+      if (data?.userId) {
+        setOnlineSpeakers((prev) => new Set([...prev, data.userId]));
+      }
+    };
+
+    // Handle user left green room
+    const handleUserLeft = (data: { userId: string }) => {
+      if (data?.userId) {
+        setOnlineSpeakers((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(data.userId);
+          return newSet;
+        });
+      }
+    };
+
+    // Only emit join if user is an assigned speaker for this session
+    // Organizers can still view the green room and see who's online,
+    // but they won't be tracked as "online presenters"
+    if (isSpeaker) {
+      socket.emit("greenroom.join", {
+        sessionId,
+        eventId,
+        userId: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      });
+    }
+
+    // Everyone listens for presence updates (so organizers can see who's arrived)
+    socket.on("greenroom.presence", handlePresenceList);
+    socket.on("greenroom.user.joined", handleUserJoined);
+    socket.on("greenroom.user.left", handleUserLeft);
+
+    return () => {
+      // Only emit leave if we joined (i.e., if we're a speaker)
+      if (isSpeaker) {
+        socket.emit("greenroom.leave", { sessionId, userId: user.id });
+      }
+      socket.off("greenroom.presence", handlePresenceList);
+      socket.off("greenroom.user.joined", handleUserJoined);
+      socket.off("greenroom.user.left", handleUserLeft);
+    };
+  }, [socket, isConnected, sessionId, eventId, user?.id, user?.first_name, user?.last_name, isSpeaker]);
 
   const handleEnterSession = () => {
     // Navigate to the session/streaming page
@@ -378,24 +442,52 @@ export default function GreenRoomPage() {
         {/* Speakers */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Users className="h-5 w-5" />
-              Speakers
+            <CardTitle className="flex items-center justify-between text-lg">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Speakers
+              </div>
+              {onlineSpeakers.size > 0 && (
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                  {onlineSpeakers.size} online
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {session.speakers?.map((speaker: { id: string; name: string; userId: string | null }) => (
-                <div
-                  key={speaker.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                >
-                  <span className="font-medium">{speaker.name}</span>
-                  {speaker.userId === user?.id && (
-                    <Badge variant="outline">You</Badge>
-                  )}
-                </div>
-              ))}
+              {session.speakers?.map((speaker: { id: string; name: string; userId: string | null }) => {
+                const isOnline = speaker.userId ? onlineSpeakers.has(speaker.userId) : false;
+                const isCurrentUser = speaker.userId === user?.id;
+                return (
+                  <div
+                    key={speaker.id}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg transition-colors",
+                      isOnline ? "bg-green-500/10 border border-green-500/20" : "bg-muted/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Online indicator */}
+                      <div className={cn(
+                        "h-2.5 w-2.5 rounded-full",
+                        isOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/30"
+                      )} />
+                      <span className="font-medium">{speaker.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isOnline && !isCurrentUser && (
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                          In Green Room
+                        </Badge>
+                      )}
+                      {isCurrentUser && (
+                        <Badge variant="outline">You</Badge>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
               {(!session.speakers || session.speakers.length === 0) && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No speakers assigned
