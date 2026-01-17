@@ -13,7 +13,9 @@ import {
   ThumbsUp,
   Smile,
   CheckCircle2,
+  Monitor,
 } from "lucide-react";
+import { VirtualAttendanceStats } from "@/components/features/virtual-session/VirtualAttendanceStats";
 
 interface LiveDashboardProps {
   eventId: string;
@@ -103,6 +105,19 @@ export const LiveDashboard = ({ eventId }: LiveDashboardProps) => {
           icon={Smile}
         />
       </div>
+
+      {/* Virtual Attendance Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="h-5 w-5" />
+            Virtual Attendance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <VirtualAttendanceStats eventId={eventId} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
