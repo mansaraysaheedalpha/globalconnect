@@ -19,11 +19,13 @@ import {
   RefreshCw,
   Users,
   Eye,
+  DoorOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { SessionControlGrid } from "./_components/session-control-grid";
 import { CombinedChatModeration } from "./_components/combined-chat-moderation";
 import { CombinedQAModeration } from "./_components/combined-qa-moderation";
+import { BreakoutRoomsControl } from "./_components/breakout-rooms-control";
 
 type Session = {
   id: string;
@@ -174,7 +176,7 @@ export default function ProducerDashboardPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Monitor className="h-4 w-4" />
             Session Control
@@ -186,6 +188,10 @@ export default function ProducerDashboardPage() {
           <TabsTrigger value="qa" className="flex items-center gap-2">
             <HelpCircle className="h-4 w-4" />
             Q&A Moderation
+          </TabsTrigger>
+          <TabsTrigger value="breakout" className="flex items-center gap-2">
+            <DoorOpen className="h-4 w-4" />
+            Breakout Rooms
           </TabsTrigger>
         </TabsList>
 
@@ -205,6 +211,10 @@ export default function ProducerDashboardPage() {
 
         <TabsContent value="qa" className="space-y-4">
           <CombinedQAModeration sessions={sessions} eventId={eventId} />
+        </TabsContent>
+
+        <TabsContent value="breakout" className="space-y-4">
+          <BreakoutRoomsControl sessions={sessions} eventId={eventId} />
         </TabsContent>
       </Tabs>
     </div>
