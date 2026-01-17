@@ -45,6 +45,7 @@ import {
   Loader,
   MoreVertical,
   BookCopy,
+  Radio,
 } from "lucide-react";
 import { SaveAsBlueprintModal } from "./save-as-blueprint-modal";
 
@@ -274,6 +275,15 @@ export const EventDetailHeader = ({
         </div>
         {isOwnerOrAdmin && (
           <div className="flex gap-2 flex-shrink-0 self-start">
+            <Link href={`/dashboard/events/${event.id}/producer`}>
+              <Button
+                variant="default"
+                className="h-10 sm:h-9 bg-red-600 hover:bg-red-700"
+              >
+                <Radio className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Producer</span>
+              </Button>
+            </Link>
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(true)}

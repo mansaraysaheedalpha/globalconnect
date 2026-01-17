@@ -552,9 +552,9 @@ const SessionCard = ({
   const presentationEnabled = session.presentationEnabled !== false;
   const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled || presentationEnabled;
 
-  // Virtual session detection - use session's URL or fall back to event-level URL
+  // Virtual session detection - only if there's a streaming URL (session-level or event-level)
   const effectiveStreamingUrl = session.streamingUrl || eventVirtualSettings?.streamingUrl;
-  const isVirtualSession = !!(effectiveStreamingUrl || session.sessionType);
+  const isVirtualSession = !!effectiveStreamingUrl || !!session.recordingUrl;
   const hasRecording = isEnded && !!session.recordingUrl;
 
   // State for virtual session viewer
