@@ -135,6 +135,10 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       recordingUrl
       broadcastOnly
       maxParticipants
+      greenRoomEnabled
+      greenRoomOpensMinutesBefore
+      greenRoomNotes
+      greenRoomOpen
       speakers {
         id
         name
@@ -158,6 +162,10 @@ export const CREATE_SESSION_MUTATION = gql`
       streamingUrl
       broadcastOnly
       maxParticipants
+      greenRoomEnabled
+      greenRoomOpensMinutesBefore
+      greenRoomNotes
+      greenRoomOpen
       speakers {
         id
         name
@@ -181,6 +189,10 @@ export const UPDATE_SESSION_MUTATION = gql`
       recordingUrl
       broadcastOnly
       maxParticipants
+      greenRoomEnabled
+      greenRoomOpensMinutesBefore
+      greenRoomNotes
+      greenRoomOpen
       speakers {
         id
         name
@@ -265,6 +277,40 @@ export const TOGGLE_SESSION_POLLS_MUTATION = gql`
       id
       pollsOpen
       pollsEnabled
+    }
+  }
+`;
+
+// Get a single session by ID (for green room, etc.)
+export const GET_SESSION_BY_ID_QUERY = gql`
+  query GetSessionById($id: ID!) {
+    session(id: $id) {
+      id
+      title
+      startTime
+      endTime
+      chatEnabled
+      qaEnabled
+      pollsEnabled
+      chatOpen
+      qaOpen
+      pollsOpen
+      sessionType
+      streamingUrl
+      recordingUrl
+      broadcastOnly
+      maxParticipants
+      requiresCamera
+      requiresMicrophone
+      greenRoomEnabled
+      greenRoomOpensMinutesBefore
+      greenRoomNotes
+      greenRoomOpen
+      speakers {
+        id
+        name
+        userId
+      }
     }
   }
 `;

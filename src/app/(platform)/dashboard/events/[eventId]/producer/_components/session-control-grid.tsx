@@ -31,8 +31,12 @@ import {
   Users,
   Eye,
   Video,
+  DoorOpen,
+  ExternalLink,
+  Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 type Session = {
   id: string;
@@ -48,7 +52,11 @@ type Session = {
   pollsOpen?: boolean;
   sessionType?: string;
   streamingUrl?: string;
-  speakers: { id: string; name: string }[];
+  greenRoomEnabled?: boolean;
+  greenRoomOpensMinutesBefore?: number;
+  greenRoomNotes?: string;
+  greenRoomOpen?: boolean;
+  speakers: { id: string; name: string; userId?: string }[];
 };
 
 interface SessionControlGridProps {
@@ -194,6 +202,46 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Video className="h-4 w-4" />
             <span className="truncate">{session.streamingUrl}</span>
+          </div>
+        )}
+
+        {/* Green Room Status */}
+        {session.greenRoomEnabled !== false && (
+          <div className={cn(
+            "flex items-center justify-between p-3 rounded-lg border",
+            session.greenRoomOpen
+              ? "bg-amber-500/10 border-amber-500/20"
+              : "bg-muted/50 border-muted"
+          )}>
+            <div className="flex items-center gap-2">
+              <DoorOpen className={cn(
+                "h-4 w-4",
+                session.greenRoomOpen ? "text-amber-600" : "text-muted-foreground"
+              )} />
+              <div>
+                <span className={cn(
+                  "text-sm font-medium",
+                  session.greenRoomOpen ? "text-amber-700" : "text-muted-foreground"
+                )}>
+                  Green Room
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  Opens {session.greenRoomOpensMinutesBefore || 15}min before
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={session.greenRoomOpen ? "default" : "secondary"} className={cn(
+                session.greenRoomOpen && "bg-amber-500"
+              )}>
+                {session.greenRoomOpen ? "Open" : "Closed"}
+              </Badge>
+              <Link href={`/dashboard/events/${eventId}/sessions/${session.id}/green-room`}>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
 
