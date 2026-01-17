@@ -144,10 +144,13 @@ export default function GreenRoomPage() {
 
   const handleEnterSession = () => {
     // Navigate to the session/streaming page
-    if (session?.streamingUrl) {
-      window.open(session.streamingUrl, "_blank");
+    // Use session-specific URL first, then fall back to event-level URL (in virtualSettings)
+    const streamingUrl = session?.streamingUrl || event?.virtualSettings?.streamingUrl;
+    if (streamingUrl) {
+      window.open(streamingUrl, "_blank");
     } else {
-      router.push(`/dashboard/events/${eventId}`);
+      // No streaming URL configured - go to the session view page
+      router.push(`/dashboard/events/${eventId}/sessions/${sessionId}`);
     }
   };
 
