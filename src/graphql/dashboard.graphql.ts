@@ -115,3 +115,45 @@ export interface EngagementBreakdown {
 export interface DashboardData {
   organizationDashboardStats: DashboardStats;
 }
+
+// ==================== Virtual Attendance Analytics ====================
+
+// Get virtual attendance stats for a specific event (organizer view)
+export const GET_EVENT_VIRTUAL_ATTENDANCE_STATS_QUERY = gql`
+  query GetEventVirtualAttendanceStats($eventId: ID!) {
+    eventVirtualAttendanceStats(eventId: $eventId) {
+      eventId
+      totalViews
+      uniqueViewers
+      currentViewers
+      avgWatchDurationSeconds
+      sessionStats {
+        sessionId
+        totalViews
+        uniqueViewers
+        currentViewers
+        avgWatchDurationSeconds
+        peakViewers
+      }
+    }
+  }
+`;
+
+// Types for virtual attendance
+export interface VirtualAttendanceStats {
+  sessionId: string;
+  totalViews: number;
+  uniqueViewers: number;
+  currentViewers: number;
+  avgWatchDurationSeconds: number;
+  peakViewers: number;
+}
+
+export interface EventVirtualAttendanceStats {
+  eventId: string;
+  totalViews: number;
+  uniqueViewers: number;
+  currentViewers: number;
+  avgWatchDurationSeconds: number;
+  sessionStats: VirtualAttendanceStats[];
+}
