@@ -66,8 +66,8 @@ function ResetPasswordComponent() {
     performPasswordReset({
       variables: {
         input: {
-          reset_token: token,
-          new_password: passwords.newPassword,
+          resetToken: token,
+          newPassword: passwords.newPassword,
         },
       },
     });

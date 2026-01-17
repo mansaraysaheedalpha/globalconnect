@@ -11,7 +11,7 @@ import {
 import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, ArchiveRestore, Loader, ArrowRight } from "lucide-react";
+import { CalendarDays, Users, ArchiveRestore, Loader, ArrowRight, Video } from "lucide-react";
 import { EventCardPlaceholder } from "./event-card-placeholder";
 
 // Type definitions for cache updates
@@ -22,6 +22,7 @@ type Event = {
   startDate: string;
   registrationsCount: number;
   imageUrl?: string | null;
+  eventType?: "IN_PERSON" | "VIRTUAL" | "HYBRID" | null;
   __typename?: string;
 };
 
@@ -144,13 +145,25 @@ export const EventCard = ({ event, isArchivedView }: EventCardProps) => {
           <EventCardPlaceholder />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent group-hover:from-black/90 group-hover:via-black/60 transition-all duration-300" />
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex gap-2">
           <Badge
             variant={event.status === "published" ? "default" : "secondary"}
             className="capitalize shadow-lg"
           >
             {isArchivedView ? "Archived" : event.status}
           </Badge>
+          {event.eventType === "VIRTUAL" && (
+            <Badge className="bg-blue-500 text-white shadow-lg">
+              <Video className="h-3 w-3 mr-1" />
+              Virtual
+            </Badge>
+          )}
+          {event.eventType === "HYBRID" && (
+            <Badge className="bg-purple-500 text-white shadow-lg">
+              <Video className="h-3 w-3 mr-1" />
+              Hybrid
+            </Badge>
+          )}
         </div>
       </div>
 

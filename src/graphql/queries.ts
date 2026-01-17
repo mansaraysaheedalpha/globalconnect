@@ -34,6 +34,7 @@ export const GET_EVENTS_BY_ORGANIZATION_QUERY = gql`
         startDate
         registrationsCount
         imageUrl
+        eventType
       }
     }
   }
