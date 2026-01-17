@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useMutation } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { StreamPlayer } from "@/components/features/video/StreamPlayer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ import {
   Lock,
   Unlock,
   Calendar,
+  Users,
+  Eye,
 } from "lucide-react";
 import { SessionChat } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-chat";
 import { SessionQA } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-qa";
@@ -34,6 +36,7 @@ import { IncidentReportForm } from "@/components/features/incidents";
 import {
   JOIN_VIRTUAL_SESSION_MUTATION,
   LEAVE_VIRTUAL_SESSION_MUTATION,
+  GET_VIRTUAL_ATTENDANCE_STATS_QUERY,
 } from "@/graphql/attendee.graphql";
 
 export interface VirtualSession {
@@ -309,6 +312,15 @@ export function VirtualSessionView({
     onError: (err) => console.warn("Failed to record session leave:", err),
   });
 
+  // Live viewer count query - polls every 15 seconds when dialog is open
+  const { data: statsData } = useQuery(GET_VIRTUAL_ATTENDANCE_STATS_QUERY, {
+    variables: { sessionId: session.id },
+    skip: !isOpen,
+    pollInterval: isOpen ? 15000 : 0, // Poll every 15 seconds while watching
+    fetchPolicy: "network-only",
+  });
+  const currentViewers = statsData?.virtualAttendanceStats?.currentViewers ?? 0;
+
   // Get device type for analytics
   const getDeviceType = useCallback(() => {
     if (typeof window === "undefined") return "unknown";
@@ -415,6 +427,14 @@ export function VirtualSessionView({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Live Viewer Count */}
+            {currentViewers > 0 && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-sm mr-2">
+                <Eye className="h-3.5 w-3.5" />
+                <span>{currentViewers} watching</span>
+              </div>
+            )}
+
             {/* Session Time */}
             <div className="hidden sm:flex items-center gap-1.5 text-sm text-white/60 mr-2">
               <Clock className="h-4 w-4" />
