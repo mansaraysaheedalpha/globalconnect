@@ -62,6 +62,7 @@ type SessionData = {
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  breakoutEnabled?: boolean;
   speakers: { id: string }[];
   // Virtual Session fields
   sessionType?: SessionType;
@@ -98,6 +99,7 @@ const formSchema = z
     chatEnabled: z.boolean(),
     qaEnabled: z.boolean(),
     pollsEnabled: z.boolean(),
+    breakoutEnabled: z.boolean(),
     // Virtual Session Support (required fields - defaults provided in useForm)
     sessionType: z.enum(["MAINSTAGE", "BREAKOUT", "WORKSHOP", "NETWORKING", "EXPO"]),
     streamingUrl: z
@@ -143,6 +145,7 @@ export const EditSessionModal = ({
         chatEnabled: session.chatEnabled !== false,
         qaEnabled: session.qaEnabled !== false,
         pollsEnabled: session.pollsEnabled !== false,
+        breakoutEnabled: session.breakoutEnabled === true,
         // Virtual Session fields
         sessionType: session.sessionType || "MAINSTAGE",
         streamingUrl: session.streamingUrl || "",
@@ -192,6 +195,7 @@ export const EditSessionModal = ({
           chatEnabled: values.chatEnabled,
           qaEnabled: values.qaEnabled,
           pollsEnabled: values.pollsEnabled,
+          breakoutEnabled: values.breakoutEnabled,
           // Virtual Session fields
           sessionType: values.sessionType,
           streamingUrl: values.streamingUrl || null,
@@ -528,6 +532,27 @@ export const EditSessionModal = ({
                     <div className="flex items-center gap-2">
                       <BarChart3 className="h-4 w-4 text-muted-foreground" />
                       <FormLabel className="font-normal cursor-pointer">Enable Polls</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="breakoutEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <FormLabel className="font-normal cursor-pointer">Enable Breakout Rooms</FormLabel>
+                        <p className="text-xs text-muted-foreground">Allow attendees to join smaller discussion groups</p>
+                      </div>
                     </div>
                     <FormControl>
                       <Switch

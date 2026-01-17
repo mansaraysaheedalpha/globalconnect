@@ -127,6 +127,7 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      breakoutEnabled
       chatOpen
       qaOpen
       pollsOpen
@@ -158,6 +159,7 @@ export const CREATE_SESSION_MUTATION = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      breakoutEnabled
       sessionType
       streamingUrl
       broadcastOnly
@@ -184,6 +186,7 @@ export const UPDATE_SESSION_MUTATION = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      breakoutEnabled
       sessionType
       streamingUrl
       recordingUrl
@@ -292,6 +295,7 @@ export const GET_SESSION_BY_ID_QUERY = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      breakoutEnabled
       chatOpen
       qaOpen
       pollsOpen

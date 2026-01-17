@@ -79,6 +79,7 @@ type Session = {
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  breakoutEnabled?: boolean;
   presentationEnabled?: boolean;
   chatOpen?: boolean;  // Runtime state: organizer controls when chat is open
   qaOpen?: boolean;    // Runtime state: organizer controls when Q&A is open
@@ -802,8 +803,8 @@ const SessionCard = ({
                   />
                 )}
 
-                {/* Breakout Rooms - available for live sessions */}
-                {isLive && (
+                {/* Breakout Rooms - available for live sessions when enabled */}
+                {isLive && session.breakoutEnabled && (
                   <AttendeeBreakoutRoomsDialog
                     session={session}
                     eventId={eventId}

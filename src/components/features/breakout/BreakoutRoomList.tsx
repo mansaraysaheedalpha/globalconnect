@@ -33,6 +33,7 @@ export function BreakoutRoomList({
   const [rooms, setRooms] = useState<BreakoutRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingVideoRoomId, setLoadingVideoRoomId] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
 
   // Fetch initial rooms
@@ -76,7 +77,13 @@ export function BreakoutRoomList({
       }
     };
 
-    const handleRoomsUpdated = (data: { roomId: string; participantCount?: number; status?: string; startedAt?: string }) => {
+    const handleRoomsUpdated = (data: {
+      roomId: string;
+      participantCount?: number;
+      status?: string;
+      startedAt?: string;
+      videoRoomUrl?: string;
+    }) => {
       setRooms((prev) =>
         prev.map((r) =>
           r.id === data.roomId
@@ -87,6 +94,7 @@ export function BreakoutRoomList({
                 },
                 status: (data.status as BreakoutRoom["status"]) ?? r.status,
                 startedAt: data.startedAt ?? r.startedAt,
+                videoRoomUrl: data.videoRoomUrl ?? r.videoRoomUrl,
               }
             : r
         )
@@ -179,6 +187,34 @@ export function BreakoutRoomList({
     [socket, onCloseRoom]
   );
 
+  const handleJoinVideo = useCallback(
+    (roomId: string) => {
+      if (!socket) return;
+
+      setLoadingVideoRoomId(roomId);
+      socket.emit(
+        "breakout.room.getVideoUrl",
+        { roomId },
+        (response: {
+          success: boolean;
+          joinUrl?: string;
+          videoUrl?: string;
+          token?: string;
+          error?: string;
+        }) => {
+          setLoadingVideoRoomId(null);
+          if (response.success && response.joinUrl) {
+            // Open video room in new tab
+            window.open(response.joinUrl, "_blank", "noopener,noreferrer");
+          } else {
+            console.error("Failed to get video URL:", response.error);
+          }
+        }
+      );
+    },
+    [socket]
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -211,6 +247,8 @@ export function BreakoutRoomList({
           onStart={() => handleStart(room.id)}
           onClose={() => handleClose(room.id)}
           onView={() => onViewRoom?.(room.id)}
+          onJoinVideo={() => handleJoinVideo(room.id)}
+          isLoadingVideo={loadingVideoRoomId === room.id}
         />
       ))}
     </div>

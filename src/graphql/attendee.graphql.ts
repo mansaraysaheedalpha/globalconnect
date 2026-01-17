@@ -87,6 +87,7 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      breakoutEnabled
       chatOpen
       qaOpen
       pollsOpen

@@ -5,7 +5,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Clock, Play, X, LogIn } from "lucide-react";
+import { Users, Clock, Play, X, LogIn, Video } from "lucide-react";
 import { BreakoutRoom } from "./types";
 
 interface BreakoutRoomCardProps {
@@ -17,6 +17,8 @@ interface BreakoutRoomCardProps {
   onStart?: () => void;
   onClose?: () => void;
   onView?: () => void;
+  onJoinVideo?: () => void;
+  isLoadingVideo?: boolean;
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -35,6 +37,8 @@ export function BreakoutRoomCard({
   onStart,
   onClose,
   onView,
+  onJoinVideo,
+  isLoadingVideo = false,
 }: BreakoutRoomCardProps) {
   const isFull = room._count.participants >= room.maxParticipants;
   const status = statusConfig[room.status] || statusConfig.WAITING;
@@ -99,14 +103,27 @@ export function BreakoutRoomCard({
           ) : (
             <>
               {isInRoom ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onLeave}
-                  className="w-full"
-                >
-                  Leave Room
-                </Button>
+                <div className="flex gap-2 w-full">
+                  {room.status === "ACTIVE" && room.videoRoomUrl && (
+                    <Button
+                      size="sm"
+                      onClick={onJoinVideo}
+                      disabled={isLoadingVideo}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Video className="h-4 w-4 mr-1" />
+                      {isLoadingVideo ? "Loading..." : "Join Video"}
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onLeave}
+                    className={room.status === "ACTIVE" && room.videoRoomUrl ? "" : "w-full"}
+                  >
+                    Leave
+                  </Button>
+                </div>
               ) : (
                 <Button
                   size="sm"
