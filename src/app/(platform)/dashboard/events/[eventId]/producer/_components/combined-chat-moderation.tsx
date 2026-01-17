@@ -45,9 +45,13 @@ type ChatMessage = {
   id: string;
   sessionId: string;
   sessionName?: string;
-  userId: string;
-  userName: string;
-  content: string;
+  authorId: string;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  text: string;
   timestamp: string;
   isDeleted?: boolean;
 };
@@ -79,18 +83,44 @@ export const CombinedChatModeration = ({ sessions, eventId }: CombinedChatModera
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    // Join all session rooms for chat monitoring
-    chatSessions.forEach((session) => {
-      socket.emit("chat:join", { sessionId: session.id, eventId });
-    });
+    // Wait for connection acknowledgement then join sessions
+    const handleConnectionAck = () => {
+      chatSessions.forEach((session) => {
+        socket.emit("session.join", { sessionId: session.id, eventId }, (response: { success: boolean; error?: { message: string } }) => {
+          if (!response?.success) {
+            console.warn(`Failed to join session ${session.id}:`, response?.error?.message);
+          }
+        });
+      });
+    };
+
+    // Listen for chat history (sent after session.join)
+    const handleChatHistory = (data: { messages: ChatMessage[] }) => {
+      if (data?.messages && Array.isArray(data.messages)) {
+        const enrichedMessages = data.messages.map((msg) => {
+          const session = chatSessions.find((s) => s.id === msg.sessionId);
+          return { ...msg, sessionName: session?.title || "Unknown Session" };
+        });
+        setMessages((prev) => {
+          // Merge avoiding duplicates
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMessages = enrichedMessages.filter((m) => !existingIds.has(m.id));
+          return [...prev, ...newMessages].slice(-500);
+        });
+      }
+    };
 
     // Listen for new messages
     const handleNewMessage = (message: ChatMessage) => {
       const session = chatSessions.find((s) => s.id === message.sessionId);
-      setMessages((prev) => [
-        ...prev,
-        { ...message, sessionName: session?.title || "Unknown Session" },
-      ].slice(-500)); // Keep last 500 messages
+      setMessages((prev) => {
+        // Avoid duplicates
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [
+          ...prev,
+          { ...message, sessionName: session?.title || "Unknown Session" },
+        ].slice(-500);
+      });
     };
 
     // Listen for message deletions
@@ -102,15 +132,24 @@ export const CombinedChatModeration = ({ sessions, eventId }: CombinedChatModera
       );
     };
 
-    socket.on("chat:message", handleNewMessage);
-    socket.on("chat:message:deleted", handleMessageDeleted);
+    socket.on("connectionAcknowledged", handleConnectionAck);
+    socket.on("chat.history", handleChatHistory);
+    socket.on("chat.message.new", handleNewMessage);
+    socket.on("chat.message.deleted", handleMessageDeleted);
+
+    // If already connected, join immediately
+    if (isConnected) {
+      handleConnectionAck();
+    }
 
     return () => {
-      socket.off("chat:message", handleNewMessage);
-      socket.off("chat:message:deleted", handleMessageDeleted);
+      socket.off("connectionAcknowledged", handleConnectionAck);
+      socket.off("chat.history", handleChatHistory);
+      socket.off("chat.message.new", handleNewMessage);
+      socket.off("chat.message.deleted", handleMessageDeleted);
       // Leave rooms
       chatSessions.forEach((session) => {
-        socket.emit("chat:leave", { sessionId: session.id });
+        socket.emit("session.leave", { sessionId: session.id });
       });
     };
   }, [socket, isConnected, chatSessions, eventId]);
@@ -125,10 +164,9 @@ export const CombinedChatModeration = ({ sessions, eventId }: CombinedChatModera
   // Handle delete message
   const handleDeleteMessage = (message: ChatMessage) => {
     if (!socket) return;
-    socket.emit("chat:delete", {
-      sessionId: message.sessionId,
+    socket.emit("chat.message.delete", {
       messageId: message.id,
-      eventId,
+      idempotencyKey: crypto.randomUUID(),
     });
   };
 
@@ -136,7 +174,7 @@ export const CombinedChatModeration = ({ sessions, eventId }: CombinedChatModera
   const filteredMessages = messages.filter((m) => {
     if (m.isDeleted) return false;
     if (selectedSession !== "all" && m.sessionId !== selectedSession) return false;
-    if (searchQuery && !m.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery && !m.text.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
@@ -243,13 +281,15 @@ export const CombinedChatModeration = ({ sessions, eventId }: CombinedChatModera
                           )}
                           {message.sessionName}
                         </Badge>
-                        <span className="font-medium text-sm">{message.userName}</span>
+                        <span className="font-medium text-sm">
+                          {message.author?.firstName} {message.author?.lastName}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(message.timestamp), "h:mm:ss a")}
                         </span>
                       </div>
                       <p className={cn("mt-1 text-sm", message.isDeleted && "line-through")}>
-                        {message.content}
+                        {message.text}
                       </p>
                     </div>
                     {!message.isDeleted && (

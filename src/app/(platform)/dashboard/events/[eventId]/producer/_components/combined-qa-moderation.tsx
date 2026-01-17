@@ -50,14 +50,28 @@ type Question = {
   id: string;
   sessionId: string;
   sessionName?: string;
-  userId: string;
-  userName: string;
-  content: string;
-  timestamp: string;
-  upvotes: number;
-  isAnswered?: boolean;
+  text: string;
+  isAnonymous: boolean;
+  status: "pending" | "approved" | "dismissed";
+  createdAt: string;
+  updatedAt: string;
+  isAnswered: boolean;
   isHidden?: boolean;
-  isAnonymous?: boolean;
+  tags: string[];
+  authorId: string;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  _count: {
+    upvotes: number;
+  };
+  answer?: {
+    id: string;
+    text: string;
+    createdAt: string;
+  };
 };
 
 interface CombinedQAModerationProps {
@@ -87,18 +101,44 @@ export const CombinedQAModeration = ({ sessions, eventId }: CombinedQAModeration
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    // Join all session rooms for Q&A monitoring
-    qaSessions.forEach((session) => {
-      socket.emit("qa:join", { sessionId: session.id, eventId });
-    });
+    // Wait for connection acknowledgement then join sessions
+    const handleConnectionAck = () => {
+      qaSessions.forEach((session) => {
+        socket.emit("session.join", { sessionId: session.id, eventId }, (response: { success: boolean; error?: { message: string } }) => {
+          if (!response?.success) {
+            console.warn(`Failed to join session ${session.id}:`, response?.error?.message);
+          }
+        });
+      });
+    };
+
+    // Listen for Q&A history (sent after session.join)
+    const handleQAHistory = (data: { questions: Question[] }) => {
+      if (data?.questions && Array.isArray(data.questions)) {
+        const enrichedQuestions = data.questions.map((q) => {
+          const session = qaSessions.find((s) => s.id === q.sessionId);
+          return { ...q, sessionName: session?.title || "Unknown Session" };
+        });
+        setQuestions((prev) => {
+          // Merge avoiding duplicates
+          const existingIds = new Set(prev.map((q) => q.id));
+          const newQuestions = enrichedQuestions.filter((q) => !existingIds.has(q.id));
+          return [...newQuestions, ...prev];
+        });
+      }
+    };
 
     // Listen for new questions
     const handleNewQuestion = (question: Question) => {
       const session = qaSessions.find((s) => s.id === question.sessionId);
-      setQuestions((prev) => [
-        { ...question, sessionName: session?.title || "Unknown Session" },
-        ...prev,
-      ]);
+      setQuestions((prev) => {
+        // Avoid duplicates
+        if (prev.some((q) => q.id === question.id)) return prev;
+        return [
+          { ...question, sessionName: session?.title || "Unknown Session" },
+          ...prev,
+        ];
+      });
     };
 
     // Listen for question updates (upvotes, answered, etc.)
@@ -113,19 +153,26 @@ export const CombinedQAModeration = ({ sessions, eventId }: CombinedQAModeration
       setQuestions((prev) => prev.filter((q) => q.id !== data.questionId));
     };
 
-    socket.on("qa:question", handleNewQuestion);
-    socket.on("qa:question:updated", handleQuestionUpdate);
-    socket.on("qa:question:upvoted", handleQuestionUpdate);
-    socket.on("qa:question:deleted", handleQuestionDeleted);
+    socket.on("connectionAcknowledged", handleConnectionAck);
+    socket.on("qa.history", handleQAHistory);
+    socket.on("qa.question.new", handleNewQuestion);
+    socket.on("qna.question.updated", handleQuestionUpdate);
+    socket.on("qna.question.removed", handleQuestionDeleted);
+
+    // If already connected, join immediately
+    if (isConnected) {
+      handleConnectionAck();
+    }
 
     return () => {
-      socket.off("qa:question", handleNewQuestion);
-      socket.off("qa:question:updated", handleQuestionUpdate);
-      socket.off("qa:question:upvoted", handleQuestionUpdate);
-      socket.off("qa:question:deleted", handleQuestionDeleted);
+      socket.off("connectionAcknowledged", handleConnectionAck);
+      socket.off("qa.history", handleQAHistory);
+      socket.off("qa.question.new", handleNewQuestion);
+      socket.off("qna.question.updated", handleQuestionUpdate);
+      socket.off("qna.question.removed", handleQuestionDeleted);
       // Leave rooms
       qaSessions.forEach((session) => {
-        socket.emit("qa:leave", { sessionId: session.id });
+        socket.emit("session.leave", { sessionId: session.id });
       });
     };
   }, [socket, isConnected, qaSessions, eventId]);
@@ -164,16 +211,18 @@ export const CombinedQAModeration = ({ sessions, eventId }: CombinedQAModeration
   // Filter questions
   const filteredQuestions = questions.filter((q) => {
     if (selectedSession !== "all" && q.sessionId !== selectedSession) return false;
-    if (searchQuery && !q.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery && !q.text.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (filterStatus === "unanswered" && q.isAnswered) return false;
     if (filterStatus === "answered" && !q.isAnswered) return false;
     return true;
   });
 
-  // Sort by upvotes (descending), then by timestamp (newest first)
+  // Sort by upvotes (descending), then by createdAt (newest first)
   const sortedQuestions = [...filteredQuestions].sort((a, b) => {
-    if (b.upvotes !== a.upvotes) return b.upvotes - a.upvotes;
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    const aUpvotes = a._count?.upvotes || 0;
+    const bUpvotes = b._count?.upvotes || 0;
+    if (bUpvotes !== aUpvotes) return bUpvotes - aUpvotes;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   // Get session color for visual distinction
@@ -314,13 +363,17 @@ export const CombinedQAModeration = ({ sessions, eventId }: CombinedQAModeration
                           <Badge variant="outline" className="text-xs">Anonymous</Badge>
                         )}
                       </div>
-                      <p className="text-sm">{question.content}</p>
+                      <p className="text-sm">{question.text}</p>
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>{question.isAnonymous ? "Anonymous" : question.userName}</span>
-                        <span>{format(new Date(question.timestamp), "h:mm a")}</span>
+                        <span>
+                          {question.isAnonymous
+                            ? "Anonymous"
+                            : `${question.author?.firstName || ""} ${question.author?.lastName || ""}`.trim() || "Unknown"}
+                        </span>
+                        <span>{format(new Date(question.createdAt), "h:mm a")}</span>
                         <div className="flex items-center gap-1">
                           <ThumbsUp className="h-3 w-3" />
-                          <span>{question.upvotes}</span>
+                          <span>{question._count?.upvotes || 0}</span>
                         </div>
                       </div>
                     </div>
