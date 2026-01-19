@@ -1,8 +1,8 @@
 // src/components/features/breakout/video/DailyProvider.tsx
 "use client";
 
-import React, { createContext, useContext, useCallback, useState, useEffect } from "react";
-import DailyIframe, { DailyCall, DailyEvent, DailyParticipant } from "@daily-co/daily-js";
+import React, { createContext, useContext, useCallback, useState, useEffect, useRef } from "react";
+import DailyIframe, { DailyCall, DailyParticipant } from "@daily-co/daily-js";
 
 interface DailyContextValue {
   callObject: DailyCall | null;
@@ -45,6 +45,9 @@ export function DailyProvider({ children }: DailyProviderProps) {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use ref to track call object for cleanup to avoid stale closure issues
+  const callObjectRef = useRef<DailyCall | null>(null);
 
   // Update participants list
   const updateParticipants = useCallback((call: DailyCall) => {
@@ -111,6 +114,7 @@ export function DailyProvider({ children }: DailyProviderProps) {
       });
 
       setCallObject(call);
+      callObjectRef.current = call;
 
       // Join the call
       await call.join({
@@ -130,9 +134,14 @@ export function DailyProvider({ children }: DailyProviderProps) {
   // Leave the call
   const leaveCall = useCallback(async () => {
     if (callObject) {
-      await callObject.leave();
-      await callObject.destroy();
+      try {
+        await callObject.leave();
+        await callObject.destroy();
+      } catch (err) {
+        console.error("Error leaving call:", err);
+      }
       setCallObject(null);
+      callObjectRef.current = null;
       setIsJoined(false);
       setParticipants([]);
       setLocalParticipant(null);
@@ -167,15 +176,17 @@ export function DailyProvider({ children }: DailyProviderProps) {
     }
   }, [callObject, isScreenSharing]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - use ref to avoid stale closure
   useEffect(() => {
     return () => {
-      if (callObject) {
-        callObject.leave();
-        callObject.destroy();
+      const call = callObjectRef.current;
+      if (call) {
+        call.leave().catch(console.error);
+        call.destroy().catch(console.error);
+        callObjectRef.current = null;
       }
     };
-  }, [callObject]);
+  }, []);
 
   const value: DailyContextValue = {
     callObject,

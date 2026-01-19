@@ -17,19 +17,38 @@ export function VideoTile({ participant, isLocal = false, isLarge = false, class
   const videoRef = useRef<HTMLVideoElement>(null);
   const screenRef = useRef<HTMLVideoElement>(null);
 
-  // Attach video track
+  // Attach video track with proper cleanup
   useEffect(() => {
+    const videoElement = videoRef.current;
     const videoTrack = participant.tracks?.video;
-    if (videoRef.current && videoTrack?.persistentTrack) {
-      videoRef.current.srcObject = new MediaStream([videoTrack.persistentTrack]);
+
+    if (videoElement && videoTrack?.persistentTrack) {
+      const stream = new MediaStream([videoTrack.persistentTrack]);
+      videoElement.srcObject = stream;
+
+      // Cleanup function to properly dispose MediaStream
+      return () => {
+        if (videoElement.srcObject) {
+          videoElement.srcObject = null;
+        }
+      };
     }
   }, [participant.tracks?.video?.persistentTrack]);
 
-  // Attach screen share track
+  // Attach screen share track with proper cleanup
   useEffect(() => {
+    const screenElement = screenRef.current;
     const screenTrack = participant.tracks?.screenVideo;
-    if (screenRef.current && screenTrack?.persistentTrack) {
-      screenRef.current.srcObject = new MediaStream([screenTrack.persistentTrack]);
+
+    if (screenElement && screenTrack?.persistentTrack) {
+      const stream = new MediaStream([screenTrack.persistentTrack]);
+      screenElement.srcObject = stream;
+
+      return () => {
+        if (screenElement.srcObject) {
+          screenElement.srcObject = null;
+        }
+      };
     }
   }, [participant.tracks?.screenVideo?.persistentTrack]);
 

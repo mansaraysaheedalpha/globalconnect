@@ -6,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Clock, Play, X, LogIn, Video, ExternalLink } from "lucide-react";
+import { Users, Clock, Play, X, LogIn, Video } from "lucide-react";
 import { BreakoutRoom } from "./types";
 
 interface BreakoutRoomCardProps {

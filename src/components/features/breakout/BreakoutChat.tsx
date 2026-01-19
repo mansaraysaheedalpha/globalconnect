@@ -28,10 +28,13 @@ interface BreakoutChatProps {
   className?: string;
 }
 
+const MAX_MESSAGE_LENGTH = 1000;
+
 export function BreakoutChat({ roomId, userId, userName, className }: BreakoutChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { socket, isConnected } = useSocket();
 
@@ -72,20 +75,31 @@ export function BreakoutChat({ roomId, userId, userName, className }: BreakoutCh
 
   // Send a message
   const sendMessage = useCallback(() => {
-    if (!socket || !inputValue.trim() || isSending) return;
+    const trimmedMessage = inputValue.trim();
+    setSendError(null);
+
+    if (!socket || !trimmedMessage || isSending) return;
+
+    // Client-side validation
+    if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
+      setSendError(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      return;
+    }
 
     setIsSending(true);
     socket.emit(
       "breakout.chat.send",
       {
         roomId,
-        content: inputValue.trim(),
+        content: trimmedMessage,
       },
       (response: { success: boolean; error?: string }) => {
         setIsSending(false);
         if (response.success) {
           setInputValue("");
+          setSendError(null);
         } else {
+          setSendError(response.error || "Failed to send message");
           console.error("Failed to send message:", response.error);
         }
       }
@@ -179,24 +193,42 @@ export function BreakoutChat({ roomId, userId, userName, className }: BreakoutCh
 
       {/* Input */}
       <div className="p-3 border-t border-gray-800">
+        {sendError && (
+          <p className="text-xs text-red-400 mb-2">{sendError}</p>
+        )}
         <div className="flex gap-2">
           <Input
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              if (sendError) setSendError(null);
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+            maxLength={MAX_MESSAGE_LENGTH + 50} // Allow slight overflow for UX
+            className={cn(
+              "flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500",
+              inputValue.length > MAX_MESSAGE_LENGTH && "border-red-500"
+            )}
             disabled={!isConnected || isSending}
           />
           <Button
             onClick={sendMessage}
-            disabled={!inputValue.trim() || !isConnected || isSending}
+            disabled={!inputValue.trim() || !isConnected || isSending || inputValue.length > MAX_MESSAGE_LENGTH}
             size="icon"
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
+        {inputValue.length > MAX_MESSAGE_LENGTH * 0.8 && (
+          <p className={cn(
+            "text-[10px] mt-1",
+            inputValue.length > MAX_MESSAGE_LENGTH ? "text-red-400" : "text-gray-500"
+          )}>
+            {inputValue.length}/{MAX_MESSAGE_LENGTH}
+          </p>
+        )}
       </div>
     </div>
   );
