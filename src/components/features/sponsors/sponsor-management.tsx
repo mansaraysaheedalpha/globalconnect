@@ -92,6 +92,8 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isManageInvitationsOpen, setIsManageInvitationsOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ type: string; id: string; message: string } | null>(null);
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
   const [invitations, setInvitations] = useState<SponsorInvitation[]>([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
@@ -187,10 +189,13 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
     await updateSponsor(sponsor.id, { isFeatured: !sponsor.isFeatured });
   };
 
-  const handleArchiveSponsor = async (sponsorId: string) => {
-    if (confirm("Are you sure you want to remove this sponsor?")) {
-      await archiveSponsor(sponsorId);
-    }
+  const handleArchiveSponsor = (sponsorId: string) => {
+    setConfirmAction({
+      type: "archive",
+      id: sponsorId,
+      message: "Are you sure you want to remove this sponsor? This action cannot be undone.",
+    });
+    setIsConfirmDialogOpen(true);
   };
 
   const handleOpenManageInvitations = async (sponsor: Sponsor) => {
@@ -202,13 +207,30 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
     setIsLoadingInvitations(false);
   };
 
-  const handleRevokeInvitation = async (invitationId: string) => {
-    if (!confirm("Are you sure you want to revoke this invitation?")) return;
+  const handleRevokeInvitation = (invitationId: string) => {
+    setConfirmAction({
+      type: "revoke",
+      id: invitationId,
+      message: "Are you sure you want to revoke this invitation? The recipient will no longer be able to accept it.",
+    });
+    setIsConfirmDialogOpen(true);
+  };
 
-    const success = await revokeInvitation(invitationId);
-    if (success) {
-      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+
+    setIsSubmitting(true);
+    if (confirmAction.type === "archive") {
+      await archiveSponsor(confirmAction.id);
+    } else if (confirmAction.type === "revoke") {
+      const success = await revokeInvitation(confirmAction.id);
+      if (success) {
+        setInvitations((prev) => prev.filter((inv) => inv.id !== confirmAction.id));
+      }
     }
+    setIsSubmitting(false);
+    setIsConfirmDialogOpen(false);
+    setConfirmAction(null);
   };
 
   const getTierBadgeStyle = (tier?: SponsorTier) => {
@@ -729,6 +751,40 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
             >
               <UserPlus className="h-4 w-4 mr-2" />
               Send New Invitation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Confirm Action
+            </DialogTitle>
+            <DialogDescription>
+              {confirmAction?.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsConfirmDialogOpen(false);
+                setConfirmAction(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmAction}
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {confirmAction?.type === "archive" ? "Remove" : "Revoke"}
             </Button>
           </DialogFooter>
         </DialogContent>
