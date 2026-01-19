@@ -425,7 +425,17 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to send invitation");
+        // Handle both string and array format for FastAPI validation errors
+        let errorMessage = "Failed to send invitation";
+        if (typeof errorData.detail === "string") {
+          errorMessage = errorData.detail;
+        } else if (Array.isArray(errorData.detail)) {
+          // Pydantic validation errors come as an array
+          errorMessage = errorData.detail.map((e: { msg: string; loc: string[] }) =>
+            `${e.loc.join('.')}: ${e.msg}`
+          ).join(", ");
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
