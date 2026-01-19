@@ -7,7 +7,7 @@
  * is not available.
  */
 
-const DB_NAME = "globalconnect_offline";
+const DB_NAME = "event_dynamics_offline";
 const DB_VERSION = 1;
 
 interface StorageConfig {
