@@ -460,7 +460,8 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       );
 
       if (!response.ok) return [];
-      return await response.json();
+      const data = await response.json();
+      return toCamelCaseArray<SponsorInvitation>(data);
     } catch (err) {
       console.error("Failed to fetch invitations:", err);
       return [];

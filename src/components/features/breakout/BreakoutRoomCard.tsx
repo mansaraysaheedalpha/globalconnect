@@ -90,9 +90,21 @@ export function BreakoutRoomCard({
                 </Button>
               )}
               {room.status === "ACTIVE" && (
-                <Badge variant="outline" className="flex-1 justify-center bg-green-500/10 text-green-600 border-green-500/20">
-                  In Progress
-                </Badge>
+                room.videoRoomUrl ? (
+                  <Button
+                    size="sm"
+                    onClick={onJoinVideo}
+                    disabled={isLoadingVideo}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Video className="h-4 w-4 mr-1" />
+                    {isLoadingVideo ? "Loading..." : "Join Video"}
+                  </Button>
+                ) : (
+                  <Badge variant="outline" className="flex-1 justify-center bg-green-500/10 text-green-600 border-green-500/20">
+                    In Progress
+                  </Badge>
+                )
               )}
               {room.status !== "CLOSED" && (
                 <Button size="sm" variant="destructive" onClick={onClose}>

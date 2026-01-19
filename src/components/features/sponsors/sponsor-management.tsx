@@ -45,6 +45,9 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  Clock,
+  XCircle,
+  MailOpen,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -57,6 +60,7 @@ import {
   useSponsorManagement,
   Sponsor,
   SponsorTier,
+  SponsorInvitation,
   CreateSponsorInput,
 } from "@/hooks/use-sponsor-management";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -78,6 +82,8 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
     updateSponsor,
     archiveSponsor,
     inviteRepresentative,
+    getInvitations,
+    revokeInvitation,
     clearError,
     refresh,
   } = useSponsorManagement({ eventId, organizationId });
@@ -85,7 +91,10 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isManageInvitationsOpen, setIsManageInvitationsOpen] = useState(false);
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
+  const [invitations, setInvitations] = useState<SponsorInvitation[]>([]);
+  const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state for adding sponsor
@@ -181,6 +190,24 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
   const handleArchiveSponsor = async (sponsorId: string) => {
     if (confirm("Are you sure you want to remove this sponsor?")) {
       await archiveSponsor(sponsorId);
+    }
+  };
+
+  const handleOpenManageInvitations = async (sponsor: Sponsor) => {
+    setSelectedSponsor(sponsor);
+    setIsManageInvitationsOpen(true);
+    setIsLoadingInvitations(true);
+    const data = await getInvitations(sponsor.id);
+    setInvitations(data);
+    setIsLoadingInvitations(false);
+  };
+
+  const handleRevokeInvitation = async (invitationId: string) => {
+    if (!confirm("Are you sure you want to revoke this invitation?")) return;
+
+    const success = await revokeInvitation(invitationId);
+    if (success) {
+      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
     }
   };
 
@@ -442,6 +469,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
                       setSelectedSponsor(sponsor);
                       setIsInviteDialogOpen(true);
                     }}
+                    onManageInvitations={() => handleOpenManageInvitations(sponsor)}
                     onToggleFeatured={() => handleToggleFeatured(sponsor)}
                     onArchive={() => handleArchiveSponsor(sponsor.id)}
                     getTierBadgeStyle={getTierBadgeStyle}
@@ -466,6 +494,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
                         setSelectedSponsor(sponsor);
                         setIsInviteDialogOpen(true);
                       }}
+                      onManageInvitations={() => handleOpenManageInvitations(sponsor)}
                       onToggleFeatured={() => handleToggleFeatured(sponsor)}
                       onArchive={() => handleArchiveSponsor(sponsor.id)}
                       getTierBadgeStyle={getTierBadgeStyle}
@@ -619,6 +648,91 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Manage Invitations Dialog */}
+      <Dialog open={isManageInvitationsOpen} onOpenChange={setIsManageInvitationsOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Manage Invitations</DialogTitle>
+            <DialogDescription>
+              View and manage pending invitations for {selectedSponsor?.companyName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {isLoadingInvitations ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : invitations.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MailOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No pending invitations</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {invitations.map((invitation) => (
+                  <div
+                    key={invitation.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium truncate">{invitation.email}</span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                        <Badge variant="secondary" className="text-xs">
+                          {invitation.role}
+                        </Badge>
+                        <span
+                          className={`flex items-center gap-1 ${
+                            invitation.status === "pending"
+                              ? "text-yellow-600"
+                              : invitation.status === "accepted"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          <Clock className="h-3 w-3" />
+                          {invitation.status}
+                        </span>
+                        <span className="text-xs">
+                          Expires: {new Date(invitation.expiresAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    {invitation.status === "pending" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                        onClick={() => handleRevokeInvitation(invitation.id)}
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Revoke
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManageInvitationsOpen(false)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setIsManageInvitationsOpen(false);
+                setIsInviteDialogOpen(true);
+              }}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Send New Invitation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -629,6 +743,7 @@ interface SponsorCardProps {
   tier?: SponsorTier;
   onEdit: () => void;
   onInvite: () => void;
+  onManageInvitations: () => void;
   onToggleFeatured: () => void;
   onArchive: () => void;
   getTierBadgeStyle: (tier?: SponsorTier) => React.CSSProperties;
@@ -639,6 +754,7 @@ function SponsorCard({
   tier,
   onEdit,
   onInvite,
+  onManageInvitations,
   onToggleFeatured,
   onArchive,
   getTierBadgeStyle,
@@ -689,6 +805,10 @@ function SponsorCard({
               <DropdownMenuItem onClick={onInvite}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Invite Representative
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onManageInvitations}>
+                <MailOpen className="h-4 w-4 mr-2" />
+                Manage Invitations
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onToggleFeatured}>
                 <Star className="h-4 w-4 mr-2" />

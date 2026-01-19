@@ -36,6 +36,19 @@ export function BreakoutRoomList({
   const [loadingVideoRoomId, setLoadingVideoRoomId] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
 
+  // Join the session socket room to receive real-time updates
+  useEffect(() => {
+    if (!socket || !isConnected || !sessionId) return;
+
+    // Join the session room to receive breakout events
+    socket.emit("session.join", { sessionId });
+
+    return () => {
+      // Leave the session room when unmounting
+      socket.emit("session.leave", { sessionId });
+    };
+  }, [socket, isConnected, sessionId]);
+
   // Fetch initial rooms
   useEffect(() => {
     if (!socket || !isConnected || !sessionId) return;
@@ -67,7 +80,13 @@ export function BreakoutRoomList({
     if (!socket || !isConnected) return;
 
     const handleRoomCreated = (room: BreakoutRoom) => {
-      setRooms((prev) => [...prev, room]);
+      // Add room only if it doesn't already exist (prevent duplicates)
+      setRooms((prev) => {
+        if (prev.some((r) => r.id === room.id)) {
+          return prev;
+        }
+        return [...prev, room];
+      });
     };
 
     const handleRoomClosed = (data: { roomId: string }) => {
@@ -101,6 +120,27 @@ export function BreakoutRoomList({
       );
     };
 
+    // Handle room started event (updates status and video URL)
+    const handleRoomStarted = (data: {
+      roomId: string;
+      startedAt?: string;
+      durationMinutes?: number;
+      videoRoomUrl?: string;
+    }) => {
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === data.roomId
+            ? {
+                ...r,
+                status: "ACTIVE" as const,
+                startedAt: data.startedAt ?? r.startedAt,
+                videoRoomUrl: data.videoRoomUrl ?? r.videoRoomUrl,
+              }
+            : r
+        )
+      );
+    };
+
     const handleRecalled = () => {
       setRooms([]);
       setCurrentRoomId(null);
@@ -109,6 +149,7 @@ export function BreakoutRoomList({
     socket.on("breakout.room.created", handleRoomCreated);
     socket.on("breakout.room.closed", handleRoomClosed);
     socket.on("breakout.rooms.updated", handleRoomsUpdated);
+    socket.on("breakout.room.started", handleRoomStarted);
     socket.on("breakout.all.recalled", handleRecalled);
     socket.on("breakout.recalled", handleRecalled);
 
@@ -116,6 +157,7 @@ export function BreakoutRoomList({
       socket.off("breakout.room.created", handleRoomCreated);
       socket.off("breakout.room.closed", handleRoomClosed);
       socket.off("breakout.rooms.updated", handleRoomsUpdated);
+      socket.off("breakout.room.started", handleRoomStarted);
       socket.off("breakout.all.recalled", handleRecalled);
       socket.off("breakout.recalled", handleRecalled);
     };
