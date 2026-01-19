@@ -83,6 +83,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
   } = useSponsorManagement({ eventId, organizationId });
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,6 +125,31 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
         tierId: undefined,
         boothNumber: "",
       });
+    }
+  };
+
+  const handleOpenEditDialog = (sponsor: Sponsor) => {
+    setSelectedSponsor(sponsor);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSponsor = async () => {
+    if (!selectedSponsor) return;
+
+    setIsSubmitting(true);
+    const result = await updateSponsor(selectedSponsor.id, {
+      companyName: selectedSponsor.companyName,
+      companyDescription: selectedSponsor.companyDescription || undefined,
+      companyWebsite: selectedSponsor.companyWebsite || undefined,
+      contactEmail: selectedSponsor.contactEmail || undefined,
+      tierId: selectedSponsor.tierId || undefined,
+      boothNumber: selectedSponsor.boothNumber || undefined,
+    });
+    setIsSubmitting(false);
+
+    if (result) {
+      setIsEditDialogOpen(false);
+      setSelectedSponsor(null);
     }
   };
 
@@ -411,6 +437,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
                     key={sponsor.id}
                     sponsor={sponsor}
                     tier={tiers.find((t) => t.id === sponsor.tierId)}
+                    onEdit={() => handleOpenEditDialog(sponsor)}
                     onInvite={() => {
                       setSelectedSponsor(sponsor);
                       setIsInviteDialogOpen(true);
@@ -434,6 +461,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
                       key={sponsor.id}
                       sponsor={sponsor}
                       tier={tier}
+                      onEdit={() => handleOpenEditDialog(sponsor)}
                       onInvite={() => {
                         setSelectedSponsor(sponsor);
                         setIsInviteDialogOpen(true);
@@ -495,6 +523,102 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Sponsor Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Sponsor</DialogTitle>
+            <DialogDescription>
+              Update sponsor information.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedSponsor && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="editCompanyName">Company Name *</Label>
+                <Input
+                  id="editCompanyName"
+                  value={selectedSponsor.companyName || ""}
+                  onChange={(e) => setSelectedSponsor({ ...selectedSponsor, companyName: e.target.value })}
+                  placeholder="Acme Corp"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editTier">Sponsorship Tier</Label>
+                <Select
+                  value={selectedSponsor.tierId || ""}
+                  onValueChange={(value) => setSelectedSponsor({ ...selectedSponsor, tierId: value || undefined })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a tier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiers.map((tier) => (
+                      <SelectItem key={tier.id} value={tier.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: tier.color || "#888" }}
+                          />
+                          {tier.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editContactEmail">Contact Email</Label>
+                <Input
+                  id="editContactEmail"
+                  type="email"
+                  value={selectedSponsor.contactEmail || ""}
+                  onChange={(e) => setSelectedSponsor({ ...selectedSponsor, contactEmail: e.target.value })}
+                  placeholder="sponsor@company.com"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editCompanyWebsite">Website</Label>
+                <Input
+                  id="editCompanyWebsite"
+                  value={selectedSponsor.companyWebsite || ""}
+                  onChange={(e) => setSelectedSponsor({ ...selectedSponsor, companyWebsite: e.target.value })}
+                  placeholder="https://company.com"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editBoothNumber">Booth Number</Label>
+                <Input
+                  id="editBoothNumber"
+                  value={selectedSponsor.boothNumber || ""}
+                  onChange={(e) => setSelectedSponsor({ ...selectedSponsor, boothNumber: e.target.value })}
+                  placeholder="A-15"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editDescription">Description</Label>
+                <Textarea
+                  id="editDescription"
+                  value={selectedSponsor.companyDescription || ""}
+                  onChange={(e) => setSelectedSponsor({ ...selectedSponsor, companyDescription: e.target.value })}
+                  placeholder="Brief description of the sponsor..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSponsor} disabled={!selectedSponsor?.companyName || isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -503,6 +627,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
 interface SponsorCardProps {
   sponsor: Sponsor & { representativeCount: number; leadCount: number };
   tier?: SponsorTier;
+  onEdit: () => void;
   onInvite: () => void;
   onToggleFeatured: () => void;
   onArchive: () => void;
@@ -512,6 +637,7 @@ interface SponsorCardProps {
 function SponsorCard({
   sponsor,
   tier,
+  onEdit,
   onInvite,
   onToggleFeatured,
   onArchive,
@@ -556,7 +682,7 @@ function SponsorCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={onEdit}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
