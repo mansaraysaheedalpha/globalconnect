@@ -99,8 +99,8 @@ export function PublicHeader() {
               <Image
                 src={logoSrc}
                 alt="Event Dynamics Logo"
-                width={52}
-                height={52}
+                width={72}
+                height={72}
                 className="transition-all"
               />
             </div>
