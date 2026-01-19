@@ -17,6 +17,21 @@ function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
+// Helper to convert snake_case to camelCase for API responses
+function toCamelCase<T>(obj: Record<string, unknown>): T {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    result[camelKey] = value;
+  }
+  return result as T;
+}
+
+// Convert array of objects from snake_case to camelCase
+function toCamelCaseArray<T>(arr: Record<string, unknown>[]): T[] {
+  return arr.map((item) => toCamelCase<T>(item));
+}
+
 // Types
 export interface SponsorTier {
   id: string;
@@ -178,7 +193,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       );
       if (response.ok) {
         const data = await response.json();
-        setTiers(data);
+        setTiers(toCamelCaseArray<SponsorTier>(data));
       }
     } catch (err) {
       console.error("Failed to fetch tiers:", err);
@@ -196,7 +211,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       );
       if (response.ok) {
         const data = await response.json();
-        setSponsors(data);
+        setSponsors(toCamelCaseArray<Sponsor>(data));
       }
     } catch (err) {
       console.error("Failed to fetch sponsors:", err);
@@ -235,8 +250,9 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       }
 
       const data = await response.json();
-      setTiers(data);
-      return data;
+      const tiersData = toCamelCaseArray<SponsorTier>(data);
+      setTiers(tiersData);
+      return tiersData;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create default tiers";
       setError(message);
@@ -269,8 +285,9 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       }
 
       const data = await response.json();
-      setTiers((prev) => [...prev, data]);
-      return data;
+      const tierData = toCamelCase<SponsorTier>(data);
+      setTiers((prev) => [...prev, tierData]);
+      return tierData;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create tier";
       setError(message);
@@ -303,9 +320,10 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       }
 
       const data = await response.json();
+      const sponsorData = toCamelCase<Sponsor>(data);
       // Fetch sponsors again to get the full data with tier
       await fetchSponsors();
-      return data;
+      return sponsorData;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create sponsor";
       setError(message);
@@ -341,8 +359,9 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       }
 
       const data = await response.json();
-      setSponsors((prev) => prev.map((s) => (s.id === sponsorId ? { ...s, ...data } : s)));
-      return data;
+      const sponsorData = toCamelCase<Sponsor>(data);
+      setSponsors((prev) => prev.map((s) => (s.id === sponsorId ? { ...s, ...sponsorData } : s)));
+      return sponsorData;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update sponsor";
       setError(message);
@@ -410,7 +429,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
       }
 
       const data = await response.json();
-      return data;
+      return toCamelCase<SponsorInvitation>(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to send invitation";
       setError(message);
