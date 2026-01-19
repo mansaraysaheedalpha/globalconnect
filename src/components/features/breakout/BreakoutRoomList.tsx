@@ -282,6 +282,8 @@ export function BreakoutRoomList({
         <BreakoutRoomCard
           key={room.id}
           room={room}
+          eventId={eventId}
+          sessionId={sessionId}
           isOrganizer={isOrganizer}
           isInRoom={currentRoomId === room.id}
           onJoin={() => handleJoin(room.id)}

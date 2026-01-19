@@ -2,14 +2,17 @@
 "use client";
 
 import React from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Clock, Play, X, LogIn, Video } from "lucide-react";
+import { Users, Clock, Play, X, LogIn, Video, ExternalLink } from "lucide-react";
 import { BreakoutRoom } from "./types";
 
 interface BreakoutRoomCardProps {
   room: BreakoutRoom;
+  eventId: string;
+  sessionId: string;
   isOrganizer?: boolean;
   isInRoom?: boolean;
   onJoin?: () => void;
@@ -30,6 +33,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export function BreakoutRoomCard({
   room,
+  eventId,
+  sessionId,
   isOrganizer = false,
   isInRoom = false,
   onJoin,
@@ -40,9 +45,22 @@ export function BreakoutRoomCard({
   onJoinVideo,
   isLoadingVideo = false,
 }: BreakoutRoomCardProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const isFull = room._count.participants >= room.maxParticipants;
   const status = statusConfig[room.status] || statusConfig.WAITING;
   const canJoin = !isFull && room.status !== "CLOSED" && !isInRoom;
+
+  // Navigate to embedded video room
+  const handleJoinVideoRoom = () => {
+    // Determine base path based on current route
+    const isAttendee = pathname.includes("/attendee/");
+    const basePath = isAttendee
+      ? `/attendee/events/${eventId}/sessions/${sessionId}/breakout-rooms/${room.id}`
+      : `/dashboard/events/${eventId}/sessions/${sessionId}/breakout-rooms/${room.id}`;
+    router.push(basePath);
+  };
 
   const facilitatorName = room.facilitator
     ? `${room.facilitator.firstName || ""} ${room.facilitator.lastName || ""}`.trim() || "Unknown"
@@ -93,12 +111,11 @@ export function BreakoutRoomCard({
                 room.videoRoomUrl ? (
                   <Button
                     size="sm"
-                    onClick={onJoinVideo}
-                    disabled={isLoadingVideo}
+                    onClick={handleJoinVideoRoom}
                     className="flex-1 bg-blue-600 hover:bg-blue-700"
                   >
                     <Video className="h-4 w-4 mr-1" />
-                    {isLoadingVideo ? "Loading..." : "Join Video"}
+                    Enter Room
                   </Button>
                 ) : (
                   <Badge variant="outline" className="flex-1 justify-center bg-green-500/10 text-green-600 border-green-500/20">
@@ -119,12 +136,11 @@ export function BreakoutRoomCard({
                   {room.status === "ACTIVE" && room.videoRoomUrl && (
                     <Button
                       size="sm"
-                      onClick={onJoinVideo}
-                      disabled={isLoadingVideo}
+                      onClick={handleJoinVideoRoom}
                       className="flex-1 bg-blue-600 hover:bg-blue-700"
                     >
                       <Video className="h-4 w-4 mr-1" />
-                      {isLoadingVideo ? "Loading..." : "Join Video"}
+                      Enter Room
                     </Button>
                   )}
                   <Button
