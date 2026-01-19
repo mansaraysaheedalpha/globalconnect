@@ -548,7 +548,7 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
                 <Label htmlFor="editTier">Sponsorship Tier</Label>
                 <Select
                   value={selectedSponsor.tierId || ""}
-                  onValueChange={(value) => setSelectedSponsor({ ...selectedSponsor, tierId: value || undefined })}
+                  onValueChange={(value) => setSelectedSponsor({ ...selectedSponsor, tierId: value ? value : null })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a tier" />
