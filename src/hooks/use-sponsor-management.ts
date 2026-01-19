@@ -6,6 +6,17 @@ import { useAuthStore } from "@/store/auth.store";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
+// Helper to convert camelCase to snake_case for API requests
+function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    result[snakeKey] = value;
+  }
+  return result;
+}
+
 // Types
 export interface SponsorTier {
   id: string;
@@ -248,7 +259,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "POST",
           headers,
-          body: JSON.stringify(input),
+          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
         }
       );
 
@@ -282,7 +293,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "POST",
           headers,
-          body: JSON.stringify(input),
+          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
         }
       );
 
@@ -320,7 +331,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "PATCH",
           headers,
-          body: JSON.stringify(input),
+          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
         }
       );
 
@@ -389,7 +400,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "POST",
           headers,
-          body: JSON.stringify(input),
+          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
         }
       );
 
