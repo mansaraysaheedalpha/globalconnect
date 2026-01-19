@@ -259,7 +259,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "POST",
           headers,
-          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
+          body: JSON.stringify(toSnakeCase(input as unknown as Record<string, unknown>)),
         }
       );
 
@@ -293,7 +293,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "POST",
           headers,
-          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
+          body: JSON.stringify(toSnakeCase(input as unknown as Record<string, unknown>)),
         }
       );
 
@@ -331,7 +331,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "PATCH",
           headers,
-          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
+          body: JSON.stringify(toSnakeCase(input as unknown as Record<string, unknown>)),
         }
       );
 
@@ -400,7 +400,7 @@ export function useSponsorManagement({ eventId, organizationId }: UseSponsorMana
         {
           method: "POST",
           headers,
-          body: JSON.stringify(toSnakeCase(input as Record<string, unknown>)),
+          body: JSON.stringify(toSnakeCase(input as unknown as Record<string, unknown>)),
         }
       );
 
