@@ -65,7 +65,7 @@ import { AdContainer } from "@/components/features/ads/ad-container";
 import { ProximityContainer } from "@/components/features/proximity";
 import { IncidentReportForm } from "@/components/features/incidents";
 import { VirtualSessionView, VirtualSession } from "@/components/features/virtual-session";
-import { BreakoutRoomList } from "@/components/features/breakout";
+import { BreakoutRoomList, RoomAssignmentNotice } from "@/components/features/breakout";
 
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
@@ -587,6 +587,15 @@ const AttendeeBreakoutRoomsDialog = ({
               You can leave and rejoin rooms at any time.
             </p>
           </div>
+          {/* Show pre-assigned room notice if user has an assignment */}
+          {userId && (
+            <RoomAssignmentNotice
+              sessionId={session.id}
+              eventId={eventId}
+              userId={userId}
+              className="mb-4"
+            />
+          )}
           <BreakoutRoomList
             sessionId={session.id}
             eventId={eventId}

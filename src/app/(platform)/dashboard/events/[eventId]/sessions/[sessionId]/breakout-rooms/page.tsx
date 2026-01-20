@@ -23,7 +23,10 @@ import {
   BreakoutRoomList,
   CreateBreakoutRoomModal,
   CreateBreakoutRoomData,
+  SegmentManager,
+  BreakoutRoom,
 } from "@/components/features/breakout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +56,7 @@ export default function BreakoutRoomsManagementPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isRecallDialogOpen, setIsRecallDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rooms, setRooms] = useState<BreakoutRoom[]>([]);
 
   const { data: sessionData, loading: sessionLoading } = useQuery(GET_SESSION_BY_ID_QUERY, {
     variables: { id: sessionId },
@@ -60,6 +64,41 @@ export default function BreakoutRoomsManagementPage() {
   });
 
   const session: Session | undefined = sessionData?.session;
+
+  // Fetch rooms for SegmentManager
+  React.useEffect(() => {
+    if (!socket || !isConnected || !sessionId) return;
+
+    socket.emit(
+      "breakout.rooms.list",
+      { sessionId },
+      (response: { success: boolean; rooms?: BreakoutRoom[] }) => {
+        if (response.success && response.rooms) {
+          setRooms(response.rooms);
+        }
+      }
+    );
+
+    // Listen for room updates
+    const handleRoomCreated = (room: BreakoutRoom) => {
+      setRooms((prev) => {
+        if (prev.some((r) => r.id === room.id)) return prev;
+        return [...prev, room];
+      });
+    };
+
+    const handleRoomClosed = (data: { roomId: string }) => {
+      setRooms((prev) => prev.filter((r) => r.id !== data.roomId));
+    };
+
+    socket.on("breakout.room.created", handleRoomCreated);
+    socket.on("breakout.room.closed", handleRoomClosed);
+
+    return () => {
+      socket.off("breakout.room.created", handleRoomCreated);
+      socket.off("breakout.room.closed", handleRoomClosed);
+    };
+  }, [socket, isConnected, sessionId]);
 
   const handleCreateRoom = useCallback(
     async (data: CreateBreakoutRoomData) => {
@@ -178,31 +217,49 @@ export default function BreakoutRoomsManagementPage() {
         </div>
       </div>
 
-      {/* Info Card */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <DoorOpen className="h-4 w-4" />
-            About Breakout Rooms
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          <p>
-            Breakout rooms allow attendees to split into smaller groups for focused
-            discussions. You can create multiple rooms with different topics, set
-            time limits, and recall everyone back to the main session when ready.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Tabs for Rooms and Segments */}
+      <Tabs defaultValue="rooms" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="rooms">Breakout Rooms</TabsTrigger>
+          <TabsTrigger value="segments">Audience Segments</TabsTrigger>
+        </TabsList>
 
-      {/* Rooms List */}
-      <BreakoutRoomList
-        sessionId={sessionId}
-        eventId={eventId}
-        isOrganizer={true}
-        onStartRoom={(roomId) => toast.success(`Room started`)}
-        onCloseRoom={(roomId) => toast.success(`Room closed`)}
-      />
+        <TabsContent value="rooms" className="space-y-4">
+          {/* Info Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <DoorOpen className="h-4 w-4" />
+                About Breakout Rooms
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <p>
+                Breakout rooms allow attendees to split into smaller groups for focused
+                discussions. You can create multiple rooms with different topics, set
+                time limits, and recall everyone back to the main session when ready.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Rooms List */}
+          <BreakoutRoomList
+            sessionId={sessionId}
+            eventId={eventId}
+            isOrganizer={true}
+            onStartRoom={() => toast.success(`Room started`)}
+            onCloseRoom={() => toast.success(`Room closed`)}
+          />
+        </TabsContent>
+
+        <TabsContent value="segments">
+          <SegmentManager
+            sessionId={sessionId}
+            eventId={eventId}
+            rooms={rooms}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Create Room Modal */}
       <CreateBreakoutRoomModal

@@ -52,3 +52,93 @@ export interface CreateBreakoutRoomData {
   facilitatorId?: string;
   idempotencyKey?: string;
 }
+
+// Segment types
+export type MatchOperator = 'equals' | 'contains' | 'startsWith' | 'in' | 'notEquals';
+
+export interface MatchCriteria {
+  field: string;
+  operator: MatchOperator;
+  value: string | string[];
+}
+
+export interface BreakoutSegment {
+  id: string;
+  sessionId: string;
+  eventId: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  matchCriteria: MatchCriteria | null;
+  priority: number;
+  creatorId: string;
+  creator: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
+  assignmentRules?: SegmentRule[];
+  _count: {
+    members: number;
+    assignmentRules: number;
+  };
+}
+
+export interface SegmentRule {
+  segmentId: string;
+  roomId: string;
+  maxFromSegment: number | null;
+  room: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface SegmentMember {
+  segmentId: string;
+  userId: string;
+  isAutoAssigned: boolean;
+  user: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
+}
+
+export type AssignmentStatus = 'PENDING' | 'NOTIFIED' | 'CONFIRMED' | 'JOINED' | 'DECLINED';
+
+export interface RoomAssignment {
+  sessionId: string;
+  eventId: string;
+  userId: string;
+  roomId: string;
+  segmentId: string | null;
+  status: AssignmentStatus;
+  notifiedAt: string | null;
+  room: {
+    id: string;
+    name: string;
+    topic: string | null;
+    status: BreakoutRoomStatus;
+    durationMinutes: number;
+    facilitator: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+    } | null;
+    _count: {
+      participants: number;
+    };
+  };
+}
+
+export interface CreateSegmentData {
+  sessionId: string;
+  eventId: string;
+  name: string;
+  description?: string;
+  color?: string;
+  matchCriteria?: MatchCriteria;
+  priority?: number;
+}
