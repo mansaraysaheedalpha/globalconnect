@@ -22,19 +22,17 @@ export interface BoothResourcesProps {
 }
 
 const RESOURCE_ICONS: Record<BoothResource["type"], React.ReactNode> = {
-  pdf: <FileText className="h-5 w-5 text-red-500" />,
-  doc: <FileText className="h-5 w-5 text-blue-500" />,
-  video: <Video className="h-5 w-5 text-purple-500" />,
-  link: <LinkIcon className="h-5 w-5 text-green-500" />,
-  image: <ImageIcon className="h-5 w-5 text-orange-500" />,
+  PDF: <FileText className="h-5 w-5 text-red-500" />,
+  VIDEO: <Video className="h-5 w-5 text-purple-500" />,
+  IMAGE: <ImageIcon className="h-5 w-5 text-orange-500" />,
+  OTHER: <LinkIcon className="h-5 w-5 text-green-500" />,
 };
 
 const RESOURCE_LABELS: Record<BoothResource["type"], string> = {
-  pdf: "PDF",
-  doc: "Document",
-  video: "Video",
-  link: "Link",
-  image: "Image",
+  PDF: "PDF",
+  VIDEO: "Video",
+  IMAGE: "Image",
+  OTHER: "Other",
 };
 
 export function BoothResources({
@@ -46,14 +44,14 @@ export function BoothResources({
     // Track download
     onDownload?.(resource);
 
-    // Open resource
-    if (resource.type === "link") {
+    // Open resource - OTHER type is typically external links
+    if (resource.type === "OTHER") {
       window.open(resource.url, "_blank", "noopener,noreferrer");
     } else {
       // Download file
       const link = document.createElement("a");
       link.href = resource.url;
-      link.download = resource.title;
+      link.download = resource.name;
       link.target = "_blank";
       document.body.appendChild(link);
       link.click();
@@ -82,7 +80,7 @@ export function BoothResources({
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-medium text-sm truncate">{resource.title}</h4>
+                <h4 className="font-medium text-sm truncate">{resource.name}</h4>
                 <Badge variant="outline" className="text-xs flex-shrink-0">
                   {RESOURCE_LABELS[resource.type]}
                 </Badge>
@@ -101,7 +99,7 @@ export function BoothResources({
               onClick={() => handleResourceClick(resource)}
               className="flex-shrink-0"
             >
-              {resource.type === "link" ? (
+              {resource.type === "OTHER" ? (
                 <ExternalLink className="h-4 w-4" />
               ) : (
                 <Download className="h-4 w-4" />
