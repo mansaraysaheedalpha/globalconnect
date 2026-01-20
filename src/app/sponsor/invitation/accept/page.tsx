@@ -142,8 +142,8 @@ function AcceptSponsorInvitationComponent() {
         setAuth(data.access_token, {
           id: data.user.id,
           email: data.user.email,
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
+          first_name: data.user.firstName || data.user.first_name || "",
+          last_name: data.user.lastName || data.user.last_name || "",
         });
       }
 

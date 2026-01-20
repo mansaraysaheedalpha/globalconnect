@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useSocket } from "@/hooks/use-socket";
 import { BreakoutRoomCard } from "./BreakoutRoomCard";
 import { BreakoutRoom } from "./types";
@@ -30,11 +31,21 @@ export function BreakoutRoomList({
   onCloseRoom,
   onViewRoom,
 }: BreakoutRoomListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [rooms, setRooms] = useState<BreakoutRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingVideoRoomId, setLoadingVideoRoomId] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
+
+  // Helper to navigate to video room
+  const navigateToVideoRoom = useCallback((roomId: string) => {
+    const isAttendee = pathname.includes("/attendee/");
+    const basePath = isAttendee
+      ? `/attendee/events/${eventId}/sessions/${sessionId}/breakout-rooms/${roomId}`
+      : `/dashboard/events/${eventId}/sessions/${sessionId}/breakout-rooms/${roomId}`;
+    router.push(basePath);
+  }, [router, pathname, eventId, sessionId]);
 
   // Join the session socket room to receive real-time updates
   useEffect(() => {
@@ -203,14 +214,21 @@ export function BreakoutRoomList({
       socket.emit(
         "breakout.room.start",
         { roomId },
-        (response: { success: boolean; error?: string }) => {
+        (response: { success: boolean; error?: string; videoRoomUrl?: string }) => {
           if (response.success) {
             onStartRoom?.(roomId);
+            // Auto-navigate organizer to the video room after starting
+            if (isOrganizer) {
+              // Small delay to ensure the room state is updated
+              setTimeout(() => {
+                navigateToVideoRoom(roomId);
+              }, 500);
+            }
           }
         }
       );
     },
-    [socket, onStartRoom]
+    [socket, onStartRoom, isOrganizer, navigateToVideoRoom]
   );
 
   const handleClose = useCallback(
@@ -227,34 +245,6 @@ export function BreakoutRoomList({
       );
     },
     [socket, onCloseRoom]
-  );
-
-  const handleJoinVideo = useCallback(
-    (roomId: string) => {
-      if (!socket) return;
-
-      setLoadingVideoRoomId(roomId);
-      socket.emit(
-        "breakout.room.getVideoUrl",
-        { roomId },
-        (response: {
-          success: boolean;
-          joinUrl?: string;
-          videoUrl?: string;
-          token?: string;
-          error?: string;
-        }) => {
-          setLoadingVideoRoomId(null);
-          if (response.success && response.joinUrl) {
-            // Open video room in new tab
-            window.open(response.joinUrl, "_blank", "noopener,noreferrer");
-          } else {
-            console.error("Failed to get video URL:", response.error);
-          }
-        }
-      );
-    },
-    [socket]
   );
 
   if (isLoading) {
@@ -291,8 +281,6 @@ export function BreakoutRoomList({
           onStart={() => handleStart(room.id)}
           onClose={() => handleClose(room.id)}
           onView={() => onViewRoom?.(room.id)}
-          onJoinVideo={() => handleJoinVideo(room.id)}
-          isLoadingVideo={loadingVideoRoomId === room.id}
         />
       ))}
     </div>
