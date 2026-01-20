@@ -1,11 +1,12 @@
 // src/app/(sponsor)/sponsor/export/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -19,11 +20,43 @@ import {
   FileText,
   Download,
   Filter,
-  CheckCircle2,
+  Inbox,
+  AlertCircle,
+  RefreshCw,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/auth.store";
+
+interface Lead {
+  id: string;
+  user_name: string | null;
+  user_email: string | null;
+  user_company: string | null;
+  user_title: string | null;
+  intent_level: "hot" | "warm" | "cold";
+  intent_score: number;
+  interaction_count: number;
+  contact_requested: boolean;
+  follow_up_status: string;
+  tags: string[];
+  first_interaction_at: string;
+  last_interaction_at: string;
+}
+
+interface Sponsor {
+  id: string;
+  company_name: string;
+}
 
 export default function ExportPage() {
+  const { token } = useAuthStore();
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [exportFormat, setExportFormat] = useState("csv");
   const [intentFilter, setIntentFilter] = useState("all");
   const [isExporting, setIsExporting] = useState(false);
@@ -42,12 +75,165 @@ export default function ExportPage() {
     lastInteraction: true,
   });
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+  // Fetch user's sponsors
+  useEffect(() => {
+    const fetchSponsors = async () => {
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${apiUrl}/my-sponsors`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch sponsors");
+        }
+
+        const data = await response.json();
+        setSponsors(data);
+        if (data.length > 0) {
+          setSelectedSponsorId(data[0].id);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load sponsors");
+      }
+    };
+
+    fetchSponsors();
+  }, [token, apiUrl]);
+
+  // Fetch leads for export
+  const fetchLeads = useCallback(async () => {
+    if (!token || !selectedSponsorId) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (intentFilter !== "all") {
+        params.append("intent_level", intentFilter);
+      }
+      params.append("limit", "1000"); // Get more leads for export
+
+      const response = await fetch(
+        `${apiUrl}/sponsors/${selectedSponsorId}/leads?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch leads");
+      }
+
+      const data = await response.json();
+      setLeads(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load leads");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, selectedSponsorId, intentFilter, apiUrl]);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
   const handleExport = async () => {
+    if (leads.length === 0) {
+      toast.error("No leads to export");
+      return;
+    }
+
     setIsExporting(true);
-    // Simulate export
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsExporting(false);
-    toast.success("Your leads have been exported successfully.");
+
+    try {
+      // Build export data based on selected fields
+      const exportData = leads.map((lead) => {
+        const row: Record<string, unknown> = {};
+        if (selectedFields.name) row.name = lead.user_name || "";
+        if (selectedFields.email) row.email = lead.user_email || "";
+        if (selectedFields.company) row.company = lead.user_company || "";
+        if (selectedFields.title) row.title = lead.user_title || "";
+        if (selectedFields.intentScore) row.intent_score = lead.intent_score;
+        if (selectedFields.intentLevel) row.intent_level = lead.intent_level;
+        if (selectedFields.interactions) row.interaction_count = lead.interaction_count;
+        if (selectedFields.contactRequested) row.contact_requested = lead.contact_requested;
+        if (selectedFields.followUpStatus) row.follow_up_status = lead.follow_up_status;
+        if (selectedFields.tags) row.tags = lead.tags?.join(", ") || "";
+        if (selectedFields.firstInteraction) row.first_interaction = lead.first_interaction_at;
+        if (selectedFields.lastInteraction) row.last_interaction = lead.last_interaction_at;
+        return row;
+      });
+
+      let content: string;
+      let mimeType: string;
+      let extension: string;
+
+      if (exportFormat === "csv") {
+        const headers = Object.keys(exportData[0] || {});
+        const csvRows = [
+          headers.join(","),
+          ...exportData.map((row) =>
+            headers
+              .map((h) => {
+                const val = String(row[h] || "");
+                return val.includes(",") ? `"${val}"` : val;
+              })
+              .join(",")
+          ),
+        ];
+        content = csvRows.join("\n");
+        mimeType = "text/csv";
+        extension = "csv";
+      } else if (exportFormat === "json") {
+        content = JSON.stringify(exportData, null, 2);
+        mimeType = "application/json";
+        extension = "json";
+      } else {
+        // For xlsx, we'd need a library - fallback to CSV for now
+        const headers = Object.keys(exportData[0] || {});
+        const csvRows = [
+          headers.join(","),
+          ...exportData.map((row) =>
+            headers
+              .map((h) => {
+                const val = String(row[h] || "");
+                return val.includes(",") ? `"${val}"` : val;
+              })
+              .join(",")
+          ),
+        ];
+        content = csvRows.join("\n");
+        mimeType = "text/csv";
+        extension = "csv";
+        toast.info("Excel export requires additional setup. Downloading as CSV.");
+      }
+
+      // Trigger download
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `leads-export-${new Date().toISOString().split("T")[0]}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${leads.length} leads successfully`);
+    } catch (err) {
+      toast.error("Failed to export leads");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const toggleField = (field: keyof typeof selectedFields) => {
@@ -56,14 +242,67 @@ export default function ExportPage() {
 
   const selectedCount = Object.values(selectedFields).filter(Boolean).length;
 
+  // Filter leads count for display
+  const filteredLeadsCount = leads.length;
+
+  if (error && sponsors.length === 0) {
+    return (
+      <div className="p-6">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error</h3>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <Button onClick={fetchLeads} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (sponsors.length === 0 && !isLoading) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Access</h3>
+            <p className="text-sm text-muted-foreground max-w-sm text-center">
+              You are not currently associated with any sponsors.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Export Leads</h1>
-        <p className="text-muted-foreground">
-          Download your lead data in various formats
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Export Leads</h1>
+          <p className="text-muted-foreground">
+            Download your lead data in various formats
+          </p>
+        </div>
+        {sponsors.length > 1 && (
+          <Select value={selectedSponsorId || ""} onValueChange={setSelectedSponsorId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Sponsor" />
+            </SelectTrigger>
+            <SelectContent>
+              {sponsors.map((sponsor) => (
+                <SelectItem key={sponsor.id} value={sponsor.id}>
+                  {sponsor.company_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -124,20 +363,24 @@ export default function ExportPage() {
             </div>
 
             <div className="pt-4">
-              <Button
-                className="w-full"
-                onClick={handleExport}
-                disabled={isExporting || selectedCount === 0}
-              >
-                {isExporting ? (
-                  <>Exporting...</>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export {selectedCount} Fields
-                  </>
-                )}
-              </Button>
+              {isLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Button
+                  className="w-full"
+                  onClick={handleExport}
+                  disabled={isExporting || selectedCount === 0 || filteredLeadsCount === 0}
+                >
+                  {isExporting ? (
+                    <>Exporting...</>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export {filteredLeadsCount} Leads ({selectedCount} Fields)
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -188,40 +431,48 @@ export default function ExportPage() {
         </Card>
       </div>
 
-      {/* Export History */}
+      {/* Export Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Exports</CardTitle>
-          <CardDescription>Your export history from this event</CardDescription>
+          <CardTitle>Export Preview</CardTitle>
+          <CardDescription>Summary of your export</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {[
-              { date: "Jan 15, 2024", format: "CSV", records: 127, status: "completed" },
-              { date: "Jan 14, 2024", format: "Excel", records: 98, status: "completed" },
-              { date: "Jan 12, 2024", format: "CSV", records: 45, status: "completed" },
-            ].map((export_, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 border rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{export_.format} Export</p>
-                    <p className="text-sm text-muted-foreground">
-                      {export_.date} • {export_.records} records
-                    </p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Download className="h-4 w-4" />
-                </Button>
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          ) : filteredLeadsCount === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <Inbox className="h-8 w-8 mx-auto opacity-50 mb-2" />
+              <p className="text-sm font-medium">No leads to export</p>
+              <p className="text-xs mt-1">
+                {intentFilter !== "all"
+                  ? `No ${intentFilter} leads found. Try changing the filter.`
+                  : "Capture some leads first to export them."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total leads to export:</span>
+                <span className="font-medium">{filteredLeadsCount}</span>
               </div>
-            ))}
-          </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Fields included:</span>
+                <span className="font-medium">{selectedCount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Export format:</span>
+                <span className="font-medium">{exportFormat.toUpperCase()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Intent filter:</span>
+                <span className="font-medium capitalize">{intentFilter}</span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

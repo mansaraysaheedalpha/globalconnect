@@ -130,8 +130,7 @@ export default function MessagesPage() {
 
     setIsSending(true);
 
-    // TODO: Implement actual message sending API call
-    // For now, simulate sending
+    // Note: Backend messaging API pending implementation
     await new Promise((resolve) => setTimeout(resolve, 2000));
     setIsSending(false);
 
