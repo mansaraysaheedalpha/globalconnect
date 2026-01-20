@@ -54,12 +54,38 @@ export interface CreateBreakoutRoomData {
 }
 
 // Segment types
-export type MatchOperator = 'equals' | 'contains' | 'startsWith' | 'in' | 'notEquals';
+export type MatchOperator =
+  | 'equals'
+  | 'notEquals'
+  | 'contains'
+  | 'notContains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'in'
+  | 'notIn'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'exists'
+  | 'regex';
 
-export interface MatchCriteria {
+// Single condition for matching
+export interface MatchCondition {
   field: string;
   operator: MatchOperator;
-  value: string | string[];
+  value: string | string[] | number | boolean;
+}
+
+// Compound criteria with AND/OR logic
+export interface MatchCriteria {
+  // For backward compatibility: single condition
+  field?: string;
+  operator?: MatchOperator;
+  value?: string | string[] | number | boolean;
+  // Compound conditions
+  all?: MatchCondition[]; // AND - all conditions must match
+  any?: MatchCondition[]; // OR - at least one condition must match
 }
 
 export interface BreakoutSegment {

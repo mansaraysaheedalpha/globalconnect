@@ -50,28 +50,52 @@ import {
   BreakoutSegment,
   BreakoutRoom,
   MatchCriteria,
+  MatchCondition,
   MatchOperator,
   CreateSegmentData,
 } from "./types";
 
 // Common registration fields that can be used for segmentation
+// Supports dot notation for nested fields
 const REGISTRATION_FIELDS = [
   { value: "jobRole", label: "Job Role" },
   { value: "industry", label: "Industry" },
   { value: "company", label: "Company" },
+  { value: "company.name", label: "Company Name" },
+  { value: "company.size", label: "Company Size" },
   { value: "experienceLevel", label: "Experience Level" },
+  { value: "yearsExperience", label: "Years Experience" },
   { value: "country", label: "Country" },
   { value: "interests", label: "Interests" },
   { value: "department", label: "Department" },
+  { value: "email", label: "Email" },
+  { value: "ticketType", label: "Ticket Type" },
 ];
 
-const OPERATORS: { value: MatchOperator; label: string }[] = [
-  { value: "equals", label: "Equals" },
-  { value: "notEquals", label: "Does not equal" },
-  { value: "contains", label: "Contains" },
-  { value: "startsWith", label: "Starts with" },
-  { value: "in", label: "Is one of" },
+const OPERATORS: { value: MatchOperator; label: string; hint?: string }[] = [
+  { value: "equals", label: "Equals", hint: "Exact match (case-insensitive)" },
+  { value: "notEquals", label: "Not equals", hint: "Does not match value" },
+  { value: "contains", label: "Contains", hint: "Value contains text" },
+  { value: "notContains", label: "Not contains", hint: "Value does not contain text" },
+  { value: "startsWith", label: "Starts with", hint: "Value starts with text" },
+  { value: "endsWith", label: "Ends with", hint: "Value ends with text (e.g., email domain)" },
+  { value: "in", label: "Is one of", hint: "Comma-separated list of values" },
+  { value: "notIn", label: "Is not one of", hint: "Excluded from list" },
+  { value: "gt", label: "Greater than", hint: "Numeric comparison >" },
+  { value: "gte", label: "Greater or equal", hint: "Numeric comparison >=" },
+  { value: "lt", label: "Less than", hint: "Numeric comparison <" },
+  { value: "lte", label: "Less or equal", hint: "Numeric comparison <=" },
+  { value: "exists", label: "Field exists", hint: "Field has a value (use true/false)" },
+  { value: "regex", label: "Matches pattern", hint: "Regular expression match" },
 ];
+
+// Grouping for UI
+const OPERATOR_GROUPS = {
+  text: ["equals", "notEquals", "contains", "notContains", "startsWith", "endsWith"],
+  list: ["in", "notIn"],
+  numeric: ["gt", "gte", "lt", "lte"],
+  special: ["exists", "regex"],
+};
 
 const SEGMENT_COLORS = [
   "#3B82F6", // Blue
@@ -107,22 +131,57 @@ export function SegmentManager({
     errors: string[];
   } | null>(null);
 
+  // Condition type for compound criteria
+  type FormCondition = {
+    id: string;
+    field: string;
+    operator: MatchOperator;
+    value: string;
+  };
+
   // Form state for creating segment
   const [newSegment, setNewSegment] = useState<{
     name: string;
     description: string;
     color: string;
-    field: string;
-    operator: MatchOperator;
-    value: string;
+    conditions: FormCondition[];
+    matchMode: "all" | "any"; // AND or OR
   }>({
     name: "",
     description: "",
     color: SEGMENT_COLORS[0],
-    field: "jobRole",
-    operator: "equals",
-    value: "",
+    conditions: [{ id: crypto.randomUUID(), field: "jobRole", operator: "equals", value: "" }],
+    matchMode: "all",
   });
+
+  // Helper to add a new condition
+  const addCondition = () => {
+    setNewSegment((prev) => ({
+      ...prev,
+      conditions: [
+        ...prev.conditions,
+        { id: crypto.randomUUID(), field: "jobRole", operator: "equals", value: "" },
+      ],
+    }));
+  };
+
+  // Helper to remove a condition
+  const removeCondition = (id: string) => {
+    setNewSegment((prev) => ({
+      ...prev,
+      conditions: prev.conditions.filter((c) => c.id !== id),
+    }));
+  };
+
+  // Helper to update a condition
+  const updateCondition = (id: string, updates: Partial<FormCondition>) => {
+    setNewSegment((prev) => ({
+      ...prev,
+      conditions: prev.conditions.map((c) =>
+        c.id === id ? { ...c, ...updates } : c
+      ),
+    }));
+  };
 
   // Form state for assignment rule
   const [newRule, setNewRule] = useState<{
@@ -179,9 +238,61 @@ export function SegmentManager({
     };
   }, [socket, isConnected]);
 
+  // Build match criteria from form conditions
+  const buildMatchCriteria = (
+    conditions: FormCondition[],
+    matchMode: "all" | "any"
+  ): MatchCriteria | undefined => {
+    // Filter out conditions without values (except 'exists' operator)
+    const validConditions = conditions.filter(
+      (c) => c.value.trim() || c.operator === "exists"
+    );
+
+    if (validConditions.length === 0) return undefined;
+
+    // Convert to MatchCondition format
+    const matchConditions: MatchCondition[] = validConditions.map((c) => {
+      let value: string | string[] | number | boolean = c.value;
+
+      // Handle special operators
+      if (["in", "notIn"].includes(c.operator)) {
+        value = c.value.split(",").map((v) => v.trim());
+      } else if (["gt", "gte", "lt", "lte"].includes(c.operator)) {
+        value = parseFloat(c.value) || 0;
+      } else if (c.operator === "exists") {
+        value = c.value.toLowerCase() === "true";
+      }
+
+      return {
+        field: c.field,
+        operator: c.operator,
+        value,
+      };
+    });
+
+    // Single condition: use backward-compatible format
+    if (matchConditions.length === 1) {
+      return {
+        field: matchConditions[0].field,
+        operator: matchConditions[0].operator,
+        value: matchConditions[0].value,
+      };
+    }
+
+    // Multiple conditions: use compound format
+    return {
+      [matchMode]: matchConditions,
+    };
+  };
+
   // Create segment
   const handleCreateSegment = useCallback(() => {
     if (!socket || !newSegment.name.trim()) return;
+
+    const matchCriteria = buildMatchCriteria(
+      newSegment.conditions,
+      newSegment.matchMode
+    );
 
     const data: CreateSegmentData = {
       sessionId,
@@ -190,19 +301,8 @@ export function SegmentManager({
       description: newSegment.description || undefined,
       color: newSegment.color,
       priority: segments.length,
+      matchCriteria,
     };
-
-    // Add match criteria if value is provided
-    if (newSegment.value.trim()) {
-      data.matchCriteria = {
-        field: newSegment.field,
-        operator: newSegment.operator,
-        value:
-          newSegment.operator === "in"
-            ? newSegment.value.split(",").map((v) => v.trim())
-            : newSegment.value,
-      };
-    }
 
     socket.emit(
       "segment.create",
@@ -214,9 +314,8 @@ export function SegmentManager({
             name: "",
             description: "",
             color: SEGMENT_COLORS[(segments.length + 1) % SEGMENT_COLORS.length],
-            field: "jobRole",
-            operator: "equals",
-            value: "",
+            conditions: [{ id: crypto.randomUUID(), field: "jobRole", operator: "equals", value: "" }],
+            matchMode: "all",
           });
         }
       }
@@ -408,20 +507,41 @@ export function SegmentManager({
                 {/* Match Criteria */}
                 {segment.matchCriteria && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-sm font-medium mb-1">Match Criteria</p>
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-mono">
-                        {segment.matchCriteria.field}
-                      </span>{" "}
-                      <span className="text-primary">
-                        {segment.matchCriteria.operator}
-                      </span>{" "}
-                      <span className="font-mono">
-                        {Array.isArray(segment.matchCriteria.value)
-                          ? segment.matchCriteria.value.join(", ")
-                          : segment.matchCriteria.value}
-                      </span>
-                    </p>
+                    <p className="text-sm font-medium mb-2">Match Criteria</p>
+                    {/* Compound criteria with all/any */}
+                    {(segment.matchCriteria.all || segment.matchCriteria.any) ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                          {segment.matchCriteria.all ? "Match ALL conditions:" : "Match ANY condition:"}
+                        </p>
+                        {(segment.matchCriteria.all || segment.matchCriteria.any)?.map((condition, idx) => (
+                          <p key={idx} className="text-sm text-muted-foreground pl-2 border-l-2 border-muted">
+                            <span className="font-mono">{condition.field}</span>{" "}
+                            <span className="text-primary">{condition.operator}</span>{" "}
+                            <span className="font-mono">
+                              {Array.isArray(condition.value)
+                                ? condition.value.join(", ")
+                                : String(condition.value)}
+                            </span>
+                          </p>
+                        ))}
+                      </div>
+                    ) : segment.matchCriteria.field && segment.matchCriteria.operator ? (
+                      /* Single condition (backward compatible) */
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-mono">
+                          {segment.matchCriteria.field}
+                        </span>{" "}
+                        <span className="text-primary">
+                          {segment.matchCriteria.operator}
+                        </span>{" "}
+                        <span className="font-mono">
+                          {Array.isArray(segment.matchCriteria.value)
+                            ? segment.matchCriteria.value.join(", ")
+                            : String(segment.matchCriteria.value ?? "")}
+                        </span>
+                      </p>
+                    ) : null}
                   </div>
                 )}
 
@@ -603,64 +723,139 @@ export function SegmentManager({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Auto-Match Criteria (Optional)</Label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Auto-Match Criteria (Optional)</Label>
+                {newSegment.conditions.length > 1 && (
+                  <Select
+                    value={newSegment.matchMode}
+                    onValueChange={(v: "all" | "any") =>
+                      setNewSegment({ ...newSegment, matchMode: v })
+                    }
+                  >
+                    <SelectTrigger className="w-[140px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Match ALL (AND)</SelectItem>
+                      <SelectItem value="any">Match ANY (OR)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 Automatically add attendees whose registration data matches
-                these criteria.
+                these criteria. Use dot notation for nested fields (e.g., company.name).
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                <Select
-                  value={newSegment.field}
-                  onValueChange={(v) =>
-                    setNewSegment({ ...newSegment, field: v })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Field" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REGISTRATION_FIELDS.map((field) => (
-                      <SelectItem key={field.value} value={field.value}>
-                        {field.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
 
-                <Select
-                  value={newSegment.operator}
-                  onValueChange={(v) =>
-                    setNewSegment({
-                      ...newSegment,
-                      operator: v as MatchOperator,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Operator" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OPERATORS.map((op) => (
-                      <SelectItem key={op.value} value={op.value}>
-                        {op.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Conditions */}
+              <div className="space-y-2">
+                {newSegment.conditions.map((condition, index) => (
+                  <div key={condition.id} className="flex items-start gap-2">
+                    <div className="grid grid-cols-3 gap-2 flex-1">
+                      <Select
+                        value={condition.field}
+                        onValueChange={(v) =>
+                          updateCondition(condition.id, { field: v })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {REGISTRATION_FIELDS.map((field) => (
+                            <SelectItem key={field.value} value={field.value}>
+                              {field.label}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="_custom">Custom field...</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                <Input
-                  placeholder={
-                    newSegment.operator === "in"
-                      ? "value1, value2"
-                      : "Value"
-                  }
-                  value={newSegment.value}
-                  onChange={(e) =>
-                    setNewSegment({ ...newSegment, value: e.target.value })
-                  }
-                />
+                      <Select
+                        value={condition.operator}
+                        onValueChange={(v) =>
+                          updateCondition(condition.id, { operator: v as MatchOperator })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Operator" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <div className="px-2 py-1 text-xs text-muted-foreground font-medium">Text</div>
+                          {OPERATORS.filter((op) => OPERATOR_GROUPS.text.includes(op.value)).map((op) => (
+                            <SelectItem key={op.value} value={op.value}>
+                              {op.label}
+                            </SelectItem>
+                          ))}
+                          <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-1">List</div>
+                          {OPERATORS.filter((op) => OPERATOR_GROUPS.list.includes(op.value)).map((op) => (
+                            <SelectItem key={op.value} value={op.value}>
+                              {op.label}
+                            </SelectItem>
+                          ))}
+                          <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-1">Numeric</div>
+                          {OPERATORS.filter((op) => OPERATOR_GROUPS.numeric.includes(op.value)).map((op) => (
+                            <SelectItem key={op.value} value={op.value}>
+                              {op.label}
+                            </SelectItem>
+                          ))}
+                          <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-1">Special</div>
+                          {OPERATORS.filter((op) => OPERATOR_GROUPS.special.includes(op.value)).map((op) => (
+                            <SelectItem key={op.value} value={op.value}>
+                              {op.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Input
+                        placeholder={
+                          ["in", "notIn"].includes(condition.operator)
+                            ? "value1, value2"
+                            : condition.operator === "exists"
+                            ? "true / false"
+                            : ["gt", "gte", "lt", "lte"].includes(condition.operator)
+                            ? "Number"
+                            : "Value"
+                        }
+                        value={condition.value}
+                        onChange={(e) =>
+                          updateCondition(condition.id, { value: e.target.value })
+                        }
+                      />
+                    </div>
+                    {newSegment.conditions.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => removeCondition(condition.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
               </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addCondition}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add Condition
+              </Button>
+
+              {/* Hint for selected operator */}
+              {newSegment.conditions.length === 1 && newSegment.conditions[0].operator && (
+                <p className="text-xs text-muted-foreground">
+                  {OPERATORS.find((op) => op.value === newSegment.conditions[0].operator)?.hint}
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
