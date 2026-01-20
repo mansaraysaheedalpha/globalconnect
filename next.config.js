@@ -45,22 +45,23 @@ const securityHeaders = [
     value: 'strict-origin-when-cross-origin',
   },
   // Permissions policy - configure browser features
+  // camera/microphone=(self) allows video calls for breakout rooms
   // geolocation=(self) allows geolocation for proximity networking feature
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(self), interest-cohort=()',
+    value: 'camera=(self "https://*.daily.co"), microphone=(self "https://*.daily.co"), geolocation=(self), interest-cohort=()',
   },
   // Content Security Policy - adjust based on your needs
   {
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.daily.co https://unpkg.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https: http://localhost:*",
       "font-src 'self' data:",
       "connect-src 'self' https: wss: ws: http://localhost:* https://localhost:*",
-      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vimeo.com",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vimeo.com https://*.daily.co",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
