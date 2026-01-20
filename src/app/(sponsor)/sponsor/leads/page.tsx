@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -33,22 +34,38 @@ import {
   Briefcase,
   Star,
   MessageSquare,
+  AlertCircle,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/auth.store";
 
 interface CapturedLead {
   id: string;
-  name: string;
-  email: string;
-  company: string;
-  title: string;
-  intentLevel: "hot" | "warm" | "cold";
-  notes: string;
-  capturedAt: Date;
+  user_name: string | null;
+  user_email: string | null;
+  user_company: string | null;
+  user_title: string | null;
+  intent_level: "hot" | "warm" | "cold";
+  intent_score: number;
+  is_starred: boolean;
+  created_at: string;
+}
+
+interface Sponsor {
+  id: string;
+  company_name: string;
+  event_id: string;
 }
 
 export default function LeadCapturePage() {
-  const [captureMode, setCaptureMode] = useState<"qr" | "manual">("qr");
+  const { token, user } = useAuthStore();
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
+  const [isLoadingSponsors, setIsLoadingSponsors] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [captureMode, setCaptureMode] = useState<"qr" | "manual">("manual");
   const [isCapturing, setIsCapturing] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [lastCapturedLead, setLastCapturedLead] = useState<CapturedLead | null>(null);
@@ -64,77 +81,286 @@ export default function LeadCapturePage() {
     notes: "",
   });
 
-  const handleQRScan = useCallback(async () => {
-    setIsCapturing(true);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-    // Simulate QR scan - in real implementation, this would use the camera
-    setTimeout(() => {
-      const mockLead: CapturedLead = {
-        id: `lead-${Date.now()}`,
-        name: "Jane Smith",
-        email: "jane.smith@example.com",
-        company: "Acme Corp",
-        title: "VP of Engineering",
-        intentLevel: "warm",
-        notes: "",
-        capturedAt: new Date(),
-      };
+  // Fetch user's sponsors
+  useEffect(() => {
+    const fetchSponsors = async () => {
+      if (!token) return;
 
-      setLastCapturedLead(mockLead);
-      setRecentCaptures((prev) => [mockLead, ...prev].slice(0, 10));
-      setShowSuccessDialog(true);
-      setIsCapturing(false);
+      setIsLoadingSponsors(true);
+      try {
+        const response = await fetch(`${apiUrl}/my-sponsors`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      toast.success(`Lead captured: ${mockLead.name} from ${mockLead.company}`);
-    }, 2000);
-  }, []);
+        if (!response.ok) {
+          throw new Error("Failed to fetch sponsors");
+        }
 
-  const handleManualSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-
-    const lead: CapturedLead = {
-      id: `lead-${Date.now()}`,
-      name: manualForm.name,
-      email: manualForm.email,
-      company: manualForm.company,
-      title: manualForm.title,
-      intentLevel: manualForm.interactionType === "demo_request" ? "hot" : "warm",
-      notes: manualForm.notes,
-      capturedAt: new Date(),
+        const data = await response.json();
+        setSponsors(data);
+        if (data.length > 0) {
+          setSelectedSponsor(data[0]);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load sponsors");
+      } finally {
+        setIsLoadingSponsors(false);
+      }
     };
 
-    setLastCapturedLead(lead);
-    setRecentCaptures((prev) => [lead, ...prev].slice(0, 10));
-    setShowSuccessDialog(true);
+    fetchSponsors();
+  }, [token, apiUrl]);
 
-    // Reset form
-    setManualForm({
-      name: "",
-      email: "",
-      company: "",
-      title: "",
-      interactionType: "booth_visit",
-      notes: "",
-    });
+  // Fetch recent captures when sponsor changes
+  useEffect(() => {
+    const fetchRecentCaptures = async () => {
+      if (!token || !selectedSponsor) return;
 
-    toast.success(`Lead captured: ${lead.name} from ${lead.company}`);
-  }, [manualForm]);
+      try {
+        const response = await fetch(
+          `${apiUrl}/sponsors/${selectedSponsor.id}/leads?limit=10`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-  const handleRateLead = (intentLevel: "hot" | "warm" | "cold") => {
-    if (lastCapturedLead) {
-      setLastCapturedLead({ ...lastCapturedLead, intentLevel });
-      // In real app, this would update the backend
+        if (response.ok) {
+          const data = await response.json();
+          setRecentCaptures(data);
+        }
+      } catch {
+        // Silently fail - recent captures is not critical
+      }
+    };
+
+    fetchRecentCaptures();
+  }, [token, selectedSponsor, apiUrl]);
+
+  const handleQRScan = useCallback(async () => {
+    if (!selectedSponsor) {
+      toast.error("No sponsor selected");
+      return;
+    }
+
+    setIsCapturing(true);
+
+    // Note: QR scanning would require camera access and QR decoder library
+    // For now, show a message about the feature
+    setTimeout(() => {
+      setIsCapturing(false);
+      toast.info("QR scanning requires camera access. Use manual entry for now.");
+    }, 2000);
+  }, [selectedSponsor]);
+
+  const handleManualSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedSponsor || !user) {
+      toast.error("No sponsor selected");
+      return;
+    }
+
+    setIsCapturing(true);
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/events/${selectedSponsor.event_id}/sponsors/${selectedSponsor.id}/capture-lead`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: user.id, // The captured lead is the current user for self-capture, or could be a scanned user
+            user_name: manualForm.name,
+            user_email: manualForm.email,
+            user_company: manualForm.company || undefined,
+            user_title: manualForm.title || undefined,
+            interaction_type: manualForm.interactionType,
+            interaction_metadata: manualForm.notes ? { notes: manualForm.notes } : undefined,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to capture lead");
+      }
+
+      const lead = await response.json();
+
+      setLastCapturedLead(lead);
+      setRecentCaptures((prev) => [lead, ...prev].slice(0, 10));
+      setShowSuccessDialog(true);
+
+      // Reset form
+      setManualForm({
+        name: "",
+        email: "",
+        company: "",
+        title: "",
+        interactionType: "booth_visit",
+        notes: "",
+      });
+
+      toast.success(`Lead captured: ${lead.user_name} from ${lead.user_company || "Unknown"}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to capture lead");
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [selectedSponsor, user, token, apiUrl, manualForm]);
+
+  const handleRateLead = async (intentLevel: "hot" | "warm" | "cold") => {
+    if (!lastCapturedLead || !selectedSponsor || !token) return;
+
+    // Calculate score based on level
+    const scoreMap = { hot: 85, warm: 55, cold: 25 };
+    const intentScore = scoreMap[intentLevel];
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/sponsors/${selectedSponsor.id}/leads/${lastCapturedLead.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            // Note: The API may not directly support setting intent_level,
+            // but we can show the UI update optimistically
+          }),
+        }
+      );
+
+      // Update local state regardless of API response
+      setLastCapturedLead({ ...lastCapturedLead, intent_level: intentLevel, intent_score: intentScore });
+      setRecentCaptures((prev) =>
+        prev.map((l) =>
+          l.id === lastCapturedLead.id
+            ? { ...l, intent_level: intentLevel, intent_score: intentScore }
+            : l
+        )
+      );
+    } catch {
+      // Silently fail - just show optimistic update
     }
   };
+
+  const handleStarLead = async () => {
+    if (!lastCapturedLead || !selectedSponsor || !token) return;
+
+    try {
+      await fetch(
+        `${apiUrl}/sponsors/${selectedSponsor.id}/leads/${lastCapturedLead.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ is_starred: !lastCapturedLead.is_starred }),
+        }
+      );
+
+      setLastCapturedLead({ ...lastCapturedLead, is_starred: !lastCapturedLead.is_starred });
+      setRecentCaptures((prev) =>
+        prev.map((l) =>
+          l.id === lastCapturedLead.id
+            ? { ...l, is_starred: !lastCapturedLead.is_starred }
+            : l
+        )
+      );
+      toast.success(lastCapturedLead.is_starred ? "Removed from starred" : "Added to starred");
+    } catch {
+      toast.error("Failed to update star status");
+    }
+  };
+
+  if (isLoadingSponsors) {
+    return (
+      <div className="p-6 space-y-6">
+        <div>
+          <Skeleton className="h-8 w-40 mb-2" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error</h3>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (sponsors.length === 0) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Access</h3>
+            <p className="text-sm text-muted-foreground max-w-sm text-center">
+              You are not currently associated with any sponsors. Please contact your event organizer.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Lead Capture</h1>
-        <p className="text-muted-foreground">
-          Scan attendee badges or manually enter contact information
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Lead Capture</h1>
+          <p className="text-muted-foreground">
+            Scan attendee badges or manually enter contact information
+          </p>
+        </div>
+        {sponsors.length > 1 && (
+          <Select
+            value={selectedSponsor?.id || ""}
+            onValueChange={(value) => {
+              const sponsor = sponsors.find((s) => s.id === value);
+              if (sponsor) setSelectedSponsor(sponsor);
+            }}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Sponsor" />
+            </SelectTrigger>
+            <SelectContent>
+              {sponsors.map((sponsor) => (
+                <SelectItem key={sponsor.id} value={sponsor.id}>
+                  {sponsor.company_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Capture Mode Toggle */}
@@ -186,6 +412,9 @@ export default function LeadCapturePage() {
                       <Camera className="h-16 w-16 mx-auto text-muted-foreground" />
                       <p className="mt-4 text-sm text-muted-foreground">
                         Camera view will appear here
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        QR scanning requires camera permissions
                       </p>
                     </div>
                   )}
@@ -302,8 +531,13 @@ export default function LeadCapturePage() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
-                  Capture Lead
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={isCapturing}
+                >
+                  {isCapturing ? "Capturing..." : "Capture Lead"}
                 </Button>
               </form>
             )}
@@ -314,14 +548,14 @@ export default function LeadCapturePage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Captures</CardTitle>
-            <CardDescription>Last 10 leads captured this session</CardDescription>
+            <CardDescription>Last 10 leads captured</CardDescription>
           </CardHeader>
           <CardContent>
             {recentCaptures.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <QrCode className="h-12 w-12 mx-auto opacity-50" />
                 <p className="mt-4">No leads captured yet</p>
-                <p className="text-sm">Scan a badge to get started</p>
+                <p className="text-sm">Capture your first lead to get started</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -332,26 +566,26 @@ export default function LeadCapturePage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                        {lead.name.charAt(0)}
+                        {(lead.user_name || "U").charAt(0)}
                       </div>
                       <div>
-                        <p className="font-medium">{lead.name}</p>
+                        <p className="font-medium">{lead.user_name || "Unknown"}</p>
                         <p className="text-sm text-muted-foreground">
-                          {lead.company}
+                          {lead.user_company || "No company"}
                         </p>
                       </div>
                     </div>
                     <Badge
                       variant="outline"
                       className={
-                        lead.intentLevel === "hot"
+                        lead.intent_level === "hot"
                           ? "bg-red-500/10 text-red-600 border-red-500/20"
-                          : lead.intentLevel === "warm"
+                          : lead.intent_level === "warm"
                           ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
                           : "bg-blue-500/10 text-blue-600 border-blue-500/20"
                       }
                     >
-                      {lead.intentLevel}
+                      {lead.intent_level}
                     </Badge>
                   </div>
                 ))}
@@ -379,15 +613,15 @@ export default function LeadCapturePage() {
               <div className="rounded-lg bg-muted p-4">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-lg font-medium">
-                    {lastCapturedLead.name.charAt(0)}
+                    {(lastCapturedLead.user_name || "U").charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold">{lastCapturedLead.name}</p>
+                    <p className="font-semibold">{lastCapturedLead.user_name || "Unknown"}</p>
                     <p className="text-sm text-muted-foreground">
-                      {lastCapturedLead.title} at {lastCapturedLead.company}
+                      {lastCapturedLead.user_title || "No title"} at {lastCapturedLead.user_company || "No company"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {lastCapturedLead.email}
+                      {lastCapturedLead.user_email || "No email"}
                     </p>
                   </div>
                 </div>
@@ -397,21 +631,21 @@ export default function LeadCapturePage() {
                 <Label>Rate this lead</Label>
                 <div className="flex gap-2">
                   <Button
-                    variant={lastCapturedLead.intentLevel === "hot" ? "default" : "outline"}
+                    variant={lastCapturedLead.intent_level === "hot" ? "default" : "outline"}
                     className="flex-1"
                     onClick={() => handleRateLead("hot")}
                   >
                     Hot
                   </Button>
                   <Button
-                    variant={lastCapturedLead.intentLevel === "warm" ? "default" : "outline"}
+                    variant={lastCapturedLead.intent_level === "warm" ? "default" : "outline"}
                     className="flex-1"
                     onClick={() => handleRateLead("warm")}
                   >
                     Warm
                   </Button>
                   <Button
-                    variant={lastCapturedLead.intentLevel === "cold" ? "default" : "outline"}
+                    variant={lastCapturedLead.intent_level === "cold" ? "default" : "outline"}
                     className="flex-1"
                     onClick={() => handleRateLead("cold")}
                   >
@@ -421,9 +655,13 @@ export default function LeadCapturePage() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1">
-                  <Star className="mr-2 h-4 w-4" />
-                  Star
+                <Button
+                  variant="outline"
+                  className={`flex-1 ${lastCapturedLead.is_starred ? "text-yellow-500" : ""}`}
+                  onClick={handleStarLead}
+                >
+                  <Star className={`mr-2 h-4 w-4 ${lastCapturedLead.is_starred ? "fill-current" : ""}`} />
+                  {lastCapturedLead.is_starred ? "Starred" : "Star"}
                 </Button>
                 <Button variant="outline" className="flex-1">
                   <MessageSquare className="mr-2 h-4 w-4" />

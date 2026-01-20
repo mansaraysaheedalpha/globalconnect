@@ -1,7 +1,7 @@
 // src/app/(sponsor)/sponsor/booth/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Building2,
   Globe,
@@ -21,34 +22,225 @@ import {
   Instagram,
   Save,
   Eye,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/auth.store";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
+
+interface Sponsor {
+  id: string;
+  company_name: string;
+  company_description?: string;
+  company_website?: string;
+  company_logo_url?: string;
+  booth_number?: string;
+  social_links?: {
+    linkedin?: string;
+    twitter?: string;
+    instagram?: string;
+  };
+  lead_capture_enabled: boolean;
+  lead_notification_email?: string;
+  tier?: {
+    name: string;
+    max_representatives: number;
+  };
+  is_active: boolean;
+}
+
+interface SponsorStats {
+  total_leads: number;
+  team_count?: number;
+}
 
 export default function BoothSettingsPage() {
+  const { token } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sponsor, setSponsor] = useState<Sponsor | null>(null);
+  const [stats, setStats] = useState<SponsorStats>({ total_leads: 0 });
 
-  // Mock booth data
-  const [boothData, setBoothData] = useState({
-    companyName: "Acme Corporation",
-    description: "Leading provider of innovative enterprise solutions. We help businesses transform their operations with cutting-edge technology.",
-    website: "https://acme.example.com",
-    boothNumber: "B-42",
+  // Local form state
+  const [formData, setFormData] = useState({
+    companyName: "",
+    description: "",
+    website: "",
+    boothNumber: "",
     leadCaptureEnabled: true,
-    notificationEmail: "leads@acme.example.com",
+    notificationEmail: "",
     socialLinks: {
-      linkedin: "https://linkedin.com/company/acme",
-      twitter: "https://twitter.com/acmecorp",
+      linkedin: "",
+      twitter: "",
       instagram: "",
     },
   });
 
+  // Fetch sponsor data
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Get sponsors for current user
+        const sponsorsRes = await fetch(`${API_BASE_URL}/sponsors/my-sponsors`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!sponsorsRes.ok) {
+          throw new Error("Failed to fetch sponsor data");
+        }
+
+        const sponsors: Sponsor[] = await sponsorsRes.json();
+
+        if (sponsors.length === 0) {
+          setError("No sponsor found");
+          setIsLoading(false);
+          return;
+        }
+
+        const currentSponsor = sponsors[0];
+        setSponsor(currentSponsor);
+
+        // Populate form with existing data
+        setFormData({
+          companyName: currentSponsor.company_name || "",
+          description: currentSponsor.company_description || "",
+          website: currentSponsor.company_website || "",
+          boothNumber: currentSponsor.booth_number || "",
+          leadCaptureEnabled: currentSponsor.lead_capture_enabled ?? true,
+          notificationEmail: currentSponsor.lead_notification_email || "",
+          socialLinks: {
+            linkedin: currentSponsor.social_links?.linkedin || "",
+            twitter: currentSponsor.social_links?.twitter || "",
+            instagram: currentSponsor.social_links?.instagram || "",
+          },
+        });
+
+        // Fetch stats
+        const statsRes = await fetch(
+          `${API_BASE_URL}/sponsors/sponsors/${currentSponsor.id}/leads/stats`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats({ total_leads: statsData.total_leads || 0 });
+        }
+      } catch (err) {
+        console.error("Error fetching booth data:", err);
+        setError(err instanceof Error ? err.message : "Failed to load booth data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [token]);
+
   const handleSave = async () => {
+    if (!sponsor || !token) return;
+
     setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    toast.success("Your booth settings have been updated.");
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/sponsors/organizations/${sponsor.id.split("-")[0]}/sponsors/${sponsor.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            company_name: formData.companyName,
+            company_description: formData.description,
+            company_website: formData.website,
+            booth_number: formData.boothNumber,
+            lead_capture_enabled: formData.leadCaptureEnabled,
+            lead_notification_email: formData.notificationEmail || null,
+            social_links: formData.socialLinks,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to update booth settings");
+      }
+
+      toast.success("Your booth settings have been updated.");
+    } catch (err) {
+      console.error("Error saving booth settings:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !sponsor) {
+    return (
+      <div className="p-6">
+        <Card className="border-destructive/50 bg-destructive/10">
+          <CardContent className="flex items-center gap-3 py-6">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Error loading booth settings</p>
+              <p className="text-sm text-muted-foreground">{error || "No sponsor data available"}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -91,9 +283,9 @@ export default function BoothSettingsPage() {
                 <Label htmlFor="companyName">Company Name</Label>
                 <Input
                   id="companyName"
-                  value={boothData.companyName}
+                  value={formData.companyName}
                   onChange={(e) =>
-                    setBoothData({ ...boothData, companyName: e.target.value })
+                    setFormData({ ...formData, companyName: e.target.value })
                   }
                 />
               </div>
@@ -101,9 +293,9 @@ export default function BoothSettingsPage() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  value={boothData.description}
+                  value={formData.description}
                   onChange={(e) =>
-                    setBoothData({ ...boothData, description: e.target.value })
+                    setFormData({ ...formData, description: e.target.value })
                   }
                   rows={4}
                 />
@@ -119,9 +311,9 @@ export default function BoothSettingsPage() {
                     <Input
                       id="website"
                       className="pl-10"
-                      value={boothData.website}
+                      value={formData.website}
                       onChange={(e) =>
-                        setBoothData({ ...boothData, website: e.target.value })
+                        setFormData({ ...formData, website: e.target.value })
                       }
                     />
                   </div>
@@ -130,9 +322,9 @@ export default function BoothSettingsPage() {
                   <Label htmlFor="boothNumber">Booth Number</Label>
                   <Input
                     id="boothNumber"
-                    value={boothData.boothNumber}
+                    value={formData.boothNumber}
                     onChange={(e) =>
-                      setBoothData({ ...boothData, boothNumber: e.target.value })
+                      setFormData({ ...formData, boothNumber: e.target.value })
                     }
                   />
                 </div>
@@ -152,8 +344,16 @@ export default function BoothSettingsPage() {
               <div className="space-y-2">
                 <Label>Company Logo</Label>
                 <div className="flex items-center gap-4">
-                  <div className="h-24 w-24 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed">
-                    <Building2 className="h-8 w-8 text-muted-foreground" />
+                  <div className="h-24 w-24 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed overflow-hidden">
+                    {sponsor.company_logo_url ? (
+                      <img
+                        src={sponsor.company_logo_url}
+                        alt={sponsor.company_name}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <Building2 className="h-8 w-8 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Button variant="outline" size="sm">
@@ -201,11 +401,11 @@ export default function BoothSettingsPage() {
                 <Input
                   id="linkedin"
                   placeholder="https://linkedin.com/company/..."
-                  value={boothData.socialLinks.linkedin}
+                  value={formData.socialLinks.linkedin}
                   onChange={(e) =>
-                    setBoothData({
-                      ...boothData,
-                      socialLinks: { ...boothData.socialLinks, linkedin: e.target.value },
+                    setFormData({
+                      ...formData,
+                      socialLinks: { ...formData.socialLinks, linkedin: e.target.value },
                     })
                   }
                 />
@@ -218,11 +418,11 @@ export default function BoothSettingsPage() {
                 <Input
                   id="twitter"
                   placeholder="https://twitter.com/..."
-                  value={boothData.socialLinks.twitter}
+                  value={formData.socialLinks.twitter}
                   onChange={(e) =>
-                    setBoothData({
-                      ...boothData,
-                      socialLinks: { ...boothData.socialLinks, twitter: e.target.value },
+                    setFormData({
+                      ...formData,
+                      socialLinks: { ...formData.socialLinks, twitter: e.target.value },
                     })
                   }
                 />
@@ -235,11 +435,11 @@ export default function BoothSettingsPage() {
                 <Input
                   id="instagram"
                   placeholder="https://instagram.com/..."
-                  value={boothData.socialLinks.instagram}
+                  value={formData.socialLinks.instagram}
                   onChange={(e) =>
-                    setBoothData({
-                      ...boothData,
-                      socialLinks: { ...boothData.socialLinks, instagram: e.target.value },
+                    setFormData({
+                      ...formData,
+                      socialLinks: { ...formData.socialLinks, instagram: e.target.value },
                     })
                   }
                 />
@@ -267,9 +467,9 @@ export default function BoothSettingsPage() {
                   </p>
                 </div>
                 <Switch
-                  checked={boothData.leadCaptureEnabled}
+                  checked={formData.leadCaptureEnabled}
                   onCheckedChange={(checked) =>
-                    setBoothData({ ...boothData, leadCaptureEnabled: checked })
+                    setFormData({ ...formData, leadCaptureEnabled: checked })
                   }
                 />
               </div>
@@ -280,10 +480,10 @@ export default function BoothSettingsPage() {
                   id="notificationEmail"
                   type="email"
                   placeholder="leads@company.com"
-                  value={boothData.notificationEmail}
+                  value={formData.notificationEmail}
                   onChange={(e) =>
-                    setBoothData({
-                      ...boothData,
+                    setFormData({
+                      ...formData,
                       notificationEmail: e.target.value,
                     })
                   }
@@ -303,23 +503,24 @@ export default function BoothSettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Status</span>
-                <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                  Active
+                <Badge className={sponsor.is_active
+                  ? "bg-green-500/10 text-green-600 border-green-500/20"
+                  : "bg-red-500/10 text-red-600 border-red-500/20"
+                }>
+                  {sponsor.is_active ? "Active" : "Inactive"}
                 </Badge>
               </div>
+              {sponsor.tier && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Tier</span>
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                    {sponsor.tier.name}
+                  </Badge>
+                </div>
+              )}
               <div className="flex items-center justify-between">
-                <span className="text-sm">Tier</span>
-                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-                  Gold Sponsor
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Team Members</span>
-                <span className="text-sm font-medium">3 / 5</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Leads Today</span>
-                <span className="text-sm font-medium">12</span>
+                <span className="text-sm">Leads Captured</span>
+                <span className="text-sm font-medium">{stats.total_leads}</span>
               </div>
             </CardContent>
           </Card>
