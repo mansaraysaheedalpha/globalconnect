@@ -182,9 +182,10 @@ export function DailyProvider({ children }: DailyProviderProps) {
 
       // Handle CPU load warning from Daily
       call.on("cpu-load-change", (event) => {
-        if (event?.cpuLoadState === "high") {
+        const loadState = event?.cpuLoadState as string | undefined;
+        if (loadState === "high") {
           setCpuLoadState("high");
-        } else if (event?.cpuLoadState === "critical") {
+        } else if (loadState === "critical") {
           setCpuLoadState("critical");
           // Auto-disable camera on critical CPU load
           call.setLocalVideo(false);
