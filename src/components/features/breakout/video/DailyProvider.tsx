@@ -73,9 +73,6 @@ export function DailyProvider({ children }: DailyProviderProps) {
       // Create a new call object
       const call = DailyIframe.createCallObject({
         subscribeToTracksAutomatically: true,
-        dailyConfig: {
-          experimentalChromeVideoMuteLightOff: true,
-        },
       });
 
       // Set up event handlers
