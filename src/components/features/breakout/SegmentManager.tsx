@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useSocket } from "@/hooks/use-socket";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -309,6 +310,7 @@ export function SegmentManager({
       data,
       (response: { success: boolean; error?: string }) => {
         if (response.success) {
+          toast.success("Segment created successfully");
           setIsCreateOpen(false);
           setNewSegment({
             name: "",
@@ -317,6 +319,8 @@ export function SegmentManager({
             conditions: [{ id: crypto.randomUUID(), field: "jobRole", operator: "equals", value: "" }],
             matchMode: "all",
           });
+        } else {
+          toast.error(response.error || "Failed to create segment");
         }
       }
     );
@@ -330,8 +334,12 @@ export function SegmentManager({
       socket.emit(
         "segment.delete",
         { segmentId, sessionId },
-        (response: { success: boolean }) => {
-          // Handled by socket event
+        (response: { success: boolean; error?: string }) => {
+          if (response.success) {
+            toast.success("Segment deleted");
+          } else {
+            toast.error(response.error || "Failed to delete segment");
+          }
         }
       );
     },
@@ -352,8 +360,9 @@ export function SegmentManager({
           ? parseInt(newRule.maxFromSegment)
           : undefined,
       },
-      (response: { success: boolean }) => {
+      (response: { success: boolean; error?: string }) => {
         if (response.success) {
+          toast.success("Room linked to segment");
           setIsRuleModalOpen(false);
           setSelectedSegmentForRule(null);
           setNewRule({ roomId: "", maxFromSegment: "" });
@@ -367,6 +376,8 @@ export function SegmentManager({
               }
             }
           );
+        } else {
+          toast.error(response.error || "Failed to link room");
         }
       }
     );
@@ -380,17 +391,22 @@ export function SegmentManager({
       socket.emit(
         "segment.rule.delete",
         { segmentId, roomId, sessionId },
-        () => {
-          // Refresh segments
-          socket.emit(
-            "segment.list",
-            { sessionId },
-            (res: { success: boolean; segments?: BreakoutSegment[] }) => {
-              if (res.success && res.segments) {
-                setSegments(res.segments);
+        (response: { success: boolean; error?: string }) => {
+          if (response.success) {
+            toast.success("Room unlinked from segment");
+            // Refresh segments
+            socket.emit(
+              "segment.list",
+              { sessionId },
+              (res: { success: boolean; segments?: BreakoutSegment[] }) => {
+                if (res.success && res.segments) {
+                  setSegments(res.segments);
+                }
               }
-            }
-          );
+            );
+          } else {
+            toast.error(response.error || "Failed to unlink room");
+          }
         }
       );
     },
@@ -407,13 +423,17 @@ export function SegmentManager({
     socket.emit(
       "segment.assignment.compute",
       { sessionId, eventId },
-      (response: { success: boolean; created?: number; errors?: string[] }) => {
+      (response: { success: boolean; created?: number; errors?: string[]; error?: string }) => {
         setIsComputing(false);
         if (response.success) {
+          const created = response.created || 0;
+          toast.success(`Created ${created} room assignment${created !== 1 ? "s" : ""}`);
           setComputeResult({
-            created: response.created || 0,
+            created,
             errors: response.errors || [],
           });
+        } else {
+          toast.error(response.error || "Failed to compute assignments");
         }
       }
     );
@@ -426,13 +446,16 @@ export function SegmentManager({
     socket.emit(
       "segment.assignment.notify",
       { sessionId },
-      (response: { success: boolean; notified?: number }) => {
+      (response: { success: boolean; notified?: number; error?: string }) => {
         if (response.success) {
+          toast.success(`Notified ${response.notified || 0} attendees`);
           setComputeResult((prev) =>
             prev
               ? { ...prev, errors: [] }
               : { created: 0, errors: [] }
           );
+        } else {
+          toast.error(response.error || "Failed to notify attendees");
         }
       }
     );
