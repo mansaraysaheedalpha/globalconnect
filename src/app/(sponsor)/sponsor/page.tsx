@@ -1,9 +1,11 @@
 // src/app/(sponsor)/sponsor/page.tsx
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users,
   QrCode,
@@ -12,9 +14,43 @@ import {
   Star,
   ArrowUpRight,
   Activity,
-  Clock
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useAuthStore } from "@/store/auth.store";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
+
+interface SponsorStats {
+  total_leads: number;
+  hot_leads: number;
+  warm_leads: number;
+  cold_leads: number;
+  leads_contacted: number;
+  leads_converted: number;
+  conversion_rate: number;
+  avg_intent_score: number;
+}
+
+interface Sponsor {
+  id: string;
+  company_name: string;
+  company_logo_url?: string;
+  event_id: string;
+}
+
+interface Lead {
+  id: string;
+  user_id: string;
+  user_name?: string;
+  user_email?: string;
+  user_company?: string;
+  intent_level: "hot" | "warm" | "cold";
+  intent_score: number;
+  created_at: string;
+  is_starred?: boolean;
+}
 
 // Stats card component
 function StatsCard({
@@ -24,6 +60,7 @@ function StatsCard({
   changeType,
   icon: Icon,
   href,
+  isLoading,
 }: {
   title: string;
   value: string | number;
@@ -31,6 +68,7 @@ function StatsCard({
   changeType?: "positive" | "negative" | "neutral";
   icon: React.ElementType;
   href?: string;
+  isLoading?: boolean;
 }) {
   const content = (
     <Card className="hover:shadow-md transition-shadow">
@@ -41,19 +79,25 @@ function StatsCard({
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {change && (
-          <p
-            className={`text-xs ${
-              changeType === "positive"
-                ? "text-green-600"
-                : changeType === "negative"
-                ? "text-red-600"
-                : "text-muted-foreground"
-            }`}
-          >
-            {change}
-          </p>
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <>
+            <div className="text-2xl font-bold">{value}</div>
+            {change && (
+              <p
+                className={`text-xs ${
+                  changeType === "positive"
+                    ? "text-green-600"
+                    : changeType === "negative"
+                    ? "text-red-600"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {change}
+              </p>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -92,7 +136,7 @@ function RecentLeadItem({
         </div>
         <div>
           <p className="font-medium">{name}</p>
-          <p className="text-sm text-muted-foreground">{company}</p>
+          <p className="text-sm text-muted-foreground">{company || "No company"}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -105,24 +149,150 @@ function RecentLeadItem({
   );
 }
 
-export default function SponsorDashboardPage() {
-  // In a real app, this would come from an API
-  const stats = {
-    totalLeads: 147,
-    hotLeads: 23,
-    warmLeads: 58,
-    coldLeads: 66,
-    todayLeads: 12,
-    conversionRate: 15.8,
-  };
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
 
-  const recentLeads = [
-    { name: "Sarah Johnson", company: "TechCorp Inc.", intentLevel: "hot" as const, time: "2m ago" },
-    { name: "Michael Chen", company: "StartupXYZ", intentLevel: "warm" as const, time: "15m ago" },
-    { name: "Emily Davis", company: "Enterprise Co.", intentLevel: "hot" as const, time: "32m ago" },
-    { name: "James Wilson", company: "Innovation Labs", intentLevel: "cold" as const, time: "1h ago" },
-    { name: "Lisa Anderson", company: "Digital Agency", intentLevel: "warm" as const, time: "2h ago" },
-  ];
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+}
+
+export default function SponsorDashboardPage() {
+  const { token } = useAuthStore();
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [stats, setStats] = useState<SponsorStats | null>(null);
+  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
+  const [starredCount, setStarredCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // First, get the sponsors the current user represents
+        const sponsorsRes = await fetch(`${API_BASE_URL}/sponsors/my-sponsors`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!sponsorsRes.ok) {
+          throw new Error("Failed to fetch sponsors");
+        }
+
+        const sponsorsData: Sponsor[] = await sponsorsRes.json();
+        setSponsors(sponsorsData);
+
+        if (sponsorsData.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Use the first sponsor for now (could add sponsor selector later)
+        const primarySponsor = sponsorsData[0];
+
+        // Fetch stats and leads in parallel
+        const [statsRes, leadsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/sponsors/sponsors/${primarySponsor.id}/leads/stats`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }),
+          fetch(`${API_BASE_URL}/sponsors/sponsors/${primarySponsor.id}/leads?limit=5`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }),
+        ]);
+
+        if (statsRes.ok) {
+          const statsData: SponsorStats = await statsRes.json();
+          setStats(statsData);
+        }
+
+        if (leadsRes.ok) {
+          const leadsData: Lead[] = await leadsRes.json();
+          setRecentLeads(leadsData);
+          // Count starred leads
+          setStarredCount(leadsData.filter(l => l.is_starred).length);
+        }
+      } catch (err) {
+        console.error("Error fetching sponsor data:", err);
+        setError(err instanceof Error ? err.message : "Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [token]);
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card className="border-destructive/50 bg-destructive/10">
+          <CardContent className="flex items-center gap-3 py-6">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Error loading dashboard</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show empty state if no sponsors
+  if (!isLoading && sponsors.length === 0) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Sponsors Found</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-sm">
+              You are not currently associated with any sponsors. Please accept a sponsor invitation to access the dashboard.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const displayStats = stats || {
+    total_leads: 0,
+    hot_leads: 0,
+    warm_leads: 0,
+    cold_leads: 0,
+    leads_contacted: 0,
+    leads_converted: 0,
+    conversion_rate: 0,
+    avg_intent_score: 0,
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -131,7 +301,7 @@ export default function SponsorDashboardPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Sponsor Dashboard</h1>
           <p className="text-muted-foreground">
-            Monitor your lead capture performance and booth activity
+            {sponsors.length > 0 ? sponsors[0].company_name : "Monitor your lead capture performance and booth activity"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -154,34 +324,38 @@ export default function SponsorDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Leads"
-          value={stats.totalLeads}
-          change={`+${stats.todayLeads} today`}
-          changeType="positive"
+          value={displayStats.total_leads}
+          change={displayStats.total_leads > 0 ? "All captured leads" : "No leads yet"}
+          changeType="neutral"
           icon={Users}
           href="/sponsor/leads/all"
+          isLoading={isLoading}
         />
         <StatsCard
           title="Hot Leads"
-          value={stats.hotLeads}
+          value={displayStats.hot_leads}
           change="High intent contacts"
           changeType="neutral"
           icon={TrendingUp}
           href="/sponsor/leads/all?intent=hot"
+          isLoading={isLoading}
         />
         <StatsCard
           title="Conversion Rate"
-          value={`${stats.conversionRate}%`}
-          change="+2.3% from last event"
-          changeType="positive"
+          value={`${displayStats.conversion_rate.toFixed(1)}%`}
+          change={`${displayStats.leads_converted} converted`}
+          changeType={displayStats.conversion_rate > 10 ? "positive" : "neutral"}
           icon={Activity}
+          isLoading={isLoading}
         />
         <StatsCard
           title="Starred Leads"
-          value="12"
+          value={starredCount}
           change="Priority follow-ups"
           changeType="neutral"
           icon={Star}
           href="/sponsor/leads/starred"
+          isLoading={isLoading}
         />
       </div>
 
@@ -199,11 +373,37 @@ export default function SponsorDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-0">
-              {recentLeads.map((lead, index) => (
-                <RecentLeadItem key={index} {...lead} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-3 py-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-32 mb-2" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                ))}
+              </div>
+            ) : recentLeads.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No leads captured yet</p>
+              </div>
+            ) : (
+              <div className="space-y-0">
+                {recentLeads.map((lead) => (
+                  <RecentLeadItem
+                    key={lead.id}
+                    name={lead.user_name || "Unknown"}
+                    company={lead.user_company || ""}
+                    intentLevel={lead.intent_level}
+                    time={formatTimeAgo(lead.created_at)}
+                  />
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -228,7 +428,9 @@ export default function SponsorDashboardPage() {
                 <Clock className="mr-3 h-5 w-5" />
                 <div className="text-left">
                   <div className="font-medium">New Leads to Follow Up</div>
-                  <div className="text-xs text-muted-foreground">23 leads awaiting first contact</div>
+                  <div className="text-xs text-muted-foreground">
+                    {displayStats.total_leads - displayStats.leads_contacted} leads awaiting first contact
+                  </div>
                 </div>
               </Link>
             </Button>
@@ -267,7 +469,11 @@ export default function SponsorDashboardPage() {
                 <TrendingUp className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-red-600">{stats.hotLeads}</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-12" />
+                ) : (
+                  <p className="text-2xl font-bold text-red-600">{displayStats.hot_leads}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Hot Leads</p>
                 <p className="text-xs text-muted-foreground">Highly engaged, demo requests</p>
               </div>
@@ -277,7 +483,11 @@ export default function SponsorDashboardPage() {
                 <Activity className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-orange-600">{stats.warmLeads}</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-12" />
+                ) : (
+                  <p className="text-2xl font-bold text-orange-600">{displayStats.warm_leads}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Warm Leads</p>
                 <p className="text-xs text-muted-foreground">Multiple booth visits</p>
               </div>
@@ -287,7 +497,11 @@ export default function SponsorDashboardPage() {
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-blue-600">{stats.coldLeads}</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-12" />
+                ) : (
+                  <p className="text-2xl font-bold text-blue-600">{displayStats.cold_leads}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Cold Leads</p>
                 <p className="text-xs text-muted-foreground">Single interaction</p>
               </div>
