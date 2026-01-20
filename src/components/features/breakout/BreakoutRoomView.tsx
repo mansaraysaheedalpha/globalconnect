@@ -59,12 +59,14 @@ function BreakoutRoomContent({
     isCameraOn,
     isMicOn,
     isScreenSharing,
+    cpuLoadState,
     error: videoError,
     joinCall,
     leaveCall,
     toggleCamera,
     toggleMic,
     toggleScreenShare,
+    setReceiveVideoQuality,
   } = useDailyCall();
 
   const [roomInfo, setRoomInfo] = useState<BreakoutRoomInfo | null>(null);
@@ -311,11 +313,13 @@ function BreakoutRoomContent({
               isCameraOn={isCameraOn}
               isScreenSharing={isScreenSharing}
               isChatOpen={showChat}
+              cpuLoadState={cpuLoadState}
               onToggleMic={toggleMic}
               onToggleCamera={toggleCamera}
               onToggleScreenShare={toggleScreenShare}
               onToggleChat={() => setShowChat(!showChat)}
               onLeave={handleLeave}
+              onSetVideoQuality={setReceiveVideoQuality}
             />
           </div>
         </div>

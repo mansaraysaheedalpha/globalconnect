@@ -11,8 +11,9 @@ import {
   Monitor,
   MonitorOff,
   PhoneOff,
-  Settings,
-  MessageSquare
+  MessageSquare,
+  Cpu,
+  Gauge
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -21,17 +22,27 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface VideoControlsProps {
   isMicOn: boolean;
   isCameraOn: boolean;
   isScreenSharing: boolean;
   isChatOpen?: boolean;
+  cpuLoadState?: "normal" | "high" | "critical";
   onToggleMic: () => void;
   onToggleCamera: () => void;
   onToggleScreenShare: () => void;
   onToggleChat?: () => void;
   onLeave: () => void;
+  onSetVideoQuality?: (quality: "low" | "medium" | "high") => void;
   className?: string;
 }
 
@@ -40,11 +51,13 @@ export function VideoControls({
   isCameraOn,
   isScreenSharing,
   isChatOpen,
+  cpuLoadState = "normal",
   onToggleMic,
   onToggleCamera,
   onToggleScreenShare,
   onToggleChat,
   onLeave,
+  onSetVideoQuality,
   className,
 }: VideoControlsProps) {
   return (
@@ -53,6 +66,29 @@ export function VideoControls({
         "flex items-center justify-center gap-2 p-4 bg-gray-900/95 backdrop-blur-sm rounded-xl",
         className
       )}>
+        {/* CPU Load Warning */}
+        {cpuLoadState !== "normal" && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium mr-2",
+                cpuLoadState === "critical"
+                  ? "bg-red-500/20 text-red-400 animate-pulse"
+                  : "bg-yellow-500/20 text-yellow-400"
+              )}>
+                <Cpu className="w-3.5 h-3.5" />
+                {cpuLoadState === "critical" ? "CPU Critical" : "High CPU"}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p>
+                {cpuLoadState === "critical"
+                  ? "CPU is overloaded. Your camera was turned off automatically. Consider closing other applications."
+                  : "High CPU usage detected. Consider turning off your camera to improve performance."}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        )}
         {/* Microphone Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -144,6 +180,50 @@ export function VideoControls({
               <p>{isChatOpen ? "Close chat" : "Open chat"}</p>
             </TooltipContent>
           </Tooltip>
+        )}
+
+        {/* Video Quality Settings */}
+        {onSetVideoQuality && (
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="rounded-full w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white"
+                  >
+                    <Gauge className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Video quality</p>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="center" className="bg-gray-800 border-gray-700">
+              <DropdownMenuLabel className="text-gray-300">Video Quality</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-700" />
+              <DropdownMenuItem
+                onClick={() => onSetVideoQuality("high")}
+                className="text-gray-200 focus:bg-gray-700"
+              >
+                High (Best quality)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onSetVideoQuality("medium")}
+                className="text-gray-200 focus:bg-gray-700"
+              >
+                Medium (Balanced)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onSetVideoQuality("low")}
+                className="text-gray-200 focus:bg-gray-700"
+              >
+                Low (Save bandwidth)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* Leave Call */}
