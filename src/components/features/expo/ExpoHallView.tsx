@@ -106,7 +106,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   const handleLeadCapture = useCallback(
     async (formData: LeadFormData): Promise<boolean> => {
       if (!selectedBooth) return false;
-      return captureLead(selectedBooth.id, formData);
+      return captureLead(selectedBooth.id, formData as unknown as Record<string, unknown>);
     },
     [selectedBooth, captureLead]
   );

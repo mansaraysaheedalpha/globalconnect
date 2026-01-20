@@ -1,7 +1,7 @@
 // src/components/features/expo/BoothVideoCall.tsx
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Video,
   VideoOff,
@@ -81,6 +81,7 @@ export function BoothVideoCall({
   className,
 }: BoothVideoCallProps) {
   const [callObject, setCallObject] = useState<DailyCall | null>(null);
+  const callObjectRef = useRef<DailyCall | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
@@ -176,6 +177,7 @@ export function BoothVideoCall({
           userName,
         });
 
+        callObjectRef.current = call;
         setCallObject(call);
       } catch (err) {
         console.error("[Video] Join error:", err);
@@ -188,9 +190,10 @@ export function BoothVideoCall({
 
     // Cleanup
     return () => {
-      if (callObject) {
-        callObject.leave().catch(console.error);
-        callObject.destroy().catch(console.error);
+      if (callObjectRef.current) {
+        callObjectRef.current.leave().catch(console.error);
+        callObjectRef.current.destroy().catch(console.error);
+        callObjectRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

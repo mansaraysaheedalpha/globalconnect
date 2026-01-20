@@ -119,10 +119,10 @@ export const ExpoBoothCard = memo(function ExpoBoothCard({
 
             {/* Features */}
             {booth.chatEnabled && (
-              <MessageSquare className="h-4 w-4" title="Chat available" />
+              <MessageSquare className="h-4 w-4" aria-label="Chat available" />
             )}
             {booth.videoEnabled && hasOnlineStaff && (
-              <Video className="h-4 w-4 text-green-500" title="Video call available" />
+              <Video className="h-4 w-4 text-green-500" aria-label="Video call available" />
             )}
           </div>
 

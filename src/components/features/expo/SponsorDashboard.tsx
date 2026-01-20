@@ -464,15 +464,15 @@ export function SponsorDashboard({
                           </span>
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
-                          {lead.formData.email && (
+                          {lead.formData.email ? (
                             <p>Email: {String(lead.formData.email)}</p>
-                          )}
-                          {lead.formData.company && (
+                          ) : null}
+                          {lead.formData.company ? (
                             <p>Company: {String(lead.formData.company)}</p>
-                          )}
-                          {lead.formData.interests && (
+                          ) : null}
+                          {lead.formData.interests ? (
                             <p>Interests: {String(lead.formData.interests)}</p>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     ))}
