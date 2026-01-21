@@ -152,13 +152,14 @@ export default function BoothSettingsPage() {
   }, [token, activeSponsorId]);
 
   const handleSave = async () => {
-    if (!sponsor || !token) return;
+    if (!sponsor || !token || !activeSponsorId) return;
 
     setIsSaving(true);
 
     try {
+      // Use the booth-settings endpoint for sponsor representatives
       const response = await fetch(
-        `${API_BASE_URL}/sponsors/organizations/${sponsor.id.split("-")[0]}/sponsors/${sponsor.id}`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/booth-settings`,
         {
           method: "PATCH",
           headers: {
@@ -166,7 +167,6 @@ export default function BoothSettingsPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            company_name: formData.companyName,
             company_description: formData.description,
             company_website: formData.website,
             booth_number: formData.boothNumber,
@@ -303,10 +303,12 @@ export default function BoothSettingsPage() {
                 <Input
                   id="companyName"
                   value={formData.companyName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, companyName: e.target.value })
-                  }
+                  disabled
+                  className="bg-muted"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Contact the event organizer to change company name
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
