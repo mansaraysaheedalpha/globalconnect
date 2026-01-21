@@ -46,6 +46,8 @@ import {
   Video,
   PlayCircle,
   DoorOpen,
+  Store,
+  ArrowRight,
 } from "lucide-react";
 import { format, isWithinInterval, isFuture } from "date-fns";
 import Link from "next/link";
@@ -1085,6 +1087,35 @@ export default function AttendeeEventPage() {
           )}
         </div>
       </PremiumCard>
+
+      {/* Expo Hall Quick Access */}
+      <Link href={`/attendee/events/${eventId}/expo`}>
+        <PremiumCard
+          variant="elevated"
+          hover="lift"
+          className="mb-6 group cursor-pointer bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-orange-500/5 border-purple-500/20 hover:border-purple-500/40 transition-all"
+        >
+          <div className="p-4 sm:p-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
+                <Store className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  Expo Hall
+                  <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+                    Open
+                  </Badge>
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Explore sponsor booths, download resources, and connect with exhibitors
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-purple-500 group-hover:translate-x-1 transition-all" />
+          </div>
+        </PremiumCard>
+      </Link>
 
       {/* Sponsored Content - Hero Banner Ad */}
       <AdContainer

@@ -36,6 +36,7 @@ import EngagementConductorPage from "./engagement/page";
 import NetworkingAnalyticsPage from "./networking/page";
 import { SponsorManagement } from "@/components/features/sponsors/sponsor-management";
 import { useAuthStore } from "@/store/auth.store";
+import ExpoManagementPage from "./expo/page";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -154,6 +155,7 @@ export default function EventDetailPage() {
               <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
               <TabsTrigger value="monetization">Monetization</TabsTrigger>
               <TabsTrigger value="networking">Networking</TabsTrigger>
+              <TabsTrigger value="expo">Expo Hall</TabsTrigger>
               <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
             </TabsList>
             <TabsContent value="live" className="mt-4 sm:mt-6">
@@ -189,6 +191,9 @@ export default function EventDetailPage() {
             </TabsContent>
             <TabsContent value="networking" className="mt-4 sm:mt-6">
               <NetworkingAnalyticsPage />
+            </TabsContent>
+            <TabsContent value="expo" className="mt-4 sm:mt-6">
+              <ExpoManagementPage />
             </TabsContent>
             <TabsContent value="sponsors" className="mt-4 sm:mt-6">
               <SponsorManagement eventId={event.id} organizationId={orgId || ""} />
