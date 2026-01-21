@@ -193,6 +193,9 @@ export function BreakoutChat({ roomId, userId, userName, className }: BreakoutCh
 
       {/* Input */}
       <div className="p-3 border-t border-gray-800">
+        {!isConnected && (
+          <p className="text-xs text-amber-400 mb-2">Connecting to chat...</p>
+        )}
         {sendError && (
           <p className="text-xs text-red-400 mb-2">{sendError}</p>
         )}
@@ -204,11 +207,12 @@ export function BreakoutChat({ roomId, userId, userName, className }: BreakoutCh
               if (sendError) setSendError(null);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder={isConnected ? "Type a message..." : "Connecting..."}
             maxLength={MAX_MESSAGE_LENGTH + 50} // Allow slight overflow for UX
             className={cn(
-              "flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500",
-              inputValue.length > MAX_MESSAGE_LENGTH && "border-red-500"
+              "flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500",
+              inputValue.length > MAX_MESSAGE_LENGTH && "border-red-500",
+              !isConnected && "opacity-50 cursor-not-allowed"
             )}
             disabled={!isConnected || isSending}
           />
@@ -216,7 +220,7 @@ export function BreakoutChat({ roomId, userId, userName, className }: BreakoutCh
             onClick={sendMessage}
             disabled={!inputValue.trim() || !isConnected || isSending || inputValue.length > MAX_MESSAGE_LENGTH}
             size="icon"
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
           </Button>
