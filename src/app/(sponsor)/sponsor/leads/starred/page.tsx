@@ -193,15 +193,16 @@ export default function StarredLeadsPage() {
     );
   }
 
-  if (sponsors.length === 0 && !isLoading) {
+  // Show empty state if no active sponsor
+  if (!activeSponsorId && !isLoading) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Sponsor Access</h3>
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm text-center">
-              You are not currently associated with any sponsors.
+              Please select a sponsor event to view starred leads.
             </p>
           </CardContent>
         </Card>
@@ -219,24 +220,12 @@ export default function StarredLeadsPage() {
             Starred Leads
           </h1>
           <p className="text-muted-foreground">
-            {filteredLeads.length} priority lead{filteredLeads.length !== 1 ? "s" : ""} to follow up
+            {activeSponsorName
+              ? `${filteredLeads.length} priority leads for ${activeSponsorName}`
+              : `${filteredLeads.length} priority lead${filteredLeads.length !== 1 ? "s" : ""} to follow up`}
           </p>
         </div>
         <div className="flex gap-2">
-          {sponsors.length > 1 && (
-            <Select value={selectedSponsorId || ""} onValueChange={setSelectedSponsorId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select Sponsor" />
-              </SelectTrigger>
-              <SelectContent>
-                {sponsors.map((sponsor) => (
-                  <SelectItem key={sponsor.id} value={sponsor.id}>
-                    {sponsor.company_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 interface Lead {
   id: string;
@@ -44,15 +45,9 @@ interface Lead {
   last_interaction_at: string;
 }
 
-interface Sponsor {
-  id: string;
-  company_name: string;
-}
-
 export default function ExportPage() {
   const { token } = useAuthStore();
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
-  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
+  const { activeSponsorId, activeSponsorName } = useSponsorStore();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,40 +70,11 @@ export default function ExportPage() {
     lastInteraction: true,
   });
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
-  // Fetch user's sponsors
-  useEffect(() => {
-    const fetchSponsors = async () => {
-      if (!token) return;
-
-      try {
-        const response = await fetch(`${apiUrl}/my-sponsors`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch sponsors");
-        }
-
-        const data = await response.json();
-        setSponsors(data);
-        if (data.length > 0) {
-          setSelectedSponsorId(data[0].id);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load sponsors");
-      }
-    };
-
-    fetchSponsors();
-  }, [token, apiUrl]);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
   // Fetch leads for export
   const fetchLeads = useCallback(async () => {
-    if (!token || !selectedSponsorId) return;
+    if (!token || !activeSponsorId) return;
 
     setIsLoading(true);
     setError(null);
@@ -121,10 +87,11 @@ export default function ExportPage() {
       params.append("limit", "1000"); // Get more leads for export
 
       const response = await fetch(
-        `${apiUrl}/sponsors/${selectedSponsorId}/leads?${params.toString()}`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
@@ -140,7 +107,7 @@ export default function ExportPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, selectedSponsorId, intentFilter, apiUrl]);
+  }, [token, activeSponsorId, intentFilter, API_BASE_URL]);
 
   useEffect(() => {
     fetchLeads();
@@ -245,7 +212,7 @@ export default function ExportPage() {
   // Filter leads count for display
   const filteredLeadsCount = leads.length;
 
-  if (error && sponsors.length === 0) {
+  if (error) {
     return (
       <div className="p-6">
         <Card className="border-red-200 bg-red-50">
@@ -263,15 +230,15 @@ export default function ExportPage() {
     );
   }
 
-  if (sponsors.length === 0 && !isLoading) {
+  if (!activeSponsorId && !isLoading) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Sponsor Access</h3>
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm text-center">
-              You are not currently associated with any sponsors.
+              Please select a sponsor event to export leads.
             </p>
           </CardContent>
         </Card>
@@ -286,23 +253,11 @@ export default function ExportPage() {
         <div>
           <h1 className="text-2xl font-bold">Export Leads</h1>
           <p className="text-muted-foreground">
-            Download your lead data in various formats
+            {activeSponsorName
+              ? `Download lead data for ${activeSponsorName}`
+              : "Download your lead data in various formats"}
           </p>
         </div>
-        {sponsors.length > 1 && (
-          <Select value={selectedSponsorId || ""} onValueChange={setSelectedSponsorId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Sponsor" />
-            </SelectTrigger>
-            <SelectContent>
-              {sponsors.map((sponsor) => (
-                <SelectItem key={sponsor.id} value={sponsor.id}>
-                  {sponsor.company_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
@@ -57,6 +58,7 @@ interface SponsorStats {
 
 export default function BoothSettingsPage() {
   const { token } = useAuthStore();
+  const { activeSponsorId, activeSponsorName } = useSponsorStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,14 +82,14 @@ export default function BoothSettingsPage() {
 
   // Fetch sponsor data
   useEffect(() => {
-    if (!token) return;
+    if (!token || !activeSponsorId) return;
 
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        // Get sponsors for current user
+        // Fetch sponsor details from my-sponsors and find the active one
         const sponsorsRes = await fetch(`${API_BASE_URL}/sponsors/my-sponsors`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -100,14 +102,12 @@ export default function BoothSettingsPage() {
         }
 
         const sponsors: Sponsor[] = await sponsorsRes.json();
+        const currentSponsor = sponsors.find(s => s.id === activeSponsorId);
 
-        if (sponsors.length === 0) {
-          setError("No sponsor found");
-          setIsLoading(false);
-          return;
+        if (!currentSponsor) {
+          throw new Error("Sponsor not found");
         }
 
-        const currentSponsor = sponsors[0];
         setSponsor(currentSponsor);
 
         // Populate form with existing data
@@ -127,7 +127,7 @@ export default function BoothSettingsPage() {
 
         // Fetch stats
         const statsRes = await fetch(
-          `${API_BASE_URL}/sponsors/sponsors/${currentSponsor.id}/leads/stats`,
+          `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -149,7 +149,7 @@ export default function BoothSettingsPage() {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, activeSponsorId]);
 
   const handleSave = async () => {
     if (!sponsor || !token) return;
@@ -190,6 +190,23 @@ export default function BoothSettingsPage() {
       setIsSaving(false);
     }
   };
+
+  // Show empty state if no active sponsor
+  if (!activeSponsorId && !isLoading) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Building2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
+            <p className="text-sm text-muted-foreground max-w-sm text-center">
+              Please select a sponsor event to manage booth settings.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -249,7 +266,9 @@ export default function BoothSettingsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Booth Settings</h1>
           <p className="text-muted-foreground">
-            Customize your sponsor booth appearance and settings
+            {activeSponsorName
+              ? `Customize booth appearance for ${activeSponsorName}`
+              : "Customize your sponsor booth appearance and settings"}
           </p>
         </div>
         <div className="flex gap-2">

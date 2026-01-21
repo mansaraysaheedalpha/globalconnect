@@ -27,6 +27,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 interface SponsorStats {
   total_leads: number;
@@ -43,11 +44,6 @@ interface Lead {
   id: string;
   interactions: Array<{ type: string; timestamp: string }>;
   interaction_count: number;
-}
-
-interface Sponsor {
-  id: string;
-  company_name: string;
 }
 
 // Stats card component
@@ -154,48 +150,18 @@ function ChartPlaceholder({
 
 export default function SponsorAnalyticsPage() {
   const { token } = useAuthStore();
+  const { activeSponsorId, activeSponsorName } = useSponsorStore();
   const [stats, setStats] = useState<SponsorStats | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
-  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("event");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
-  // Fetch user's sponsors
-  useEffect(() => {
-    const fetchSponsors = async () => {
-      if (!token) return;
-
-      try {
-        const response = await fetch(`${apiUrl}/my-sponsors`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch sponsors");
-        }
-
-        const data = await response.json();
-        setSponsors(data);
-        if (data.length > 0) {
-          setSelectedSponsorId(data[0].id);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load sponsors");
-      }
-    };
-
-    fetchSponsors();
-  }, [token, apiUrl]);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
   // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
-    if (!token || !selectedSponsorId) return;
+    if (!token || !activeSponsorId) return;
 
     setIsLoading(true);
     setError(null);
@@ -203,11 +169,17 @@ export default function SponsorAnalyticsPage() {
     try {
       // Fetch stats and leads in parallel
       const [statsResponse, leadsResponse] = await Promise.all([
-        fetch(`${apiUrl}/sponsors/${selectedSponsorId}/leads/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
+        fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }),
-        fetch(`${apiUrl}/sponsors/${selectedSponsorId}/leads?limit=100`, {
-          headers: { Authorization: `Bearer ${token}` },
+        fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads?limit=100`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }),
       ]);
 
@@ -227,7 +199,7 @@ export default function SponsorAnalyticsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, selectedSponsorId, apiUrl]);
+  }, [token, activeSponsorId, API_BASE_URL]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -294,15 +266,16 @@ export default function SponsorAnalyticsPage() {
     );
   }
 
-  if (sponsors.length === 0 && !isLoading) {
+  // Show empty state if no active sponsor
+  if (!activeSponsorId && !isLoading) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Sponsor Access</h3>
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm text-center">
-              You are not currently associated with any sponsors.
+              Please select a sponsor event to view analytics.
             </p>
           </CardContent>
         </Card>
@@ -317,24 +290,12 @@ export default function SponsorAnalyticsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
           <p className="text-muted-foreground">
-            Track your booth performance and lead quality
+            {activeSponsorName
+              ? `Performance analytics for ${activeSponsorName}`
+              : "Track your booth performance and lead quality"}
           </p>
         </div>
         <div className="flex gap-2">
-          {sponsors.length > 1 && (
-            <Select value={selectedSponsorId || ""} onValueChange={setSelectedSponsorId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select Sponsor" />
-              </SelectTrigger>
-              <SelectContent>
-                {sponsors.map((sponsor) => (
-                  <SelectItem key={sponsor.id} value={sponsor.id}>
-                    {sponsor.company_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
           <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-[180px]">
               <Calendar className="mr-2 h-4 w-4" />
