@@ -804,7 +804,7 @@ export function SegmentManager({
                         <SelectTrigger>
                           <SelectValue placeholder="Operator" />
                         </SelectTrigger>
-                        <SelectContent position="popper" side="bottom" sideOffset={4} className="max-h-[300px]">
+                        <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                           <div className="px-2 py-1 text-xs text-muted-foreground font-medium">Text</div>
                           {OPERATORS.filter((op) => OPERATOR_GROUPS.text.includes(op.value)).map((op) => (
                             <SelectItem key={op.value} value={op.value}>
