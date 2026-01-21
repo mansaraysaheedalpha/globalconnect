@@ -308,9 +308,10 @@ export function SegmentManager({
     socket.emit(
       "segment.create",
       data,
-      (response: { success: boolean; error?: string }) => {
-        if (response.success) {
+      (response: { success: boolean; error?: string; segment?: BreakoutSegment }) => {
+        if (response.success && response.segment) {
           toast.success("Segment created successfully");
+          setSegments((prev) => [...prev, response.segment!]);
           setIsCreateOpen(false);
           setNewSegment({
             name: "",
@@ -337,6 +338,7 @@ export function SegmentManager({
         (response: { success: boolean; error?: string }) => {
           if (response.success) {
             toast.success("Segment deleted");
+            setSegments((prev) => prev.filter((s) => s.id !== segmentId));
           } else {
             toast.error(response.error || "Failed to delete segment");
           }
