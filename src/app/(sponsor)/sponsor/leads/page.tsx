@@ -126,16 +126,22 @@ export default function LeadCapturePage() {
   const handleManualSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!activeSponsorId || !activeEventId || !user) {
+    if (!activeSponsorId) {
       toast.error("No sponsor selected");
+      return;
+    }
+
+    if (!manualForm.name || !manualForm.email) {
+      toast.error("Name and email are required");
       return;
     }
 
     setIsCapturing(true);
 
     try {
+      // Use the manual capture endpoint for sponsor representatives
       const response = await fetch(
-        `${API_BASE_URL}/sponsors/events/${activeEventId}/sponsors/${activeSponsorId}/capture-lead`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/capture-lead-manual`,
         {
           method: "POST",
           headers: {
@@ -143,13 +149,12 @@ export default function LeadCapturePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            user_id: user.id, // The captured lead is the current user for self-capture, or could be a scanned user
             user_name: manualForm.name,
             user_email: manualForm.email,
-            user_company: manualForm.company || undefined,
-            user_title: manualForm.title || undefined,
+            user_company: manualForm.company || null,
+            user_title: manualForm.title || null,
             interaction_type: manualForm.interactionType,
-            interaction_metadata: manualForm.notes ? { notes: manualForm.notes } : undefined,
+            notes: manualForm.notes || null,
           }),
         }
       );
@@ -181,7 +186,7 @@ export default function LeadCapturePage() {
     } finally {
       setIsCapturing(false);
     }
-  }, [activeSponsorId, activeEventId, user, token, API_BASE_URL, manualForm]);
+  }, [activeSponsorId, token, API_BASE_URL, manualForm]);
 
   const handleRateLead = async (intentLevel: "hot" | "warm" | "cold") => {
     if (!lastCapturedLead || !activeSponsorId || !token) return;
