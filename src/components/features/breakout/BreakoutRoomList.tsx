@@ -35,6 +35,7 @@ export function BreakoutRoomList({
   const pathname = usePathname();
   const [rooms, setRooms] = useState<BreakoutRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [assignedRoomId, setAssignedRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { socket, isConnected } = useSocket();
 
@@ -85,6 +86,21 @@ export function BreakoutRoomList({
       }
     );
   }, [socket, isConnected, sessionId, userId]);
+
+  // Fetch user's assigned room to exclude from list (for attendees)
+  useEffect(() => {
+    if (!socket || !isConnected || !sessionId || isOrganizer) return;
+
+    socket.emit(
+      "segment.assignment.get",
+      { sessionId },
+      (response: { success: boolean; assignment?: { roomId: string } }) => {
+        if (response.success && response.assignment) {
+          setAssignedRoomId(response.assignment.roomId);
+        }
+      }
+    );
+  }, [socket, isConnected, sessionId, isOrganizer]);
 
   // Listen for room updates
   useEffect(() => {
@@ -266,9 +282,22 @@ export function BreakoutRoomList({
     );
   }
 
+  // Filter out assigned room for attendees (it's shown separately in RoomAssignmentNotice)
+  const displayRooms = assignedRoomId
+    ? rooms.filter((r) => r.id !== assignedRoomId)
+    : rooms;
+
+  if (displayRooms.length === 0 && assignedRoomId) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        <p className="text-sm">You can browse other rooms below once more are available.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {rooms.map((room) => (
+      {displayRooms.map((room) => (
         <BreakoutRoomCard
           key={room.id}
           room={room}

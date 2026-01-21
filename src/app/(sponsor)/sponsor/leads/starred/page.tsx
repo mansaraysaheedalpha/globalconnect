@@ -29,6 +29,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 interface StarredLead {
   id: string;
@@ -43,11 +44,6 @@ interface StarredLead {
   created_at: string;
   last_interaction_at: string;
   is_starred: boolean;
-}
-
-interface Sponsor {
-  id: string;
-  company_name: string;
 }
 
 function getIntentBadgeClass(intentLevel: string) {
@@ -65,47 +61,17 @@ function getIntentBadgeClass(intentLevel: string) {
 
 export default function StarredLeadsPage() {
   const { token } = useAuthStore();
+  const { activeSponsorId, activeSponsorName } = useSponsorStore();
   const [leads, setLeads] = useState<StarredLead[]>([]);
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
-  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
-  // Fetch user's sponsors
-  useEffect(() => {
-    const fetchSponsors = async () => {
-      if (!token) return;
-
-      try {
-        const response = await fetch(`${apiUrl}/my-sponsors`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch sponsors");
-        }
-
-        const data = await response.json();
-        setSponsors(data);
-        if (data.length > 0) {
-          setSelectedSponsorId(data[0].id);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load sponsors");
-      }
-    };
-
-    fetchSponsors();
-  }, [token, apiUrl]);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
   // Fetch starred leads for selected sponsor
   const fetchLeads = useCallback(async () => {
-    if (!token || !selectedSponsorId) return;
+    if (!token || !activeSponsorId) return;
 
     setIsLoading(true);
     setError(null);
@@ -114,10 +80,11 @@ export default function StarredLeadsPage() {
       // Fetch all leads and filter starred ones client-side
       // (API may not have direct starred filter, so we get all and filter)
       const response = await fetch(
-        `${apiUrl}/sponsors/${selectedSponsorId}/leads?limit=100`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads?limit=100`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
@@ -135,7 +102,7 @@ export default function StarredLeadsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, selectedSponsorId, apiUrl]);
+  }, [token, activeSponsorId, API_BASE_URL]);
 
   useEffect(() => {
     fetchLeads();
@@ -143,11 +110,11 @@ export default function StarredLeadsPage() {
 
   // Unstar a lead
   const unstarLead = async (leadId: string) => {
-    if (!token || !selectedSponsorId) return;
+    if (!token || !activeSponsorId) return;
 
     try {
       const response = await fetch(
-        `${apiUrl}/sponsors/${selectedSponsorId}/leads/${leadId}`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/${leadId}`,
         {
           method: "PATCH",
           headers: {

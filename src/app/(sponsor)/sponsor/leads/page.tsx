@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 interface CapturedLead {
   id: string;
@@ -52,24 +53,16 @@ interface CapturedLead {
   created_at: string;
 }
 
-interface Sponsor {
-  id: string;
-  company_name: string;
-  event_id: string;
-}
-
 export default function LeadCapturePage() {
   const { token, user } = useAuthStore();
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
-  const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
-  const [isLoadingSponsors, setIsLoadingSponsors] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { activeSponsorId, activeEventId, activeSponsorName } = useSponsorStore();
 
   const [captureMode, setCaptureMode] = useState<"qr" | "manual">("manual");
   const [isCapturing, setIsCapturing] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [lastCapturedLead, setLastCapturedLead] = useState<CapturedLead | null>(null);
   const [recentCaptures, setRecentCaptures] = useState<CapturedLead[]>([]);
+  const [isLoadingCaptures, setIsLoadingCaptures] = useState(true);
 
   // Manual entry form state
   const [manualForm, setManualForm] = useState({
@@ -81,51 +74,21 @@ export default function LeadCapturePage() {
     notes: "",
   });
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
-  // Fetch user's sponsors
-  useEffect(() => {
-    const fetchSponsors = async () => {
-      if (!token) return;
-
-      setIsLoadingSponsors(true);
-      try {
-        const response = await fetch(`${apiUrl}/my-sponsors`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch sponsors");
-        }
-
-        const data = await response.json();
-        setSponsors(data);
-        if (data.length > 0) {
-          setSelectedSponsor(data[0]);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load sponsors");
-      } finally {
-        setIsLoadingSponsors(false);
-      }
-    };
-
-    fetchSponsors();
-  }, [token, apiUrl]);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
   // Fetch recent captures when sponsor changes
   useEffect(() => {
     const fetchRecentCaptures = async () => {
-      if (!token || !selectedSponsor) return;
+      if (!token || !activeSponsorId) return;
 
+      setIsLoadingCaptures(true);
       try {
         const response = await fetch(
-          `${apiUrl}/sponsors/${selectedSponsor.id}/leads?limit=10`,
+          `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads?limit=10`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
             },
           }
         );
@@ -136,14 +99,16 @@ export default function LeadCapturePage() {
         }
       } catch {
         // Silently fail - recent captures is not critical
+      } finally {
+        setIsLoadingCaptures(false);
       }
     };
 
     fetchRecentCaptures();
-  }, [token, selectedSponsor, apiUrl]);
+  }, [token, activeSponsorId, API_BASE_URL]);
 
   const handleQRScan = useCallback(async () => {
-    if (!selectedSponsor) {
+    if (!activeSponsorId) {
       toast.error("No sponsor selected");
       return;
     }
@@ -156,12 +121,12 @@ export default function LeadCapturePage() {
       setIsCapturing(false);
       toast.info("QR scanning requires camera access. Use manual entry for now.");
     }, 2000);
-  }, [selectedSponsor]);
+  }, [activeSponsorId]);
 
   const handleManualSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedSponsor || !user) {
+    if (!activeSponsorId || !activeEventId || !user) {
       toast.error("No sponsor selected");
       return;
     }
@@ -170,7 +135,7 @@ export default function LeadCapturePage() {
 
     try {
       const response = await fetch(
-        `${apiUrl}/events/${selectedSponsor.event_id}/sponsors/${selectedSponsor.id}/capture-lead`,
+        `${API_BASE_URL}/sponsors/events/${activeEventId}/sponsors/${activeSponsorId}/capture-lead`,
         {
           method: "POST",
           headers: {
@@ -216,18 +181,18 @@ export default function LeadCapturePage() {
     } finally {
       setIsCapturing(false);
     }
-  }, [selectedSponsor, user, token, apiUrl, manualForm]);
+  }, [activeSponsorId, activeEventId, user, token, API_BASE_URL, manualForm]);
 
   const handleRateLead = async (intentLevel: "hot" | "warm" | "cold") => {
-    if (!lastCapturedLead || !selectedSponsor || !token) return;
+    if (!lastCapturedLead || !activeSponsorId || !token) return;
 
     // Calculate score based on level
     const scoreMap = { hot: 85, warm: 55, cold: 25 };
     const intentScore = scoreMap[intentLevel];
 
     try {
-      const response = await fetch(
-        `${apiUrl}/sponsors/${selectedSponsor.id}/leads/${lastCapturedLead.id}`,
+      await fetch(
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/${lastCapturedLead.id}`,
         {
           method: "PATCH",
           headers: {
@@ -235,8 +200,8 @@ export default function LeadCapturePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            // Note: The API may not directly support setting intent_level,
-            // but we can show the UI update optimistically
+            intent_level: intentLevel,
+            intent_score: intentScore,
           }),
         }
       );
@@ -256,11 +221,11 @@ export default function LeadCapturePage() {
   };
 
   const handleStarLead = async () => {
-    if (!lastCapturedLead || !selectedSponsor || !token) return;
+    if (!lastCapturedLead || !activeSponsorId || !token) return;
 
     try {
       await fetch(
-        `${apiUrl}/sponsors/${selectedSponsor.id}/leads/${lastCapturedLead.id}`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/${lastCapturedLead.id}`,
         {
           method: "PATCH",
           headers: {
@@ -285,45 +250,16 @@ export default function LeadCapturePage() {
     }
   };
 
-  if (isLoadingSponsors) {
-    return (
-      <div className="p-6 space-y-6">
-        <div>
-          <Skeleton className="h-8 w-40 mb-2" />
-          <Skeleton className="h-4 w-64" />
-        </div>
-        <Skeleton className="h-10 w-64" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error</h3>
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (sponsors.length === 0) {
+  // Show empty state if no active sponsor (layout handles initialization)
+  if (!activeSponsorId) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Sponsor Access</h3>
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm text-center">
-              You are not currently associated with any sponsors. Please contact your event organizer.
+              Please select a sponsor event to access lead capture.
             </p>
           </CardContent>
         </Card>
@@ -338,29 +274,11 @@ export default function LeadCapturePage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Lead Capture</h1>
           <p className="text-muted-foreground">
-            Scan attendee badges or manually enter contact information
+            {activeSponsorName
+              ? `Capture leads for ${activeSponsorName}`
+              : "Scan attendee badges or manually enter contact information"}
           </p>
         </div>
-        {sponsors.length > 1 && (
-          <Select
-            value={selectedSponsor?.id || ""}
-            onValueChange={(value) => {
-              const sponsor = sponsors.find((s) => s.id === value);
-              if (sponsor) setSelectedSponsor(sponsor);
-            }}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Sponsor" />
-            </SelectTrigger>
-            <SelectContent>
-              {sponsors.map((sponsor) => (
-                <SelectItem key={sponsor.id} value={sponsor.id}>
-                  {sponsor.company_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       {/* Capture Mode Toggle */}
