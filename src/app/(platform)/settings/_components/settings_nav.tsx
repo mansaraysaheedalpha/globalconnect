@@ -9,6 +9,7 @@ export function SettingsNav() {
   const pathname = usePathname();
   const navLinks = [
     { href: "/settings/profile", label: "My Profile" },
+    { href: "/settings/networking", label: "Networking" },
     { href: "/settings/security", label: "Security" },
   ];
 

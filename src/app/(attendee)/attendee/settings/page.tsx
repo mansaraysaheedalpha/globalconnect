@@ -2,11 +2,11 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/store/auth.store";
-import { User, Mail, Settings } from "lucide-react";
+import { User, Mail } from "lucide-react";
+import { NetworkingProfileForm } from "@/components/features/networking/networking-profile-form";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -59,6 +59,8 @@ export default function SettingsPage() {
             </p>
           </CardContent>
         </Card>
+
+        <NetworkingProfileForm />
 
         <Card>
           <CardHeader>
