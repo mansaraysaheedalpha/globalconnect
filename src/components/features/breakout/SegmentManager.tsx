@@ -759,7 +759,7 @@ export function SegmentManager({
                     <SelectTrigger className="w-[140px] h-8">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" side="bottom" sideOffset={4}>
                       <SelectItem value="all">Match ALL (AND)</SelectItem>
                       <SelectItem value="any">Match ANY (OR)</SelectItem>
                     </SelectContent>
@@ -785,7 +785,7 @@ export function SegmentManager({
                         <SelectTrigger>
                           <SelectValue placeholder="Field" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" side="bottom" sideOffset={4}>
                           {REGISTRATION_FIELDS.map((field) => (
                             <SelectItem key={field.value} value={field.value}>
                               {field.label}
@@ -804,7 +804,7 @@ export function SegmentManager({
                         <SelectTrigger>
                           <SelectValue placeholder="Operator" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" side="bottom" sideOffset={4} className="max-h-[300px]">
                           <div className="px-2 py-1 text-xs text-muted-foreground font-medium">Text</div>
                           {OPERATORS.filter((op) => OPERATOR_GROUPS.text.includes(op.value)).map((op) => (
                             <SelectItem key={op.value} value={op.value}>
@@ -909,7 +909,7 @@ export function SegmentManager({
                 <SelectTrigger>
                   <SelectValue placeholder="Select a room" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="bottom" sideOffset={4}>
                   {rooms.map((room) => (
                     <SelectItem key={room.id} value={room.id}>
                       {room.name}

@@ -205,7 +205,7 @@ export function NetworkingProfileForm() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select your industry" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="bottom" sideOffset={4}>
                   {INDUSTRIES.map((industry) => (
                     <SelectItem key={industry} value={industry.toLowerCase()}>
                       {industry}
@@ -228,7 +228,7 @@ export function NetworkingProfileForm() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select experience level" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="bottom" sideOffset={4}>
                   {EXPERIENCE_LEVELS.map((level) => (
                     <SelectItem key={level.value} value={level.value}>
                       {level.label}
