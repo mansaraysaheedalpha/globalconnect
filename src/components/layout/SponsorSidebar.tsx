@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -13,8 +13,12 @@ import {
   Building2,
   FileDown,
   Star,
+  ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 interface SponsorSidebarProps {
   className?: string;
@@ -71,6 +75,8 @@ const navItems = [
 
 export function SponsorSidebar({ className }: SponsorSidebarProps) {
   const pathname = usePathname();
+  const { activeSponsorName, sponsors } = useSponsorStore();
+  const hasMultipleSponsors = sponsors.length > 1;
 
   return (
     <aside
@@ -85,6 +91,30 @@ export function SponsorSidebar({ className }: SponsorSidebarProps) {
           <span className="text-lg font-semibold">Sponsor Portal</span>
         </Link>
       </div>
+
+      {/* Current sponsor info */}
+      {activeSponsorName && (
+        <div className="border-b px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Current Sponsor</p>
+              <p className="font-medium truncate">{activeSponsorName}</p>
+            </div>
+            {hasMultipleSponsors && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 h-8 w-8 p-0"
+                asChild
+              >
+                <Link href="/sponsor/select-event" title="Switch Event">
+                  <RefreshCw className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => {

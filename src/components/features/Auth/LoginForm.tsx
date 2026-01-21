@@ -33,7 +33,7 @@ export function LoginForm() {
 
   const [login, { loading }] = useMutation(LOGIN_USER_MUTATION, {
     onCompleted: (data) => {
-      const { token, user, requires2FA, userIdFor2FA, onboardingToken } =
+      const { token, user, requires2FA, userIdFor2FA, onboardingToken, isSponsor, sponsorCount } =
         data.login;
 
       if (onboardingToken) {
@@ -49,12 +49,21 @@ export function LoginForm() {
         toast.success("Login Successful!");
         setAuth(token, user);
 
-        // Redirect based on user type (organizer vs attendee)
+        // Redirect based on user type (organizer vs attendee vs sponsor)
         try {
           const decoded = jwtDecode<JwtPayload>(token);
           if (decoded.orgId) {
             // User is an organizer - redirect to organizer dashboard
             router.push("/dashboard");
+          } else if (isSponsor) {
+            // User is a sponsor representative
+            if (sponsorCount > 1) {
+              // Multiple sponsors - go to event selection page
+              router.push("/sponsor/select-event");
+            } else {
+              // Single sponsor - go directly to sponsor dashboard
+              router.push("/sponsor");
+            }
           } else {
             // User is an attendee - redirect to attendee dashboard
             router.push("/attendee");

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Loader } from "@/components/ui/loader";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, CheckCircle2, AlertCircle, LogIn } from "lucide-react";
 
@@ -31,6 +32,7 @@ function AcceptSponsorInvitationComponent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const setAuth = useAuthStore((state) => state.setAuth);
+  const { setActiveSponsor, setSponsors } = useSponsorStore();
 
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
@@ -145,6 +147,19 @@ function AcceptSponsorInvitationComponent() {
           first_name: data.user.firstName || data.user.first_name || "",
           last_name: data.user.lastName || data.user.last_name || "",
         });
+      }
+
+      // Set sponsor context from the accepted invitation
+      if (data.sponsor_id && data.event_id && data.sponsor_name) {
+        setActiveSponsor(data.sponsor_id, data.event_id, data.sponsor_name, data.role || null);
+        // Also set the sponsors array with this single sponsor
+        setSponsors([{
+          id: data.sponsor_id,
+          eventId: data.event_id,
+          companyName: data.sponsor_name,
+          companyLogoUrl: preview?.sponsor_logo_url || null,
+          role: data.role || null,
+        }]);
       }
 
       setSuccess(true);

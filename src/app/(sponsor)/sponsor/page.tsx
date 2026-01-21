@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
@@ -31,13 +32,6 @@ interface SponsorStats {
   leads_converted: number;
   conversion_rate: number;
   avg_intent_score: number;
-}
-
-interface Sponsor {
-  id: string;
-  company_name: string;
-  company_logo_url?: string;
-  event_id: string;
 }
 
 interface Lead {
@@ -165,7 +159,7 @@ function formatTimeAgo(dateString: string): string {
 
 export default function SponsorDashboardPage() {
   const { token } = useAuthStore();
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const { activeSponsorId, activeSponsorName } = useSponsorStore();
   const [stats, setStats] = useState<SponsorStats | null>(null);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [starredCount, setStarredCount] = useState(0);
@@ -173,45 +167,22 @@ export default function SponsorDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !activeSponsorId) return;
 
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        // First, get the sponsors the current user represents
-        const sponsorsRes = await fetch(`${API_BASE_URL}/sponsors/my-sponsors`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!sponsorsRes.ok) {
-          throw new Error("Failed to fetch sponsors");
-        }
-
-        const sponsorsData: Sponsor[] = await sponsorsRes.json();
-        setSponsors(sponsorsData);
-
-        if (sponsorsData.length === 0) {
-          setIsLoading(false);
-          return;
-        }
-
-        // Use the first sponsor for now (could add sponsor selector later)
-        const primarySponsor = sponsorsData[0];
-
-        // Fetch stats and leads in parallel
+        // Fetch stats and leads in parallel using active sponsor from store
         const [statsRes, leadsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/sponsors/sponsors/${primarySponsor.id}/leads/stats`, {
+          fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
           }),
-          fetch(`${API_BASE_URL}/sponsors/sponsors/${primarySponsor.id}/leads?limit=5`, {
+          fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads?limit=5`, {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
@@ -239,7 +210,7 @@ export default function SponsorDashboardPage() {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, activeSponsorId]);
 
   // Show error state
   if (error) {
@@ -266,17 +237,20 @@ export default function SponsorDashboardPage() {
     );
   }
 
-  // Show empty state if no sponsors
-  if (!isLoading && sponsors.length === 0) {
+  // Show empty state if no active sponsor
+  if (!isLoading && !activeSponsorId) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Sponsors Found</h3>
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              You are not currently associated with any sponsors. Please accept a sponsor invitation to access the dashboard.
+              Please select a sponsor event to access the dashboard.
             </p>
+            <Button className="mt-4" asChild>
+              <Link href="/sponsor/select-event">Select Event</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -301,7 +275,7 @@ export default function SponsorDashboardPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Sponsor Dashboard</h1>
           <p className="text-muted-foreground">
-            {sponsors.length > 0 ? sponsors[0].company_name : "Monitor your lead capture performance and booth activity"}
+            {activeSponsorName || "Monitor your lead capture performance and booth activity"}
           </p>
         </div>
         <div className="flex gap-2">

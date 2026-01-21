@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
 
 interface SponsorStats {
   total_leads: number;
@@ -38,15 +39,11 @@ interface SponsorStats {
   leads_converted: number;
 }
 
-interface Sponsor {
-  id: string;
-  company_name: string;
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
 export default function MessagesPage() {
   const { token } = useAuthStore();
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
-  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
+  const { activeSponsorId, activeSponsorName } = useSponsorStore();
   const [stats, setStats] = useState<SponsorStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,49 +55,20 @@ export default function MessagesPage() {
     body: "",
   });
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
-  // Fetch user's sponsors
-  useEffect(() => {
-    const fetchSponsors = async () => {
-      if (!token) return;
-
-      try {
-        const response = await fetch(`${apiUrl}/my-sponsors`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch sponsors");
-        }
-
-        const data = await response.json();
-        setSponsors(data);
-        if (data.length > 0) {
-          setSelectedSponsorId(data[0].id);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load sponsors");
-      }
-    };
-
-    fetchSponsors();
-  }, [token, apiUrl]);
-
   // Fetch stats for audience counts
   const fetchStats = useCallback(async () => {
-    if (!token || !selectedSponsorId) return;
+    if (!token || !activeSponsorId) return;
 
     setIsLoading(true);
+    setError(null);
 
     try {
       const response = await fetch(
-        `${apiUrl}/sponsors/${selectedSponsorId}/leads/stats`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
@@ -116,7 +84,7 @@ export default function MessagesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, selectedSponsorId, apiUrl]);
+  }, [token, activeSponsorId]);
 
   useEffect(() => {
     fetchStats();
@@ -165,15 +133,15 @@ export default function MessagesPage() {
     );
   }
 
-  if (sponsors.length === 0 && !isLoading) {
+  if (!activeSponsorId && !isLoading) {
     return (
       <div className="p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Sponsor Access</h3>
+            <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
             <p className="text-sm text-muted-foreground max-w-sm text-center">
-              You are not currently associated with any sponsors.
+              Please select a sponsor event to access messages.
             </p>
           </CardContent>
         </Card>
@@ -188,23 +156,9 @@ export default function MessagesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
           <p className="text-muted-foreground">
-            Send follow-up messages to your captured leads
+            {activeSponsorName ? `Send follow-up messages to ${activeSponsorName} leads` : "Send follow-up messages to your captured leads"}
           </p>
         </div>
-        {sponsors.length > 1 && (
-          <Select value={selectedSponsorId || ""} onValueChange={setSelectedSponsorId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Sponsor" />
-            </SelectTrigger>
-            <SelectContent>
-              {sponsors.map((sponsor) => (
-                <SelectItem key={sponsor.id} value={sponsor.id}>
-                  {sponsor.company_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

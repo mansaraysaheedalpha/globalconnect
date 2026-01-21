@@ -14,6 +14,9 @@ export const LOGIN_USER_MUTATION = gql`
       }
       requires2FA
       userIdFor2FA
+      isAttendee
+      isSponsor
+      sponsorCount
     }
   }
 `;
