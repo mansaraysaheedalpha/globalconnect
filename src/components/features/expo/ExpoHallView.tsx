@@ -8,10 +8,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useExpo } from "@/hooks/use-expo";
+import { useAuthStore } from "@/store/auth.store";
 import { ExpoBooth } from "./types";
 import { ExpoHallGrid } from "./ExpoHallGrid";
 import { ExpoBoothView } from "./ExpoBoothView";
 import { LeadFormData } from "./LeadCaptureForm";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export interface ExpoHallViewProps {
   eventId: string;
@@ -21,6 +24,7 @@ export interface ExpoHallViewProps {
 export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   const [selectedBooth, setSelectedBooth] = useState<ExpoBooth | null>(null);
   const [isRequestingVideo, setIsRequestingVideo] = useState(false);
+  const { token } = useAuthStore();
 
   const {
     hall,
@@ -109,6 +113,34 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
       return captureLead(selectedBooth.id, formData as unknown as Record<string, unknown>);
     },
     [selectedBooth, captureLead]
+  );
+
+  // Get presigned download URL for S3 resources
+  const getDownloadUrl = useCallback(
+    async (resourceUrl: string, filename: string): Promise<string> => {
+      if (!token) {
+        return resourceUrl; // Fall back to direct URL if no token
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/sponsors/booth-resources/download-url?resource_url=${encodeURIComponent(resourceUrl)}&filename=${encodeURIComponent(filename)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to get download URL");
+        return resourceUrl; // Fall back to direct URL on error
+      }
+
+      const data = await response.json();
+      return data.download_url;
+    },
+    [token]
   );
 
   // Loading state
@@ -250,6 +282,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
           onCtaClick={handleCtaClick}
           onLeadCapture={handleLeadCapture}
           isRequestingVideo={isRequestingVideo}
+          getDownloadUrl={getDownloadUrl}
         />
       )}
     </div>

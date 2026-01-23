@@ -44,6 +44,8 @@ export interface ExpoBoothViewProps {
   onCtaClick: (ctaId: string) => void;
   onLeadCapture: (formData: LeadFormData) => Promise<boolean>;
   isRequestingVideo?: boolean;
+  /** Function to get a presigned download URL for S3 resources */
+  getDownloadUrl?: (resourceUrl: string, filename: string) => Promise<string>;
 }
 
 export function ExpoBoothView({
@@ -58,6 +60,7 @@ export function ExpoBoothView({
   onCtaClick,
   onLeadCapture,
   isRequestingVideo = false,
+  getDownloadUrl,
 }: ExpoBoothViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const tierConfig = BOOTH_TIER_CONFIG[booth.tier];
@@ -303,6 +306,7 @@ export function ExpoBoothView({
                 <BoothResources
                   resources={booth.resources}
                   onDownload={(resource) => onResourceDownload(resource.id)}
+                  getDownloadUrl={getDownloadUrl}
                 />
                 {booth.resources.length === 0 && (
                   <div className="text-center py-12 text-muted-foreground">

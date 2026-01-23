@@ -1,6 +1,7 @@
 // src/components/features/expo/BoothResources.tsx
 "use client";
 
+import { useState } from "react";
 import {
   FileText,
   Video,
@@ -8,6 +9,7 @@ import {
   Image as ImageIcon,
   Download,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,8 @@ import { BoothResource } from "./types";
 export interface BoothResourcesProps {
   resources: BoothResource[];
   onDownload?: (resource: BoothResource) => void;
+  /** Function to get a presigned download URL for S3 resources */
+  getDownloadUrl?: (resourceUrl: string, filename: string) => Promise<string>;
   className?: string;
 }
 
@@ -42,25 +46,44 @@ const RESOURCE_LABELS: Record<BoothResource["type"], string> = {
 export function BoothResources({
   resources,
   onDownload,
+  getDownloadUrl,
   className,
 }: BoothResourcesProps) {
-  const handleResourceClick = (resource: BoothResource) => {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleResourceClick = async (resource: BoothResource) => {
     // Track download
     onDownload?.(resource);
 
     // Open resource - LINK and OTHER types are external links
     if (resource.type === "LINK" || resource.type === "OTHER") {
       window.open(resource.url, "_blank", "noopener,noreferrer");
-    } else {
-      // Download file
-      const link = document.createElement("a");
-      link.href = resource.url;
-      link.download = resource.name;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      return;
     }
+
+    // For downloadable files, get presigned URL if available
+    let downloadUrl = resource.url;
+
+    if (getDownloadUrl) {
+      try {
+        setDownloadingId(resource.id);
+        downloadUrl = await getDownloadUrl(resource.url, resource.name);
+      } catch (error) {
+        console.error("Failed to get download URL:", error);
+        // Fall back to direct URL
+      } finally {
+        setDownloadingId(null);
+      }
+    }
+
+    // Trigger download
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = resource.name;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (resources.length === 0) {
@@ -102,8 +125,11 @@ export function BoothResources({
               size="icon"
               onClick={() => handleResourceClick(resource)}
               className="flex-shrink-0"
+              disabled={downloadingId === resource.id}
             >
-              {resource.type === "LINK" || resource.type === "OTHER" ? (
+              {downloadingId === resource.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : resource.type === "LINK" || resource.type === "OTHER" ? (
                 <ExternalLink className="h-4 w-4" />
               ) : (
                 <Download className="h-4 w-4" />
