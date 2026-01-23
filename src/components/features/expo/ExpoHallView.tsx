@@ -14,7 +14,8 @@ import { ExpoHallGrid } from "./ExpoHallGrid";
 import { ExpoBoothView } from "./ExpoBoothView";
 import { LeadFormData } from "./LeadCaptureForm";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+// Use event service URL for REST API calls (not the GraphQL gateway)
+const EVENT_SERVICE_URL = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || "http://localhost:8000/api/v1";
 
 export interface ExpoHallViewProps {
   eventId: string;
@@ -132,7 +133,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/sponsors/booth-resources/download-url?resource_url=${encodeURIComponent(resourceUrl)}&filename=${encodeURIComponent(filename)}`,
+        `${EVENT_SERVICE_URL}/sponsors/booth-resources/download-url?resource_url=${encodeURIComponent(resourceUrl)}&filename=${encodeURIComponent(filename)}`,
         {
           method: "POST",
           headers: {
