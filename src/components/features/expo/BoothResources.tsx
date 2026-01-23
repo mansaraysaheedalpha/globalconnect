@@ -25,13 +25,17 @@ const RESOURCE_ICONS: Record<BoothResource["type"], React.ReactNode> = {
   PDF: <FileText className="h-5 w-5 text-red-500" />,
   VIDEO: <Video className="h-5 w-5 text-purple-500" />,
   IMAGE: <ImageIcon className="h-5 w-5 text-orange-500" />,
-  OTHER: <LinkIcon className="h-5 w-5 text-green-500" />,
+  DOCUMENT: <FileText className="h-5 w-5 text-blue-500" />,
+  LINK: <LinkIcon className="h-5 w-5 text-green-500" />,
+  OTHER: <LinkIcon className="h-5 w-5 text-gray-500" />,
 };
 
 const RESOURCE_LABELS: Record<BoothResource["type"], string> = {
   PDF: "PDF",
   VIDEO: "Video",
   IMAGE: "Image",
+  DOCUMENT: "Document",
+  LINK: "Link",
   OTHER: "Other",
 };
 
@@ -44,8 +48,8 @@ export function BoothResources({
     // Track download
     onDownload?.(resource);
 
-    // Open resource - OTHER type is typically external links
-    if (resource.type === "OTHER") {
+    // Open resource - LINK and OTHER types are external links
+    if (resource.type === "LINK" || resource.type === "OTHER") {
       window.open(resource.url, "_blank", "noopener,noreferrer");
     } else {
       // Download file
@@ -99,7 +103,7 @@ export function BoothResources({
               onClick={() => handleResourceClick(resource)}
               className="flex-shrink-0"
             >
-              {resource.type === "OTHER" ? (
+              {resource.type === "LINK" || resource.type === "OTHER" ? (
                 <ExternalLink className="h-4 w-4" />
               ) : (
                 <Download className="h-4 w-4" />

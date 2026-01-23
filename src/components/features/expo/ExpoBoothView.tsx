@@ -76,10 +76,10 @@ export function ExpoBoothView({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl p-0">
-        <div className="flex flex-col h-full">
+      <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Header with banner */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             {/* Banner */}
             <div className="h-40 bg-muted relative">
               {booth.bannerUrl ? (
@@ -165,7 +165,7 @@ export function ExpoBoothView({
           </div>
 
           {/* Quick stats */}
-          <div className="px-6 pb-4">
+          <div className="px-6 pb-4 flex-shrink-0">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
@@ -177,15 +177,15 @@ export function ExpoBoothView({
             </div>
           </div>
 
-          <Separator />
+          <Separator className="flex-shrink-0" />
 
           {/* Main content tabs */}
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="flex-1 flex flex-col min-h-0"
+            className="flex-1 flex flex-col min-h-0 overflow-hidden"
           >
-            <TabsList className="mx-6 mt-4 grid grid-cols-3">
+            <TabsList className="mx-6 mt-4 grid grid-cols-3 flex-shrink-0">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="chat">
                 Chat
@@ -196,7 +196,7 @@ export function ExpoBoothView({
               <TabsTrigger value="resources">Resources</TabsTrigger>
             </TabsList>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-auto">
               {/* Overview Tab */}
               <TabsContent value="overview" className="p-6 space-y-6 mt-0">
                 {/* Tagline */}

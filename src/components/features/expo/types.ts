@@ -31,11 +31,12 @@ export interface ExpoHall {
 export interface BoothResource {
   id: string;
   name: string;
-  type: 'PDF' | 'VIDEO' | 'IMAGE' | 'OTHER';
+  type: 'PDF' | 'VIDEO' | 'IMAGE' | 'DOCUMENT' | 'LINK' | 'OTHER';
   url: string;
   description?: string;
   thumbnailUrl?: string;
   downloadCount: number;
+  fileSize?: number;
 }
 
 export interface BoothCta {
