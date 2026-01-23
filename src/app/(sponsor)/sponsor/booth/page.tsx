@@ -49,6 +49,7 @@ import {
   Edit2,
   MousePointerClick,
   Loader2,
+  Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -774,13 +775,23 @@ export default function BoothSettingsPage() {
         </div>
         <div className="flex gap-2">
           {expoBooth?.expoHall && (
-            <Button
-              variant="outline"
-              onClick={() => window.open(`/attendee/events/${expoBooth.expoHall?.eventId}/expo`, "_blank")}
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Preview Booth
-            </Button>
+            <>
+              <Button
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => router.push("/sponsor/booth/live")}
+              >
+                <Radio className="mr-2 h-4 w-4" />
+                Go Live
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open(`/attendee/events/${expoBooth.expoHall?.eventId}/expo`, "_blank")}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Preview Booth
+              </Button>
+            </>
           )}
           <Button onClick={handleSave} disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />
