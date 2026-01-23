@@ -4,25 +4,21 @@
 import { useState } from "react";
 import Image from "next/image";
 import {
-  X,
   Video,
   MessageSquare,
   Users,
   ExternalLink,
   Loader2,
   Phone,
-  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -75,8 +71,8 @@ export function ExpoBoothView({
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col h-full overflow-hidden">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] p-0 flex flex-col overflow-hidden">
         <div className="flex flex-col h-full overflow-hidden">
           {/* Header with banner */}
           <div className="relative flex-shrink-0">
@@ -98,25 +94,6 @@ export function ExpoBoothView({
                 />
               )}
 
-              {/* Close button */}
-              <Button
-                variant="secondary"
-                size="icon"
-                className="absolute top-4 right-4 rounded-full shadow-md"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-
-              {/* Back button (mobile) */}
-              <Button
-                variant="secondary"
-                size="icon"
-                className="absolute top-4 left-4 rounded-full shadow-md sm:hidden"
-                onClick={onClose}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
             </div>
 
             {/* Logo and title overlay */}
@@ -336,7 +313,7 @@ export function ExpoBoothView({
             </ScrollArea>
           </Tabs>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
