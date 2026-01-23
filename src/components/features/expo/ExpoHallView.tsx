@@ -292,8 +292,8 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
           onCtaClick={handleCtaClick}
           onLeadCapture={handleLeadCapture}
           isRequestingVideo={isRequestingVideo}
-          userName={user?.firstName && user?.lastName
-            ? `${user.firstName} ${user.lastName}`
+          userName={user?.first_name && user?.last_name
+            ? `${user.first_name} ${user.last_name}`
             : user?.email || "Attendee"}
           getDownloadUrl={getDownloadUrl}
         />

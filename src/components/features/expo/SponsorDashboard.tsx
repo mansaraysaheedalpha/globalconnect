@@ -108,8 +108,8 @@ export function SponsorDashboard({
 
   // Get user info for video call display name
   const { user } = useAuthStore();
-  const staffDisplayName = user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
+  const staffDisplayName = user?.first_name && user?.last_name
+    ? `${user.first_name} ${user.last_name}`
     : user?.email || "Staff";
 
   // Format duration
