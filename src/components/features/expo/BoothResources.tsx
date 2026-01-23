@@ -61,29 +61,45 @@ export function BoothResources({
       return;
     }
 
-    // For downloadable files, get presigned URL if available
-    let downloadUrl = resource.url;
+    // Start loading state
+    setDownloadingId(resource.id);
 
-    if (getDownloadUrl) {
-      try {
-        setDownloadingId(resource.id);
-        downloadUrl = await getDownloadUrl(resource.url, resource.name);
-      } catch (error) {
-        console.error("Failed to get download URL:", error);
-        // Fall back to direct URL
-      } finally {
-        setDownloadingId(null);
+    try {
+      // Get presigned URL if available
+      let downloadUrl = resource.url;
+      if (getDownloadUrl) {
+        try {
+          downloadUrl = await getDownloadUrl(resource.url, resource.name);
+        } catch (error) {
+          console.error("Failed to get download URL:", error);
+          // Fall back to direct URL
+        }
       }
-    }
 
-    // Trigger download
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = resource.name;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Fetch the file and create a blob URL for download
+      // This works reliably for cross-origin S3 presigned URLs
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error("Download failed");
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = resource.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback: open in new tab
+      window.open(resource.url, "_blank", "noopener,noreferrer");
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   if (resources.length === 0) {
