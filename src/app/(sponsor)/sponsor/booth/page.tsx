@@ -33,9 +33,6 @@ import {
   Upload,
   Link2,
   Bell,
-  Linkedin,
-  Twitter,
-  Instagram,
   Save,
   Eye,
   AlertCircle,
@@ -194,11 +191,6 @@ export default function BoothSettingsPage() {
     boothNumber: "",
     leadCaptureEnabled: true,
     notificationEmail: "",
-    socialLinks: {
-      linkedin: "",
-      twitter: "",
-      instagram: "",
-    },
   });
 
   // Fetch sponsor and expo booth data
@@ -241,11 +233,6 @@ export default function BoothSettingsPage() {
           boothNumber: currentSponsor.booth_number || "",
           leadCaptureEnabled: currentSponsor.lead_capture_enabled ?? true,
           notificationEmail: currentSponsor.lead_notification_email || "",
-          socialLinks: {
-            linkedin: currentSponsor.social_links?.linkedin || "",
-            twitter: currentSponsor.social_links?.twitter || "",
-            instagram: currentSponsor.social_links?.instagram || "",
-          },
         });
 
         // Fetch stats
@@ -351,7 +338,6 @@ export default function BoothSettingsPage() {
             booth_number: formData.boothNumber,
             lead_capture_enabled: formData.leadCaptureEnabled,
             lead_notification_email: formData.notificationEmail || null,
-            social_links: formData.socialLinks,
           }),
         }
       );
@@ -1592,71 +1578,6 @@ export default function BoothSettingsPage() {
             </Card>
           )}
 
-          {/* Social Links */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Link2 className="h-5 w-5" />
-                Social Links
-              </CardTitle>
-              <CardDescription>
-                Connect your social media profiles
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="linkedin" className="flex items-center gap-2">
-                  <Linkedin className="h-4 w-4" />
-                  LinkedIn
-                </Label>
-                <Input
-                  id="linkedin"
-                  placeholder="https://linkedin.com/company/..."
-                  value={formData.socialLinks.linkedin}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, linkedin: e.target.value },
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="twitter" className="flex items-center gap-2">
-                  <Twitter className="h-4 w-4" />
-                  Twitter
-                </Label>
-                <Input
-                  id="twitter"
-                  placeholder="https://twitter.com/..."
-                  value={formData.socialLinks.twitter}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, twitter: e.target.value },
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="instagram" className="flex items-center gap-2">
-                  <Instagram className="h-4 w-4" />
-                  Instagram
-                </Label>
-                <Input
-                  id="instagram"
-                  placeholder="https://instagram.com/..."
-                  value={formData.socialLinks.instagram}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, instagram: e.target.value },
-                    })
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Sidebar */}
