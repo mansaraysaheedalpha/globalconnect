@@ -40,11 +40,15 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
     leaveBooth,
     requestVideoCall,
     cancelVideoRequest,
+    endVideoCall,
     trackResourceDownload,
     trackCtaClick,
     captureLead,
     clearError,
   } = useExpo({ eventId });
+
+  // Get user info from auth store
+  const { user } = useAuthStore();
 
   // Enter hall on mount
   useEffect(() => {
@@ -85,6 +89,11 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   const handleCancelVideo = useCallback(async () => {
     await cancelVideoRequest();
   }, [cancelVideoRequest]);
+
+  // Handle video end
+  const handleEndVideo = useCallback(async () => {
+    await endVideoCall();
+  }, [endVideoCall]);
 
   // Handle resource download
   const handleResourceDownload = useCallback(
@@ -278,10 +287,14 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
           onClose={handleBoothClose}
           onRequestVideo={handleRequestVideo}
           onCancelVideoRequest={handleCancelVideo}
+          onEndVideoCall={handleEndVideo}
           onResourceDownload={handleResourceDownload}
           onCtaClick={handleCtaClick}
           onLeadCapture={handleLeadCapture}
           isRequestingVideo={isRequestingVideo}
+          userName={user?.firstName && user?.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user?.email || "Attendee"}
           getDownloadUrl={getDownloadUrl}
         />
       )}

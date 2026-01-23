@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useExpoStaff } from "@/hooks/use-expo-staff";
+import { useAuthStore } from "@/store/auth.store";
 import { BoothChat } from "./BoothChat";
 import { BoothVideoCall } from "./BoothVideoCall";
 import { StaffPresenceStatus } from "./types";
@@ -97,7 +98,6 @@ export function SponsorDashboard({
     isConnected,
     isLoading,
     error,
-    currentUserId,
     updateStatus,
     acceptVideoCall,
     declineVideoCall,
@@ -105,6 +105,12 @@ export function SponsorDashboard({
     fetchAnalytics,
     clearError,
   } = useExpoStaff({ boothId, eventId });
+
+  // Get user info for video call display name
+  const { user } = useAuthStore();
+  const staffDisplayName = user?.firstName && user?.lastName
+    ? `${user.firstName} ${user.lastName}`
+    : user?.email || "Staff";
 
   // Format duration
   const formatDuration = (seconds: number) => {
@@ -268,7 +274,7 @@ export function SponsorDashboard({
             <CardContent>
               <BoothVideoCall
                 session={activeVideoSession}
-                userName={currentUserId || "Staff"}
+                userName={staffDisplayName}
                 isStaff={true}
                 onEnd={endVideoCall}
               />

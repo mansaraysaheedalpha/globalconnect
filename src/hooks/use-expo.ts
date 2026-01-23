@@ -38,6 +38,39 @@ interface SocketResponse {
   stats?: BoothAnalytics;
 }
 
+// Play notification sound when video call is accepted
+const playVideoAcceptedSound = () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const audioContext = new (window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext)();
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Pleasant ascending tone to indicate call connected
+    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
+    oscillator.frequency.setValueAtTime(554.37, audioContext.currentTime + 0.15); // C#5
+    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.3); // E5
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      audioContext.currentTime + 0.5
+    );
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  } catch {
+    // Audio not supported
+  }
+};
+
 export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
   const [state, setState] = useState<ExpoState>({
     hall: null,
@@ -149,6 +182,8 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     // Listen for video call accepted
     newSocket.on("expo.booth.video.accepted", (data: BoothVideoSession & { attendeeToken: string }) => {
       if (data.attendeeId === user?.id) {
+        console.log("[Expo] Video call accepted, connecting...");
+        playVideoAcceptedSound();
         setState((prev) => ({
           ...prev,
           videoSession: { ...data, token: data.attendeeToken },

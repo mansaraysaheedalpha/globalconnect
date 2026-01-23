@@ -31,6 +31,7 @@ import { BoothChat } from "./BoothChat";
 import { BoothResources } from "./BoothResources";
 import { BoothStaffStatus } from "./BoothStaffStatus";
 import { LeadCaptureForm, LeadFormData } from "./LeadCaptureForm";
+import { BoothVideoCall } from "./BoothVideoCall";
 
 export interface ExpoBoothViewProps {
   booth: ExpoBooth;
@@ -40,10 +41,13 @@ export interface ExpoBoothViewProps {
   onClose: () => void;
   onRequestVideo: () => Promise<void>;
   onCancelVideoRequest: () => Promise<void>;
+  onEndVideoCall: () => Promise<void>;
   onResourceDownload: (resourceId: string) => void;
   onCtaClick: (ctaId: string) => void;
   onLeadCapture: (formData: LeadFormData) => Promise<boolean>;
   isRequestingVideo?: boolean;
+  /** Current user's display name for video calls */
+  userName?: string;
   /** Function to get a presigned download URL for S3 resources */
   getDownloadUrl?: (resourceUrl: string, filename: string) => Promise<string>;
 }
@@ -56,16 +60,27 @@ export function ExpoBoothView({
   onClose,
   onRequestVideo,
   onCancelVideoRequest,
+  onEndVideoCall,
   onResourceDownload,
   onCtaClick,
   onLeadCapture,
   isRequestingVideo = false,
+  userName = "Attendee",
   getDownloadUrl,
 }: ExpoBoothViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const tierConfig = BOOTH_TIER_CONFIG[booth.tier];
   const hasOnlineStaff = booth.staffPresence.some((s) => s.status === "ONLINE");
   const visitorCount = booth._count.visits;
+
+  // Check if video call is ready to connect (has token and room URL)
+  const isVideoCallReady = videoSession &&
+    videoSession.token &&
+    videoSession.videoRoomUrl &&
+    (videoSession.status === "ACCEPTED" || videoSession.status === "ACTIVE");
+
+  // Check if video is in waiting state (requested but not yet accepted)
+  const isVideoWaiting = videoSession && videoSession.status === "REQUESTED";
 
   // Handle CTA click
   const handleCtaClick = (cta: BoothCta) => {
@@ -217,51 +232,72 @@ export function ExpoBoothView({
                   <BoothStaffStatus staff={booth.staffPresence} />
                 </div>
 
-                {/* Video call CTA */}
+                {/* Video call section */}
                 {booth.videoEnabled && (
-                  <div className="p-4 rounded-lg border bg-muted/50">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h4 className="font-medium flex items-center gap-2">
-                          <Video className="h-4 w-4" />
-                          Request a Video Call
-                        </h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {hasOnlineStaff
-                            ? "Staff members are available for a video chat"
-                            : "No staff currently available. Try again later."}
-                        </p>
-                      </div>
-                      {videoSession ? (
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge variant="secondary">
-                            {videoSession.status === "REQUESTED"
-                              ? "Waiting..."
-                              : videoSession.status}
+                  <>
+                    {/* Active video call - render full video component */}
+                    {isVideoCallReady && videoSession && (
+                      <div className="rounded-lg border overflow-hidden">
+                        <div className="bg-muted px-4 py-2 border-b flex items-center justify-between">
+                          <h4 className="font-medium flex items-center gap-2">
+                            <Video className="h-4 w-4 text-green-500" />
+                            Video Call with {videoSession.staffName || "Staff"}
+                          </h4>
+                          <Badge variant="secondary" className="bg-green-100 text-green-700">
+                            Connected
                           </Badge>
+                        </div>
+                        <BoothVideoCall
+                          session={videoSession}
+                          userName={userName}
+                          isStaff={false}
+                          onEnd={onEndVideoCall}
+                        />
+                      </div>
+                    )}
+
+                    {/* Waiting for staff to accept */}
+                    {isVideoWaiting && videoSession && (
+                      <div className="rounded-lg border overflow-hidden">
+                        <BoothVideoCall
+                          session={videoSession}
+                          userName={userName}
+                          isStaff={false}
+                          onEnd={onCancelVideoRequest}
+                        />
+                      </div>
+                    )}
+
+                    {/* No active session - show request button */}
+                    {!videoSession && (
+                      <div className="p-4 rounded-lg border bg-muted/50">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h4 className="font-medium flex items-center gap-2">
+                              <Video className="h-4 w-4" />
+                              Request a Video Call
+                            </h4>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {hasOnlineStaff
+                                ? "Staff members are available for a video chat"
+                                : "No staff currently available. Try again later."}
+                            </p>
+                          </div>
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={onCancelVideoRequest}
+                            onClick={onRequestVideo}
+                            disabled={!hasOnlineStaff || isRequestingVideo}
                           >
-                            Cancel
+                            {isRequestingVideo ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <Phone className="h-4 w-4 mr-2" />
+                            )}
+                            Request Call
                           </Button>
                         </div>
-                      ) : (
-                        <Button
-                          onClick={onRequestVideo}
-                          disabled={!hasOnlineStaff || isRequestingVideo}
-                        >
-                          {isRequestingVideo ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Phone className="h-4 w-4 mr-2" />
-                          )}
-                          Request Call
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* CTA Buttons */}
