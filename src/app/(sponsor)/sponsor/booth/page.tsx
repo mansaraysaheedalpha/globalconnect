@@ -165,6 +165,12 @@ export default function BoothSettingsPage() {
     url: "",
   });
 
+  // File upload state
+  const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   // CTA form state
   const [ctaForm, setCtaForm] = useState({
     label: "",
@@ -349,12 +355,87 @@ export default function BoothSettingsPage() {
     }
   };
 
+  // Helper: Get resource type from file MIME type
+  const getResourceTypeFromMime = (mimeType: string): "PDF" | "VIDEO" | "IMAGE" | "DOCUMENT" => {
+    if (mimeType === "application/pdf") return "PDF";
+    if (mimeType.startsWith("video/")) return "VIDEO";
+    if (mimeType.startsWith("image/")) return "IMAGE";
+    return "DOCUMENT";
+  };
+
+  // Helper: Upload file to S3 via presigned URL
+  const uploadFileToS3 = async (file: File): Promise<string> => {
+    // Step 1: Get presigned upload URL
+    const uploadRequestRes = await fetch(
+      `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/booth-resources/upload-request?filename=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(file.type)}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!uploadRequestRes.ok) {
+      const errorData = await uploadRequestRes.json().catch(() => ({}));
+      throw new Error(errorData.detail || "Failed to get upload URL");
+    }
+
+    const uploadData = await uploadRequestRes.json();
+
+    // Step 2: Upload file directly to S3
+    const formData = new FormData();
+    // Add all the presigned fields first (order matters for S3)
+    Object.entries(uploadData.fields).forEach(([key, value]) => {
+      formData.append(key, value as string);
+    });
+    // Add file last
+    formData.append("file", file);
+
+    setUploadProgress(10);
+
+    const uploadRes = await fetch(uploadData.url, {
+      method: "POST",
+      body: formData,
+    });
+
+    setUploadProgress(90);
+
+    if (!uploadRes.ok) {
+      throw new Error("Failed to upload file to storage");
+    }
+
+    setUploadProgress(100);
+
+    // Return the public URL for the uploaded file
+    return uploadData.public_url;
+  };
+
   // Resource management
   const handleAddResource = async () => {
     if (!expoBooth || !token) return;
     setIsSubmitting(true);
 
     try {
+      let resourceUrl = resourceForm.url;
+      let resourceType = resourceForm.type;
+
+      // If in file upload mode and a file is selected, upload it first
+      if (uploadMode === "file" && selectedFile) {
+        setIsUploading(true);
+        setUploadProgress(0);
+        try {
+          resourceUrl = await uploadFileToS3(selectedFile);
+          resourceType = getResourceTypeFromMime(selectedFile.type);
+        } catch (uploadErr) {
+          toast.error(uploadErr instanceof Error ? uploadErr.message : "Failed to upload file");
+          setIsUploading(false);
+          setIsSubmitting(false);
+          return;
+        }
+        setIsUploading(false);
+      }
+
       const response = await fetch(
         `${REALTIME_API_URL}/api/expo/booths/${expoBooth.id}/resources`,
         {
@@ -363,7 +444,13 @@ export default function BoothSettingsPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(resourceForm),
+          body: JSON.stringify({
+            name: resourceForm.name,
+            description: resourceForm.description,
+            type: resourceType,
+            url: resourceUrl,
+            fileSize: selectedFile?.size,
+          }),
         }
       );
 
@@ -378,11 +465,15 @@ export default function BoothSettingsPage() {
       });
       setIsResourceDialogOpen(false);
       setResourceForm({ name: "", description: "", type: "PDF", url: "" });
+      setSelectedFile(null);
+      setUploadMode("url");
+      setUploadProgress(0);
       toast.success("Resource added successfully");
     } catch (err) {
       toast.error("Failed to add resource");
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -836,6 +927,9 @@ export default function BoothSettingsPage() {
                     if (!open) {
                       setEditingResource(null);
                       setResourceForm({ name: "", description: "", type: "PDF", url: "" });
+                      setSelectedFile(null);
+                      setUploadMode("url");
+                      setUploadProgress(0);
                     }
                   }}>
                     <DialogTrigger asChild>
@@ -871,47 +965,167 @@ export default function BoothSettingsPage() {
                             rows={2}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label>Type</Label>
-                          <Select
-                            value={resourceForm.type}
-                            onValueChange={(v) => setResourceForm({ ...resourceForm, type: v as typeof resourceForm.type })}
-                            disabled={!!editingResource}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="PDF">PDF Document</SelectItem>
-                              <SelectItem value="VIDEO">Video</SelectItem>
-                              <SelectItem value="IMAGE">Image</SelectItem>
-                              <SelectItem value="DOCUMENT">Other Document</SelectItem>
-                              <SelectItem value="LINK">External Link</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>URL</Label>
-                          <Input
-                            value={resourceForm.url}
-                            onChange={(e) => setResourceForm({ ...resourceForm, url: e.target.value })}
-                            placeholder="https://example.com/file.pdf"
-                          />
-                        </div>
+
+                        {/* Upload mode toggle - only show when adding new resource */}
+                        {!editingResource && (
+                          <div className="space-y-2">
+                            <Label>Source</Label>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant={uploadMode === "file" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  setUploadMode("file");
+                                  setResourceForm({ ...resourceForm, url: "" });
+                                }}
+                              >
+                                <Upload className="h-4 w-4 mr-1" />
+                                Upload File
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={uploadMode === "url" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  setUploadMode("url");
+                                  setSelectedFile(null);
+                                }}
+                              >
+                                <Link2 className="h-4 w-4 mr-1" />
+                                Enter URL
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* File upload input */}
+                        {!editingResource && uploadMode === "file" && (
+                          <div className="space-y-2">
+                            <Label>File</Label>
+                            <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                              {selectedFile ? (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                    <span className="text-sm font-medium">{selectedFile.name}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                                  </p>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedFile(null)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              ) : (
+                                <label className="cursor-pointer">
+                                  <div className="space-y-2">
+                                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground">
+                                      Click to select a file
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      PDF, images, videos, or documents (max 50MB)
+                                    </p>
+                                  </div>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        if (file.size > 50 * 1024 * 1024) {
+                                          toast.error("File size must be less than 50MB");
+                                          return;
+                                        }
+                                        setSelectedFile(file);
+                                        // Auto-fill name if empty
+                                        if (!resourceForm.name) {
+                                          const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+                                          setResourceForm({ ...resourceForm, name: nameWithoutExt });
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              )}
+                            </div>
+                            {isUploading && (
+                              <div className="space-y-1">
+                                <div className="w-full bg-muted rounded-full h-2">
+                                  <div
+                                    className="bg-primary h-2 rounded-full transition-all"
+                                    style={{ width: `${uploadProgress}%` }}
+                                  />
+                                </div>
+                                <p className="text-xs text-muted-foreground text-center">
+                                  Uploading... {uploadProgress}%
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* URL input - show when in URL mode or editing */}
+                        {(uploadMode === "url" || editingResource) && (
+                          <>
+                            <div className="space-y-2">
+                              <Label>Type</Label>
+                              <Select
+                                value={resourceForm.type}
+                                onValueChange={(v) => setResourceForm({ ...resourceForm, type: v as typeof resourceForm.type })}
+                                disabled={!!editingResource}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="PDF">PDF Document</SelectItem>
+                                  <SelectItem value="VIDEO">Video</SelectItem>
+                                  <SelectItem value="IMAGE">Image</SelectItem>
+                                  <SelectItem value="DOCUMENT">Other Document</SelectItem>
+                                  <SelectItem value="LINK">External Link</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>URL</Label>
+                              <Input
+                                value={resourceForm.url}
+                                onChange={(e) => setResourceForm({ ...resourceForm, url: e.target.value })}
+                                placeholder="https://example.com/file.pdf"
+                              />
+                            </div>
+                          </>
+                        )}
                       </div>
                       <DialogFooter>
                         <Button
                           variant="outline"
                           onClick={() => setIsResourceDialogOpen(false)}
+                          disabled={isUploading}
                         >
                           Cancel
                         </Button>
                         <Button
                           onClick={editingResource ? handleUpdateResource : handleAddResource}
-                          disabled={!resourceForm.name || !resourceForm.url || isSubmitting}
+                          disabled={
+                            !resourceForm.name ||
+                            (uploadMode === "url" && !resourceForm.url && !editingResource) ||
+                            (uploadMode === "file" && !selectedFile && !editingResource) ||
+                            (editingResource && !resourceForm.url) ||
+                            isSubmitting ||
+                            isUploading
+                          }
                         >
-                          {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                          {editingResource ? "Update" : "Add"} Resource
+                          {(isSubmitting || isUploading) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          {isUploading ? "Uploading..." : `${editingResource ? "Update" : "Add"} Resource`}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
