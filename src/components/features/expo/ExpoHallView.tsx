@@ -15,7 +15,16 @@ import { ExpoBoothView } from "./ExpoBoothView";
 import { LeadFormData } from "./LeadCaptureForm";
 
 // Use event service URL for REST API calls (not the GraphQL gateway)
-const EVENT_SERVICE_URL = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || "http://localhost:8000/api/v1";
+// Ensure the URL ends with /api/v1
+const getEventServiceUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || "http://localhost:8000/api/v1";
+  // If URL doesn't end with /api/v1, append it
+  if (!baseUrl.endsWith("/api/v1")) {
+    return baseUrl.replace(/\/$/, "") + "/api/v1";
+  }
+  return baseUrl;
+};
+const EVENT_SERVICE_URL = getEventServiceUrl();
 
 export interface ExpoHallViewProps {
   eventId: string;
