@@ -50,6 +50,7 @@ import {
   MousePointerClick,
   Loader2,
   Radio,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -166,11 +167,17 @@ export default function BoothSettingsPage() {
     url: "",
   });
 
-  // File upload state
+  // File upload state (for resources)
   const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Branding upload state
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
 
   // CTA form state
   const [ctaForm, setCtaForm] = useState({
@@ -301,6 +308,13 @@ export default function BoothSettingsPage() {
           if (boothRes.ok) {
             const boothData = await boothRes.json();
             setExpoBooth(boothData.booth);
+            // Initialize branding URLs from booth data
+            if (boothData.booth?.logoUrl) {
+              setLogoUrl(boothData.booth.logoUrl);
+            }
+            if (boothData.booth?.bannerUrl) {
+              setBannerUrl(boothData.booth.bannerUrl);
+            }
           }
         } catch (boothErr) {
           console.log("No expo booth found for this sponsor (this is normal if expo hall not set up)");
@@ -410,6 +424,134 @@ export default function BoothSettingsPage() {
 
     // Return the public URL for the uploaded file
     return uploadData.public_url;
+  };
+
+  // Helper: Update booth branding via real-time service
+  const updateBoothBranding = async (updates: { logoUrl?: string; bannerUrl?: string }) => {
+    if (!expoBooth || !token || !activeSponsorId) return;
+
+    const response = await fetch(
+      `${REALTIME_API_URL}/api/expo/sponsor/${activeSponsorId}/booth`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to update booth branding");
+    }
+
+    return response.json();
+  };
+
+  // Handle logo upload
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeSponsorId || !token) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Logo file must be less than 5MB");
+      return;
+    }
+
+    setIsUploadingLogo(true);
+
+    try {
+      // Upload to S3
+      const uploadedUrl = await uploadFileToS3(file);
+
+      // Update booth with new logo URL
+      await updateBoothBranding({ logoUrl: uploadedUrl });
+
+      setLogoUrl(uploadedUrl);
+      toast.success("Logo uploaded successfully");
+    } catch (err) {
+      console.error("Error uploading logo:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to upload logo");
+    } finally {
+      setIsUploadingLogo(false);
+      // Reset the file input
+      e.target.value = "";
+    }
+  };
+
+  // Handle banner upload
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeSponsorId || !token) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 10MB for banners)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Banner file must be less than 10MB");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+
+    try {
+      // Upload to S3
+      const uploadedUrl = await uploadFileToS3(file);
+
+      // Update booth with new banner URL
+      await updateBoothBranding({ bannerUrl: uploadedUrl });
+
+      setBannerUrl(uploadedUrl);
+      toast.success("Banner uploaded successfully");
+    } catch (err) {
+      console.error("Error uploading banner:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to upload banner");
+    } finally {
+      setIsUploadingBanner(false);
+      // Reset the file input
+      e.target.value = "";
+    }
+  };
+
+  // Handle logo removal
+  const handleRemoveLogo = async () => {
+    if (!expoBooth || !token || !activeSponsorId) return;
+
+    try {
+      await updateBoothBranding({ logoUrl: "" });
+      setLogoUrl(null);
+      toast.success("Logo removed");
+    } catch (err) {
+      console.error("Error removing logo:", err);
+      toast.error("Failed to remove logo");
+    }
+  };
+
+  // Handle banner removal
+  const handleRemoveBanner = async () => {
+    if (!expoBooth || !token || !activeSponsorId) return;
+
+    try {
+      await updateBoothBranding({ bannerUrl: "" });
+      setBannerUrl(null);
+      toast.success("Banner removed");
+    } catch (err) {
+      console.error("Error removing banner:", err);
+      toast.error("Failed to remove banner");
+    }
   };
 
   // Resource management
@@ -878,43 +1020,148 @@ export default function BoothSettingsPage() {
                 Logo and visual assets for your booth
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+            <CardContent className="space-y-6">
+              {/* Logo Upload */}
+              <div className="space-y-3">
                 <Label>Company Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="h-24 w-24 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed overflow-hidden">
-                    {sponsor.company_logo_url ? (
-                      <img
-                        src={sponsor.company_logo_url}
-                        alt={sponsor.company_name}
-                        className="h-full w-full object-contain"
-                      />
+                <div className="flex items-start gap-4">
+                  <div className="relative h-24 w-24 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed overflow-hidden flex-shrink-0">
+                    {logoUrl || sponsor.company_logo_url ? (
+                      <>
+                        <img
+                          src={logoUrl || sponsor.company_logo_url}
+                          alt={sponsor.company_name}
+                          className="h-full w-full object-contain"
+                        />
+                        <button
+                          onClick={handleRemoveLogo}
+                          className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors"
+                          title="Remove logo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </>
                     ) : (
                       <Building2 className="h-8 w-8 text-muted-foreground" />
                     )}
+                    {isUploadingLogo && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Button variant="outline" size="sm">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Logo
-                    </Button>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={isUploadingLogo || !expoBooth}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isUploadingLogo || !expoBooth}
+                        className="pointer-events-none"
+                      >
+                        {isUploadingLogo ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="mr-2 h-4 w-4" />
+                        )}
+                        {isUploadingLogo ? "Uploading..." : "Upload Logo"}
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Recommended: 400x400px, PNG or SVG
+                      Recommended: 400x400px, PNG or SVG (max 5MB)
                     </p>
+                    {!expoBooth && (
+                      <p className="text-xs text-amber-600">
+                        Expo booth must be set up to upload branding
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
+
               <Separator />
-              <div className="space-y-2">
+
+              {/* Banner Upload */}
+              <div className="space-y-3">
                 <Label>Banner Image</Label>
-                <div className="h-32 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed">
-                  <div className="text-center">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Upload a banner image (1200x400px recommended)
-                    </p>
-                  </div>
+                <div className="relative">
+                  {bannerUrl ? (
+                    <div className="relative h-32 rounded-lg overflow-hidden border">
+                      <img
+                        src={bannerUrl}
+                        alt="Booth banner"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={handleRemoveBanner}
+                        className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors"
+                        title="Remove banner"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      {isUploadingBanner && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative h-32 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerUpload}
+                        disabled={isUploadingBanner || !expoBooth}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      {isUploadingBanner ? (
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      ) : (
+                        <div className="text-center pointer-events-none">
+                          <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {expoBooth
+                              ? "Click to upload banner (1200x400px recommended)"
+                              : "Expo booth must be set up first"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+                {bannerUrl && (
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerUpload}
+                      disabled={isUploadingBanner || !expoBooth}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isUploadingBanner || !expoBooth}
+                      className="pointer-events-none"
+                    >
+                      {isUploadingBanner ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      Change Banner
+                    </Button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 1200x400px, JPG or PNG (max 10MB)
+                </p>
               </div>
             </CardContent>
           </Card>
