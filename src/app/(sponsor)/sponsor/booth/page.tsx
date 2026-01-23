@@ -51,6 +51,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
 
@@ -138,11 +139,13 @@ const RESOURCE_TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function BoothSettingsPage() {
+  const router = useRouter();
   const { token } = useAuthStore();
-  const { activeSponsorId, activeSponsorName } = useSponsorStore();
+  const { activeSponsorId, activeSponsorName, clearSponsorContext } = useSponsorStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSponsorStale, setIsSponsorStale] = useState(false);
   const [sponsor, setSponsor] = useState<Sponsor | null>(null);
   const [stats, setStats] = useState<SponsorStats>({ total_leads: 0 });
   const [expoBooth, setExpoBooth] = useState<ExpoBooth | null>(null);
@@ -209,7 +212,9 @@ export default function BoothSettingsPage() {
         const currentSponsor = sponsors.find(s => s.id === activeSponsorId);
 
         if (!currentSponsor) {
-          throw new Error("Sponsor not found");
+          // The activeSponsorId is stale - sponsor no longer exists or user is no longer a rep
+          setIsSponsorStale(true);
+          throw new Error("The selected sponsor is no longer available. Please select a different sponsor.");
         }
 
         setSponsor(currentSponsor);
@@ -556,9 +561,12 @@ export default function BoothSettingsPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <h3 className="text-lg font-semibold mb-2">No Sponsor Selected</h3>
-            <p className="text-sm text-muted-foreground max-w-sm text-center">
+            <p className="text-sm text-muted-foreground max-w-sm text-center mb-4">
               Please select a sponsor event to manage booth settings.
             </p>
+            <Button onClick={() => router.push("/sponsor/select-event")}>
+              Select Sponsor
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -593,6 +601,11 @@ export default function BoothSettingsPage() {
   }
 
   if (error || !sponsor) {
+    const handleSelectNewSponsor = () => {
+      clearSponsorContext();
+      router.push("/sponsor/select-event");
+    };
+
     return (
       <div className="p-6">
         <Card className="border-destructive/50 bg-destructive/10">
@@ -602,14 +615,25 @@ export default function BoothSettingsPage() {
               <p className="font-medium text-destructive">Error loading booth settings</p>
               <p className="text-sm text-muted-foreground">{error || "No sponsor data available"}</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-auto"
-              onClick={() => window.location.reload()}
-            >
-              Retry
-            </Button>
+            <div className="ml-auto flex gap-2">
+              {isSponsorStale ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSelectNewSponsor}
+                >
+                  Select Sponsor
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
