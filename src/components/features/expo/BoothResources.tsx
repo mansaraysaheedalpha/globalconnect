@@ -65,34 +65,28 @@ export function BoothResources({
     setDownloadingId(resource.id);
 
     try {
-      // Get presigned URL if available
+      // Get presigned URL with Content-Disposition: attachment header
       let downloadUrl = resource.url;
       if (getDownloadUrl) {
         try {
           downloadUrl = await getDownloadUrl(resource.url, resource.name);
+          console.log("Got presigned download URL:", downloadUrl);
         } catch (error) {
           console.error("Failed to get download URL:", error);
           // Fall back to direct URL
         }
       }
 
-      // Fetch the file and create a blob URL for download
-      // This works reliably for cross-origin S3 presigned URLs
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error("Download failed");
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
+      // Create a hidden anchor element to trigger the download
+      // The presigned URL has Content-Disposition: attachment which tells
+      // the browser to download instead of display
       const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = resource.name;
+      link.href = downloadUrl;
+      link.setAttribute("download", resource.name);
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Clean up blob URL
-      URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Download failed:", error);
       // Fallback: open in new tab
