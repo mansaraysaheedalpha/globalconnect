@@ -252,7 +252,7 @@ export default function BoothSettingsPage() {
 
         // Fetch expo booth data from real-time service
         try {
-          const boothRes = await fetch(
+          let boothRes = await fetch(
             `${REALTIME_API_URL}/api/expo/sponsor/${activeSponsorId}/booth`,
             {
               headers: {
@@ -261,6 +261,35 @@ export default function BoothSettingsPage() {
               },
             }
           );
+
+          // If we get 403, try to self-repair booth access and retry
+          if (boothRes.status === 403) {
+            console.log("Got 403 on booth fetch, attempting to sync booth access...");
+            const syncRes = await fetch(
+              `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/sync-my-booth-access`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            if (syncRes.ok) {
+              console.log("Booth access synced, retrying booth fetch...");
+              // Retry the booth fetch after syncing
+              boothRes = await fetch(
+                `${REALTIME_API_URL}/api/expo/sponsor/${activeSponsorId}/booth`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+            }
+          }
 
           if (boothRes.ok) {
             const boothData = await boothRes.json();
