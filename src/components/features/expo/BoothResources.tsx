@@ -43,6 +43,29 @@ const RESOURCE_LABELS: Record<BoothResource["type"], string> = {
   OTHER: "Other",
 };
 
+// Extract file extension from URL
+const getExtensionFromUrl = (url: string): string => {
+  try {
+    const pathname = new URL(url).pathname;
+    const match = pathname.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+    return match ? `.${match[1].toLowerCase()}` : "";
+  } catch {
+    return "";
+  }
+};
+
+// Ensure filename has proper extension
+const getFilenameWithExtension = (name: string, url: string): string => {
+  // Check if name already has an extension
+  const hasExtension = /\.[a-zA-Z0-9]{2,5}$/.test(name);
+  if (hasExtension) {
+    return name;
+  }
+  // Extract extension from URL and append
+  const ext = getExtensionFromUrl(url);
+  return ext ? `${name}${ext}` : name;
+};
+
 export function BoothResources({
   resources,
   onDownload,
@@ -65,11 +88,14 @@ export function BoothResources({
     setDownloadingId(resource.id);
 
     try {
+      // Ensure filename has proper extension
+      const filename = getFilenameWithExtension(resource.name, resource.url);
+
       // Get presigned URL with Content-Disposition: attachment header
       let downloadUrl = resource.url;
       if (getDownloadUrl) {
         try {
-          downloadUrl = await getDownloadUrl(resource.url, resource.name);
+          downloadUrl = await getDownloadUrl(resource.url, filename);
           console.log("Got presigned download URL:", downloadUrl);
         } catch (error) {
           console.error("Failed to get download URL:", error);
@@ -82,7 +108,7 @@ export function BoothResources({
       // the browser to download instead of display
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.setAttribute("download", resource.name);
+      link.setAttribute("download", filename);
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
