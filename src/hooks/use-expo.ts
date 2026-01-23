@@ -112,7 +112,14 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     socketRef.current = newSocket;
 
     newSocket.on("connect", () => {
-      setState((prev) => ({ ...prev, isConnected: true, error: null }));
+      setState((prev) => {
+        // Re-join booth room if we were in one (handles reconnection)
+        if (prev.currentBooth) {
+          console.log("[Expo] Reconnected, re-joining booth:", prev.currentBooth.id);
+          newSocket.emit("expo.booth.join", { boothId: prev.currentBooth.id });
+        }
+        return { ...prev, isConnected: true, error: null };
+      });
       console.log("[Expo] Connected to server");
     });
 
@@ -181,14 +188,27 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
 
     // Listen for video call accepted
     newSocket.on("expo.booth.video.accepted", (data: BoothVideoSession & { attendeeToken: string }) => {
-      if (data.attendeeId === user?.id) {
-        console.log("[Expo] Video call accepted, connecting...");
-        playVideoAcceptedSound();
-        setState((prev) => ({
-          ...prev,
-          videoSession: { ...data, token: data.attendeeToken },
-        }));
-      }
+      console.log("[Expo] Video accepted event received:", {
+        dataAttendeeId: data.attendeeId,
+        userId: user?.id,
+        sessionId: data.id
+      });
+
+      // Check if this event is for us - match by attendeeId OR by pending session ID
+      setState((prev) => {
+        const isForMe = data.attendeeId === user?.id ||
+                        (prev.videoSession?.id === data.id && prev.videoSession?.status === "REQUESTED");
+
+        if (isForMe) {
+          console.log("[Expo] Video call accepted, connecting...");
+          playVideoAcceptedSound();
+          return {
+            ...prev,
+            videoSession: { ...data, token: data.attendeeToken },
+          };
+        }
+        return prev;
+      });
     });
 
     // Listen for video call declined
