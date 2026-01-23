@@ -13,6 +13,7 @@ import { ExpoBooth } from "./types";
 import { ExpoHallGrid } from "./ExpoHallGrid";
 import { ExpoBoothView } from "./ExpoBoothView";
 import { LeadFormData } from "./LeadCaptureForm";
+import { VideoCallOverlay } from "./VideoCallOverlay";
 
 // Use event service URL for REST API calls (not the GraphQL gateway)
 // Ensure the URL ends with /api/v1
@@ -33,6 +34,7 @@ export interface ExpoHallViewProps {
 
 export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   const [selectedBooth, setSelectedBooth] = useState<ExpoBooth | null>(null);
+  const [videoCallBooth, setVideoCallBooth] = useState<ExpoBooth | null>(null);
   const [isRequestingVideo, setIsRequestingVideo] = useState(false);
   const { token } = useAuthStore();
 
@@ -88,6 +90,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   const handleRequestVideo = useCallback(async () => {
     if (!selectedBooth) return;
     setIsRequestingVideo(true);
+    setVideoCallBooth(selectedBooth);
     try {
       await requestVideoCall(selectedBooth.id);
     } finally {
@@ -98,11 +101,13 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   // Handle video cancel
   const handleCancelVideo = useCallback(async () => {
     await cancelVideoRequest();
+    setVideoCallBooth(null);
   }, [cancelVideoRequest]);
 
   // Handle video end
   const handleEndVideo = useCallback(async () => {
     await endVideoCall();
+    setVideoCallBooth(null);
   }, [endVideoCall]);
 
   // Handle resource download
@@ -288,12 +293,12 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
       </div>
 
       {/* Booth detail view */}
-      {selectedBooth && (
+      {selectedBooth && !videoSession && (
         <ExpoBoothView
           booth={selectedBooth}
           eventId={eventId}
-          videoSession={videoSession}
-          isOpen={!!selectedBooth}
+          videoSession={null}
+          isOpen={!!selectedBooth && !videoSession}
           onClose={handleBoothClose}
           onRequestVideo={handleRequestVideo}
           onCancelVideoRequest={handleCancelVideo}
@@ -306,6 +311,20 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
             ? `${user.first_name} ${user.last_name}`
             : user?.email || "Attendee"}
           getDownloadUrl={getDownloadUrl}
+        />
+      )}
+
+      {/* Full-screen video call overlay */}
+      {videoSession && videoCallBooth && (
+        <VideoCallOverlay
+          session={videoSession}
+          booth={videoCallBooth}
+          userName={user?.first_name && user?.last_name
+            ? `${user.first_name} ${user.last_name}`
+            : user?.email || "Attendee"}
+          isStaff={false}
+          onEnd={handleEndVideo}
+          onCancel={handleCancelVideo}
         />
       )}
     </div>

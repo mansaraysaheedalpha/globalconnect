@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+// Note: BoothVideoSession type kept for API compatibility, but video is now rendered via VideoCallOverlay
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -31,7 +32,6 @@ import { BoothChat } from "./BoothChat";
 import { BoothResources } from "./BoothResources";
 import { BoothStaffStatus } from "./BoothStaffStatus";
 import { LeadCaptureForm, LeadFormData } from "./LeadCaptureForm";
-import { BoothVideoCall } from "./BoothVideoCall";
 
 export interface ExpoBoothViewProps {
   booth: ExpoBooth;
@@ -72,15 +72,6 @@ export function ExpoBoothView({
   const tierConfig = BOOTH_TIER_CONFIG[booth.tier];
   const hasOnlineStaff = booth.staffPresence.some((s) => s.status === "ONLINE");
   const visitorCount = booth._count.visits;
-
-  // Check if video call is ready to connect (has token and room URL)
-  const isVideoCallReady = videoSession &&
-    videoSession.token &&
-    videoSession.videoRoomUrl &&
-    (videoSession.status === "ACCEPTED" || videoSession.status === "ACTIVE");
-
-  // Check if video is in waiting state (requested but not yet accepted)
-  const isVideoWaiting = videoSession && videoSession.status === "REQUESTED";
 
   // Handle CTA click
   const handleCtaClick = (cta: BoothCta) => {
@@ -234,70 +225,33 @@ export function ExpoBoothView({
 
                 {/* Video call section */}
                 {booth.videoEnabled && (
-                  <>
-                    {/* Active video call - render full video component */}
-                    {isVideoCallReady && videoSession && (
-                      <div className="rounded-lg border overflow-hidden">
-                        <div className="bg-muted px-4 py-2 border-b flex items-center justify-between">
-                          <h4 className="font-medium flex items-center gap-2">
-                            <Video className="h-4 w-4 text-green-500" />
-                            Video Call with {videoSession.staffName || "Staff"}
-                          </h4>
-                          <Badge variant="secondary" className="bg-green-100 text-green-700">
-                            Connected
-                          </Badge>
-                        </div>
-                        <BoothVideoCall
-                          session={videoSession}
-                          userName={userName}
-                          isStaff={false}
-                          onEnd={onEndVideoCall}
-                        />
+                  <div className="p-4 rounded-lg border bg-muted/50">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Video Call with Staff
+                        </h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {hasOnlineStaff
+                            ? "Staff members are available for a live video chat"
+                            : "No staff currently available. Try again later."}
+                        </p>
                       </div>
-                    )}
-
-                    {/* Waiting for staff to accept */}
-                    {isVideoWaiting && videoSession && (
-                      <div className="rounded-lg border overflow-hidden">
-                        <BoothVideoCall
-                          session={videoSession}
-                          userName={userName}
-                          isStaff={false}
-                          onEnd={onCancelVideoRequest}
-                        />
-                      </div>
-                    )}
-
-                    {/* No active session - show request button */}
-                    {!videoSession && (
-                      <div className="p-4 rounded-lg border bg-muted/50">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h4 className="font-medium flex items-center gap-2">
-                              <Video className="h-4 w-4" />
-                              Request a Video Call
-                            </h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {hasOnlineStaff
-                                ? "Staff members are available for a video chat"
-                                : "No staff currently available. Try again later."}
-                            </p>
-                          </div>
-                          <Button
-                            onClick={onRequestVideo}
-                            disabled={!hasOnlineStaff || isRequestingVideo}
-                          >
-                            {isRequestingVideo ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : (
-                              <Phone className="h-4 w-4 mr-2" />
-                            )}
-                            Request Call
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                      <Button
+                        onClick={onRequestVideo}
+                        disabled={!hasOnlineStaff || isRequestingVideo}
+                        size="lg"
+                      >
+                        {isRequestingVideo ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Phone className="h-4 w-4 mr-2" />
+                        )}
+                        {isRequestingVideo ? "Requesting..." : "Start Video Call"}
+                      </Button>
+                    </div>
+                  </div>
                 )}
 
                 {/* CTA Buttons */}

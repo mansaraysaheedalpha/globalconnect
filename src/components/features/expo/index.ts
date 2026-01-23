@@ -8,6 +8,7 @@ export * from "./BoothChat";
 export * from "./BoothResources";
 export * from "./BoothStaffStatus";
 export * from "./BoothVideoCall";
+export * from "./VideoCallOverlay";
 export * from "./LeadCaptureForm";
 export * from "./SponsorDashboard";
 export * from "./ExpoBoothManagement";
