@@ -129,7 +129,7 @@ export function ExpoHallGrid({
     showOnlineOnly;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Search and filters bar */}
       <div className="flex flex-col gap-3 p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         {/* Search row */}

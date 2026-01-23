@@ -33,7 +33,7 @@ export default function AttendeeExpoHallPage() {
       </div>
 
       {/* Expo Hall Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <ExpoHallView eventId={eventId} className="h-full" />
       </div>
     </PageTransition>

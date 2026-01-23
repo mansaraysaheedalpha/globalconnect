@@ -227,7 +227,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
       )}
 
       {/* Booth grid */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <ExpoHallGrid
           booths={booths}
           categories={categories}

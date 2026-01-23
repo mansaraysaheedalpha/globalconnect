@@ -97,6 +97,17 @@ export default function ExpoManagementPage() {
     categories: "",
   });
 
+  // Create booth dialog
+  const [showCreateBooth, setShowCreateBooth] = useState(false);
+  const [isCreatingBooth, setIsCreatingBooth] = useState(false);
+  const [boothForm, setBoothForm] = useState({
+    name: "",
+    tagline: "",
+    description: "",
+    tier: "BRONZE",
+    category: "",
+  });
+
   // Fetch expo hall data
   useEffect(() => {
     if (!socket || !isConnected || !eventId) return;
@@ -192,6 +203,42 @@ export default function ExpoManagementPage() {
           toast.success(`Expo hall ${response.hall.isActive ? "activated" : "deactivated"}`);
         } else {
           toast.error(response.error || "Failed to update expo hall");
+        }
+      }
+    );
+  };
+
+  // Create booth
+  const handleCreateBooth = async () => {
+    if (!socket || !hall || !boothForm.name.trim()) return;
+
+    setIsCreatingBooth(true);
+
+    socket.emit(
+      "expo.booth.create",
+      {
+        hallId: hall.id,
+        name: boothForm.name.trim(),
+        tagline: boothForm.tagline.trim() || undefined,
+        description: boothForm.description.trim() || undefined,
+        tier: boothForm.tier,
+        category: boothForm.category.trim() || undefined,
+      },
+      (response: any) => {
+        setIsCreatingBooth(false);
+        if (response.success) {
+          setBooths((prev) => [...prev, response.booth]);
+          setShowCreateBooth(false);
+          setBoothForm({
+            name: "",
+            tagline: "",
+            description: "",
+            tier: "BRONZE",
+            category: "",
+          });
+          toast.success("Booth created successfully");
+        } else {
+          toast.error(response.error || "Failed to create booth");
         }
       }
     );
@@ -384,19 +431,105 @@ export default function ExpoManagementPage() {
         </TabsList>
 
         <TabsContent value="booths" className="space-y-4">
+          <div className="flex justify-end">
+            <Dialog open={showCreateBooth} onOpenChange={setShowCreateBooth}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Booth
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Booth</DialogTitle>
+                  <DialogDescription>
+                    Add a new sponsor booth to the expo hall.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="booth-name">Booth Name</Label>
+                    <Input
+                      id="booth-name"
+                      placeholder="e.g., Acme Corp"
+                      value={boothForm.name}
+                      onChange={(e) => setBoothForm({ ...boothForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="booth-tagline">Tagline</Label>
+                    <Input
+                      id="booth-tagline"
+                      placeholder="e.g., Building the future of tech"
+                      value={boothForm.tagline}
+                      onChange={(e) => setBoothForm({ ...boothForm, tagline: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="booth-description">Description</Label>
+                    <Textarea
+                      id="booth-description"
+                      placeholder="Brief description of the company..."
+                      value={boothForm.description}
+                      onChange={(e) => setBoothForm({ ...boothForm, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="booth-tier">Tier</Label>
+                      <select
+                        id="booth-tier"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={boothForm.tier}
+                        onChange={(e) => setBoothForm({ ...boothForm, tier: e.target.value })}
+                      >
+                        <option value="BRONZE">Bronze</option>
+                        <option value="SILVER">Silver</option>
+                        <option value="GOLD">Gold</option>
+                        <option value="PLATINUM">Platinum</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="booth-category">Category</Label>
+                      <Input
+                        id="booth-category"
+                        placeholder="e.g., Technology"
+                        value={boothForm.category}
+                        onChange={(e) => setBoothForm({ ...boothForm, category: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowCreateBooth(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateBooth} disabled={isCreatingBooth || !boothForm.name.trim()}>
+                    {isCreatingBooth ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Booth"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
           {booths.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Building2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Booths Yet</h3>
-                <p className="text-sm text-muted-foreground text-center max-w-sm">
-                  Sponsor booths will appear here once sponsors are assigned to this event.
-                  Go to the Sponsors page to invite and assign sponsors.
+                <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
+                  Create booths for sponsors to showcase their products and services.
                 </p>
-                <Button variant="outline" className="mt-4" asChild>
-                  <a href={`/dashboard/events/${eventId}/sponsors`}>
-                    Manage Sponsors
-                  </a>
+                <Button onClick={() => setShowCreateBooth(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Your First Booth
                 </Button>
               </CardContent>
             </Card>

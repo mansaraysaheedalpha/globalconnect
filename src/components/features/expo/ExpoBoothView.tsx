@@ -183,7 +183,7 @@ export function ExpoBoothView({
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="flex-1 flex flex-col overflow-hidden"
+            className="flex-1 flex flex-col min-h-0"
           >
             <TabsList className="mx-6 mt-4 grid grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
