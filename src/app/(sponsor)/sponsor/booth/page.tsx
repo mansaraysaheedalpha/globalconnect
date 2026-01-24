@@ -53,6 +53,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
+import { useExpoStaffContext } from "@/providers/expo-staff-provider";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 const REALTIME_API_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
@@ -141,6 +142,7 @@ export default function BoothSettingsPage() {
   const router = useRouter();
   const { token } = useAuthStore();
   const { activeSponsorId, activeSponsorName, clearSponsorContext } = useSponsorStore();
+  const { isLive, goLive, goOffline, isLoading: isGoingLive, boothId } = useExpoStaffContext();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -904,14 +906,47 @@ export default function BoothSettingsPage() {
         <div className="flex gap-2">
           {expoBooth?.expoHall && (
             <>
-              <Button
-                variant="default"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => router.push("/sponsor/booth/live")}
-              >
-                <Radio className="mr-2 h-4 w-4" />
-                Go Live
-              </Button>
+              {isLive ? (
+                <>
+                  <Button
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => router.push("/sponsor/booth/live")}
+                  >
+                    <Radio className="mr-2 h-4 w-4 animate-pulse" />
+                    View Dashboard
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={goOffline}
+                    disabled={isGoingLive}
+                  >
+                    {isGoingLive ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Radio className="mr-2 h-4 w-4" />
+                    )}
+                    Go Offline
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={async () => {
+                    await goLive();
+                    router.push("/sponsor/booth/live");
+                  }}
+                  disabled={isGoingLive}
+                >
+                  {isGoingLive ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Radio className="mr-2 h-4 w-4" />
+                  )}
+                  Go Live
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => window.open(`/attendee/events/${expoBooth.expoHall?.eventId}/expo`, "_blank")}

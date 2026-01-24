@@ -15,16 +15,18 @@ import {
   Star,
   ChevronDown,
   RefreshCw,
+  Radio,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSponsorStore } from "@/store/sponsor.store";
+import { useExpoStaffContext } from "@/providers/expo-staff-provider";
 
 interface SponsorSidebarProps {
   className?: string;
 }
 
-const navItems = [
+const getNavItems = (boothId: string | null, isLive: boolean) => [
   {
     label: "Dashboard",
     href: "/sponsor",
@@ -66,6 +68,14 @@ const navItems = [
     href: "/sponsor/booth",
     icon: Building2,
   },
+  // Show Booth Dashboard only if booth exists
+  ...(boothId ? [{
+    label: "Booth Dashboard",
+    href: "/sponsor/booth/live",
+    icon: Radio,
+    showLiveIndicator: true,
+    isLive,
+  }] : []),
   {
     label: "Settings",
     href: "/sponsor/settings",
@@ -76,7 +86,10 @@ const navItems = [
 export function SponsorSidebar({ className }: SponsorSidebarProps) {
   const pathname = usePathname();
   const { activeSponsorName, sponsors } = useSponsorStore();
+  const { boothId, isLive } = useExpoStaffContext();
   const hasMultipleSponsors = sponsors.length > 1;
+
+  const navItems = getNavItems(boothId, isLive);
 
   return (
     <aside
@@ -142,6 +155,21 @@ export function SponsorSidebar({ className }: SponsorSidebarProps) {
                 >
                   {item.badge}
                 </Badge>
+              )}
+              {(item as { showLiveIndicator?: boolean; isLive?: boolean }).showLiveIndicator && (
+                <div className="flex items-center gap-1">
+                  <div
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      (item as { isLive?: boolean }).isLive
+                        ? "bg-green-500 animate-pulse"
+                        : "bg-gray-400"
+                    )}
+                  />
+                  {(item as { isLive?: boolean }).isLive && (
+                    <span className="text-xs text-green-500">Live</span>
+                  )}
+                </div>
               )}
             </Link>
           );
