@@ -142,7 +142,7 @@ export default function BoothSettingsPage() {
   const router = useRouter();
   const { token } = useAuthStore();
   const { activeSponsorId, activeSponsorName, clearSponsorContext } = useSponsorStore();
-  const { isLive, goLive, goOffline, isLoading: isGoingLive, boothId, isFetchingBooth, boothFetchError } = useExpoStaffContext();
+  const { isLive, goLive, goOffline, isLoading: isGoingLive, boothId, isFetchingBooth, boothFetchError, isSocketConnected } = useExpoStaffContext();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -947,6 +947,16 @@ export default function BoothSettingsPage() {
                     Go Offline
                   </Button>
                 </>
+              ) : !isSocketConnected && boothId ? (
+                <Button
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled
+                  title="Connecting to live session..."
+                >
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </Button>
               ) : (
                 <Button
                   variant="default"
@@ -959,7 +969,7 @@ export default function BoothSettingsPage() {
                       toast.error(error instanceof Error ? error.message : "Failed to go live");
                     }
                   }}
-                  disabled={isGoingLive || !boothId}
+                  disabled={isGoingLive || !boothId || !isSocketConnected}
                 >
                   {isGoingLive ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

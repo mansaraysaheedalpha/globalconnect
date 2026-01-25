@@ -16,6 +16,7 @@ interface ExpoStaffContextType {
   isLoading: boolean;
   isFetchingBooth: boolean;
   boothFetchError: string | null;
+  isSocketConnected: boolean;
 }
 
 const ExpoStaffContext = createContext<ExpoStaffContextType | null>(null);
@@ -32,6 +33,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
   const [isFetchingBooth, setIsFetchingBooth] = useState(false);
   const [boothFetchError, setBoothFetchError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   // Fetch booth data when sponsor is selected
@@ -139,10 +141,13 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
   // Initialize socket connection when booth data is available
   useEffect(() => {
     if (!token || !boothData?.boothId || !boothData?.eventId) {
+      setIsSocketConnected(false);
       return;
     }
 
     const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
+
+    console.log("[ExpoStaffProvider] Initializing socket connection to:", REALTIME_URL);
 
     const socket = io(REALTIME_URL, {
       auth: { token: `Bearer ${token}` },
@@ -156,33 +161,56 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("[ExpoStaffProvider] Socket connected");
+      console.log("[ExpoStaffProvider] Socket connected, ID:", socket.id);
+      setIsSocketConnected(true);
     });
 
     socket.on("disconnect", () => {
       console.log("[ExpoStaffProvider] Socket disconnected");
+      setIsSocketConnected(false);
       setIsLive(false);
     });
 
+    socket.on("connect_error", (error) => {
+      console.error("[ExpoStaffProvider] Socket connection error:", error);
+      setIsSocketConnected(false);
+    });
+
     return () => {
+      console.log("[ExpoStaffProvider] Cleaning up socket connection");
       socket.disconnect();
       socketRef.current = null;
+      setIsSocketConnected(false);
     };
   }, [token, boothData?.boothId, boothData?.eventId]);
 
   const goLive = useCallback(async () => {
     if (!socketRef.current || !boothData) {
       console.error("[ExpoStaffProvider] Socket or booth data not available");
-      return;
+      throw new Error("Socket or booth data not available");
+    }
+
+    if (!socketRef.current.connected) {
+      console.error("[ExpoStaffProvider] Socket is not connected");
+      throw new Error("Connection not ready. Please wait a moment and try again.");
     }
 
     setIsLoading(true);
     try {
+      console.log("[ExpoStaffProvider] Emitting expo.booth.staff.join for booth:", boothData.boothId);
+
       await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Request timed out. Please try again."));
+        }, 10000); // 10 second timeout
+
         socketRef.current!.emit(
           "expo.booth.staff.join",
           { boothId: boothData.boothId },
           (response: { success: boolean; error?: string }) => {
+            clearTimeout(timeout);
+            console.log("[ExpoStaffProvider] Got response from expo.booth.staff.join:", response);
+
             if (response.success) {
               setIsLive(true);
               resolve(response);
@@ -192,6 +220,8 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
           }
         );
       });
+
+      console.log("[ExpoStaffProvider] Successfully went live");
     } catch (error) {
       console.error("[ExpoStaffProvider] Failed to go live:", error);
       throw error;
@@ -241,6 +271,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isFetchingBooth,
         boothFetchError,
+        isSocketConnected,
       }}
     >
       {children}
