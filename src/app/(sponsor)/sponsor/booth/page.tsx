@@ -142,7 +142,7 @@ export default function BoothSettingsPage() {
   const router = useRouter();
   const { token } = useAuthStore();
   const { activeSponsorId, activeSponsorName, clearSponsorContext } = useSponsorStore();
-  const { isLive, goLive, goOffline, isLoading: isGoingLive, boothId } = useExpoStaffContext();
+  const { isLive, goLive, goOffline, isLoading: isGoingLive, boothId, isFetchingBooth, boothFetchError } = useExpoStaffContext();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -906,7 +906,25 @@ export default function BoothSettingsPage() {
         <div className="flex gap-2">
           {expoBooth?.expoHall && (
             <>
-              {isLive ? (
+              {isFetchingBooth ? (
+                <Button
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled
+                >
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading Booth...
+                </Button>
+              ) : boothFetchError ? (
+                <Button
+                  variant="destructive"
+                  disabled
+                  title={boothFetchError}
+                >
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Booth Error
+                </Button>
+              ) : isLive ? (
                 <>
                   <Button
                     variant="default"
@@ -934,10 +952,14 @@ export default function BoothSettingsPage() {
                   variant="default"
                   className="bg-green-600 hover:bg-green-700"
                   onClick={async () => {
-                    await goLive();
-                    router.push("/sponsor/booth/live");
+                    try {
+                      await goLive();
+                      router.push("/sponsor/booth/live");
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Failed to go live");
+                    }
                   }}
-                  disabled={isGoingLive}
+                  disabled={isGoingLive || !boothId}
                 >
                   {isGoingLive ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

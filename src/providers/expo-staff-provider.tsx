@@ -14,6 +14,8 @@ interface ExpoStaffContextType {
   goLive: () => Promise<void>;
   goOffline: () => Promise<void>;
   isLoading: boolean;
+  isFetchingBooth: boolean;
+  boothFetchError: string | null;
 }
 
 const ExpoStaffContext = createContext<ExpoStaffContextType | null>(null);
@@ -27,21 +29,31 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
     eventId: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingBooth, setIsFetchingBooth] = useState(false);
+  const [boothFetchError, setBoothFetchError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   // Fetch booth data when sponsor is selected
   useEffect(() => {
+    console.log("[ExpoStaffProvider] Effect running with:", { token: !!token, activeSponsorId });
+
     if (!token || !activeSponsorId) {
+      console.log("[ExpoStaffProvider] Missing token or activeSponsorId, skipping fetch");
       setBoothData(null);
+      setBoothFetchError(null);
       setIsLive(false);
       return;
     }
 
     const fetchBoothData = async () => {
+      console.log("[ExpoStaffProvider] Fetching booth data for sponsor:", activeSponsorId);
+      setIsFetchingBooth(true);
+      setBoothFetchError(null);
+
       try {
         const REALTIME_SERVICE_URL = process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002";
-        const response = await fetch(
+        let response = await fetch(
           `${REALTIME_SERVICE_URL}/api/expo/sponsor/${activeSponsorId}/booth`,
           {
             headers: {
@@ -50,11 +62,43 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
           }
         );
 
+        console.log("[ExpoStaffProvider] Booth API response status:", response.status);
+
+        // Handle 403 - try to sync booth access and retry
+        if (response.status === 403) {
+          console.log("[ExpoStaffProvider] Got 403, attempting to sync booth access...");
+          const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
+          const syncResponse = await fetch(
+            `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/sync-my-booth-access`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (syncResponse.ok) {
+            console.log("[ExpoStaffProvider] Booth access synced, retrying fetch...");
+            // Retry the booth fetch
+            response = await fetch(
+              `${REALTIME_SERVICE_URL}/api/expo/sponsor/${activeSponsorId}/booth`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            console.log("[ExpoStaffProvider] Retry response status:", response.status);
+          }
+        }
+
         if (response.ok) {
           const data = await response.json();
-          console.log("[ExpoStaffProvider] Booth API response:", data);
+          console.log("[ExpoStaffProvider] Booth API response data:", data);
           const { booth } = data;
-          if (booth) {
+
+          if (booth && booth.id) {
             console.log("[ExpoStaffProvider] Setting booth data:", {
               boothId: booth.id,
               boothName: booth.name,
@@ -65,26 +109,27 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
               boothName: booth.name,
               eventId: booth.expoHall?.eventId,
             });
+            setBoothFetchError(null);
           } else {
-            console.error("[ExpoStaffProvider] No booth in response:", data);
+            console.error("[ExpoStaffProvider] No valid booth in response:", data);
+            setBoothFetchError("No booth data found in response");
+            setBoothData(null);
           }
-        } else if (response.status === 403) {
-          // Try to sync booth access
-          const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
-          await fetch(
-            `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/sync-my-booth-access`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          // Retry fetch after sync
-          fetchBoothData();
+        } else {
+          // Handle other error statuses
+          const errorMessage = response.status === 404
+            ? "No expo booth found for this sponsor"
+            : `Failed to fetch booth data (${response.status})`;
+          console.error("[ExpoStaffProvider] API error:", errorMessage);
+          setBoothFetchError(errorMessage);
+          setBoothData(null);
         }
       } catch (error) {
         console.error("[ExpoStaffProvider] Failed to fetch booth data:", error);
+        setBoothFetchError(error instanceof Error ? error.message : "Network error");
+        setBoothData(null);
+      } finally {
+        setIsFetchingBooth(false);
       }
     };
 
@@ -194,6 +239,8 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
         goLive,
         goOffline,
         isLoading,
+        isFetchingBooth,
+        boothFetchError,
       }}
     >
       {children}
