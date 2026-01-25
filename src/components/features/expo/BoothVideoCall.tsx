@@ -106,7 +106,22 @@ export function BoothVideoCall({
 
   // Join the call when session has video URL
   useEffect(() => {
+    console.log("[BoothVideoCall] useEffect triggered with session:", {
+      hasVideoRoomUrl: !!session.videoRoomUrl,
+      hasToken: !!session.token,
+      isJoined,
+      hasCallObject: !!callObject,
+      videoRoomUrl: session.videoRoomUrl,
+      tokenLength: session.token?.length,
+    });
+
     if (!session.videoRoomUrl || !session.token || isJoined || callObject) {
+      console.log("[BoothVideoCall] Skipping call initialization:", {
+        missingVideoRoomUrl: !session.videoRoomUrl,
+        missingToken: !session.token,
+        alreadyJoined: isJoined,
+        alreadyHasCallObject: !!callObject,
+      });
       return;
     }
 
@@ -133,49 +148,69 @@ export function BoothVideoCall({
     };
 
     const initializeCall = async () => {
-      if (!window.DailyIframe || !session.videoRoomUrl || !session.token) return;
+      console.log("[BoothVideoCall] initializeCall starting...");
+      if (!window.DailyIframe || !session.videoRoomUrl || !session.token) {
+        console.log("[BoothVideoCall] initializeCall aborted - missing dependencies:", {
+          hasDailyIframe: !!window.DailyIframe,
+          hasVideoRoomUrl: !!session.videoRoomUrl,
+          hasToken: !!session.token,
+        });
+        return;
+      }
 
       setIsJoining(true);
       setError(null);
 
       try {
+        console.log("[BoothVideoCall] Creating call object...");
         const call = window.DailyIframe.createCallObject();
 
         // Set up event handlers
         call.on("joined-meeting", () => {
+          console.log("[BoothVideoCall] joined-meeting event received");
           setIsJoined(true);
           setIsJoining(false);
           updateParticipants(call);
         });
 
         call.on("left-meeting", () => {
+          console.log("[BoothVideoCall] left-meeting event received");
           setIsJoined(false);
           onEnd();
         });
 
         call.on("participant-joined", () => {
+          console.log("[BoothVideoCall] participant-joined event received");
           updateParticipants(call);
         });
 
         call.on("participant-left", () => {
+          console.log("[BoothVideoCall] participant-left event received");
           updateParticipants(call);
         });
 
         call.on("participant-updated", () => {
+          console.log("[BoothVideoCall] participant-updated event received");
           updateParticipants(call);
         });
 
         call.on("error", (e) => {
-          console.error("[Video] Error:", e);
+          console.error("[BoothVideoCall] Daily error event:", e);
           setError("Video call error occurred");
         });
 
         // Join the call
+        console.log("[BoothVideoCall] Joining call with:", {
+          url: session.videoRoomUrl,
+          hasToken: !!session.token,
+          userName,
+        });
         await call.join({
           url: session.videoRoomUrl,
           token: session.token,
           userName,
         });
+        console.log("[BoothVideoCall] Join call completed successfully");
 
         callObjectRef.current = call;
         setCallObject(call);
