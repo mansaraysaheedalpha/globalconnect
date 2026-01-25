@@ -51,12 +51,14 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
         );
 
         if (response.ok) {
-          const booth = await response.json();
-          setBoothData({
-            boothId: booth.id,
-            boothName: booth.name,
-            eventId: booth.expoHall?.eventId,
-          });
+          const { booth } = await response.json();
+          if (booth) {
+            setBoothData({
+              boothId: booth.id,
+              boothName: booth.name,
+              eventId: booth.expoHall?.eventId,
+            });
+          }
         } else if (response.status === 403) {
           // Try to sync booth access
           const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
