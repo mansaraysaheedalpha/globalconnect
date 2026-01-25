@@ -1507,8 +1507,6 @@ export default function BoothSettingsPage() {
                     </DialogContent>
                   </Dialog>
                 </div>
-              </CardHeader>
-              <CardContent>
                 {expoBooth.resources?.length > 0 ? (
                   <div className="space-y-2">
                     {expoBooth.resources.map((resource) => (
