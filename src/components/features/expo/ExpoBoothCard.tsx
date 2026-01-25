@@ -27,7 +27,8 @@ export const ExpoBoothCard = memo(function ExpoBoothCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-lg group overflow-hidden",
+        "cursor-pointer transition-all duration-200 hover:shadow-lg group overflow-hidden touch-manipulation",
+        "active:scale-[0.98] active:shadow-md",
         tierConfig.borderColor,
         "border-2",
         isSelected && "ring-2 ring-primary ring-offset-2",

@@ -127,7 +127,7 @@ export const useExpoStaff = ({
     }
 
     const realtimeUrl =
-      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+      `${process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002"}/events`;
 
     const newSocket = io(realtimeUrl, {
       auth: { token: `Bearer ${token}` },
@@ -140,9 +140,91 @@ export const useExpoStaff = ({
 
     socketRef.current = newSocket;
 
-    newSocket.on("connect", () => {
-      setState((prev) => ({ ...prev, isConnected: true, error: null }));
+    newSocket.on("connect", async () => {
       console.log("[ExpoStaff] Connected to server");
+      setState((prev) => ({ ...prev, isConnected: true, error: null }));
+
+      // Auto-join as staff to receive visitor and lead events
+      try {
+        const response = await new Promise<{ success: boolean; pendingRequests?: VideoRequest[] }>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error("Join timeout")), 10000);
+
+          newSocket.emit("expo.booth.staff.join", { boothId }, (response: { success: boolean; pendingRequests?: VideoRequest[] }) => {
+            clearTimeout(timeout);
+            if (response.success) {
+              resolve(response);
+            } else {
+              reject(new Error("Failed to join as staff"));
+            }
+          });
+        });
+
+        setState((prev) => ({
+          ...prev,
+          pendingVideoRequests: response.pendingRequests || [],
+          myStatus: "ONLINE",
+        }));
+
+        console.log("[ExpoStaff] Joined as staff successfully");
+
+        // Fetch initial analytics with visitors list and leads
+        try {
+          const [analyticsResponse, leadsResponse] = await Promise.all([
+            new Promise<{ success: boolean; stats?: any }>((resolve, reject) => {
+              const timeout = setTimeout(() => reject(new Error("Analytics timeout")), 10000);
+
+              newSocket.emit("expo.booth.analytics", { boothId }, (response: { success: boolean; stats?: any }) => {
+                clearTimeout(timeout);
+                if (response.success) {
+                  resolve(response);
+                } else {
+                  reject(new Error("Failed to fetch analytics"));
+                }
+              });
+            }),
+            new Promise<{ success: boolean; leads?: LeadCapture[] }>((resolve, reject) => {
+              const timeout = setTimeout(() => reject(new Error("Leads timeout")), 10000);
+
+              newSocket.emit("expo.booth.leads", { boothId, limit: 50 }, (response: { success: boolean; leads?: LeadCapture[] }) => {
+                clearTimeout(timeout);
+                if (response.success) {
+                  resolve(response);
+                } else {
+                  reject(new Error("Failed to fetch leads"));
+                }
+              });
+            }),
+          ]);
+
+          const updates: Partial<ExpoStaffState> = {};
+
+          if (analyticsResponse.stats) {
+            const stats = analyticsResponse.stats;
+            const visitors = stats.visitors || [];
+
+            updates.analytics = stats;
+            updates.currentVisitors = visitors.map((v: any) => ({
+              visitorId: v.userId,
+              visitorName: v.userId, // Will be populated from real-time events
+              visitId: v.userId,
+              enteredAt: v.enteredAt,
+            }));
+
+            console.log("[ExpoStaff] Fetched initial analytics and visitors:", visitors.length);
+          }
+
+          if (leadsResponse.leads) {
+            updates.recentLeads = leadsResponse.leads;
+            console.log("[ExpoStaff] Fetched initial leads:", leadsResponse.leads.length);
+          }
+
+          setState((prev) => ({ ...prev, ...updates }));
+        } catch (error) {
+          console.error("[ExpoStaff] Failed to fetch initial data:", error);
+        }
+      } catch (error) {
+        console.error("[ExpoStaff] Failed to join as staff:", error);
+      }
     });
 
     newSocket.on("disconnect", () => {
@@ -447,12 +529,8 @@ export const useExpoStaff = ({
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
-  // Auto-join when connected
-  useEffect(() => {
-    if (state.isConnected && state.myStatus === "OFFLINE") {
-      joinAsStaff();
-    }
-  }, [state.isConnected, state.myStatus, joinAsStaff]);
+  // Note: Auto-join is now handled in the socket connect event handler
+  // to ensure staff room is joined and initial data is fetched immediately
 
   // Periodic analytics refresh
   useEffect(() => {

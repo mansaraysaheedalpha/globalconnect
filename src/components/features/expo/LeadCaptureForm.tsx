@@ -109,7 +109,8 @@ export function LeadCaptureForm({
     </div>
   ) : (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      {/* Name and Email - stack on mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">
             Name <span className="text-red-500">*</span>
@@ -120,6 +121,7 @@ export function LeadCaptureForm({
             onChange={(e) => updateField("name", e.target.value)}
             required
             placeholder="John Doe"
+            className="h-11"
           />
         </div>
 
@@ -134,11 +136,13 @@ export function LeadCaptureForm({
             onChange={(e) => updateField("email", e.target.value)}
             required
             placeholder="john@example.com"
+            className="h-11"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Company and Job Title - stack on mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="company">Company</Label>
           <Input
@@ -146,6 +150,7 @@ export function LeadCaptureForm({
             value={formData.company}
             onChange={(e) => updateField("company", e.target.value)}
             placeholder="Acme Inc."
+            className="h-11"
           />
         </div>
 
@@ -156,6 +161,7 @@ export function LeadCaptureForm({
             value={formData.jobTitle}
             onChange={(e) => updateField("jobTitle", e.target.value)}
             placeholder="Software Engineer"
+            className="h-11"
           />
         </div>
       </div>
@@ -168,6 +174,7 @@ export function LeadCaptureForm({
           value={formData.phone}
           onChange={(e) => updateField("phone", e.target.value)}
           placeholder="+1 (555) 123-4567"
+          className="h-11"
         />
       </div>
 
@@ -178,6 +185,7 @@ export function LeadCaptureForm({
           value={formData.interests}
           onChange={(e) => updateField("interests", e.target.value)}
           placeholder="e.g., Product demo, Pricing, Partnership"
+          className="h-11"
         />
       </div>
 
@@ -189,23 +197,26 @@ export function LeadCaptureForm({
           onChange={(e) => updateField("message", e.target.value)}
           placeholder="Any specific questions or comments?"
           rows={3}
+          className="min-h-[80px]"
         />
       </div>
 
-      <div className="flex items-center space-x-2">
+      {/* Marketing consent with larger touch target */}
+      <div className="flex items-start space-x-3 py-2">
         <Checkbox
           id="marketingConsent"
           checked={formData.marketingConsent}
           onCheckedChange={(checked) =>
             updateField("marketingConsent", checked === true)
           }
+          className="mt-0.5 h-5 w-5"
         />
-        <Label htmlFor="marketingConsent" className="text-sm text-muted-foreground">
+        <Label htmlFor="marketingConsent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
           I agree to receive marketing communications from {boothName}
         </Label>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" className="w-full h-11" disabled={isSubmitting}>
         {isSubmitting ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

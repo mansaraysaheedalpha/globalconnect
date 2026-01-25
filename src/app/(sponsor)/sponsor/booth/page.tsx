@@ -48,12 +48,21 @@ import {
   Loader2,
   Radio,
   X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
 import { useExpoStaffContext } from "@/providers/expo-staff-provider";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 const REALTIME_API_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
@@ -143,6 +152,7 @@ export default function BoothSettingsPage() {
   const { token } = useAuthStore();
   const { activeSponsorId, activeSponsorName, clearSponsorContext } = useSponsorStore();
   const { isLive, goLive, goOffline, isLoading: isGoingLive, boothId, isFetchingBooth, boothFetchError, isSocketConnected } = useExpoStaffContext();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +160,12 @@ export default function BoothSettingsPage() {
   const [sponsor, setSponsor] = useState<Sponsor | null>(null);
   const [stats, setStats] = useState<SponsorStats>({ total_leads: 0 });
   const [expoBooth, setExpoBooth] = useState<ExpoBooth | null>(null);
+
+  // Mobile collapsible states
+  const [isCompanyInfoOpen, setIsCompanyInfoOpen] = useState(true);
+  const [isBrandingOpen, setIsBrandingOpen] = useState(false);
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+  const [isCtaOpen, setIsCtaOpen] = useState(false);
 
   // Dialog states
   const [isResourceDialogOpen, setIsResourceDialogOpen] = useState(false);
@@ -892,18 +908,20 @@ export default function BoothSettingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className={cn("space-y-6", isMobile ? "p-4" : "p-6")}>
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Booth Settings</h1>
-          <p className="text-muted-foreground">
+          <h1 className={cn("font-bold tracking-tight", isMobile ? "text-xl" : "text-2xl")}>
+            Booth Settings
+          </h1>
+          <p className={cn("text-muted-foreground", isMobile ? "text-sm" : "")}>
             {activeSponsorName
-              ? `Customize booth appearance for ${activeSponsorName}`
-              : "Customize your sponsor booth appearance and settings"}
+              ? `Customize booth for ${isMobile ? activeSponsorName.split(' ')[0] : activeSponsorName}`
+              : "Customize your sponsor booth"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className={cn("flex gap-2", isMobile ? "flex-wrap" : "")}>
           {expoBooth?.expoHall && (
             <>
               {isFetchingBooth ? (
@@ -988,92 +1006,122 @@ export default function BoothSettingsPage() {
               </Button>
             </>
           )}
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className={cn(isMobile ? "h-11 w-full" : "")}
+          >
             <Save className="mr-2 h-4 w-4" />
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={cn("grid gap-6", isMobile ? "grid-cols-1" : "lg:grid-cols-3")}>
         {/* Main Settings */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={cn("space-y-4", !isMobile && "lg:col-span-2 space-y-6")}>
           {/* Company Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Company Information
-              </CardTitle>
-              <CardDescription>
-                Basic information displayed on your booth
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input
-                  id="companyName"
-                  value={formData.companyName}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Contact the event organizer to change company name
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Brief description of your company (max 500 characters)
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="website"
-                      className="pl-10"
-                      value={formData.website}
-                      onChange={(e) =>
-                        setFormData({ ...formData, website: e.target.value })
-                      }
-                    />
+          <Collapsible open={isMobile ? isCompanyInfoOpen : true} onOpenChange={setIsCompanyInfoOpen}>
+            <Card>
+              <CollapsibleTrigger asChild disabled={!isMobile}>
+                <CardHeader className={cn(isMobile && "cursor-pointer active:bg-muted/50 transition-colors")}>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Company Information
+                    </CardTitle>
+                    {isMobile && (
+                      isCompanyInfoOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="boothNumber">Booth Number</Label>
-                  <Input
-                    id="boothNumber"
+                  {!isMobile && (
+                    <CardDescription>
+                      Basic information displayed on your booth
+                    </CardDescription>
+                  )}
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Company Name</Label>
+                    <Input
+                      id="companyName"
+                      value={formData.companyName}
+                      disabled
+                      className={cn("bg-muted", isMobile && "h-11")}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Contact the event organizer to change company name
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({ ...formData, description: e.target.value })
+                      }
+                      rows={4}
+                      className="min-h-[100px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Brief description of your company (max 500 characters)
+                    </p>
+                  </div>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="website">Website</Label>
+                      <div className="relative">
+                        <Globe className={cn("absolute left-3 h-4 w-4 text-muted-foreground", isMobile ? "top-3.5" : "top-3")} />
+                        <Input
+                          id="website"
+                          className={cn("pl-10", isMobile && "h-11")}
+                          value={formData.website}
+                          onChange={(e) =>
+                            setFormData({ ...formData, website: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="boothNumber">Booth Number</Label>
+                      <Input
+                        id="boothNumber"
+                        className={cn(isMobile && "h-11")}
                     value={formData.boothNumber}
                     onChange={(e) =>
                       setFormData({ ...formData, boothNumber: e.target.value })
                     }
                   />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Branding */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Branding</CardTitle>
-              <CardDescription>
-                Logo and visual assets for your booth
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <Collapsible open={isMobile ? isBrandingOpen : true} onOpenChange={setIsBrandingOpen}>
+            <Card>
+              <CollapsibleTrigger asChild disabled={!isMobile}>
+                <CardHeader className={cn(isMobile && "cursor-pointer active:bg-muted/50 transition-colors")}>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Branding</CardTitle>
+                    {isMobile && (
+                      isBrandingOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  {!isMobile && (
+                    <CardDescription>
+                      Logo and visual assets for your booth
+                    </CardDescription>
+                  )}
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-6">
               {/* Logo Upload */}
               <div className="space-y-3">
                 <Label>Company Logo</Label>
@@ -1216,39 +1264,56 @@ export default function BoothSettingsPage() {
                   Recommended: 1200x400px, JPG or PNG (max 10MB)
                 </p>
               </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Resources - Only show if expo booth exists */}
           {expoBooth && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Resources
-                    </CardTitle>
-                    <CardDescription>
-                      Downloadable files for booth visitors
-                    </CardDescription>
-                  </div>
-                  <Dialog open={isResourceDialogOpen} onOpenChange={(open) => {
-                    setIsResourceDialogOpen(open);
-                    if (!open) {
-                      setEditingResource(null);
-                      setResourceForm({ name: "", description: "", type: "PDF", url: "" });
-                      setSelectedFile(null);
-                      setUploadMode("url");
-                      setUploadProgress(0);
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button size="sm">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Resource
-                      </Button>
-                    </DialogTrigger>
+            <Collapsible open={isMobile ? isResourcesOpen : true} onOpenChange={setIsResourcesOpen}>
+              <Card>
+                <CollapsibleTrigger asChild disabled={!isMobile}>
+                  <CardHeader className={cn(isMobile && "cursor-pointer active:bg-muted/50 transition-colors")}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <div>
+                          <CardTitle>Resources</CardTitle>
+                          {!isMobile && (
+                            <CardDescription>
+                              Downloadable files for booth visitors
+                            </CardDescription>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isMobile && (
+                          isResourcesOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="flex justify-end mb-4">
+                      <Dialog open={isResourceDialogOpen} onOpenChange={(open) => {
+                        setIsResourceDialogOpen(open);
+                        if (!open) {
+                          setEditingResource(null);
+                          setResourceForm({ name: "", description: "", type: "PDF", url: "" });
+                          setSelectedFile(null);
+                          setUploadMode("url");
+                          setUploadProgress(0);
+                        }
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className={cn(isMobile && "h-11")}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Resource
+                          </Button>
+                        </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>
@@ -1489,37 +1554,54 @@ export default function BoothSettingsPage() {
                     <p className="text-xs">Add brochures, videos, or documents for visitors</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           )}
 
           {/* CTA Buttons - Only show if expo booth exists */}
           {expoBooth && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <MousePointerClick className="h-5 w-5" />
-                      Call-to-Action Buttons
-                    </CardTitle>
-                    <CardDescription>
-                      Action buttons displayed on your booth
-                    </CardDescription>
-                  </div>
-                  <Dialog open={isCtaDialogOpen} onOpenChange={(open) => {
-                    setIsCtaDialogOpen(open);
-                    if (!open) {
-                      setEditingCta(null);
-                      setCtaForm({ label: "", url: "", style: "primary" });
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button size="sm">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add CTA
-                      </Button>
-                    </DialogTrigger>
+            <Collapsible open={isMobile ? isCtaOpen : true} onOpenChange={setIsCtaOpen}>
+              <Card>
+                <CollapsibleTrigger asChild disabled={!isMobile}>
+                  <CardHeader className={cn(isMobile && "cursor-pointer active:bg-muted/50 transition-colors")}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MousePointerClick className="h-5 w-5" />
+                        <div>
+                          <CardTitle>Call-to-Action Buttons</CardTitle>
+                          {!isMobile && (
+                            <CardDescription>
+                              Action buttons displayed on your booth
+                            </CardDescription>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isMobile && (
+                          isCtaOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="flex justify-end mb-4">
+                      <Dialog open={isCtaDialogOpen} onOpenChange={(open) => {
+                        setIsCtaDialogOpen(open);
+                        if (!open) {
+                          setEditingCta(null);
+                          setCtaForm({ label: "", url: "", style: "primary" });
+                        }
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className={cn(isMobile && "h-11")}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add CTA
+                          </Button>
+                        </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>
@@ -1641,8 +1723,10 @@ export default function BoothSettingsPage() {
                     <p className="text-xs">Add buttons like &quot;Schedule Demo&quot; or &quot;Visit Website&quot;</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           )}
 
         </div>

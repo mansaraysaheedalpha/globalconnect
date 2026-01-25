@@ -20,6 +20,7 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useExpoStaff } from "@/hooks/use-expo-staff";
 import { useAuthStore } from "@/store/auth.store";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { BoothChat } from "./BoothChat";
 import { BoothVideoCall } from "./BoothVideoCall";
 import { StaffPresenceStatus } from "./types";
@@ -87,6 +89,7 @@ export function SponsorDashboard({
   className,
 }: SponsorDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
     analytics,
@@ -144,6 +147,231 @@ export function SponsorDashboard({
 
   const statusConfig = STATUS_CONFIG[myStatus];
 
+  // Mobile Metric Card component
+  const MobileMetricCard = ({ label, value, icon: Icon }: { label: string; value: number | string; icon?: React.ElementType }) => (
+    <div className="p-4 rounded-lg border bg-card">
+      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        {Icon && <Icon className="h-4 w-4" />}
+        <span className="text-xs">{label}</span>
+      </div>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
+  );
+
+  // Mobile video request banner
+  const MobileVideoRequestBanner = () => {
+    if (pendingVideoRequests.length === 0) return null;
+    const request = pendingVideoRequests[0];
+    return (
+      <div className="p-3 bg-primary/10 border-b border-primary/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Bell className="h-5 w-5 text-primary animate-pulse flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">{request.attendeeName}</p>
+              <p className="text-xs text-muted-foreground">wants to video call</p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 w-9 p-0"
+              onClick={() => handleDeclineVideo(request.sessionId)}
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              className="h-9"
+              onClick={() => handleAcceptVideo(request.sessionId)}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Accept
+            </Button>
+          </div>
+        </div>
+        {pendingVideoRequests.length > 1 && (
+          <p className="text-xs text-muted-foreground mt-2">
+            +{pendingVideoRequests.length - 1} more request{pendingVideoRequests.length > 2 ? 's' : ''}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // Mobile layout
+  if (isMobile) {
+    return (
+      <div className={cn("flex flex-col h-full", className)}>
+        {/* Compact header */}
+        <header className="flex items-center justify-between p-4 border-b">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-bold truncate">{boothName}</h1>
+            <p className="text-xs text-muted-foreground">Live Dashboard</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isConnected && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            {/* Status toggle - prominent */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-9">
+                  {statusConfig.icon}
+                  <span className={cn("text-sm", statusConfig.color)}>{statusConfig.label}</span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => updateStatus("ONLINE")} className="min-h-[44px]">
+                  <Circle className="h-3 w-3 fill-green-500 text-green-500 mr-2" />
+                  Online
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateStatus("AWAY")} className="min-h-[44px]">
+                  <Coffee className="h-3 w-3 text-yellow-500 mr-2" />
+                  Away
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateStatus("BUSY")} className="min-h-[44px]">
+                  <Phone className="h-3 w-3 text-red-500 mr-2" />
+                  Busy
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateStatus("OFFLINE")} className="min-h-[44px]">
+                  <Circle className="h-3 w-3 text-gray-400 mr-2" />
+                  Offline
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        {/* Error alert */}
+        {error && (
+          <Alert variant="destructive" className="mx-4 mt-2">
+            <AlertDescription className="flex items-center justify-between text-sm">
+              <span className="truncate">{error}</span>
+              <Button variant="ghost" size="sm" onClick={clearError} className="h-8 px-2">
+                Dismiss
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Video request banner - full width, urgent styling */}
+        <MobileVideoRequestBanner />
+
+        {/* Active video call */}
+        {activeVideoSession && (
+          <div className="p-4 border-b">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Video className="h-4 w-4 text-green-500" />
+                  Video Call Active
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BoothVideoCall
+                  session={activeVideoSession}
+                  userName={staffDisplayName}
+                  isStaff={true}
+                  onEnd={endVideoCall}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Key metrics - 2x2 grid with large numbers */}
+        <div className="grid grid-cols-2 gap-3 p-4">
+          <MobileMetricCard label="Visitors" value={analytics?.currentVisitors ?? 0} icon={Users} />
+          <MobileMetricCard label="Leads" value={analytics?.totalLeads ?? 0} icon={UserCheck} />
+        </div>
+
+        {/* Tabs for Chat/Leads/Visitors - full screen when active */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="mx-4 h-12 grid grid-cols-3">
+            <TabsTrigger value="chat" className="h-10 text-sm">
+              <MessageSquare className="h-4 w-4 mr-1.5" />
+              Chat
+            </TabsTrigger>
+            <TabsTrigger value="leads" className="h-10 text-sm">
+              Leads
+              {recentLeads.length > 0 && (
+                <Badge variant="secondary" className="ml-1.5 text-xs h-5 px-1.5">
+                  {recentLeads.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="visitors" className="h-10 text-sm">
+              Visitors
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab content - flex-1 to fill remaining space */}
+          <TabsContent value="chat" className="flex-1 min-h-0 m-0 mt-2">
+            <BoothChat boothId={boothId} eventId={eventId} className="h-full" />
+          </TabsContent>
+
+          <TabsContent value="leads" className="flex-1 min-h-0 m-0 p-4 overflow-auto">
+            {recentLeads.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <UserCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No leads captured yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentLeads.map((lead, index) => (
+                  <div key={index} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-sm">{lead.visitorName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatTimeAgo(lead.capturedAt)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      {lead.formData.email && <p>Email: {String(lead.formData.email)}</p>}
+                      {lead.formData.company && <p>Company: {String(lead.formData.company)}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="visitors" className="flex-1 min-h-0 m-0 p-4 overflow-auto">
+            {currentVisitors.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No visitors currently in booth</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {currentVisitors.map((visitor) => (
+                  <div
+                    key={visitor.visitId}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                        {visitor.visitorName?.charAt(0) || "?"}
+                      </div>
+                      <span className="font-medium text-sm">{visitor.visitorName}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatTimeAgo(visitor.enteredAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  }
+
+  // Desktop layout (existing)
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Header */}

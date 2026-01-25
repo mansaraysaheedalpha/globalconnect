@@ -249,18 +249,18 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
         {/* Hall info */}
         <div
           className={cn(
-            "px-6 py-4",
-            hall.bannerUrl ? "-mt-16 relative" : "border-b"
+            "px-4 sm:px-6 py-4",
+            hall.bannerUrl ? "-mt-12 sm:-mt-16 relative" : "border-b"
           )}
         >
-          <h1 className="text-2xl font-bold">{hall.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{hall.name}</h1>
           {hall.description && (
-            <p className="text-muted-foreground mt-1 max-w-2xl">
+            <p className="text-muted-foreground mt-1 max-w-2xl text-sm sm:text-base">
               {hall.description}
             </p>
           )}
           {hall.welcomeMessage && (
-            <p className="text-sm text-muted-foreground mt-2 italic">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-2 italic">
               {hall.welcomeMessage}
             </p>
           )}

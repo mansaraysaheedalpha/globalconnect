@@ -1,16 +1,17 @@
 // src/components/features/expo/BoothChat.tsx
 "use client";
 
-import { useState, useRef, useEffect, FormEvent } from "react";
+import { useState, useRef, useEffect, FormEvent, KeyboardEvent } from "react";
 import { Send, Loader2, ChevronUp, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useBoothChat } from "@/hooks/use-booth-chat";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 export interface BoothChatProps {
   boothId: string;
@@ -21,7 +22,8 @@ export interface BoothChatProps {
 export function BoothChat({ boothId, eventId, className }: BoothChatProps) {
   const [messageInput, setMessageInput] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
     messages,
@@ -43,6 +45,27 @@ export function BoothChat({ boothId, eventId, className }: BoothChatProps) {
     }
   }, [messages]);
 
+  // Virtual keyboard handling for iOS
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const visualViewport = window.visualViewport;
+    if (!visualViewport) return;
+
+    const handleResize = () => {
+      // Scroll to bottom when keyboard appears
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    visualViewport.addEventListener('resize', handleResize);
+    return () => visualViewport.removeEventListener('resize', handleResize);
+  }, []);
+
   // Handle send message
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -52,6 +75,14 @@ export function BoothChat({ boothId, eventId, className }: BoothChatProps) {
     if (success) {
       setMessageInput("");
       inputRef.current?.focus();
+    }
+  };
+
+  // Handle Enter key (send on Enter, newline on Shift+Enter)
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as unknown as FormEvent);
     }
   };
 
@@ -205,31 +236,36 @@ export function BoothChat({ boothId, eventId, className }: BoothChatProps) {
       </ScrollArea>
 
       {/* Message input */}
-      <form
-        onSubmit={handleSubmit}
-        className="p-4 border-t bg-background flex gap-2"
-      >
-        <Input
-          ref={inputRef}
-          value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
-          placeholder="Type a message..."
-          disabled={!isConnected || isSending}
-          maxLength={2000}
-          className="flex-1"
-        />
-        <Button
-          type="submit"
-          disabled={!isConnected || isSending || !messageInput.trim()}
-          size="icon"
-        >
-          {isSending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
-      </form>
+      <div className="p-4 border-t bg-background safe-bottom">
+        <form onSubmit={handleSubmit} className="flex items-end gap-2">
+          <Textarea
+            ref={inputRef}
+            value={messageInput}
+            onChange={(e) => setMessageInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            disabled={!isConnected || isSending}
+            maxLength={2000}
+            className={cn(
+              "flex-1 resize-none",
+              isMobile ? "min-h-[44px] max-h-32" : "min-h-[40px] max-h-24"
+            )}
+            rows={1}
+          />
+          <Button
+            type="submit"
+            disabled={!isConnected || isSending || !messageInput.trim()}
+            size="icon"
+            className={cn(isMobile ? "h-11 w-11" : "h-10 w-10", "flex-shrink-0")}
+          >
+            {isSending ? (
+              <Loader2 className={cn("animate-spin", isMobile ? "h-5 w-5" : "h-4 w-4")} />
+            ) : (
+              <Send className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
