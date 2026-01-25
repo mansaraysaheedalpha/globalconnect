@@ -1,7 +1,7 @@
 import React from 'react';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://globalconnect.com';
-const SITE_NAME = 'GlobalConnect';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
+const SITE_NAME = 'Event Dynamics';
 
 // Type definitions for event data
 export interface EventForSchema {
@@ -27,7 +27,7 @@ export interface TicketForSchema {
 }
 
 /**
- * Organization schema for GlobalConnect
+ * Organization schema for Event Dynamics
  */
 export function generateOrganizationSchema() {
   return {
@@ -36,16 +36,16 @@ export function generateOrganizationSchema() {
     name: SITE_NAME,
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
-    description: 'The ultimate virtual event platform for conferences, expos, and networking.',
+    description: 'The ultimate event management platform for in-person, virtual, and hybrid conferences, expos, and networking.',
     sameAs: [
-      'https://twitter.com/globalconnect',
-      'https://linkedin.com/company/globalconnect',
-      'https://facebook.com/globalconnect',
+      'https://twitter.com/eventdynamics',
+      'https://linkedin.com/company/eventdynamics',
+      'https://facebook.com/eventdynamics',
     ],
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'Customer Support',
-      email: 'support@globalconnect.com',
+      email: 'support@eventdynamics.com',
     },
   };
 }

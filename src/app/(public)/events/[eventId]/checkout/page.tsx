@@ -8,7 +8,7 @@ import {
   renderJsonLd,
 } from '@/lib/seo/json-ld';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://globalconnect.com';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
 
 interface PageProps {
   params: Promise<{

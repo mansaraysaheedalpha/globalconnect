@@ -12,16 +12,18 @@ import {
   renderJsonLd,
 } from '@/lib/seo/json-ld';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://globalconnect.com';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
 
 export async function generateMetadata(): Promise<Metadata> {
   return generateSEOMetadata({
     title: 'Browse Events',
     description:
-      'Discover and register for exciting virtual events. From conferences to workshops, networking sessions to expos - find your next immersive online experience.',
+      'Discover and register for exciting in-person, virtual, and hybrid events. From conferences to workshops, networking sessions to expos - find your next immersive experience.',
     path: '/events',
     keywords: [
+      'in-person events',
       'virtual events',
+      'hybrid events',
       'online conferences',
       'workshops',
       'networking events',
@@ -40,9 +42,9 @@ export default function EventsPage() {
   ]);
 
   const webPageSchema = generateWebPageSchema({
-    title: 'Browse Events - GlobalConnect',
+    title: 'Browse Events - Event Dynamics',
     description:
-      'Discover and register for exciting virtual events on GlobalConnect.',
+      'Discover and register for exciting in-person, virtual, and hybrid events on Event Dynamics.',
     url: getCanonicalUrl('/events'),
   });
 

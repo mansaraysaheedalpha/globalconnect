@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://globalconnect.com';
-const SITE_NAME = 'GlobalConnect';
-const SITE_DESCRIPTION = 'GlobalConnect - The ultimate virtual event platform for conferences, expos, and networking. Join immersive events with video chat, expo halls, and sponsor booths.';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
+const SITE_NAME = 'Event Dynamics';
+const SITE_DESCRIPTION = 'Event Dynamics - The ultimate event management platform for in-person, virtual, and hybrid conferences, expos, and networking. Create immersive experiences with video chat, expo halls, and sponsor booths.';
 
 export interface SEOConfig {
   title: string;
@@ -98,8 +98,8 @@ export function generateSEOMetadata(config: SEOConfig): Metadata {
       title: fullTitle,
       description,
       images: [imageUrl],
-      creator: '@globalconnect',
-      site: '@globalconnect',
+      creator: '@eventdynamics',
+      site: '@eventdynamics',
     },
   };
 
@@ -116,14 +116,16 @@ export const defaultMetadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   keywords: [
+    'event management platform',
+    'in-person events',
     'virtual events',
+    'hybrid events',
     'online conferences',
     'expo hall',
     'networking platform',
-    'virtual booth',
+    'event registration',
     'video conferencing',
-    'event management',
-    'online events',
+    'sponsor booths',
   ].join(', '),
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
@@ -158,8 +160,8 @@ export const defaultMetadata: Metadata = {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
     images: [`${SITE_URL}/og-default.png`],
-    creator: '@globalconnect',
-    site: '@globalconnect',
+    creator: '@eventdynamics',
+    site: '@eventdynamics',
   },
 };
 

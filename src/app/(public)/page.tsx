@@ -17,24 +17,25 @@ import {
   renderJsonLd,
 } from '@/lib/seo/json-ld';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://globalconnect.com';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
 
 export async function generateMetadata(): Promise<Metadata> {
   return generateSEOMetadata({
-    title: 'GlobalConnect - Virtual Event Platform',
+    title: 'Event Dynamics - Event Management Platform',
     description:
-      'The ultimate virtual event platform for immersive conferences, expos, and networking. Connect globally with video chat, virtual booths, and interactive sessions.',
+      'The ultimate event management platform for in-person, virtual, and hybrid conferences, expos, and networking. Create immersive experiences with video chat, expo halls, and interactive sessions.',
     path: '/',
     keywords: [
+      'event management platform',
+      'in-person events',
       'virtual events',
+      'hybrid events',
       'online conferences',
-      'virtual event platform',
       'expo hall',
       'networking platform',
+      'event registration',
       'video conferencing',
-      'event management',
-      'virtual booth',
-      'online networking',
+      'sponsor booths',
     ],
     type: 'website',
   });
@@ -45,9 +46,9 @@ export default function Home() {
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebSiteSchema();
   const webPageSchema = generateWebPageSchema({
-    title: 'GlobalConnect - Virtual Event Platform',
+    title: 'Event Dynamics - Event Management Platform',
     description:
-      'The ultimate virtual event platform for immersive conferences, expos, and networking.',
+      'The ultimate event management platform for in-person, virtual, and hybrid conferences, expos, and networking.',
     url: getCanonicalUrl('/'),
   });
 

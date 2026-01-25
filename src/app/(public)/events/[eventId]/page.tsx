@@ -16,7 +16,7 @@ import {
 } from '@/lib/seo/json-ld';
 import { getEventForSEO } from '@/lib/seo/server-data';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://globalconnect.com';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
 
 interface PageProps {
   params: Promise<{
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const description = event.description
     ? truncateDescription(event.description, 160)
-    : `Join ${event.name} on GlobalConnect. Register now for this virtual event.`;
+    : `Join ${event.name} on Event Dynamics. Register now for this event.`;
 
   return generateSEOMetadata({
     title: event.name,
@@ -47,9 +47,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     path: `/events/${eventId}`,
     image: event.bannerUrl || undefined,
     keywords: [
-      'virtual event',
+      'event',
       event.name,
-      'online conference',
+      'conference',
       'event registration',
       'networking',
     ],
