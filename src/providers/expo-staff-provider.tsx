@@ -145,7 +145,8 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
+    const REALTIME_BASE_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
+    const REALTIME_URL = `${REALTIME_BASE_URL}/events`; // Connect to /events namespace
 
     console.log("[ExpoStaffProvider] Initializing socket connection to:", REALTIME_URL);
 
