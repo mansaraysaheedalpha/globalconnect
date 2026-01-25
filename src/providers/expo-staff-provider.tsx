@@ -52,7 +52,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       setBoothFetchError(null);
 
       try {
-        const REALTIME_SERVICE_URL = process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002";
+        const REALTIME_SERVICE_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
         let response = await fetch(
           `${REALTIME_SERVICE_URL}/api/expo/sponsor/${activeSponsorId}/booth`,
           {
@@ -142,7 +142,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
+    const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
 
     const socket = io(REALTIME_URL, {
       auth: { token: `Bearer ${token}` },
