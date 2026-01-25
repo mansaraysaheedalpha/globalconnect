@@ -205,8 +205,8 @@ export const useExpoStaff = ({
             updates.analytics = stats;
             updates.currentVisitors = visitors.map((v: any) => ({
               visitorId: v.userId,
-              visitorName: v.userId, // Will be populated from real-time events
-              visitId: v.userId,
+              visitorName: v.userName || v.visitorName || v.name || `Visitor ${v.userId.slice(0, 8)}`,
+              visitId: v.visitId || v.userId,
               enteredAt: v.enteredAt,
             }));
 

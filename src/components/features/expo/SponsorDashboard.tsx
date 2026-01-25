@@ -288,39 +288,78 @@ export function SponsorDashboard({
           <MobileMetricCard label="Leads" value={analytics?.totalLeads ?? 0} icon={UserCheck} />
         </div>
 
-        {/* Tabs for Chat/Leads/Visitors - full screen when active */}
+        {/* Tabs for Overview/Chat/Leads/Visitors - full screen when active */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-4 h-12 grid grid-cols-3">
-            <TabsTrigger value="chat" className="h-10 text-sm">
-              <MessageSquare className="h-4 w-4 mr-1.5" />
+          <TabsList className="mx-4 h-12 grid grid-cols-4">
+            <TabsTrigger value="overview" className="h-10 text-xs">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="h-10 text-xs">
+              <MessageSquare className="h-4 w-4 mr-1" />
               Chat
             </TabsTrigger>
-            <TabsTrigger value="leads" className="h-10 text-sm">
+            <TabsTrigger value="leads" className="h-10 text-xs">
               Leads
               {recentLeads.length > 0 && (
-                <Badge variant="secondary" className="ml-1.5 text-xs h-5 px-1.5">
+                <Badge variant="secondary" className="ml-1 text-xs h-5 px-1">
                   {recentLeads.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="visitors" className="h-10 text-sm">
+            <TabsTrigger value="visitors" className="h-10 text-xs">
               Visitors
             </TabsTrigger>
           </TabsList>
 
           {/* Tab content - flex-1 to fill remaining space */}
+          <TabsContent value="overview" className="flex-1 min-h-0 m-0 p-4 pb-6 overflow-auto">
+            <div className="space-y-4 pb-4">
+              {/* Engagement metrics */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg border bg-card text-center">
+                  <MessageSquare className="h-5 w-5 mx-auto mb-1 text-blue-500" />
+                  <p className="text-xl font-bold">{analytics?.totalChatMessages ?? 0}</p>
+                  <p className="text-xs text-muted-foreground">Chats</p>
+                </div>
+                <div className="p-3 rounded-lg border bg-card text-center">
+                  <Video className="h-5 w-5 mx-auto mb-1 text-purple-500" />
+                  <p className="text-xl font-bold">{analytics?.completedVideoSessions ?? 0}</p>
+                  <p className="text-xs text-muted-foreground">Videos</p>
+                </div>
+                <div className="p-3 rounded-lg border bg-card text-center">
+                  <Download className="h-5 w-5 mx-auto mb-1 text-green-500" />
+                  <p className="text-xl font-bold">{analytics?.totalDownloads ?? 0}</p>
+                  <p className="text-xs text-muted-foreground">Downloads</p>
+                </div>
+                <div className="p-3 rounded-lg border bg-card text-center">
+                  <MousePointerClick className="h-5 w-5 mx-auto mb-1 text-orange-500" />
+                  <p className="text-xl font-bold">{analytics?.totalCtaClicks ?? 0}</p>
+                  <p className="text-xs text-muted-foreground">CTA Clicks</p>
+                </div>
+              </div>
+
+              {/* Additional stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <MobileMetricCard label="Total Visitors" value={analytics?.totalVisitors ?? 0} icon={TrendingUp} />
+                <MobileMetricCard label="Unique Visitors" value={analytics?.uniqueVisitors ?? 0} icon={Users} />
+                <MobileMetricCard label="Peak Visitors" value={analytics?.peakVisitors ?? 0} icon={TrendingUp} />
+                <MobileMetricCard label="Avg Visit Time" value={formatDuration(analytics?.avgVisitDuration ?? 0)} icon={Clock} />
+              </div>
+            </div>
+          </TabsContent>
+
           <TabsContent value="chat" className="flex-1 min-h-0 m-0 mt-2">
             <BoothChat boothId={boothId} eventId={eventId} className="h-full" />
           </TabsContent>
 
-          <TabsContent value="leads" className="flex-1 min-h-0 m-0 p-4 overflow-auto">
+          <TabsContent value="leads" className="flex-1 min-h-0 m-0 p-4 pb-6 overflow-auto">
             {recentLeads.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <UserCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No leads captured yet</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 pb-4">
                 {recentLeads.map((lead, index) => (
                   <div key={index} className="p-3 rounded-lg border bg-card">
                     <div className="flex items-center justify-between mb-2">
@@ -339,14 +378,14 @@ export function SponsorDashboard({
             )}
           </TabsContent>
 
-          <TabsContent value="visitors" className="flex-1 min-h-0 m-0 p-4 overflow-auto">
+          <TabsContent value="visitors" className="flex-1 min-h-0 m-0 p-4 pb-6 overflow-auto">
             {currentVisitors.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No visitors currently in booth</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 pb-4">
                 {currentVisitors.map((visitor) => (
                   <div
                     key={visitor.visitId}
