@@ -89,6 +89,8 @@ export function SponsorSidebar({ className }: SponsorSidebarProps) {
   const { boothId, isLive } = useExpoStaffContext();
   const hasMultipleSponsors = sponsors.length > 1;
 
+  console.log("[SponsorSidebar] Context values:", { boothId, isLive });
+
   const navItems = getNavItems(boothId, isLive);
 
   return (

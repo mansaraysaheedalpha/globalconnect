@@ -51,13 +51,22 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
         );
 
         if (response.ok) {
-          const { booth } = await response.json();
+          const data = await response.json();
+          console.log("[ExpoStaffProvider] Booth API response:", data);
+          const { booth } = data;
           if (booth) {
+            console.log("[ExpoStaffProvider] Setting booth data:", {
+              boothId: booth.id,
+              boothName: booth.name,
+              eventId: booth.expoHall?.eventId,
+            });
             setBoothData({
               boothId: booth.id,
               boothName: booth.name,
               eventId: booth.expoHall?.eventId,
             });
+          } else {
+            console.error("[ExpoStaffProvider] No booth in response:", data);
           }
         } else if (response.status === 403) {
           // Try to sync booth access
