@@ -133,9 +133,20 @@ export function SponsorSidebar({ className }: SponsorSidebarProps) {
 
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/sponsor" && pathname.startsWith(item.href));
+          // Special handling for booth routes to prevent both from being active
+          let isActive: boolean;
+          if (item.href === "/sponsor/booth") {
+            // Booth Settings should only be active on exact match or non-live booth pages
+            isActive = pathname === "/sponsor/booth" ||
+                      (pathname.startsWith("/sponsor/booth") && !pathname.startsWith("/sponsor/booth/live"));
+          } else if (item.href === "/sponsor/booth/live") {
+            // Booth Dashboard should be active on exact match or any /booth/live/* pages
+            isActive = pathname === "/sponsor/booth/live" || pathname.startsWith("/sponsor/booth/live");
+          } else {
+            // Default matching logic for other routes
+            isActive = pathname === item.href ||
+                      (item.href !== "/sponsor" && pathname.startsWith(item.href));
+          }
 
           return (
             <Link
