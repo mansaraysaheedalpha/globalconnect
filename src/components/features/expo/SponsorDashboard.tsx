@@ -284,8 +284,8 @@ export function SponsorDashboard({
 
         {/* Key metrics - 2x2 grid with large numbers */}
         <div className="grid grid-cols-2 gap-3 p-4">
-          <MobileMetricCard label="Visitors" value={analytics?.currentVisitors ?? 0} icon={Users} />
-          <MobileMetricCard label="Leads" value={analytics?.totalLeads ?? 0} icon={UserCheck} />
+          <MobileMetricCard label="Current Visitors" value={analytics?.currentVisitors ?? 0} icon={Users} />
+          <MobileMetricCard label="Leads Captured" value={analytics?.totalLeads ?? 0} icon={UserCheck} />
         </div>
 
         {/* Tabs for Overview/Chat/Leads/Visitors - full screen when active */}
