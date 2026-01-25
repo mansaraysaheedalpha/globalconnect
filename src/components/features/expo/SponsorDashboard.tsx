@@ -330,8 +330,8 @@ export function SponsorDashboard({
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-0.5">
-                      {lead.formData.email && <p>Email: {String(lead.formData.email)}</p>}
-                      {lead.formData.company && <p>Company: {String(lead.formData.company)}</p>}
+                      {(lead.formData as any).email && <p>Email: {String((lead.formData as any).email)}</p>}
+                      {(lead.formData as any).company && <p>Company: {String((lead.formData as any).company)}</p>}
                     </div>
                   </div>
                 ))}

@@ -1673,8 +1673,6 @@ export default function BoothSettingsPage() {
                     </DialogContent>
                   </Dialog>
                 </div>
-              </CardHeader>
-              <CardContent>
                 {expoBooth.ctaButtons?.length > 0 ? (
                   <div className="space-y-2">
                     {expoBooth.ctaButtons.map((cta) => (
