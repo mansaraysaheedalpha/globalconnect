@@ -577,7 +577,7 @@ export function SponsorDashboard({
           {/* Overview Tab */}
           <TabsContent value="overview" className="p-4 space-y-4 mt-0">
             {/* Stats grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <Card>
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-2">
@@ -603,8 +603,33 @@ export function SponsorDashboard({
                   <p className="text-2xl font-bold mt-1">
                     {analytics?.totalVisitors ?? 0}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {analytics?.uniqueVisitors ?? 0} unique
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Unique Visitors
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold mt-1">
+                    {analytics?.uniqueVisitors ?? 0}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Peak Visitors
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold mt-1">
+                    {analytics?.peakVisitors ?? 0}
                   </p>
                 </CardContent>
               </Card>
