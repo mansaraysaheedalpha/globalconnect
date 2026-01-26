@@ -632,7 +632,7 @@ export default function TeamManagementPage() {
                           <div>
                             <p className="font-medium">
                               {member.user?.email || "Unknown User"}
-                              {member.user_id === user?.sub && (
+                              {member.user_id === user?.id && (
                                 <span className="ml-2 text-xs text-muted-foreground">
                                   (You)
                                 </span>
@@ -659,7 +659,7 @@ export default function TeamManagementPage() {
                         </div>
                         <PermissionBadges member={member} />
                       </div>
-                      {canInviteOthers && member.user_id !== user?.sub && (
+                      {canInviteOthers && member.user_id !== user?.id && (
                         <Button
                           variant="ghost"
                           size="sm"
