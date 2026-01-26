@@ -1,7 +1,7 @@
 // src/app/(sponsor)/sponsor/messages/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,25 +31,27 @@ import {
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
-
-interface SponsorStats {
-  total_leads: number;
-  hot_leads: number;
-  warm_leads: number;
-  cold_leads: number;
-  leads_contacted: number;
-  leads_converted: number;
-}
+import { useLeads } from "@/hooks/use-leads";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
-const REALTIME_API_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
 
 export default function MessagesPage() {
   const { token } = useAuthStore();
   const { activeSponsorId, activeSponsorName } = useSponsorStore();
-  const [stats, setStats] = useState<SponsorStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Use the useLeads hook for lead stats (PostgreSQL as single source of truth)
+  const {
+    stats,
+    isLoadingStats: isLoading,
+    statsError,
+    refetch,
+  } = useLeads({
+    sponsorId: activeSponsorId || "",
+    enabled: !!activeSponsorId && !!token,
+    limit: 1, // We only need stats, not the full lead list
+  });
+
+  const error = statsError?.message || null;
 
   const [isSending, setIsSending] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -58,44 +60,6 @@ export default function MessagesPage() {
     subject: "",
     body: "",
   });
-
-  // Fetch stats for audience counts from real-time service (MongoDB)
-  // This is the same data source as the Booth Dashboard
-  const fetchStats = useCallback(async () => {
-    if (!token || !activeSponsorId) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `${REALTIME_API_URL}/api/expo/sponsor/${activeSponsorId}/leads/stats`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch lead stats");
-      }
-
-      const data = await response.json();
-      console.log('[Messages] Stats received:', data);
-      console.log('[Messages] Sponsor ID used:', activeSponsorId);
-      setStats(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load stats");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token, activeSponsorId]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
 
   const handleSend = async () => {
     if (!message.subject || !message.body) {
@@ -143,7 +107,7 @@ export default function MessagesPage() {
       setMessage({ subject: "", body: "" });
 
       // Refresh stats after successful send
-      fetchStats();
+      refetch();
     } catch (err) {
       console.error("Failed to send campaign:", err);
       toast.error(
@@ -225,7 +189,7 @@ export default function MessagesPage() {
             <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
             <h3 className="text-lg font-semibold mb-2">Error Loading Messages</h3>
             <p className="text-sm text-muted-foreground mb-4">{error}</p>
-            <Button onClick={fetchStats} variant="outline">
+            <Button onClick={() => refetch()} variant="outline">
               <RefreshCw className="mr-2 h-4 w-4" />
               Try Again
             </Button>
