@@ -368,12 +368,14 @@ export function SponsorDashboard({
                 </div>
               </div>
 
-              {/* Additional stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <MobileMetricCard label="Total Visitors" value={analytics?.totalVisitors ?? 0} icon={TrendingUp} />
-                <MobileMetricCard label="Unique Visitors" value={analytics?.uniqueVisitors ?? 0} icon={Users} />
-                <MobileMetricCard label="Peak Visitors" value={analytics?.peakVisitors ?? 0} icon={TrendingUp} />
-                <MobileMetricCard label="Avg Visit Time" value={formatDuration(analytics?.avgVisitDuration ?? 0)} icon={Clock} />
+              {/* Peak Visitors - only metric not in top grid */}
+              <div className="p-4 rounded-lg border bg-card">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-sm">Peak Visitors</span>
+                </div>
+                <p className="text-2xl font-bold">{analytics?.peakVisitors ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Maximum concurrent visitors</p>
               </div>
             </div>
           </TabsContent>
