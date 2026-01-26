@@ -586,9 +586,9 @@ export function SponsorDashboard({
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="flex-1 flex flex-col overflow-hidden"
+        className="flex-1 flex flex-col min-h-0"
       >
-        <TabsList className="mx-4 mt-4">
+        <TabsList className="mx-4 mt-4 flex-shrink-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="chat">
             Chat
@@ -605,7 +605,7 @@ export function SponsorDashboard({
           <TabsTrigger value="visitors">Visitors</TabsTrigger>
         </TabsList>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           {/* Overview Tab */}
           <TabsContent value="overview" className="p-4 pb-8 space-y-4 mt-0">
             {/* Stats grid */}
