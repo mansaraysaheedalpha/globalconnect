@@ -712,43 +712,19 @@ export function SponsorDashboard({
               </CardContent>
             </Card>
 
-            {/* Additional stats */}
+            {/* Peak Visitors - only metric not in top grid */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Additional Statistics</CardTitle>
+                <CardTitle className="text-lg">Peak Visitors</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-lg border bg-card">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className="text-sm">Total Visitors</span>
-                    </div>
-                    <p className="text-2xl font-bold">{analytics?.totalVisitors ?? 0}</p>
+                <div className="flex items-center gap-3">
+                  <div className="p-4 rounded-full bg-primary/10">
+                    <TrendingUp className="h-8 w-8 text-primary" />
                   </div>
-
-                  <div className="p-4 rounded-lg border bg-card">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                      <Users className="h-4 w-4" />
-                      <span className="text-sm">Unique Visitors</span>
-                    </div>
-                    <p className="text-2xl font-bold">{analytics?.uniqueVisitors ?? 0}</p>
-                  </div>
-
-                  <div className="p-4 rounded-lg border bg-card">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className="text-sm">Peak Visitors</span>
-                    </div>
-                    <p className="text-2xl font-bold">{analytics?.peakVisitors ?? 0}</p>
-                  </div>
-
-                  <div className="p-4 rounded-lg border bg-card">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm">Avg Visit Time</span>
-                    </div>
-                    <p className="text-2xl font-bold">{formatDuration(analytics?.avgVisitDuration ?? 0)}</p>
+                  <div>
+                    <p className="text-4xl font-bold">{analytics?.peakVisitors ?? 0}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Maximum concurrent visitors</p>
                   </div>
                 </div>
               </CardContent>
