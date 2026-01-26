@@ -21,6 +21,9 @@ interface ExpoStaffContextType {
 
 const ExpoStaffContext = createContext<ExpoStaffContextType | null>(null);
 
+// Session storage key for persisting live status across page refreshes
+const LIVE_STATUS_KEY = "expo_staff_live_status";
+
 export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
   const { token, user } = useAuthStore();
   const { activeSponsorId } = useSponsorStore();
@@ -36,11 +39,52 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const isLiveRef = useRef(false);
+  const hasAutoReconnectedRef = useRef(false);
 
-  // Keep ref in sync with state
+  // Check if user was previously live (from sessionStorage)
+  const getPersistedLiveStatus = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = sessionStorage.getItem(LIVE_STATUS_KEY);
+      if (stored) {
+        const data = JSON.parse(stored);
+        // Only restore if same user and sponsor, and within 5 minutes
+        const isValid =
+          data.userId === user?.id &&
+          data.sponsorId === activeSponsorId &&
+          Date.now() - data.timestamp < 5 * 60 * 1000; // 5 minute grace period
+        return isValid ? data : null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [user?.id, activeSponsorId]);
+
+  // Persist live status to sessionStorage
+  const persistLiveStatus = useCallback((live: boolean) => {
+    if (typeof window === "undefined") return;
+    try {
+      if (live && user?.id && activeSponsorId && boothData?.boothId) {
+        sessionStorage.setItem(LIVE_STATUS_KEY, JSON.stringify({
+          userId: user.id,
+          sponsorId: activeSponsorId,
+          boothId: boothData.boothId,
+          timestamp: Date.now(),
+        }));
+      } else {
+        sessionStorage.removeItem(LIVE_STATUS_KEY);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [user?.id, activeSponsorId, boothData?.boothId]);
+
+  // Keep ref in sync with state and persist
   useEffect(() => {
     isLiveRef.current = isLive;
-  }, [isLive]);
+    persistLiveStatus(isLive);
+  }, [isLive, persistLiveStatus]);
 
   // Fetch booth data when sponsor is selected
   useEffect(() => {
@@ -203,9 +247,13 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       console.log("[ExpoStaffProvider] Socket connected, ID:", socket.id);
       setIsSocketConnected(true);
 
-      // Auto-rejoin as staff if we were previously live
-      if (isLiveRef.current && boothData) {
-        console.log("[ExpoStaffProvider] Auto-rejoining as staff after reconnect");
+      // Check if we should auto-rejoin (either from in-memory state or sessionStorage)
+      const persistedStatus = getPersistedLiveStatus();
+      const shouldAutoRejoin = (isLiveRef.current || persistedStatus) && boothData && !hasAutoReconnectedRef.current;
+
+      if (shouldAutoRejoin) {
+        hasAutoReconnectedRef.current = true; // Prevent duplicate rejoin attempts
+        console.log("[ExpoStaffProvider] Auto-rejoining as staff after page refresh/reconnect");
         try {
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => reject(new Error("Rejoin timeout")), 10000);
@@ -216,9 +264,12 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
                 clearTimeout(timeout);
                 if (response.success) {
                   console.log("[ExpoStaffProvider] Successfully rejoined as staff");
+                  setIsLive(true); // Restore live state
                   resolve(response);
                 } else {
                   console.error("[ExpoStaffProvider] Failed to rejoin:", response.error);
+                  // Clear persisted status since rejoin failed
+                  sessionStorage.removeItem(LIVE_STATUS_KEY);
                   reject(new Error(response.error || "Failed to rejoin"));
                 }
               }
@@ -226,6 +277,8 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
           });
         } catch (error) {
           console.error("[ExpoStaffProvider] Auto-rejoin failed:", error);
+          // Clear persisted status since rejoin failed
+          sessionStorage.removeItem(LIVE_STATUS_KEY);
         }
       }
     });
@@ -247,7 +300,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       socketRef.current = null;
       setIsSocketConnected(false);
     };
-  }, [token, boothData?.boothId, boothData?.eventId]);
+  }, [token, boothData?.boothId, boothData?.eventId, getPersistedLiveStatus]);
 
   const goLive = useCallback(async () => {
     if (!socketRef.current || !boothData) {
@@ -309,6 +362,9 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
           (response: { success: boolean; error?: string }) => {
             if (response.success) {
               setIsLive(false);
+              // Clear persisted status and reset auto-reconnect flag
+              sessionStorage.removeItem(LIVE_STATUS_KEY);
+              hasAutoReconnectedRef.current = false;
               resolve(response);
             } else {
               reject(new Error(response.error || "Failed to go offline"));
