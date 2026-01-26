@@ -26,20 +26,12 @@ interface BoothVisitor {
   enteredAt: string;
 }
 
-interface LeadCapture {
-  visitorId: string;
-  visitorName: string;
-  formData: Record<string, unknown>;
-  capturedAt: string;
-}
-
 interface ExpoStaffState {
   booth: ExpoBooth | null;
   analytics: BoothAnalytics | null;
   pendingVideoRequests: VideoRequest[];
   activeVideoSession: BoothVideoSession | null;
   currentVisitors: BoothVisitor[];
-  recentLeads: LeadCapture[];
   myStatus: StaffPresenceStatus;
   isConnected: boolean;
   isLoading: boolean;
@@ -104,7 +96,6 @@ export const useExpoStaff = ({
     pendingVideoRequests: [],
     activeVideoSession: null,
     currentVisitors: [],
-    recentLeads: [],
     myStatus: "OFFLINE",
     isConnected: false,
     isLoading: false,
@@ -167,58 +158,39 @@ export const useExpoStaff = ({
 
         console.log("[ExpoStaff] Joined as staff successfully");
 
-        // Fetch initial analytics with visitors list and leads
+        // Fetch initial analytics with visitors list
+        // Note: Leads are now managed by the useLeads hook (PostgreSQL as single source of truth)
         try {
-          const [analyticsResponse, leadsResponse] = await Promise.all([
-            new Promise<{ success: boolean; stats?: any }>((resolve, reject) => {
-              const timeout = setTimeout(() => reject(new Error("Analytics timeout")), 10000);
+          const analyticsResponse = await new Promise<{ success: boolean; stats?: any }>((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error("Analytics timeout")), 10000);
 
-              newSocket.emit("expo.booth.analytics", { boothId }, (response: { success: boolean; stats?: any }) => {
-                clearTimeout(timeout);
-                if (response.success) {
-                  resolve(response);
-                } else {
-                  reject(new Error("Failed to fetch analytics"));
-                }
-              });
-            }),
-            new Promise<{ success: boolean; leads?: LeadCapture[] }>((resolve, reject) => {
-              const timeout = setTimeout(() => reject(new Error("Leads timeout")), 10000);
-
-              newSocket.emit("expo.booth.leads", { boothId, limit: 50 }, (response: { success: boolean; leads?: LeadCapture[] }) => {
-                clearTimeout(timeout);
-                if (response.success) {
-                  resolve(response);
-                } else {
-                  reject(new Error("Failed to fetch leads"));
-                }
-              });
-            }),
-          ]);
-
-          const updates: Partial<ExpoStaffState> = {};
+            newSocket.emit("expo.booth.analytics", { boothId }, (response: { success: boolean; stats?: any }) => {
+              clearTimeout(timeout);
+              if (response.success) {
+                resolve(response);
+              } else {
+                reject(new Error("Failed to fetch analytics"));
+              }
+            });
+          });
 
           if (analyticsResponse.stats) {
             const stats = analyticsResponse.stats;
             const visitors = stats.visitors || [];
 
-            updates.analytics = stats;
-            updates.currentVisitors = visitors.map((v: any) => ({
-              visitorId: v.userId,
-              visitorName: v.userName || v.visitorName || v.name || `Visitor ${v.userId.slice(0, 8)}`,
-              visitId: v.visitId || v.userId,
-              enteredAt: v.enteredAt,
+            setState((prev) => ({
+              ...prev,
+              analytics: stats,
+              currentVisitors: visitors.map((v: any) => ({
+                visitorId: v.userId,
+                visitorName: v.userName || v.visitorName || v.name || `Visitor ${v.userId.slice(0, 8)}`,
+                visitId: v.visitId || v.userId,
+                enteredAt: v.enteredAt,
+              })),
             }));
 
             console.log("[ExpoStaff] Fetched initial analytics and visitors:", visitors.length);
           }
-
-          if (leadsResponse.leads) {
-            updates.recentLeads = leadsResponse.leads;
-            console.log("[ExpoStaff] Fetched initial leads:", leadsResponse.leads.length);
-          }
-
-          setState((prev) => ({ ...prev, ...updates }));
         } catch (error) {
           console.error("[ExpoStaff] Failed to fetch initial data:", error);
         }
@@ -275,23 +247,8 @@ export const useExpoStaff = ({
       }
     );
 
-    // Listen for new leads
-    newSocket.on(
-      "expo.booth.lead.captured",
-      (data: { visitorId: string; visitorName: string; formData: Record<string, unknown> }) => {
-        playNotificationSound();
-        setState((prev) => ({
-          ...prev,
-          recentLeads: [
-            { ...data, capturedAt: new Date().toISOString() },
-            ...prev.recentLeads.slice(0, 49), // Keep last 50
-          ],
-          analytics: prev.analytics
-            ? { ...prev.analytics, totalLeads: prev.analytics.totalLeads + 1 }
-            : null,
-        }));
-      }
-    );
+    // Note: Lead capture events are now handled by the useLeads hook
+    // which fetches from PostgreSQL as the single source of truth
 
     // Listen for video session ended
     newSocket.on(
@@ -327,7 +284,6 @@ export const useExpoStaff = ({
       newSocket.off("expo.booth.video.requested");
       newSocket.off("expo.booth.visitor.entered");
       newSocket.off("expo.booth.visitors.update");
-      newSocket.off("expo.booth.lead.captured");
       newSocket.off("expo.booth.video.ended");
       newSocket.off("expo.booth.chat.message");
       newSocket.disconnect();
@@ -550,7 +506,6 @@ export const useExpoStaff = ({
     pendingVideoRequests: state.pendingVideoRequests,
     activeVideoSession: state.activeVideoSession,
     currentVisitors: state.currentVisitors,
-    recentLeads: state.recentLeads,
     myStatus: state.myStatus,
     isConnected: state.isConnected,
     isLoading: state.isLoading,

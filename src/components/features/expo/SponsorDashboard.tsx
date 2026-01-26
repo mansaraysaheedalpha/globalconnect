@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useExpoStaff } from "@/hooks/use-expo-staff";
+import { useLeads } from "@/hooks/use-leads";
 import { useAuthStore } from "@/store/auth.store";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { BoothChat } from "./BoothChat";
@@ -91,7 +92,6 @@ export function SponsorDashboard({
   className,
 }: SponsorDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview");
-  const [pgLeadCount, setPgLeadCount] = useState<number | null>(null);
   const [fetchingSponsorId, setFetchingSponsorId] = useState(false);
   const [resolvedSponsorId, setResolvedSponsorId] = useState<string | null>(sponsorId || null);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -101,7 +101,6 @@ export function SponsorDashboard({
     pendingVideoRequests,
     activeVideoSession,
     currentVisitors,
-    recentLeads,
     myStatus,
     isConnected,
     isLoading,
@@ -119,6 +118,18 @@ export function SponsorDashboard({
   const staffDisplayName = user?.first_name && user?.last_name
     ? `${user.first_name} ${user.last_name}`
     : user?.email || "Staff";
+
+  // Use the useLeads hook for lead data (PostgreSQL as single source of truth)
+  const {
+    leads,
+    stats: leadStats,
+    isLoading: isLoadingLeads,
+    isRealTimeConnected,
+    refetch: refetchLeads,
+  } = useLeads({
+    sponsorId: resolvedSponsorId || "",
+    enabled: !!resolvedSponsorId && !!token,
+  });
 
   // Fetch sponsorId from booth if not provided
   useEffect(() => {
@@ -154,44 +165,10 @@ export function SponsorDashboard({
     fetchSponsorId();
   }, [boothId, token, resolvedSponsorId, fetchingSponsorId]);
 
-  // Fetch PostgreSQL lead count (single source of truth)
-  useEffect(() => {
-    if (!resolvedSponsorId || !token) return;
-
-    const fetchPgLeadCount = async () => {
-      try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
-        const response = await fetch(
-          `${API_BASE_URL}/sponsors/sponsors/${resolvedSponsorId}/leads/stats`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setPgLeadCount(data.total_leads);
-        }
-      } catch (error) {
-        console.error("[SponsorDashboard] Failed to fetch PostgreSQL lead count:", error);
-      }
-    };
-
-    // Fetch immediately
-    fetchPgLeadCount();
-
-    // Refresh every 30 seconds to stay in sync
-    const interval = setInterval(fetchPgLeadCount, 30000);
-    return () => clearInterval(interval);
-  }, [resolvedSponsorId, token]);
-
-  // Override analytics with PostgreSQL lead count (single source of truth)
-  const analyticsWithPgLeads = analytics && pgLeadCount !== null
-    ? { ...analytics, totalLeads: pgLeadCount }
-    : analytics;
+  // Compute analytics with PostgreSQL lead count from useLeads (single source of truth)
+  const analyticsWithPgLeads = analytics
+    ? { ...analytics, totalLeads: leadStats?.total_leads ?? analytics.totalLeads }
+    : null;
 
   // Format duration
   const formatDuration = (seconds: number) => {
@@ -408,9 +385,9 @@ export function SponsorDashboard({
             </TabsTrigger>
             <TabsTrigger value="leads" className="h-10 text-xs">
               Leads
-              {recentLeads.length > 0 && (
+              {leads.length > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs h-5 px-1">
-                  {recentLeads.length}
+                  {leadStats?.total_leads ?? leads.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -463,24 +440,41 @@ export function SponsorDashboard({
           </TabsContent>
 
           <TabsContent value="leads" className="flex-1 min-h-0 m-0 p-4 pb-6 overflow-auto">
-            {recentLeads.length === 0 ? (
+            {isLoadingLeads ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : leads.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <UserCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No leads captured yet</p>
               </div>
             ) : (
               <div className="space-y-3 pb-4">
-                {recentLeads.map((lead, index) => (
-                  <div key={index} className="p-3 rounded-lg border bg-card">
+                {leads.map((lead) => (
+                  <div key={lead.id} className="p-3 rounded-lg border bg-card">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{lead.visitorName}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{lead.user_name || "Unknown"}</span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs h-5 px-1",
+                            lead.intent_level === "hot" && "bg-red-500/10 text-red-600 border-red-500/20",
+                            lead.intent_level === "warm" && "bg-orange-500/10 text-orange-600 border-orange-500/20",
+                            lead.intent_level === "cold" && "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                          )}
+                        >
+                          {lead.intent_level}
+                        </Badge>
+                      </div>
                       <span className="text-xs text-muted-foreground">
-                        {formatTimeAgo(lead.capturedAt)}
+                        {formatTimeAgo(lead.created_at)}
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-0.5">
-                      {(lead.formData as any).email && <p>Email: {String((lead.formData as any).email)}</p>}
-                      {(lead.formData as any).company && <p>Company: {String((lead.formData as any).company)}</p>}
+                      {lead.user_email && <p>Email: {lead.user_email}</p>}
+                      {lead.user_company && <p>Company: {lead.user_company}</p>}
                     </div>
                   </div>
                 ))}
@@ -674,9 +668,9 @@ export function SponsorDashboard({
           </TabsTrigger>
           <TabsTrigger value="leads">
             Leads
-            {recentLeads.length > 0 && (
+            {leads.length > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs">
-                {recentLeads.length}
+                {leadStats?.total_leads ?? leads.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -819,39 +813,57 @@ export function SponsorDashboard({
           <TabsContent value="leads" className="p-4 mt-0">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Recent Leads</CardTitle>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span>Recent Leads</span>
+                  {isRealTimeConnected && (
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      <Circle className="h-2 w-2 fill-green-500 mr-1" />
+                      Live
+                    </Badge>
+                  )}
+                </CardTitle>
                 <CardDescription>
                   Contact information captured from booth visitors
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {recentLeads.length === 0 ? (
+                {isLoadingLeads ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : leads.length === 0 ? (
                   <p className="text-center py-8 text-muted-foreground">
                     No leads captured yet
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {recentLeads.map((lead, index) => (
+                    {leads.map((lead) => (
                       <div
-                        key={index}
+                        key={lead.id}
                         className="p-3 rounded-lg border bg-card"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{lead.visitorName}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{lead.user_name || "Unknown"}</span>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                lead.intent_level === "hot" && "bg-red-500/10 text-red-600 border-red-500/20",
+                                lead.intent_level === "warm" && "bg-orange-500/10 text-orange-600 border-orange-500/20",
+                                lead.intent_level === "cold" && "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                              )}
+                            >
+                              {lead.intent_level}
+                            </Badge>
+                          </div>
                           <span className="text-xs text-muted-foreground">
-                            {formatTimeAgo(lead.capturedAt)}
+                            {formatTimeAgo(lead.created_at)}
                           </span>
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
-                          {lead.formData.email ? (
-                            <p>Email: {String(lead.formData.email)}</p>
-                          ) : null}
-                          {lead.formData.company ? (
-                            <p>Company: {String(lead.formData.company)}</p>
-                          ) : null}
-                          {lead.formData.interests ? (
-                            <p>Interests: {String(lead.formData.interests)}</p>
-                          ) : null}
+                          {lead.user_email && <p>Email: {lead.user_email}</p>}
+                          {lead.user_company && <p>Company: {lead.user_company}</p>}
+                          {lead.user_title && <p>Title: {lead.user_title}</p>}
                         </div>
                       </div>
                     ))}

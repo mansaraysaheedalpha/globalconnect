@@ -1,7 +1,6 @@
 // src/app/(sponsor)/sponsor/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,31 +19,9 @@ import {
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
+import { useLeads } from "@/hooks/use-leads";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
-
-interface SponsorStats {
-  total_leads: number;
-  hot_leads: number;
-  warm_leads: number;
-  cold_leads: number;
-  leads_contacted: number;
-  leads_converted: number;
-  conversion_rate: number;
-  avg_intent_score: number;
-}
-
-interface Lead {
-  id: string;
-  user_id: string;
-  user_name?: string;
-  user_email?: string;
-  user_company?: string;
-  intent_level: "hot" | "warm" | "cold";
-  intent_score: number;
-  created_at: string;
-  is_starred?: boolean;
-}
+import type { Lead, LeadStats } from "@/types/leads";
 
 // Stats card component
 function StatsCard({
@@ -160,57 +137,23 @@ function formatTimeAgo(dateString: string): string {
 export default function SponsorDashboardPage() {
   const { token } = useAuthStore();
   const { activeSponsorId, activeSponsorName } = useSponsorStore();
-  const [stats, setStats] = useState<SponsorStats | null>(null);
-  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
-  const [starredCount, setStarredCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!token || !activeSponsorId) return;
+  // Use the useLeads hook for lead data (PostgreSQL as single source of truth)
+  const {
+    leads,
+    stats,
+    isLoading,
+    isLoadingStats,
+    error,
+    refetch,
+  } = useLeads({
+    sponsorId: activeSponsorId || "",
+    enabled: !!activeSponsorId && !!token,
+    limit: 5, // Only fetch 5 for recent leads display
+  });
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Fetch stats and leads in parallel using active sponsor from store
-        const [statsRes, leadsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }),
-          fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads?limit=5`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }),
-        ]);
-
-        if (statsRes.ok) {
-          const statsData: SponsorStats = await statsRes.json();
-          setStats(statsData);
-        }
-
-        if (leadsRes.ok) {
-          const leadsData: Lead[] = await leadsRes.json();
-          setRecentLeads(leadsData);
-          // Count starred leads
-          setStarredCount(leadsData.filter(l => l.is_starred).length);
-        }
-      } catch (err) {
-        console.error("Error fetching sponsor data:", err);
-        setError(err instanceof Error ? err.message : "Failed to load data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [token, activeSponsorId]);
+  // Count starred leads from the fetched leads
+  const starredCount = leads.filter((l) => l.is_starred).length;
 
   // Show error state
   if (error) {
@@ -221,13 +164,13 @@ export default function SponsorDashboardPage() {
             <AlertCircle className="h-5 w-5 text-destructive" />
             <div>
               <p className="font-medium text-destructive">Error loading dashboard</p>
-              <p className="text-sm text-muted-foreground">{error}</p>
+              <p className="text-sm text-muted-foreground">{error.message}</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               className="ml-auto"
-              onClick={() => window.location.reload()}
+              onClick={() => refetch()}
             >
               Retry
             </Button>
@@ -257,7 +200,7 @@ export default function SponsorDashboardPage() {
     );
   }
 
-  const displayStats = stats || {
+  const displayStats: LeadStats = stats || {
     total_leads: 0,
     hot_leads: 0,
     warm_leads: 0,
@@ -360,14 +303,14 @@ export default function SponsorDashboardPage() {
                   </div>
                 ))}
               </div>
-            ) : recentLeads.length === 0 ? (
+            ) : leads.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">No leads captured yet</p>
               </div>
             ) : (
               <div className="space-y-0">
-                {recentLeads.map((lead) => (
+                {leads.map((lead) => (
                   <RecentLeadItem
                     key={lead.id}
                     name={lead.user_name || "Unknown"}
