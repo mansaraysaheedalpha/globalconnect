@@ -44,7 +44,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch booth data when sponsor is selected
   useEffect(() => {
-    console.log("[ExpoStaffProvider] Effect running with:", { token: !!token, activeSponsorId });
+    console.log("[ExpoStaffProvider] Effect running with:", { token: !!token, activeSponsorId, userId: user?.id });
 
     if (!token || !activeSponsorId) {
       console.log("[ExpoStaffProvider] Missing token or activeSponsorId, skipping fetch");
@@ -120,10 +120,20 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
             setBoothFetchError(null);
 
             // Check if current user is active staff (restore live status)
+            console.log("[ExpoStaffProvider] Checking staff presence:", {
+              hasUser: !!user,
+              userId: user?.id,
+              hasStaffPresence: !!booth.staffPresence,
+              staffPresenceCount: booth.staffPresence?.length || 0,
+              staffPresence: booth.staffPresence,
+            });
+
             if (user && booth.staffPresence) {
               const myPresence = booth.staffPresence.find(
                 (staff: any) => staff.staffId === user.id
               );
+              console.log("[ExpoStaffProvider] My presence record:", myPresence);
+
               const isActive = myPresence && (
                 myPresence.status === "ONLINE" ||
                 myPresence.status === "BUSY" ||
@@ -136,6 +146,9 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
                 console.log("[ExpoStaffProvider] No active presence found for current user");
                 setIsLive(false);
               }
+            } else {
+              console.log("[ExpoStaffProvider] Cannot check presence - missing user or staffPresence");
+              setIsLive(false);
             }
           } else {
             console.error("[ExpoStaffProvider] No valid booth in response:", data);
@@ -161,7 +174,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchBoothData();
-  }, [token, activeSponsorId]);
+  }, [token, activeSponsorId, user]);
 
   // Initialize socket connection when booth data is available
   useEffect(() => {

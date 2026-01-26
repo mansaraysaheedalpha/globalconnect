@@ -607,7 +607,7 @@ export function SponsorDashboard({
 
         <ScrollArea className="flex-1">
           {/* Overview Tab */}
-          <TabsContent value="overview" className="p-4 space-y-4 mt-0">
+          <TabsContent value="overview" className="p-4 pb-8 space-y-4 mt-0">
             {/* Stats grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
