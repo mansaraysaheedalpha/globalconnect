@@ -713,11 +713,12 @@ export function SponsorDashboard({
             </Card>
 
             {/* Peak Visitors - only metric not in top grid */}
-            <Card>
-              <CardHeader>
+            <Card className="border-2 border-primary">
+              <CardHeader className="bg-primary/5">
                 <CardTitle className="text-lg">Peak Visitors</CardTitle>
+                <CardDescription>Highest number of simultaneous visitors</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
                   <div className="p-4 rounded-full bg-primary/10">
                     <TrendingUp className="h-8 w-8 text-primary" />
