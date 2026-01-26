@@ -22,7 +22,7 @@ interface ExpoStaffContextType {
 const ExpoStaffContext = createContext<ExpoStaffContextType | null>(null);
 
 export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
   const { activeSponsorId } = useSponsorStore();
   const [boothData, setBoothData] = useState<{
     boothId: string;
@@ -119,13 +119,23 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
             });
             setBoothFetchError(null);
 
-            // Check if booth has active staff presence (restore live status)
-            const hasActiveStaff = booth.staffPresence && booth.staffPresence.some(
-              (staff: any) => staff.status === "ONLINE" || staff.status === "BUSY" || staff.status === "AWAY"
-            );
-            if (hasActiveStaff) {
-              console.log("[ExpoStaffProvider] Restoring live status - active staff found");
-              setIsLive(true);
+            // Check if current user is active staff (restore live status)
+            if (user && booth.staffPresence) {
+              const myPresence = booth.staffPresence.find(
+                (staff: any) => staff.staffId === user.id
+              );
+              const isActive = myPresence && (
+                myPresence.status === "ONLINE" ||
+                myPresence.status === "BUSY" ||
+                myPresence.status === "AWAY"
+              );
+              if (isActive) {
+                console.log("[ExpoStaffProvider] Restoring live status - found active presence for current user");
+                setIsLive(true);
+              } else {
+                console.log("[ExpoStaffProvider] No active presence found for current user");
+                setIsLive(false);
+              }
             }
           } else {
             console.error("[ExpoStaffProvider] No valid booth in response:", data);
