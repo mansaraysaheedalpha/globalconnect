@@ -52,7 +52,19 @@ export default function RootLayout({
         <LiveRegionProvider>
           <SkipLink href="#main-content" />
           <ApolloProvider>{children}</ApolloProvider>
-          <Toaster />
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            toastOptions={{
+              style: {
+                background: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))',
+                border: '1px solid hsl(var(--border))',
+              },
+              className: 'text-sm',
+            }}
+          />
         </LiveRegionProvider>
       </body>
     </html>
