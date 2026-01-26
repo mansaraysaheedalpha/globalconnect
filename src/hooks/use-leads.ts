@@ -87,6 +87,9 @@ export const useLeads = ({
   const maxRetries = 3;
   const isMountedRef = useRef(true);
 
+  // Stable ref for refetch to avoid WebSocket effect re-running
+  const refetchRef = useRef<() => void>(() => {});
+
   // Build query params
   const buildQueryParams = useCallback(
     (customOffset?: number) => {
@@ -213,6 +216,11 @@ export const useLeads = ({
     fetchStats();
   }, [fetchLeads, fetchStats]);
 
+  // Keep refetchRef in sync with refetch
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
+
   // Fetch next page
   const fetchNextPage = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage && !isLoading) {
@@ -288,10 +296,11 @@ export const useLeads = ({
     if (!enabled || !sponsorId || autoRefreshInterval <= 0) return;
 
     refreshIntervalRef.current = setInterval(() => {
-      // Only refetch if no pending fetch and component is mounted
-      if (!isLoading && !isFetchingNextPage && isMountedRef.current) {
+      // Only refetch if component is mounted
+      // Use ref to always get latest refetch function
+      if (isMountedRef.current) {
         console.log("[useLeads] Polling refresh");
-        refetch();
+        refetchRef.current();
       }
     }, autoRefreshInterval);
 
@@ -301,7 +310,7 @@ export const useLeads = ({
         refreshIntervalRef.current = null;
       }
     };
-  }, [enabled, sponsorId, autoRefreshInterval, refetch, isLoading, isFetchingNextPage]);
+  }, [enabled, sponsorId, autoRefreshInterval]);
 
   // Setup WebSocket connection for real-time notifications
   useEffect(() => {
@@ -359,7 +368,7 @@ export const useLeads = ({
       // Refetch from PostgreSQL to get the complete lead data
       // This ensures data consistency - PostgreSQL is the single source of truth
       if (isMountedRef.current) {
-        refetch();
+        refetchRef.current();
       }
     });
 
@@ -369,7 +378,7 @@ export const useLeads = ({
 
       // Refetch to get the updated data from PostgreSQL
       if (isMountedRef.current) {
-        refetch();
+        refetchRef.current();
       }
     });
 
@@ -383,7 +392,7 @@ export const useLeads = ({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token, sponsorId, enabled, refetch]);
+  }, [token, sponsorId, enabled]); // Removed refetch - using refetchRef instead
 
   // Cleanup on unmount
   useEffect(() => {
