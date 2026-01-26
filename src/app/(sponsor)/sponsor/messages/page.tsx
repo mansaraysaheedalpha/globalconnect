@@ -67,7 +67,7 @@ export default function MessagesPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`,
+        `${API_BASE_URL}/sponsors/${activeSponsorId}/leads/stats`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -108,7 +108,7 @@ export default function MessagesPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/sponsors/${activeSponsorId}/campaigns`,
+        `${API_BASE_URL}/sponsors-campaigns/sponsors/${activeSponsorId}/campaigns`,
         {
           method: "POST",
           headers: {
@@ -120,7 +120,7 @@ export default function MessagesPage() {
             subject: message.subject,
             message_body: message.body,
             audience_type: audience,
-            metadata: {},
+            campaign_metadata: {},
           }),
         }
       );
