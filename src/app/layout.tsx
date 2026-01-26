@@ -56,6 +56,7 @@ export default function RootLayout({
             position="top-right"
             richColors
             closeButton
+            duration={10000}
             toastOptions={{
               style: {
                 background: 'hsl(var(--background))',
