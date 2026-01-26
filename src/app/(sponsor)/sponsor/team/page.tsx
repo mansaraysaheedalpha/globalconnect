@@ -139,7 +139,7 @@ export default function TeamManagementPage() {
   const [isRevoking, setIsRevoking] = useState(false);
 
   // Check if current user can invite others
-  const currentUserMember = teamMembers.find(m => m.user_id === user?.sub);
+  const currentUserMember = teamMembers.find(m => m.user_id === user?.id);
   const canInviteOthers = currentUserMember?.can_invite_others ?? false;
 
   // Fetch team members and invitations
