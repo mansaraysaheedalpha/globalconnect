@@ -284,8 +284,38 @@ export function SponsorDashboard({
 
         {/* Key metrics - 2x2 grid with large numbers */}
         <div className="grid grid-cols-2 gap-3 p-4">
-          <MobileMetricCard label="Current Visitors" value={analytics?.currentVisitors ?? 0} icon={Users} />
-          <MobileMetricCard label="Leads Captured" value={analytics?.totalLeads ?? 0} icon={UserCheck} />
+          <div className="p-4 rounded-lg border bg-card">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Users className="h-4 w-4" />
+              <span className="text-xs">Current Visitors</span>
+            </div>
+            <p className="text-2xl font-bold">{analytics?.currentVisitors ?? 0}</p>
+          </div>
+
+          <div className="p-4 rounded-lg border bg-card">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-xs">Total Visitors</span>
+            </div>
+            <p className="text-2xl font-bold">{analytics?.totalVisitors ?? 0}</p>
+            <p className="text-xs text-muted-foreground">{analytics?.uniqueVisitors ?? 0} unique</p>
+          </div>
+
+          <div className="p-4 rounded-lg border bg-card">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <UserCheck className="h-4 w-4" />
+              <span className="text-xs">Leads Captured</span>
+            </div>
+            <p className="text-2xl font-bold">{analytics?.totalLeads ?? 0}</p>
+          </div>
+
+          <div className="p-4 rounded-lg border bg-card">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Clock className="h-4 w-4" />
+              <span className="text-xs">Avg. Visit Time</span>
+            </div>
+            <p className="text-2xl font-bold">{formatDuration(analytics?.avgVisitDuration ?? 0)}</p>
+          </div>
         </div>
 
         {/* Tabs for Overview/Chat/Leads/Visitors - full screen when active */}
@@ -577,7 +607,7 @@ export function SponsorDashboard({
           {/* Overview Tab */}
           <TabsContent value="overview" className="p-4 space-y-4 mt-0">
             {/* Stats grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-2">
@@ -603,33 +633,8 @@ export function SponsorDashboard({
                   <p className="text-2xl font-bold mt-1">
                     {analytics?.totalVisitors ?? 0}
                   </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      Unique Visitors
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold mt-1">
-                    {analytics?.uniqueVisitors ?? 0}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      Peak Visitors
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold mt-1">
-                    {analytics?.peakVisitors ?? 0}
+                  <p className="text-xs text-muted-foreground">
+                    {analytics?.uniqueVisitors ?? 0} unique
                   </p>
                 </CardContent>
               </Card>
