@@ -96,14 +96,57 @@ export default function MessagesPage() {
       return;
     }
 
+    if (!activeSponsorId) {
+      toast.error("No sponsor selected.");
+      return;
+    }
+
     setIsSending(true);
 
-    // Note: Backend messaging API pending implementation
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsSending(false);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/sponsors/${activeSponsorId}/campaigns`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: `Campaign ${new Date().toLocaleString()}`,
+            subject: message.subject,
+            message_body: message.body,
+            audience_type: audience,
+            metadata: {},
+          }),
+        }
+      );
 
-    toast.success("Your message has been sent to the selected recipients.");
-    setMessage({ subject: "", body: "" });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to send campaign");
+      }
+
+      const campaign = await response.json();
+
+      toast.success(
+        `Campaign "${campaign.name}" has been queued! Your message is being sent to ${campaign.total_recipients} recipient${campaign.total_recipients !== 1 ? 's' : ''}.`
+      );
+
+      setMessage({ subject: "", body: "" });
+
+      // Refresh stats after successful send
+      fetchStats();
+    } catch (err) {
+      console.error("Failed to send campaign:", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to send campaign. Please try again."
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Calculate audience counts from real stats
