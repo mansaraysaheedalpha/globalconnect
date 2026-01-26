@@ -35,6 +35,12 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
   const [isLive, setIsLive] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const isLiveRef = useRef(false);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isLiveRef.current = isLive;
+  }, [isLive]);
 
   // Fetch booth data when sponsor is selected
   useEffect(() => {
@@ -112,6 +118,15 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
               eventId: booth.expoHall?.eventId,
             });
             setBoothFetchError(null);
+
+            // Check if booth has active staff presence (restore live status)
+            const hasActiveStaff = booth.staffPresence && booth.staffPresence.some(
+              (staff: any) => staff.status === "ONLINE" || staff.status === "BUSY" || staff.status === "AWAY"
+            );
+            if (hasActiveStaff) {
+              console.log("[ExpoStaffProvider] Restoring live status - active staff found");
+              setIsLive(true);
+            }
           } else {
             console.error("[ExpoStaffProvider] No valid booth in response:", data);
             setBoothFetchError("No booth data found in response");
@@ -161,15 +176,41 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
+    socket.on("connect", async () => {
       console.log("[ExpoStaffProvider] Socket connected, ID:", socket.id);
       setIsSocketConnected(true);
+
+      // Auto-rejoin as staff if we were previously live
+      if (isLiveRef.current && boothData) {
+        console.log("[ExpoStaffProvider] Auto-rejoining as staff after reconnect");
+        try {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error("Rejoin timeout")), 10000);
+            socket.emit(
+              "expo.booth.staff.join",
+              { boothId: boothData.boothId },
+              (response: { success: boolean; error?: string }) => {
+                clearTimeout(timeout);
+                if (response.success) {
+                  console.log("[ExpoStaffProvider] Successfully rejoined as staff");
+                  resolve(response);
+                } else {
+                  console.error("[ExpoStaffProvider] Failed to rejoin:", response.error);
+                  reject(new Error(response.error || "Failed to rejoin"));
+                }
+              }
+            );
+          });
+        } catch (error) {
+          console.error("[ExpoStaffProvider] Auto-rejoin failed:", error);
+        }
+      }
     });
 
     socket.on("disconnect", () => {
       console.log("[ExpoStaffProvider] Socket disconnected");
       setIsSocketConnected(false);
-      setIsLive(false);
+      // Keep isLive true so we can auto-rejoin on reconnect
     });
 
     socket.on("connect_error", (error) => {
