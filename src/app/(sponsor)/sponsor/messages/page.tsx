@@ -363,24 +363,37 @@ export default function MessagesPage() {
               </div>
 
               {/* Send Options */}
-              <div className="flex items-center gap-4 pt-4">
-                <Button
-                  onClick={handleSend}
-                  disabled={isSending || audienceCounts[audience] === 0}
-                >
-                  {isSending ? (
-                    <>Sending...</>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Now
-                    </>
-                  )}
-                </Button>
-                <Button variant="outline" disabled={isSending}>
-                  <Clock className="mr-2 h-4 w-4" />
-                  Schedule
-                </Button>
+              <div className="space-y-3 pt-4">
+                {audienceCounts[audience] === 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-yellow-800">No recipients available</p>
+                      <p className="text-xs text-yellow-700 mt-0.5">
+                        You don&apos;t have any leads in the selected audience category yet. Try selecting a different audience or capture more leads first.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={handleSend}
+                    disabled={isSending || audienceCounts[audience] === 0}
+                  >
+                    {isSending ? (
+                      <>Sending...</>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Send Now
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" disabled={isSending}>
+                    <Clock className="mr-2 h-4 w-4" />
+                    Schedule
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -1822,7 +1822,11 @@ export default function BoothSettingsPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => router.push("/sponsor/team")}
+              >
                 Manage Team Members
               </Button>
               {expoBooth?.expoHall && (
