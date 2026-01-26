@@ -81,6 +81,8 @@ export default function MessagesPage() {
       }
 
       const data = await response.json();
+      console.log('[Messages] Stats received:', data);
+      console.log('[Messages] Sponsor ID used:', activeSponsorId);
       setStats(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load stats");
