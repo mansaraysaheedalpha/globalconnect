@@ -80,10 +80,14 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, activeSponsorId, boothData?.boothId]);
 
-  // Keep ref in sync with state and persist
+  // Keep ref in sync with state - only persist when going live (not when clearing)
+  // This prevents the API response from clearing sessionStorage before auto-rejoin can happen
   useEffect(() => {
     isLiveRef.current = isLive;
-    persistLiveStatus(isLive);
+    // Only persist when going live - clearing is handled explicitly in goOffline and rejoin failure
+    if (isLive) {
+      persistLiveStatus(true);
+    }
   }, [isLive, persistLiveStatus]);
 
   // Fetch booth data when sponsor is selected
@@ -247,12 +251,34 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       console.log("[ExpoStaffProvider] Socket connected, ID:", socket.id);
       setIsSocketConnected(true);
 
-      // Check if we should auto-rejoin (either from in-memory state or sessionStorage)
-      const persistedStatus = getPersistedLiveStatus();
-      const shouldAutoRejoin = (isLiveRef.current || persistedStatus) && boothData && !hasAutoReconnectedRef.current;
+      // Check if we should auto-rejoin - read directly from sessionStorage to avoid timing issues
+      let shouldAutoRejoin = false;
 
-      if (shouldAutoRejoin) {
-        hasAutoReconnectedRef.current = true; // Prevent duplicate rejoin attempts
+      try {
+        const stored = sessionStorage.getItem(LIVE_STATUS_KEY);
+        if (stored) {
+          const data = JSON.parse(stored);
+          // Check if within 5 minute grace period and matches current booth
+          const isValid = data.boothId === boothData.boothId &&
+            Date.now() - data.timestamp < 5 * 60 * 1000;
+          if (isValid) {
+            shouldAutoRejoin = true;
+            console.log("[ExpoStaffProvider] Found valid persisted live status:", data);
+          }
+        }
+      } catch {
+        // Ignore parse errors
+      }
+
+      // Also check in-memory state (for reconnects without page refresh)
+      if (!shouldAutoRejoin && isLiveRef.current && boothData) {
+        shouldAutoRejoin = true;
+        console.log("[ExpoStaffProvider] Using in-memory live state for rejoin");
+      }
+
+      // Only attempt rejoin once per socket connection
+      if (shouldAutoRejoin && !hasAutoReconnectedRef.current) {
+        hasAutoReconnectedRef.current = true;
         console.log("[ExpoStaffProvider] Auto-rejoining as staff after page refresh/reconnect");
         try {
           await new Promise((resolve, reject) => {
@@ -300,7 +326,7 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       socketRef.current = null;
       setIsSocketConnected(false);
     };
-  }, [token, boothData?.boothId, boothData?.eventId, getPersistedLiveStatus]);
+  }, [token, boothData?.boothId, boothData?.eventId]);
 
   const goLive = useCallback(async () => {
     if (!socketRef.current || !boothData) {
