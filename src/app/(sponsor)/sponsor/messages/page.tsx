@@ -67,7 +67,7 @@ export default function MessagesPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/sponsors/${activeSponsorId}/leads/stats`,
+        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
