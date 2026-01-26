@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getPublishedEventsForSEO } from '@/lib/seo/server-data';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.eventdynamics.io';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all published events
