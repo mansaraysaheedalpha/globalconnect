@@ -42,6 +42,7 @@ interface SponsorStats {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
+const REALTIME_API_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
 
 export default function MessagesPage() {
   const { token } = useAuthStore();
@@ -58,7 +59,8 @@ export default function MessagesPage() {
     body: "",
   });
 
-  // Fetch stats for audience counts
+  // Fetch stats for audience counts from real-time service (MongoDB)
+  // This is the same data source as the Booth Dashboard
   const fetchStats = useCallback(async () => {
     if (!token || !activeSponsorId) return;
 
@@ -67,7 +69,7 @@ export default function MessagesPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`,
+        `${REALTIME_API_URL}/api/expo/sponsor/${activeSponsorId}/leads/stats`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
