@@ -88,11 +88,6 @@ interface Sponsor {
   is_active: boolean;
 }
 
-interface SponsorStats {
-  total_leads: number;
-  team_count?: number;
-}
-
 interface BoothResource {
   id: string;
   name: string;
@@ -158,7 +153,6 @@ export default function BoothSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSponsorStale, setIsSponsorStale] = useState(false);
   const [sponsor, setSponsor] = useState<Sponsor | null>(null);
-  const [stats, setStats] = useState<SponsorStats>({ total_leads: 0 });
   const [expoBooth, setExpoBooth] = useState<ExpoBooth | null>(null);
 
   // Mobile collapsible states
@@ -253,22 +247,6 @@ export default function BoothSettingsPage() {
           notificationEmail: currentSponsor.lead_notification_email || "",
         });
 
-        // Fetch stats
-        const statsRes = await fetch(
-          `${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats({ total_leads: statsData.total_leads || 0 });
-        }
-
         // Fetch expo booth data from real-time service
         try {
           let boothRes = await fetch(
@@ -320,6 +298,7 @@ export default function BoothSettingsPage() {
             if (boothData.booth?.bannerUrl) {
               setBannerUrl(boothData.booth.bannerUrl);
             }
+
           }
         } catch (boothErr) {
           console.log("No expo booth found for this sponsor (this is normal if expo hall not set up)");
@@ -1797,10 +1776,6 @@ export default function BoothSettingsPage() {
                   </Badge>
                 </div>
               )}
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Leads Captured</span>
-                <span className="text-sm font-medium">{stats.total_leads}</span>
-              </div>
               {expoBooth && (
                 <>
                   <Separator />
