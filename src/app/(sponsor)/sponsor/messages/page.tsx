@@ -25,6 +25,8 @@ import {
   AlertCircle,
   RefreshCw,
   Inbox,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
@@ -49,6 +51,7 @@ export default function MessagesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [isSending, setIsSending] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [audience, setAudience] = useState("all");
   const [message, setMessage] = useState({
     subject: "",
@@ -149,6 +152,58 @@ export default function MessagesPage() {
     }
   };
 
+  const handleAIGenerate = async () => {
+    if (!activeSponsorId) {
+      toast.error("No sponsor selected.");
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/sponsors-campaigns/sponsors/${activeSponsorId}/campaigns/generate-ai-message`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            audience_type: audience,
+            tone: "professional",
+            include_cta: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to generate AI message");
+      }
+
+      const result = await response.json();
+
+      setMessage({
+        subject: result.subject,
+        body: result.body,
+      });
+
+      toast.success("AI message generated! Feel free to customize it.", {
+        description: result.reasoning,
+      });
+    } catch (err) {
+      console.error("Failed to generate AI message:", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "AI generation failed. Please try again or write manually."
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Calculate audience counts from real stats
   const audienceCounts: Record<string, number> = {
     all: stats?.total_leads ?? 0,
@@ -218,6 +273,37 @@ export default function MessagesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* AI Generation Button */}
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                    AI-Powered Message Generator
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Let Claude AI write a personalized message based on your event and audience
+                  </p>
+                </div>
+                <Button
+                  onClick={handleAIGenerate}
+                  disabled={isGenerating || audienceCounts[audience] === 0}
+                  variant="default"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate with AI
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Audience Selection */}
               <div className="space-y-2">
                 <Label>Recipients</Label>
