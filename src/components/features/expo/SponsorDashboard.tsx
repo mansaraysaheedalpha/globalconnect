@@ -1,7 +1,7 @@
 // src/components/features/expo/SponsorDashboard.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   Video,
@@ -53,6 +53,7 @@ export interface SponsorDashboardProps {
   boothId: string;
   boothName: string;
   eventId: string;
+  sponsorId?: string; // Optional: if not provided, will be fetched from booth
   className?: string;
 }
 
@@ -86,9 +87,13 @@ export function SponsorDashboard({
   boothId,
   boothName,
   eventId,
+  sponsorId,
   className,
 }: SponsorDashboardProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [pgLeadCount, setPgLeadCount] = useState<number | null>(null);
+  const [fetchingSponsorId, setFetchingSponsorId] = useState(false);
+  const [resolvedSponsorId, setResolvedSponsorId] = useState<string | null>(sponsorId || null);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
@@ -110,10 +115,83 @@ export function SponsorDashboard({
   } = useExpoStaff({ boothId, eventId });
 
   // Get user info for video call display name
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const staffDisplayName = user?.first_name && user?.last_name
     ? `${user.first_name} ${user.last_name}`
     : user?.email || "Staff";
+
+  // Fetch sponsorId from booth if not provided
+  useEffect(() => {
+    if (resolvedSponsorId || !token || fetchingSponsorId) return;
+
+    const fetchSponsorId = async () => {
+      setFetchingSponsorId(true);
+      try {
+        const REALTIME_API_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
+        const response = await fetch(
+          `${REALTIME_API_URL}/api/expo/booths/${boothId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.booth?.sponsorId) {
+            setResolvedSponsorId(data.booth.sponsorId);
+          }
+        }
+      } catch (error) {
+        console.error("[SponsorDashboard] Failed to fetch sponsorId:", error);
+      } finally {
+        setFetchingSponsorId(false);
+      }
+    };
+
+    fetchSponsorId();
+  }, [boothId, token, resolvedSponsorId, fetchingSponsorId]);
+
+  // Fetch PostgreSQL lead count (single source of truth)
+  useEffect(() => {
+    if (!resolvedSponsorId || !token) return;
+
+    const fetchPgLeadCount = async () => {
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
+        const response = await fetch(
+          `${API_BASE_URL}/sponsors/sponsors/${resolvedSponsorId}/leads/stats`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setPgLeadCount(data.total_leads);
+        }
+      } catch (error) {
+        console.error("[SponsorDashboard] Failed to fetch PostgreSQL lead count:", error);
+      }
+    };
+
+    // Fetch immediately
+    fetchPgLeadCount();
+
+    // Refresh every 30 seconds to stay in sync
+    const interval = setInterval(fetchPgLeadCount, 30000);
+    return () => clearInterval(interval);
+  }, [resolvedSponsorId, token]);
+
+  // Override analytics with PostgreSQL lead count (single source of truth)
+  const analyticsWithPgLeads = analytics && pgLeadCount !== null
+    ? { ...analytics, totalLeads: pgLeadCount }
+    : analytics;
 
   // Format duration
   const formatDuration = (seconds: number) => {
@@ -289,7 +367,7 @@ export function SponsorDashboard({
               <Users className="h-4 w-4" />
               <span className="text-xs">Current Visitors</span>
             </div>
-            <p className="text-2xl font-bold">{analytics?.currentVisitors ?? 0}</p>
+            <p className="text-2xl font-bold">{analyticsWithPgLeads?.currentVisitors ?? 0}</p>
           </div>
 
           <div className="p-4 rounded-lg border bg-card">
@@ -297,8 +375,8 @@ export function SponsorDashboard({
               <TrendingUp className="h-4 w-4" />
               <span className="text-xs">Total Visitors</span>
             </div>
-            <p className="text-2xl font-bold">{analytics?.totalVisitors ?? 0}</p>
-            <p className="text-xs text-muted-foreground">{analytics?.uniqueVisitors ?? 0} unique</p>
+            <p className="text-2xl font-bold">{analyticsWithPgLeads?.totalVisitors ?? 0}</p>
+            <p className="text-xs text-muted-foreground">{analyticsWithPgLeads?.uniqueVisitors ?? 0} unique</p>
           </div>
 
           <div className="p-4 rounded-lg border bg-card">
@@ -306,7 +384,7 @@ export function SponsorDashboard({
               <UserCheck className="h-4 w-4" />
               <span className="text-xs">Leads Captured</span>
             </div>
-            <p className="text-2xl font-bold">{analytics?.totalLeads ?? 0}</p>
+            <p className="text-2xl font-bold">{analyticsWithPgLeads?.totalLeads ?? 0}</p>
           </div>
 
           <div className="p-4 rounded-lg border bg-card">
@@ -314,7 +392,7 @@ export function SponsorDashboard({
               <Clock className="h-4 w-4" />
               <span className="text-xs">Avg. Visit Time</span>
             </div>
-            <p className="text-2xl font-bold">{formatDuration(analytics?.avgVisitDuration ?? 0)}</p>
+            <p className="text-2xl font-bold">{formatDuration(analyticsWithPgLeads?.avgVisitDuration ?? 0)}</p>
           </div>
         </div>
 
@@ -348,22 +426,22 @@ export function SponsorDashboard({
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg border bg-card text-center">
                   <MessageSquare className="h-5 w-5 mx-auto mb-1 text-blue-500" />
-                  <p className="text-xl font-bold">{analytics?.totalChatMessages ?? 0}</p>
+                  <p className="text-xl font-bold">{analyticsWithPgLeads?.totalChatMessages ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Chats</p>
                 </div>
                 <div className="p-3 rounded-lg border bg-card text-center">
                   <Video className="h-5 w-5 mx-auto mb-1 text-purple-500" />
-                  <p className="text-xl font-bold">{analytics?.completedVideoSessions ?? 0}</p>
+                  <p className="text-xl font-bold">{analyticsWithPgLeads?.completedVideoSessions ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Videos</p>
                 </div>
                 <div className="p-3 rounded-lg border bg-card text-center">
                   <Download className="h-5 w-5 mx-auto mb-1 text-green-500" />
-                  <p className="text-xl font-bold">{analytics?.totalDownloads ?? 0}</p>
+                  <p className="text-xl font-bold">{analyticsWithPgLeads?.totalDownloads ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Downloads</p>
                 </div>
                 <div className="p-3 rounded-lg border bg-card text-center">
                   <MousePointerClick className="h-5 w-5 mx-auto mb-1 text-orange-500" />
-                  <p className="text-xl font-bold">{analytics?.totalCtaClicks ?? 0}</p>
+                  <p className="text-xl font-bold">{analyticsWithPgLeads?.totalCtaClicks ?? 0}</p>
                   <p className="text-xs text-muted-foreground">CTA Clicks</p>
                 </div>
               </div>
@@ -374,7 +452,7 @@ export function SponsorDashboard({
                   <TrendingUp className="h-4 w-4" />
                   <span className="text-sm">Peak Visitors</span>
                 </div>
-                <p className="text-2xl font-bold">{analytics?.peakVisitors ?? 0}</p>
+                <p className="text-2xl font-bold">{analyticsWithPgLeads?.peakVisitors ?? 0}</p>
                 <p className="text-xs text-muted-foreground">Maximum concurrent visitors</p>
               </div>
             </div>
@@ -619,7 +697,7 @@ export function SponsorDashboard({
                     </span>
                   </div>
                   <p className="text-2xl font-bold mt-1">
-                    {analytics?.currentVisitors ?? 0}
+                    {analyticsWithPgLeads?.currentVisitors ?? 0}
                   </p>
                 </CardContent>
               </Card>
@@ -633,10 +711,10 @@ export function SponsorDashboard({
                     </span>
                   </div>
                   <p className="text-2xl font-bold mt-1">
-                    {analytics?.totalVisitors ?? 0}
+                    {analyticsWithPgLeads?.totalVisitors ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {analytics?.uniqueVisitors ?? 0} unique
+                    {analyticsWithPgLeads?.uniqueVisitors ?? 0} unique
                   </p>
                 </CardContent>
               </Card>
@@ -650,7 +728,7 @@ export function SponsorDashboard({
                     </span>
                   </div>
                   <p className="text-2xl font-bold mt-1">
-                    {analytics?.totalLeads ?? 0}
+                    {analyticsWithPgLeads?.totalLeads ?? 0}
                   </p>
                 </CardContent>
               </Card>
@@ -664,7 +742,7 @@ export function SponsorDashboard({
                     </span>
                   </div>
                   <p className="text-2xl font-bold mt-1">
-                    {formatDuration(analytics?.avgVisitDuration ?? 0)}
+                    {formatDuration(analyticsWithPgLeads?.avgVisitDuration ?? 0)}
                   </p>
                 </CardContent>
               </Card>
@@ -680,7 +758,7 @@ export function SponsorDashboard({
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <MessageSquare className="h-6 w-6 mx-auto mb-2 text-blue-500" />
                     <p className="text-2xl font-bold">
-                      {analytics?.totalChatMessages ?? 0}
+                      {analyticsWithPgLeads?.totalChatMessages ?? 0}
                     </p>
                     <p className="text-sm text-muted-foreground">Chat Messages</p>
                   </div>
@@ -688,7 +766,7 @@ export function SponsorDashboard({
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <Video className="h-6 w-6 mx-auto mb-2 text-purple-500" />
                     <p className="text-2xl font-bold">
-                      {analytics?.completedVideoSessions ?? 0}
+                      {analyticsWithPgLeads?.completedVideoSessions ?? 0}
                     </p>
                     <p className="text-sm text-muted-foreground">Video Calls</p>
                   </div>
@@ -696,7 +774,7 @@ export function SponsorDashboard({
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <Download className="h-6 w-6 mx-auto mb-2 text-green-500" />
                     <p className="text-2xl font-bold">
-                      {analytics?.totalDownloads ?? 0}
+                      {analyticsWithPgLeads?.totalDownloads ?? 0}
                     </p>
                     <p className="text-sm text-muted-foreground">Downloads</p>
                   </div>
@@ -704,7 +782,7 @@ export function SponsorDashboard({
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <MousePointerClick className="h-6 w-6 mx-auto mb-2 text-orange-500" />
                     <p className="text-2xl font-bold">
-                      {analytics?.totalCtaClicks ?? 0}
+                      {analyticsWithPgLeads?.totalCtaClicks ?? 0}
                     </p>
                     <p className="text-sm text-muted-foreground">CTA Clicks</p>
                   </div>
@@ -724,7 +802,7 @@ export function SponsorDashboard({
                     <TrendingUp className="h-8 w-8 text-primary" />
                   </div>
                   <div>
-                    <p className="text-4xl font-bold">{analytics?.peakVisitors ?? 0}</p>
+                    <p className="text-4xl font-bold">{analyticsWithPgLeads?.peakVisitors ?? 0}</p>
                     <p className="text-sm text-muted-foreground mt-1">Maximum concurrent visitors</p>
                   </div>
                 </div>
