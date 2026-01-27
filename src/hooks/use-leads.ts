@@ -335,13 +335,13 @@ export const useLeads = ({
         setIsRealTimeConnected(true);
       }
 
-      // Join sponsor leads room
+      // Join sponsor leads room - send sponsorId in payload
       socket.emit(
         "sponsor.leads.join",
-        {},
+        { sponsorId },
         (response: { success: boolean; error?: string }) => {
           if (response.success) {
-            console.log("[useLeads] Joined sponsor leads room");
+            console.log("[useLeads] Joined sponsor leads room for sponsor:", sponsorId);
           } else {
             console.warn("[useLeads] Failed to join leads room:", response.error);
           }
