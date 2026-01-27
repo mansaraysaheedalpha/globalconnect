@@ -10,8 +10,8 @@ const GET_EVENT_QUERY = `
       name
       description
       bannerUrl
-      startTime
-      endTime
+      startDate
+      endDate
       updatedAt
       organizer {
         id
@@ -44,8 +44,10 @@ export interface Event {
   name: string;
   description: string | null;
   bannerUrl: string | null;
-  startTime?: string;
-  endTime?: string;
+  startDate?: string;
+  endDate?: string;
+  startTime?: string; // Kept for backwards compatibility
+  endTime?: string;   // Kept for backwards compatibility
   updatedAt: string;
   organizer: {
     id: string;

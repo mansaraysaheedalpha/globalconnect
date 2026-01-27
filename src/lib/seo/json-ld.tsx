@@ -9,8 +9,10 @@ export interface EventForSchema {
   name: string;
   description: string | null;
   bannerUrl: string | null;
-  startTime?: string | Date;
-  endTime?: string | Date;
+  startDate?: string | Date;
+  endDate?: string | Date;
+  startTime?: string | Date; // Kept for backwards compatibility
+  endTime?: string | Date;   // Kept for backwards compatibility
   organizer: {
     id?: string;
     name: string | null;
@@ -122,8 +124,11 @@ export function generateEventSchema(event: EventForSchema) {
   // Determine event status
   let eventStatus = 'https://schema.org/EventScheduled';
   const now = new Date();
-  const startDate = event.startTime ? (typeof event.startTime === 'string' ? new Date(event.startTime) : event.startTime) : null;
-  const endDate = event.endTime ? (typeof event.endTime === 'string' ? new Date(event.endTime) : event.endTime) : null;
+  // Support both startDate/endDate (new) and startTime/endTime (legacy) field names
+  const startDateRaw = event.startDate || event.startTime;
+  const endDateRaw = event.endDate || event.endTime;
+  const startDate = startDateRaw ? (typeof startDateRaw === 'string' ? new Date(startDateRaw) : startDateRaw) : null;
+  const endDate = endDateRaw ? (typeof endDateRaw === 'string' ? new Date(endDateRaw) : endDateRaw) : null;
 
   if (endDate && endDate < now) {
     eventStatus = 'https://schema.org/EventCompleted';
