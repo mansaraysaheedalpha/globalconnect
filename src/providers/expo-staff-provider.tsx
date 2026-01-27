@@ -42,17 +42,19 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
   const hasAutoReconnectedRef = useRef(false);
 
   // Check if user was previously live (from sessionStorage)
+  // This is a secondary cache - the backend staffPresence is the source of truth
   const getPersistedLiveStatus = useCallback(() => {
     if (typeof window === "undefined") return null;
     try {
       const stored = sessionStorage.getItem(LIVE_STATUS_KEY);
       if (stored) {
         const data = JSON.parse(stored);
-        // Only restore if same user and sponsor, and within 5 minutes
+        // Only restore if same user and sponsor
+        // No time limit - backend staffPresence is the source of truth
+        // sessionStorage just helps with faster reconnection
         const isValid =
           data.userId === user?.id &&
-          data.sponsorId === activeSponsorId &&
-          Date.now() - data.timestamp < 5 * 60 * 1000; // 5 minute grace period
+          data.sponsorId === activeSponsorId;
         return isValid ? data : null;
       }
     } catch {
@@ -231,6 +233,10 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Reset auto-reconnect flag for new booth/socket connection
+    // This ensures auto-rejoin is attempted when booth changes
+    hasAutoReconnectedRef.current = false;
+
     const REALTIME_BASE_URL = process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
     const REALTIME_URL = `${REALTIME_BASE_URL}/events`; // Connect to /events namespace
 
@@ -252,15 +258,16 @@ export function ExpoStaffProvider({ children }: { children: React.ReactNode }) {
       setIsSocketConnected(true);
 
       // Check if we should auto-rejoin - read directly from sessionStorage to avoid timing issues
+      // Note: The backend staffPresence is the source of truth for "live" status.
+      // SessionStorage is just a hint for faster reconnection.
       let shouldAutoRejoin = false;
 
       try {
         const stored = sessionStorage.getItem(LIVE_STATUS_KEY);
         if (stored) {
           const data = JSON.parse(stored);
-          // Check if within 5 minute grace period and matches current booth
-          const isValid = data.boothId === boothData.boothId &&
-            Date.now() - data.timestamp < 5 * 60 * 1000;
+          // Check if matches current booth (no time limit - backend is source of truth)
+          const isValid = data.boothId === boothData.boothId;
           if (isValid) {
             shouldAutoRejoin = true;
             console.log("[ExpoStaffProvider] Found valid persisted live status:", data);
