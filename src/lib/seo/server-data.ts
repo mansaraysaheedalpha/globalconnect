@@ -9,15 +9,10 @@ const GET_EVENT_QUERY = `
       id
       name
       description
-      bannerUrl
+      imageUrl
       startDate
       endDate
       updatedAt
-      organizer {
-        id
-        name
-        email
-      }
     }
   }
 `;
@@ -43,13 +38,14 @@ export interface Event {
   id: string;
   name: string;
   description: string | null;
-  bannerUrl: string | null;
+  imageUrl: string | null;
+  bannerUrl?: string | null; // Alias for backwards compatibility
   startDate?: string;
   endDate?: string;
   startTime?: string; // Kept for backwards compatibility
   endTime?: string;   // Kept for backwards compatibility
   updatedAt: string;
-  organizer: {
+  organizer?: {
     id: string;
     name: string | null;
     email: string;

@@ -8,12 +8,13 @@ export interface EventForSchema {
   id: string;
   name: string;
   description: string | null;
-  bannerUrl: string | null;
+  imageUrl?: string | null;
+  bannerUrl?: string | null; // Alias for backwards compatibility
   startDate?: string | Date;
   endDate?: string | Date;
   startTime?: string | Date; // Kept for backwards compatibility
   endTime?: string | Date;   // Kept for backwards compatibility
-  organizer: {
+  organizer?: {
     id?: string;
     name: string | null;
     email: string;
@@ -136,6 +137,9 @@ export function generateEventSchema(event: EventForSchema) {
     eventStatus = 'https://schema.org/EventMovedOnline'; // Ongoing
   }
 
+  // Support both imageUrl (new) and bannerUrl (legacy)
+  const eventImage = event.imageUrl || event.bannerUrl;
+
   const schema: any = {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -148,10 +152,10 @@ export function generateEventSchema(event: EventForSchema) {
       '@type': 'VirtualLocation',
       url: eventUrl,
     },
-    image: event.bannerUrl ? [event.bannerUrl] : [`${SITE_URL}/og-default.png`],
+    image: eventImage ? [eventImage] : [`${SITE_URL}/og-default.png`],
     organizer: {
       '@type': 'Organization',
-      name: event.organizer.name || event.organizer.email,
+      name: event.organizer?.name || event.organizer?.email || SITE_NAME,
       url: SITE_URL,
     },
   };

@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: event.name,
     description,
     path: `/events/${eventId}`,
-    image: event.bannerUrl || undefined,
+    image: event.imageUrl || event.bannerUrl || undefined,
     keywords: [
       'event',
       event.name,
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       'networking',
     ],
     type: 'website',
-    publishedTime: event.startTime,
+    publishedTime: event.startDate || event.startTime,
     modifiedTime: event.updatedAt,
   });
 }
