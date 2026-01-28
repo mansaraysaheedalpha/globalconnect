@@ -1,9 +1,20 @@
 // src/hooks/use-leads.ts
+/**
+ * Real-time leads hook with optimistic updates and guaranteed delivery.
+ *
+ * Key features:
+ * - Zustand store integration for centralized state management
+ * - Direct WebSocket event handling (no refetch on events)
+ * - Optimistic updates for instant UI feedback with rollback
+ * - 5-minute polling fallback (vs 30-second before)
+ * - Redis Streams ensures no missed events during disconnection
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
+import { useLeadsStore } from "@/store/leads.store";
 import {
   Lead,
   LeadStats,
@@ -18,6 +29,9 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 const REALTIME_URL =
   process.env.NEXT_PUBLIC_REALTIME_SERVICE_URL || "http://localhost:3002";
+
+// Default to 5 minutes - WebSocket handles real-time, this is fallback only
+const DEFAULT_POLLING_INTERVAL = 300000;
 
 // Play notification sound for new leads
 const playLeadNotification = () => {
@@ -56,19 +70,41 @@ export const useLeads = ({
   enabled = true,
   limit = 50,
   intentLevel,
-  autoRefreshInterval = 30000,
+  autoRefreshInterval = DEFAULT_POLLING_INTERVAL,
 }: UseLeadsOptions): UseLeadsReturn => {
   const { token } = useAuthStore();
 
-  // Data state
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [stats, setStats] = useState<LeadStats | null>(null);
+  // Zustand store for centralized state management
+  const store = useLeadsStore();
+  const {
+    leads: storeLeads,
+    stats: storeStats,
+    isLoading: storeIsLoading,
+    isLoadingStats: storeIsLoadingStats,
+    setLeads,
+    setStats,
+    setSponsorId,
+    setLoading,
+    setLoadingStats,
+    handleLeadCaptured,
+    handleIntentUpdated,
+    handleStatsUpdated,
+    optimisticUpdateLead,
+    commitUpdate,
+    rollbackUpdate,
+  } = store;
+
+  // Filter leads by intent level if specified
+  const leads = intentLevel
+    ? storeLeads.filter((l) => l.intent_level === intentLevel)
+    : storeLeads;
+  const stats = storeStats;
+  const isLoading = storeIsLoading;
+  const isLoadingStats = storeIsLoadingStats;
+
+  // Local state for pagination (not in store)
   const [offset, setOffset] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(true);
-
-  // Loading states
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
   // Error states
@@ -114,7 +150,7 @@ export const useLeads = ({
       if (isNextPage) {
         setIsFetchingNextPage(true);
       } else {
-        setIsLoading(true);
+        setLoading(true);
       }
       setError(null);
 
@@ -139,7 +175,13 @@ export const useLeads = ({
 
         if (!isMountedRef.current) return;
 
-        setLeads((prev) => (isNextPage ? [...prev, ...data] : data));
+        if (isNextPage) {
+          // For pagination, append to existing leads
+          setLeads([...storeLeads, ...data]);
+        } else {
+          // Fresh fetch - replace all leads in store
+          setLeads(data);
+        }
         setHasNextPage(data.length === limit);
         setOffset(isNextPage ? offset + data.length : data.length);
         setLastUpdated(new Date());
@@ -150,6 +192,7 @@ export const useLeads = ({
         console.error("[useLeads] Fetch error:", err);
         if (!isMountedRef.current) return;
         setError(err as Error);
+        setLoading(false);
 
         // Implement exponential backoff retry
         if (retryCountRef.current < maxRetries) {
@@ -163,19 +206,18 @@ export const useLeads = ({
         }
       } finally {
         if (isMountedRef.current) {
-          setIsLoading(false);
           setIsFetchingNextPage(false);
         }
       }
     },
-    [token, sponsorId, enabled, buildQueryParams, limit, offset]
+    [token, sponsorId, enabled, buildQueryParams, limit, offset, setLeads, setLoading, storeLeads]
   );
 
   // Fetch stats from PostgreSQL (single source of truth)
   const fetchStats = useCallback(async () => {
     if (!token || !sponsorId || !enabled) return;
 
-    setIsLoadingStats(true);
+    setLoadingStats(true);
     setStatsError(null);
 
     try {
@@ -201,13 +243,10 @@ export const useLeads = ({
       console.error("[useLeads] Stats fetch error:", err);
       if (isMountedRef.current) {
         setStatsError(err as Error);
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setIsLoadingStats(false);
+        setLoadingStats(false);
       }
     }
-  }, [token, sponsorId, enabled]);
+  }, [token, sponsorId, enabled, setStats, setLoadingStats]);
 
   // Combined refetch - resets pagination and fetches fresh data
   const refetch = useCallback(() => {
@@ -228,52 +267,64 @@ export const useLeads = ({
     }
   }, [hasNextPage, isFetchingNextPage, isLoading, fetchLeads]);
 
-  // Update lead
+  // Update lead with optimistic updates
   const updateLead = useCallback(
     async (leadId: string, update: LeadUpdate): Promise<Lead> => {
       if (!token || !sponsorId) {
         throw new Error("Not authenticated");
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/sponsors/sponsors/${sponsorId}/leads/${leadId}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(update),
+      // Apply optimistic update immediately for instant UI feedback
+      optimisticUpdateLead(leadId, update);
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/sponsors/sponsors/${sponsorId}/leads/${leadId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(update),
+          }
+        );
+
+        if (!response.ok) {
+          // Rollback optimistic update on failure
+          rollbackUpdate(leadId);
+          throw new Error(`Failed to update lead: ${response.status}`);
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(`Failed to update lead: ${response.status}`);
+        const updatedLead: Lead = await response.json();
+
+        // Commit the update (removes pending flag)
+        commitUpdate(leadId);
+
+        // Refetch stats when follow_up_status changes (affects contacted/converted counts)
+        if (update.follow_up_status) {
+          fetchStats();
+        }
+
+        return updatedLead;
+      } catch (err) {
+        // Rollback on any error
+        rollbackUpdate(leadId);
+        throw err;
       }
-
-      const updatedLead: Lead = await response.json();
-
-      // Update local state immediately
-      setLeads((prev) =>
-        prev.map((lead) => (lead.id === leadId ? updatedLead : lead))
-      );
-
-      // Refetch stats as they may have changed
-      fetchStats();
-
-      return updatedLead;
     },
-    [token, sponsorId, fetchStats]
+    [token, sponsorId, fetchStats, optimisticUpdateLead, commitUpdate, rollbackUpdate]
   );
 
-  // Initial fetch
+  // Initial fetch and sponsor change handling
   useEffect(() => {
     isMountedRef.current = true;
 
     if (enabled && sponsorId && token) {
-      // Reset state for new sponsor
-      setLeads([]);
-      setStats(null);
+      // Update sponsorId in store - this clears data if sponsor changed
+      setSponsorId(sponsorId);
+
+      // Reset local pagination state
       setOffset(0);
       setHasNextPage(true);
       setError(null);
@@ -289,9 +340,10 @@ export const useLeads = ({
     };
     // Intentionally excluding fetchLeads and fetchStats to avoid loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, sponsorId, token, intentLevel]);
+  }, [enabled, sponsorId, token, intentLevel, setSponsorId]);
 
-  // Setup polling interval as fallback
+  // Setup polling interval as fallback (5 minutes default)
+  // WebSocket handles real-time updates - this is for recovery/catch-up only
   useEffect(() => {
     if (!enabled || !sponsorId || autoRefreshInterval <= 0) return;
 
@@ -299,7 +351,7 @@ export const useLeads = ({
       // Only refetch if component is mounted
       // Use ref to always get latest refetch function
       if (isMountedRef.current) {
-        console.log("[useLeads] Polling refresh");
+        console.log("[useLeads] Fallback polling refresh (every 5 min)");
         refetchRef.current();
       }
     }, autoRefreshInterval);
@@ -360,25 +412,37 @@ export const useLeads = ({
       console.error("[useLeads] WebSocket connection error:", error.message);
     });
 
-    // Listen for new leads - triggers refetch from PostgreSQL
+    // Listen for new leads - direct store update (no refetch!)
     socket.on("lead.captured.new", (data: LeadCapturedEvent) => {
       console.log("[useLeads] New lead captured event:", data.id);
       playLeadNotification();
 
-      // Refetch from PostgreSQL to get the complete lead data
-      // This ensures data consistency - PostgreSQL is the single source of truth
+      // Direct store update - instant UI feedback without refetch
+      // Redis Streams guarantees delivery, so we trust the event data
       if (isMountedRef.current) {
-        refetchRef.current();
+        handleLeadCaptured(data);
+        setLastUpdated(new Date());
       }
     });
 
-    // Listen for lead intent updates - triggers refetch
+    // Listen for lead intent updates - direct store update (no refetch!)
     socket.on("lead.intent.updated", (data: LeadIntentUpdatedEvent) => {
       console.log("[useLeads] Lead intent updated event:", data.lead_id);
 
-      // Refetch to get the updated data from PostgreSQL
+      // Direct store update - instant UI feedback without refetch
       if (isMountedRef.current) {
-        refetchRef.current();
+        handleIntentUpdated(data);
+        setLastUpdated(new Date());
+      }
+    });
+
+    // Listen for stats updates from server
+    socket.on("lead.stats.updated", (data: LeadStats) => {
+      console.log("[useLeads] Stats updated event");
+
+      if (isMountedRef.current) {
+        handleStatsUpdated(data);
+        setLastUpdated(new Date());
       }
     });
 
@@ -389,10 +453,11 @@ export const useLeads = ({
       socket.off("connect_error");
       socket.off("lead.captured.new");
       socket.off("lead.intent.updated");
+      socket.off("lead.stats.updated");
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token, sponsorId, enabled]); // Removed refetch - using refetchRef instead
+  }, [token, sponsorId, enabled, handleLeadCaptured, handleIntentUpdated, handleStatsUpdated]);
 
   // Cleanup on unmount
   useEffect(() => {
