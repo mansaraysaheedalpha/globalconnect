@@ -494,14 +494,49 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     [emitWithCallback]
   );
 
-  // Capture lead
+  // Capture lead - calls REST API directly to write to PostgreSQL
   const captureLead = useCallback(
     async (boothId: string, formData: Record<string, unknown>): Promise<boolean> => {
       try {
-        await emitWithCallback("expo.booth.lead.capture", {
-          boothId,
-          formData,
-        });
+        // Get sponsorId from the booth
+        const booth = state.currentBooth?.id === boothId
+          ? state.currentBooth
+          : state.hall?.booths.find(b => b.id === boothId);
+
+        if (!booth?.sponsorId) {
+          throw new Error("Could not find sponsor for this booth");
+        }
+
+        const eventId = eventIdRef.current;
+        const apiBaseUrl = process.env.NEXT_PUBLIC_EVENT_SERVICE_URL ||
+          process.env.NEXT_PUBLIC_API_BASE_URL;
+
+        if (!apiBaseUrl) {
+          throw new Error("Event service URL not configured");
+        }
+
+        // Call the REST API directly to write to PostgreSQL
+        const response = await fetch(
+          `${apiBaseUrl}/events/${eventId}/sponsors/${booth.sponsorId}/capture-lead`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({
+              ...formData,
+              actionType: "FORM_SUBMITTED",
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `Failed to capture lead: ${response.status}`);
+        }
+
+        console.log("[Expo] Lead captured successfully via REST API");
         return true;
       } catch (error) {
         const message =
@@ -511,7 +546,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
         return false;
       }
     },
-    [emitWithCallback]
+    [state.currentBooth, state.hall?.booths, token]
   );
 
   // Clear error
