@@ -142,7 +142,7 @@ export default function SponsorDashboardPage() {
   const {
     leads,
     stats,
-    isLoading,
+    isLoading: isLoadingLeads,
     isLoadingStats,
     error,
     refetch,
@@ -151,6 +151,9 @@ export default function SponsorDashboardPage() {
     enabled: !!activeSponsorId && !!token,
     limit: 5, // Only fetch 5 for recent leads display
   });
+
+  // Combined loading state - show loading until both leads AND stats are ready
+  const isLoading = isLoadingLeads || isLoadingStats;
 
   // Count starred leads from the fetched leads
   const starredCount = leads.filter((l) => l.is_starred).length;

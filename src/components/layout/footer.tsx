@@ -15,10 +15,10 @@ const footerLinks = {
     { label: "Integrations", href: "#integrations" },
   ],
   company: [
-    { label: "About Us", href: "#about" },
-    { label: "Careers", href: "#careers" },
+    { label: "About Us", href: "/about" },
+    { label: "Careers", href: "mailto:careers@eventdynamics.io" },
     { label: "Blog", href: "#blog" },
-    { label: "Contact", href: "#contact" },
+    { label: "Contact", href: "mailto:contact@eventdynamics.io" },
   ],
   legal: [
     { label: "Privacy Policy", href: "/privacy" },
