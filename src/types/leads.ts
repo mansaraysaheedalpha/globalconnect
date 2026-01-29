@@ -113,3 +113,31 @@ export interface LeadIntentUpdatedEvent {
   intent_level: "hot" | "warm" | "cold";
   interaction_count: number;
 }
+
+// Timeline data types for analytics charts
+export interface LeadTimelineDataPoint {
+  date: string; // ISO date string (YYYY-MM-DD)
+  total: number;
+  hot: number;
+  warm: number;
+  cold: number;
+}
+
+export interface LeadTimelineResponse {
+  data: LeadTimelineDataPoint[];
+  period: "daily" | "hourly";
+  total_leads: number;
+}
+
+export interface EngagementDataPoint {
+  hour: number; // 0-23
+  interaction_count: number;
+  unique_visitors: number;
+  avg_duration_seconds: number | null;
+}
+
+export interface EngagementTimelineResponse {
+  data: EngagementDataPoint[];
+  peak_hour: number;
+  total_interactions: number;
+}

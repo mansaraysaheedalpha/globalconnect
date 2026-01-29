@@ -1,13 +1,14 @@
 // src/app/(sponsor)/sponsor/messages/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -27,13 +28,72 @@ import {
   Inbox,
   Sparkles,
   Loader2,
+  CheckCircle2,
+  XCircle,
+  Circle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
 import { useLeads } from "@/hooks/use-leads";
+import { formatDistanceToNow } from "date-fns";
+
+interface Campaign {
+  id: string;
+  name: string;
+  subject: string;
+  status: string;
+  total_recipients: number;
+  sent_count: number;
+  delivered_count: number;
+  failed_count: number;
+  opened_count: number;
+  clicked_count: number;
+  created_at: string;
+  sent_at: string | null;
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
+
+function CampaignStatusBadge({ status }: { status: string }) {
+  switch (status) {
+    case "sent":
+      return (
+        <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-100">
+          <CheckCircle2 className="h-3 w-3 mr-1" />
+          Sent
+        </Badge>
+      );
+    case "sending":
+      return (
+        <Badge variant="default" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          Sending
+        </Badge>
+      );
+    case "queued":
+      return (
+        <Badge variant="default" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
+          <Clock className="h-3 w-3 mr-1" />
+          Queued
+        </Badge>
+      );
+    case "failed":
+      return (
+        <Badge variant="destructive">
+          <XCircle className="h-3 w-3 mr-1" />
+          Failed
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="outline">
+          <Circle className="h-3 w-3 mr-1" />
+          {status}
+        </Badge>
+      );
+  }
+}
 
 export default function MessagesPage() {
   const { token } = useAuthStore();
@@ -60,6 +120,38 @@ export default function MessagesPage() {
     subject: "",
     body: "",
   });
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
+
+  // Fetch recent campaigns
+  const fetchCampaigns = useCallback(async () => {
+    if (!activeSponsorId || !token) return;
+
+    setIsLoadingCampaigns(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/sponsors-campaigns/sponsors/${activeSponsorId}/campaigns?limit=5`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setCampaigns(data.campaigns || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch campaigns:", err);
+    } finally {
+      setIsLoadingCampaigns(false);
+    }
+  }, [activeSponsorId, token]);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
 
   const handleSend = async () => {
     if (!message.subject || !message.body) {
@@ -106,8 +198,9 @@ export default function MessagesPage() {
 
       setMessage({ subject: "", body: "" });
 
-      // Refresh stats after successful send
+      // Refresh stats and campaigns after successful send
       refetch();
+      fetchCampaigns();
     } catch (err) {
       console.error("Failed to send campaign:", err);
       toast.error(
@@ -486,13 +579,58 @@ export default function MessagesPage() {
               <CardTitle>Recent Messages</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="py-8 text-center text-muted-foreground">
-                <Inbox className="h-8 w-8 mx-auto opacity-50 mb-2" />
-                <p className="text-sm font-medium">No messages sent yet</p>
-                <p className="text-xs mt-1">
-                  Your message history will appear here
-                </p>
-              </div>
+              {isLoadingCampaigns ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : campaigns.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <Inbox className="h-8 w-8 mx-auto opacity-50 mb-2" />
+                  <p className="text-sm font-medium">No messages sent yet</p>
+                  <p className="text-xs mt-1">
+                    Your message history will appear here
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {campaigns.map((campaign) => (
+                    <div
+                      key={campaign.id}
+                      className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {campaign.subject}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {campaign.total_recipients} recipient{campaign.total_recipients !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                        <CampaignStatusBadge status={campaign.status} />
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        {campaign.status === "sent" && (
+                          <>
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3 text-green-500" />
+                              {campaign.delivered_count} delivered
+                            </span>
+                            {campaign.opened_count > 0 && (
+                              <span>{campaign.opened_count} opened</span>
+                            )}
+                          </>
+                        )}
+                        <span className="ml-auto">
+                          {formatDistanceToNow(new Date(campaign.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
