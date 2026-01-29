@@ -21,7 +21,7 @@ export default function UnsubscribePage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sponsors-campaigns/unsubscribe/${deliveryId}`,
+        `${process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL}/sponsors-campaigns/unsubscribe/${deliveryId}`,
         {
           method: "POST",
           headers: {

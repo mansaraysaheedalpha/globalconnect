@@ -35,7 +35,7 @@ export default function EmailPreferencesPage() {
     const fetchPreferences = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sponsors-campaigns/email-preferences/${deliveryId}`
+          `${process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL}/sponsors-campaigns/email-preferences/${deliveryId}`
         );
 
         if (!response.ok) {
@@ -65,7 +65,7 @@ export default function EmailPreferencesPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sponsors-campaigns/email-preferences/${deliveryId}`,
+        `${process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL}/sponsors-campaigns/email-preferences/${deliveryId}`,
         {
           method: "PUT",
           headers: {
