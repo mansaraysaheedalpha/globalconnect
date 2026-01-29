@@ -517,7 +517,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
 
         // Call the REST API directly to write to PostgreSQL
         const response = await fetch(
-          `${apiBaseUrl}/events/${eventId}/sponsors/${booth.sponsorId}/capture-lead`,
+          `${apiBaseUrl}/api/v1/sponsors/events/${eventId}/sponsors/${booth.sponsorId}/capture-lead`,
           {
             method: "POST",
             headers: {
