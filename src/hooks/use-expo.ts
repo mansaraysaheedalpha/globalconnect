@@ -515,6 +515,24 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
           throw new Error("Event service URL not configured");
         }
 
+        // Build the lead payload matching the API schema (SponsorLeadCreate)
+        const leadPayload = {
+          user_id: user?.id || `anon_${Date.now()}`, // User ID from auth or anonymous
+          user_name: (formData.name as string) || null,
+          user_email: (formData.email as string) || null,
+          user_company: (formData.company as string) || null,
+          user_title: (formData.jobTitle as string) || null,
+          interaction_type: "booth_contact_form",
+          interaction_metadata: {
+            message: (formData.message as string) || null,
+            phone: (formData.phone as string) || null,
+            interests: formData.interests || null,
+            marketing_consent: formData.marketingConsent || false,
+            booth_id: boothId,
+            booth_name: booth.name,
+          },
+        };
+
         // Call the REST API directly to write to PostgreSQL
         const response = await fetch(
           `${apiBaseUrl}/api/v1/sponsors/events/${eventId}/sponsors/${booth.sponsorId}/capture-lead`,
@@ -524,10 +542,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
               "Content-Type": "application/json",
               ...(token && { Authorization: `Bearer ${token}` }),
             },
-            body: JSON.stringify({
-              ...formData,
-              actionType: "FORM_SUBMITTED",
-            }),
+            body: JSON.stringify(leadPayload),
           }
         );
 
@@ -546,7 +561,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
         return false;
       }
     },
-    [state.currentBooth, state.hall?.booths, token]
+    [state.currentBooth, state.hall?.booths, token, user]
   );
 
   // Clear error
