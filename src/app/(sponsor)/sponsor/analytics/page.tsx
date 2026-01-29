@@ -13,6 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Users,
   TrendingUp,
   Target,
@@ -25,6 +32,12 @@ import {
   Calendar,
   AlertCircle,
   RefreshCw,
+  Mail,
+  Eye,
+  MousePointer,
+  CheckCircle2,
+  XCircle,
+  Send,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
@@ -57,6 +70,21 @@ interface SponsorStats {
   leads_converted: number;
   conversion_rate: number;
   avg_intent_score: number;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+  subject: string;
+  status: string;
+  total_recipients: number;
+  sent_count: number;
+  delivered_count: number;
+  failed_count: number;
+  opened_count: number;
+  clicked_count: number;
+  created_at: string;
+  sent_at: string | null;
 }
 
 interface Lead {
@@ -418,6 +446,12 @@ export default function SponsorAnalyticsPage() {
   const [engagementPeakHour, setEngagementPeakHour] = useState<number>(0);
   const [isLoadingEngagement, setIsLoadingEngagement] = useState(true);
 
+  // Campaign performance data state
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(true);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [campaignDetailsOpen, setCampaignDetailsOpen] = useState(false);
+
   const API_BASE_URL = process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
 
   // Map date range to days parameter
@@ -438,13 +472,14 @@ export default function SponsorAnalyticsPage() {
     setIsLoading(true);
     setIsLoadingTimeline(true);
     setIsLoadingEngagement(true);
+    setIsLoadingCampaigns(true);
     setError(null);
 
     const days = getDaysFromDateRange(dateRange);
 
     try {
       // Fetch all data in parallel
-      const [statsResponse, leadsResponse, timelineResponse, engagementResponse] = await Promise.all([
+      const [statsResponse, leadsResponse, timelineResponse, engagementResponse, campaignsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/stats`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -464,6 +499,12 @@ export default function SponsorAnalyticsPage() {
           },
         }),
         fetch(`${API_BASE_URL}/sponsors/sponsors/${activeSponsorId}/leads/engagement-timeline?days=${days}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        fetch(`${API_BASE_URL}/sponsors-campaigns/sponsors/${activeSponsorId}/campaigns?limit=20`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -497,10 +538,18 @@ export default function SponsorAnalyticsPage() {
         setEngagementPeakHour(engagementResult.peak_hour);
       }
       setIsLoadingEngagement(false);
+
+      // Process campaigns data
+      if (campaignsResponse.ok) {
+        const campaignsData = await campaignsResponse.json();
+        setCampaigns(campaignsData.campaigns || []);
+      }
+      setIsLoadingCampaigns(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load analytics");
       setIsLoadingTimeline(false);
       setIsLoadingEngagement(false);
+      setIsLoadingCampaigns(false);
     } finally {
       setIsLoading(false);
     }
@@ -917,6 +966,302 @@ export default function SponsorAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Email Campaign Performance Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Email Campaign Performance
+          </CardTitle>
+          <CardDescription>
+            Track open rates, click rates, and engagement for your email campaigns
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingCampaigns ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <Send className="h-12 w-12 mx-auto opacity-50 mb-3" />
+              <p className="font-medium">No campaigns sent yet</p>
+              <p className="text-sm mt-1">
+                Send your first email campaign from the Messages tab to see performance metrics here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Summary Stats */}
+              {(() => {
+                const sentCampaigns = campaigns.filter(c => c.status === "sent");
+                const totalSent = sentCampaigns.reduce((sum, c) => sum + c.delivered_count, 0);
+                const totalOpened = sentCampaigns.reduce((sum, c) => sum + c.opened_count, 0);
+                const totalClicked = sentCampaigns.reduce((sum, c) => sum + c.clicked_count, 0);
+                const avgOpenRate = totalSent > 0 ? (totalOpened / totalSent) * 100 : 0;
+                const avgClickRate = totalOpened > 0 ? (totalClicked / totalOpened) * 100 : 0;
+
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <Send className="h-4 w-4" />
+                        Campaigns
+                      </div>
+                      <p className="text-2xl font-bold">{sentCampaigns.length}</p>
+                    </div>
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Delivered
+                      </div>
+                      <p className="text-2xl font-bold">{totalSent}</p>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm text-blue-600 mb-1">
+                        <Eye className="h-4 w-4" />
+                        Avg Open Rate
+                      </div>
+                      <p className="text-2xl font-bold text-blue-700">{avgOpenRate.toFixed(1)}%</p>
+                    </div>
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm text-green-600 mb-1">
+                        <MousePointer className="h-4 w-4" />
+                        Avg Click Rate
+                      </div>
+                      <p className="text-2xl font-bold text-green-700">{avgClickRate.toFixed(1)}%</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Campaign List */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">Recent Campaigns</h4>
+                {campaigns.slice(0, 5).map((campaign) => {
+                  const openRate = campaign.delivered_count > 0
+                    ? ((campaign.opened_count / campaign.delivered_count) * 100).toFixed(1)
+                    : "0";
+                  const clickRate = campaign.opened_count > 0
+                    ? ((campaign.clicked_count / campaign.opened_count) * 100).toFixed(1)
+                    : "0";
+
+                  return (
+                    <div
+                      key={campaign.id}
+                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedCampaign(campaign);
+                        setCampaignDetailsOpen(true);
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{campaign.subject}</p>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {campaign.total_recipients} recipients • {campaign.sent_at ? format(parseISO(campaign.sent_at), "MMM d, yyyy") : "Not sent"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="text-center">
+                            <div className="flex items-center gap-1 text-blue-600">
+                              <Eye className="h-4 w-4" />
+                              <span className="font-medium">{openRate}%</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">opens</p>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center gap-1 text-green-600">
+                              <MousePointer className="h-4 w-4" />
+                              <span className="font-medium">{clickRate}%</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">clicks</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {campaign.status === "sent" && (
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <div>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-muted-foreground">Open Rate</span>
+                              <span className="font-medium text-blue-600">{openRate}%</span>
+                            </div>
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-blue-500 transition-all"
+                                style={{ width: `${Math.min(parseFloat(openRate), 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-muted-foreground">Click Rate</span>
+                              <span className="font-medium text-green-600">{clickRate}%</span>
+                            </div>
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-green-500 transition-all"
+                                style={{ width: `${Math.min(parseFloat(clickRate), 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Campaign Details Modal */}
+      <Dialog open={campaignDetailsOpen} onOpenChange={setCampaignDetailsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Campaign Performance
+            </DialogTitle>
+            <DialogDescription>
+              Detailed metrics for this email campaign
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCampaign && (
+            <div className="space-y-6">
+              {/* Campaign Info */}
+              <div className="space-y-2">
+                <h4 className="font-medium">{selectedCampaign.subject}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {selectedCampaign.sent_at
+                    ? format(parseISO(selectedCampaign.sent_at), "MMM d, yyyy h:mm a")
+                    : format(parseISO(selectedCampaign.created_at), "MMM d, yyyy h:mm a")}
+                </p>
+              </div>
+
+              {/* Delivery Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Users className="h-4 w-4" />
+                    Recipients
+                  </div>
+                  <p className="text-2xl font-bold">{selectedCampaign.total_recipients}</p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-green-600 mb-1">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Delivered
+                  </div>
+                  <p className="text-2xl font-bold text-green-700">{selectedCampaign.delivered_count}</p>
+                  <p className="text-xs text-green-600">
+                    {selectedCampaign.total_recipients > 0
+                      ? ((selectedCampaign.delivered_count / selectedCampaign.total_recipients) * 100).toFixed(1)
+                      : 0}% delivery rate
+                  </p>
+                </div>
+              </div>
+
+              {/* Engagement Stats */}
+              {selectedCampaign.status === "sent" && (
+                <div className="space-y-4">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Engagement Metrics
+                  </h4>
+
+                  {/* Open Rate */}
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm font-medium">Opens</span>
+                      </div>
+                      <span className="text-sm font-bold text-blue-600">
+                        {selectedCampaign.opened_count} opens
+                      </span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all"
+                        style={{
+                          width: `${selectedCampaign.delivered_count > 0
+                            ? Math.min((selectedCampaign.opened_count / selectedCampaign.delivered_count) * 100, 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedCampaign.delivered_count > 0
+                        ? ((selectedCampaign.opened_count / selectedCampaign.delivered_count) * 100).toFixed(1)
+                        : 0}% open rate
+                    </p>
+                  </div>
+
+                  {/* Click Rate */}
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <MousePointer className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium">Clicks</span>
+                      </div>
+                      <span className="text-sm font-bold text-green-600">
+                        {selectedCampaign.clicked_count} clicks
+                      </span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-500 transition-all"
+                        style={{
+                          width: `${selectedCampaign.opened_count > 0
+                            ? Math.min((selectedCampaign.clicked_count / selectedCampaign.opened_count) * 100, 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedCampaign.opened_count > 0
+                        ? ((selectedCampaign.clicked_count / selectedCampaign.opened_count) * 100).toFixed(1)
+                        : 0}% click-through rate (of opens)
+                    </p>
+                  </div>
+
+                  {/* Failed Deliveries */}
+                  {selectedCampaign.failed_count > 0 && (
+                    <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-4 w-4 text-red-500" />
+                        <span className="text-sm font-medium text-red-700">
+                          {selectedCampaign.failed_count} failed delivery{selectedCampaign.failed_count !== 1 ? "ies" : ""}
+                        </span>
+                      </div>
+                      <p className="text-xs text-red-600 mt-1">
+                        These emails could not be delivered due to invalid addresses or server issues.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Helpful Tips */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  <strong>Tip:</strong> Industry average open rates are 15-25%. Click rates of 2-5% are considered good.
+                  {selectedCampaign.delivered_count > 0 && selectedCampaign.opened_count / selectedCampaign.delivered_count > 0.25 && (
+                    <span className="block mt-1 text-green-700">Your open rate is above average!</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
