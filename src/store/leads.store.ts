@@ -95,8 +95,13 @@ export const useLeadsStore = create<LeadsState>()(
         // Only update stats if we have valid data (don't overwrite with null/empty)
         if (stats && stats.total_leads !== undefined) {
           state.stats = stats;
+          state.isLoadingStats = false;
+        } else if (state.stats !== null) {
+          // If we already have stats, just mark loading as done (keep old stats)
+          state.isLoadingStats = false;
         }
-        state.isLoadingStats = false;
+        // If stats is null and we have no previous stats, keep loading true
+        // to show skeleton instead of 0
       }),
 
     setSponsorId: (sponsorId) =>
@@ -328,8 +333,11 @@ export const useLeadsStore = create<LeadsState>()(
         // Only update if we receive valid stats data
         if (stats && stats.total_leads !== undefined) {
           state.stats = stats;
+          state.isLoadingStats = false;
+        } else if (state.stats !== null) {
+          // Keep existing stats if new data is invalid
+          state.isLoadingStats = false;
         }
-        state.isLoadingStats = false;
       }),
 
     // ==========================================
