@@ -92,14 +92,19 @@ export const useLeadsStore = create<LeadsState>()(
 
     setStats: (stats) =>
       set((state) => {
-        state.stats = stats;
+        // Only update stats if we have valid data (don't overwrite with null/empty)
+        if (stats && stats.total_leads !== undefined) {
+          state.stats = stats;
+        }
         state.isLoadingStats = false;
       }),
 
     setSponsorId: (sponsorId) =>
       set((state) => {
-        if (state.sponsorId !== sponsorId) {
-          // Clear data when sponsor changes
+        // Only clear data if sponsor ACTUALLY changes (not on initial set from null)
+        const sponsorChanged = state.sponsorId !== null && state.sponsorId !== sponsorId;
+        if (sponsorChanged) {
+          // Clear data when sponsor changes to a different sponsor
           state.leads = [];
           state.stats = null;
           state.isLoading = true;
@@ -320,7 +325,10 @@ export const useLeadsStore = create<LeadsState>()(
 
     handleStatsUpdated: (stats) =>
       set((state) => {
-        state.stats = stats;
+        // Only update if we receive valid stats data
+        if (stats && stats.total_leads !== undefined) {
+          state.stats = stats;
+        }
         state.isLoadingStats = false;
       }),
 
