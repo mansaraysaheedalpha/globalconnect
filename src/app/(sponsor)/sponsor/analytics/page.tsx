@@ -84,7 +84,7 @@ interface Campaign {
   opened_count: number;
   clicked_count: number;
   created_at: string;
-  sent_at: string | null;
+  completed_at: string | null;
 }
 
 interface Lead {
@@ -998,7 +998,8 @@ export default function SponsorAnalyticsPage() {
               {/* Summary Stats */}
               {(() => {
                 const sentCampaigns = campaigns.filter(c => c.status === "sent");
-                const totalSent = sentCampaigns.reduce((sum, c) => sum + c.delivered_count, 0);
+                // Use sent_count as the base metric (delivered_count requires webhooks)
+                const totalSent = sentCampaigns.reduce((sum, c) => sum + c.sent_count, 0);
                 const totalOpened = sentCampaigns.reduce((sum, c) => sum + c.opened_count, 0);
                 const totalClicked = sentCampaigns.reduce((sum, c) => sum + c.clicked_count, 0);
                 const avgOpenRate = totalSent > 0 ? (totalOpened / totalSent) * 100 : 0;
@@ -1016,7 +1017,7 @@ export default function SponsorAnalyticsPage() {
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                         <CheckCircle2 className="h-4 w-4" />
-                        Delivered
+                        Sent
                       </div>
                       <p className="text-2xl font-bold">{totalSent}</p>
                     </div>
@@ -1042,8 +1043,9 @@ export default function SponsorAnalyticsPage() {
               <div className="space-y-3">
                 <h4 className="font-medium text-sm text-muted-foreground">Recent Campaigns</h4>
                 {campaigns.slice(0, 5).map((campaign) => {
-                  const openRate = campaign.delivered_count > 0
-                    ? ((campaign.opened_count / campaign.delivered_count) * 100).toFixed(1)
+                  // Use sent_count as base (delivered_count requires webhooks)
+                  const openRate = campaign.sent_count > 0
+                    ? ((campaign.opened_count / campaign.sent_count) * 100).toFixed(1)
                     : "0";
                   const clickRate = campaign.opened_count > 0
                     ? ((campaign.clicked_count / campaign.opened_count) * 100).toFixed(1)
@@ -1062,7 +1064,7 @@ export default function SponsorAnalyticsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{campaign.subject}</p>
                           <p className="text-sm text-muted-foreground mt-0.5">
-                            {campaign.total_recipients} recipients • {campaign.sent_at ? format(parseISO(campaign.sent_at), "MMM d, yyyy") : "Not sent"}
+                            {campaign.total_recipients} recipients • {campaign.completed_at ? format(parseISO(campaign.completed_at), "MMM d, yyyy") : "Not sent"}
                           </p>
                         </div>
                         <div className="flex items-center gap-4 text-sm">
@@ -1139,8 +1141,8 @@ export default function SponsorAnalyticsPage() {
               <div className="space-y-2">
                 <h4 className="font-medium">{selectedCampaign.subject}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {selectedCampaign.sent_at
-                    ? format(parseISO(selectedCampaign.sent_at), "MMM d, yyyy h:mm a")
+                  {selectedCampaign.completed_at
+                    ? format(parseISO(selectedCampaign.completed_at), "MMM d, yyyy h:mm a")
                     : format(parseISO(selectedCampaign.created_at), "MMM d, yyyy h:mm a")}
                 </p>
               </div>
@@ -1157,13 +1159,13 @@ export default function SponsorAnalyticsPage() {
                 <div className="p-4 bg-green-50 rounded-lg">
                   <div className="flex items-center gap-2 text-sm text-green-600 mb-1">
                     <CheckCircle2 className="h-4 w-4" />
-                    Delivered
+                    Sent
                   </div>
-                  <p className="text-2xl font-bold text-green-700">{selectedCampaign.delivered_count}</p>
+                  <p className="text-2xl font-bold text-green-700">{selectedCampaign.sent_count}</p>
                   <p className="text-xs text-green-600">
                     {selectedCampaign.total_recipients > 0
-                      ? ((selectedCampaign.delivered_count / selectedCampaign.total_recipients) * 100).toFixed(1)
-                      : 0}% delivery rate
+                      ? ((selectedCampaign.sent_count / selectedCampaign.total_recipients) * 100).toFixed(1)
+                      : 0}% send rate
                   </p>
                 </div>
               </div>
@@ -1191,15 +1193,15 @@ export default function SponsorAnalyticsPage() {
                       <div
                         className="h-full bg-blue-500 transition-all"
                         style={{
-                          width: `${selectedCampaign.delivered_count > 0
-                            ? Math.min((selectedCampaign.opened_count / selectedCampaign.delivered_count) * 100, 100)
+                          width: `${selectedCampaign.sent_count > 0
+                            ? Math.min((selectedCampaign.opened_count / selectedCampaign.sent_count) * 100, 100)
                             : 0}%`
                         }}
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {selectedCampaign.delivered_count > 0
-                        ? ((selectedCampaign.opened_count / selectedCampaign.delivered_count) * 100).toFixed(1)
+                      {selectedCampaign.sent_count > 0
+                        ? ((selectedCampaign.opened_count / selectedCampaign.sent_count) * 100).toFixed(1)
                         : 0}% open rate
                     </p>
                   </div>
@@ -1253,7 +1255,7 @@ export default function SponsorAnalyticsPage() {
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-xs text-blue-700">
                   <strong>Tip:</strong> Industry average open rates are 15-25%. Click rates of 2-5% are considered good.
-                  {selectedCampaign.delivered_count > 0 && selectedCampaign.opened_count / selectedCampaign.delivered_count > 0.25 && (
+                  {selectedCampaign.sent_count > 0 && selectedCampaign.opened_count / selectedCampaign.sent_count > 0.25 && (
                     <span className="block mt-1 text-green-700">Your open rate is above average!</span>
                   )}
                 </p>
