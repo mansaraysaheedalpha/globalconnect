@@ -20,7 +20,6 @@ import {
   MessageSquare,
   Send,
   Users,
-  Clock,
   Mail,
   Zap,
   AlertCircle,
@@ -31,6 +30,7 @@ import {
   CheckCircle2,
   XCircle,
   Circle,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
@@ -432,25 +432,19 @@ export default function MessagesPage() {
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={handleSend}
-                    disabled={isSending || audienceCounts[audience] === 0}
-                  >
-                    {isSending ? (
-                      <>Sending...</>
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-4 w-4" />
-                        Send Now
-                      </>
-                    )}
-                  </Button>
-                  <Button variant="outline" disabled={isSending}>
-                    <Clock className="mr-2 h-4 w-4" />
-                    Schedule
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleSend}
+                  disabled={isSending || audienceCounts[audience] === 0}
+                >
+                  {isSending ? (
+                    <>Sending...</>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Now
+                    </>
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
