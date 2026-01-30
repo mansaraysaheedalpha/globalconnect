@@ -133,7 +133,7 @@ export function SponsorSidebar({ className }: SponsorSidebarProps) {
 
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => {
-          // Special handling for booth routes to prevent both from being active
+          // Special handling to prevent parent routes from being active on child routes
           let isActive: boolean;
           if (item.href === "/sponsor/booth") {
             // Booth Settings should only be active on exact match or non-live booth pages
@@ -142,6 +142,9 @@ export function SponsorSidebar({ className }: SponsorSidebarProps) {
           } else if (item.href === "/sponsor/booth/live") {
             // Booth Dashboard should be active on exact match or any /booth/live/* pages
             isActive = pathname === "/sponsor/booth/live" || pathname.startsWith("/sponsor/booth/live");
+          } else if (item.href === "/sponsor/leads") {
+            // Lead Capture should only be active on exact match (not /starred or /all)
+            isActive = pathname === "/sponsor/leads";
           } else {
             // Default matching logic for other routes
             isActive = pathname === item.href ||
