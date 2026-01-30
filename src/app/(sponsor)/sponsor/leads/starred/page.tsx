@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
+import Link from "next/link";
 
 interface StarredLead {
   id: string;
@@ -328,17 +329,25 @@ export default function StarredLeadsPage() {
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">
-              <Star className="h-12 w-12 mx-auto opacity-50" />
-              <p className="mt-4 font-medium">No starred leads</p>
-              <p className="text-sm">
-                {search
-                  ? "No starred leads match your search"
-                  : "Star your most important leads to see them here"}
-              </p>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="h-16 w-16 rounded-full bg-yellow-50 flex items-center justify-center mb-4">
+              <Star className="h-8 w-8 text-yellow-400" />
             </div>
+            <h3 className="text-lg font-semibold mb-2">No starred leads</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
+              {search
+                ? "No starred leads match your search. Try adjusting your search terms."
+                : "Star your most important leads from the All Leads page to quickly access them here for priority follow-up."}
+            </p>
+            {!search && (
+              <Button variant="outline" asChild>
+                <Link href="/sponsor/leads">
+                  <Users className="mr-2 h-4 w-4" />
+                  View All Leads
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
