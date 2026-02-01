@@ -14,10 +14,8 @@ import {
   User,
   Bell,
   Mail,
-  Shield,
   LogOut,
   Loader2,
-  ExternalLink,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
@@ -33,7 +31,6 @@ interface SponsorUserSettings {
   notify_hot_leads: boolean;
   notify_daily_summary: boolean;
   notify_event_updates: boolean;
-  notify_marketing: boolean;
   can_view_leads: boolean;
   can_export_leads: boolean;
   can_message_attendees: boolean;
@@ -46,7 +43,7 @@ interface SponsorUserSettings {
 
 export default function SponsorSettingsPage() {
   const { user, logout, token } = useAuthStore();
-  const { currentSponsor } = useSponsorStore();
+  const { activeSponsorId } = useSponsorStore();
   const { toast } = useToast();
 
   const [settings, setSettings] = useState<SponsorUserSettings | null>(null);
@@ -60,7 +57,6 @@ export default function SponsorSettingsPage() {
   const [notifyHotLeads, setNotifyHotLeads] = useState(true);
   const [notifyDailySummary, setNotifyDailySummary] = useState(true);
   const [notifyEventUpdates, setNotifyEventUpdates] = useState(false);
-  const [notifyMarketing, setNotifyMarketing] = useState(false);
 
   const fullName = user ? `${user.first_name} ${user.last_name}` : "";
   const initials = fullName
@@ -74,12 +70,12 @@ export default function SponsorSettingsPage() {
 
   // Fetch user settings
   useEffect(() => {
-    if (!currentSponsor?.id || !token) return;
+    if (!activeSponsorId || !token) return;
 
     const fetchSettings = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${currentSponsor.id}/settings/profile`,
+          `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -101,7 +97,6 @@ export default function SponsorSettingsPage() {
         setNotifyHotLeads(data.notify_hot_leads);
         setNotifyDailySummary(data.notify_daily_summary);
         setNotifyEventUpdates(data.notify_event_updates);
-        setNotifyMarketing(data.notify_marketing);
       } catch (error) {
         console.error("Error loading settings:", error);
         toast({
@@ -115,15 +110,15 @@ export default function SponsorSettingsPage() {
     };
 
     fetchSettings();
-  }, [currentSponsor?.id, token, toast]);
+  }, [activeSponsorId, token, toast]);
 
   const handleSaveProfile = async () => {
-    if (!currentSponsor?.id || !token) return;
+    if (!activeSponsorId || !token) return;
 
     setSaving(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${currentSponsor.id}/settings/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
         {
           method: "PUT",
           headers: {
@@ -157,12 +152,12 @@ export default function SponsorSettingsPage() {
   };
 
   const handleSavePreferences = async () => {
-    if (!currentSponsor?.id || !token) return;
+    if (!activeSponsorId || !token) return;
 
     setSaving(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${currentSponsor.id}/settings/preferences`,
+        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/preferences`,
         {
           method: "PUT",
           headers: {
@@ -175,7 +170,6 @@ export default function SponsorSettingsPage() {
             notify_hot_leads: notifyHotLeads,
             notify_daily_summary: notifyDailySummary,
             notify_event_updates: notifyEventUpdates,
-            notify_marketing: notifyMarketing,
           }),
         }
       );
@@ -380,18 +374,6 @@ export default function SponsorSettingsPage() {
                   Leave blank to use your account email ({user?.email})
                 </p>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Marketing Communications</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Receive tips and best practices
-                  </p>
-                </div>
-                <Switch
-                  checked={notifyMarketing}
-                  onCheckedChange={setNotifyMarketing}
-                />
-              </div>
               <Button
                 onClick={handleSavePreferences}
                 disabled={saving}
@@ -405,24 +387,6 @@ export default function SponsorSettingsPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Security */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Security
-              </CardTitle>
-              <CardDescription>
-                Managed by your account provider
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Password and two-factor authentication settings are managed through your account provider.
-              </p>
-            </CardContent>
-          </Card>
-
           {/* Account Actions */}
           <Card>
             <CardHeader>
@@ -446,45 +410,6 @@ export default function SponsorSettingsPage() {
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Help */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Need Help?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant="link"
-                className="w-full justify-start p-0 h-auto"
-                asChild
-              >
-                <a href="https://eventdynamics.io/docs" target="_blank" rel="noopener noreferrer">
-                  View Documentation
-                  <ExternalLink className="ml-2 h-3 w-3" />
-                </a>
-              </Button>
-              <Button
-                variant="link"
-                className="w-full justify-start p-0 h-auto"
-                asChild
-              >
-                <a href="mailto:support@eventdynamics.io">
-                  Contact Support
-                  <Mail className="ml-2 h-3 w-3" />
-                </a>
-              </Button>
-              <Button
-                variant="link"
-                className="w-full justify-start p-0 h-auto"
-                asChild
-              >
-                <a href="https://eventdynamics.io/report-issue" target="_blank" rel="noopener noreferrer">
-                  Report an Issue
-                  <ExternalLink className="ml-2 h-3 w-3" />
-                </a>
               </Button>
             </CardContent>
           </Card>
