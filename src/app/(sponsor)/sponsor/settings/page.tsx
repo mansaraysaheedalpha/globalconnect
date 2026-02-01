@@ -1,6 +1,7 @@
 // src/app/(sponsor)/sponsor/settings/page.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,18 +9,58 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import {
   User,
   Bell,
   Mail,
   Shield,
   LogOut,
-  Camera,
+  Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { useSponsorStore } from "@/store/sponsor.store";
+
+interface SponsorUserSettings {
+  id: string;
+  sponsor_id: string;
+  user_id: string;
+  role: string;
+  job_title: string | null;
+  notification_email: string | null;
+  notify_new_leads: boolean;
+  notify_hot_leads: boolean;
+  notify_daily_summary: boolean;
+  notify_event_updates: boolean;
+  notify_marketing: boolean;
+  can_view_leads: boolean;
+  can_export_leads: boolean;
+  can_message_attendees: boolean;
+  can_manage_booth: boolean;
+  can_invite_others: boolean;
+  is_active: boolean;
+  joined_at: string;
+  last_active_at: string | null;
+}
 
 export default function SponsorSettingsPage() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, token } = useAuthStore();
+  const { currentSponsor } = useSponsorStore();
+  const { toast } = useToast();
+
+  const [settings, setSettings] = useState<SponsorUserSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [jobTitle, setJobTitle] = useState("");
+  const [notificationEmail, setNotificationEmail] = useState("");
+  const [notifyNewLeads, setNotifyNewLeads] = useState(true);
+  const [notifyHotLeads, setNotifyHotLeads] = useState(true);
+  const [notifyDailySummary, setNotifyDailySummary] = useState(true);
+  const [notifyEventUpdates, setNotifyEventUpdates] = useState(false);
+  const [notifyMarketing, setNotifyMarketing] = useState(false);
 
   const fullName = user ? `${user.first_name} ${user.last_name}` : "";
   const initials = fullName
@@ -30,6 +71,142 @@ export default function SponsorSettingsPage() {
         .toUpperCase()
         .slice(0, 2)
     : "SP";
+
+  // Fetch user settings
+  useEffect(() => {
+    if (!currentSponsor?.id || !token) return;
+
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${currentSponsor.id}/settings/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to load settings");
+        }
+
+        const data: SponsorUserSettings = await response.json();
+        setSettings(data);
+
+        // Populate form
+        setJobTitle(data.job_title || "");
+        setNotificationEmail(data.notification_email || "");
+        setNotifyNewLeads(data.notify_new_leads);
+        setNotifyHotLeads(data.notify_hot_leads);
+        setNotifyDailySummary(data.notify_daily_summary);
+        setNotifyEventUpdates(data.notify_event_updates);
+        setNotifyMarketing(data.notify_marketing);
+      } catch (error) {
+        console.error("Error loading settings:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load your settings. Please try again.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [currentSponsor?.id, token, toast]);
+
+  const handleSaveProfile = async () => {
+    if (!currentSponsor?.id || !token) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${currentSponsor.id}/settings/profile`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            job_title: jobTitle || null,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to save profile");
+      }
+
+      toast({
+        title: "Success",
+        description: "Your profile has been updated.",
+      });
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save your profile. Please try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSavePreferences = async () => {
+    if (!currentSponsor?.id || !token) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${currentSponsor.id}/settings/preferences`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            notification_email: notificationEmail || null,
+            notify_new_leads: notifyNewLeads,
+            notify_hot_leads: notifyHotLeads,
+            notify_daily_summary: notifyDailySummary,
+            notify_event_updates: notifyEventUpdates,
+            notify_marketing: notifyMarketing,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to save preferences");
+      }
+
+      toast({
+        title: "Success",
+        description: "Your preferences have been updated.",
+      });
+    } catch (error) {
+      console.error("Error saving preferences:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save your preferences. Please try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -62,12 +239,9 @@ export default function SponsorSettingsPage() {
                   <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
-                  <Button variant="outline" size="sm">
-                    <Camera className="mr-2 h-4 w-4" />
-                    Change Photo
-                  </Button>
+                  <p className="text-sm font-medium">{fullName}</p>
                   <p className="text-xs text-muted-foreground">
-                    JPG, PNG or GIF. Max 2MB.
+                    Profile photo is managed by your account provider
                   </p>
                 </div>
               </div>
@@ -75,18 +249,43 @@ export default function SponsorSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" defaultValue={fullName} />
+                  <Input
+                    id="name"
+                    value={fullName}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Managed by your account provider
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue={user?.email || ""} disabled />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={user?.email || ""}
+                    disabled
+                    className="bg-muted"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="title">Job Title</Label>
-                <Input id="title" placeholder="e.g. Sales Representative" />
+                <Input
+                  id="title"
+                  placeholder="e.g. Sales Representative"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                />
               </div>
-              <Button>Save Changes</Button>
+              <Button
+                onClick={handleSaveProfile}
+                disabled={saving}
+              >
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Profile
+              </Button>
             </CardContent>
           </Card>
 
@@ -109,7 +308,10 @@ export default function SponsorSettingsPage() {
                     Get notified when a new lead is captured
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={notifyNewLeads}
+                  onCheckedChange={setNotifyNewLeads}
+                />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -119,7 +321,10 @@ export default function SponsorSettingsPage() {
                     Immediate alerts for high-intent leads
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={notifyHotLeads}
+                  onCheckedChange={setNotifyHotLeads}
+                />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -129,7 +334,10 @@ export default function SponsorSettingsPage() {
                     Daily email with lead capture summary
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={notifyDailySummary}
+                  onCheckedChange={setNotifyDailySummary}
+                />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -139,7 +347,10 @@ export default function SponsorSettingsPage() {
                     Updates about the event schedule
                   </p>
                 </div>
-                <Switch />
+                <Switch
+                  checked={notifyEventUpdates}
+                  onCheckedChange={setNotifyEventUpdates}
+                />
               </div>
             </CardContent>
           </Card>
@@ -161,10 +372,12 @@ export default function SponsorSettingsPage() {
                 <Input
                   id="notificationEmail"
                   type="email"
-                  defaultValue={user?.email || ""}
+                  placeholder={user?.email || ""}
+                  value={notificationEmail}
+                  onChange={(e) => setNotificationEmail(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Where to send lead notifications
+                  Leave blank to use your account email ({user?.email})
                 </p>
               </div>
               <div className="flex items-center justify-between">
@@ -174,8 +387,18 @@ export default function SponsorSettingsPage() {
                     Receive tips and best practices
                   </p>
                 </div>
-                <Switch />
+                <Switch
+                  checked={notifyMarketing}
+                  onCheckedChange={setNotifyMarketing}
+                />
               </div>
+              <Button
+                onClick={handleSavePreferences}
+                disabled={saving}
+              >
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Preferences
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -189,14 +412,14 @@ export default function SponsorSettingsPage() {
                 <Shield className="h-5 w-5" />
                 Security
               </CardTitle>
+              <CardDescription>
+                Managed by your account provider
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full">
-                Change Password
-              </Button>
-              <Button variant="outline" className="w-full">
-                Enable Two-Factor Auth
-              </Button>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Password and two-factor authentication settings are managed through your account provider.
+              </p>
             </CardContent>
           </Card>
 
@@ -209,6 +432,11 @@ export default function SponsorSettingsPage() {
               <div className="text-sm">
                 <p className="font-medium">{fullName}</p>
                 <p className="text-muted-foreground">{user?.email}</p>
+                {settings?.role && (
+                  <p className="text-xs text-muted-foreground capitalize mt-1">
+                    {settings.role.replace("_", " ")}
+                  </p>
+                )}
               </div>
               <Separator />
               <Button
@@ -228,14 +456,35 @@ export default function SponsorSettingsPage() {
               <CardTitle>Need Help?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="link" className="w-full justify-start p-0 h-auto">
-                View Documentation
+              <Button
+                variant="link"
+                className="w-full justify-start p-0 h-auto"
+                asChild
+              >
+                <a href="https://eventdynamics.io/docs" target="_blank" rel="noopener noreferrer">
+                  View Documentation
+                  <ExternalLink className="ml-2 h-3 w-3" />
+                </a>
               </Button>
-              <Button variant="link" className="w-full justify-start p-0 h-auto">
-                Contact Event Organizer
+              <Button
+                variant="link"
+                className="w-full justify-start p-0 h-auto"
+                asChild
+              >
+                <a href="mailto:support@eventdynamics.io">
+                  Contact Support
+                  <Mail className="ml-2 h-3 w-3" />
+                </a>
               </Button>
-              <Button variant="link" className="w-full justify-start p-0 h-auto">
-                Report an Issue
+              <Button
+                variant="link"
+                className="w-full justify-start p-0 h-auto"
+                asChild
+              >
+                <a href="https://eventdynamics.io/report-issue" target="_blank" rel="noopener noreferrer">
+                  Report an Issue
+                  <ExternalLink className="ml-2 h-3 w-3" />
+                </a>
               </Button>
             </CardContent>
           </Card>
