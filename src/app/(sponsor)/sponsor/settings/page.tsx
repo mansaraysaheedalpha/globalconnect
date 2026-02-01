@@ -16,7 +16,9 @@ import {
   Mail,
   LogOut,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
 import { getGatewayApiUrl } from "@/lib/env";
@@ -50,6 +52,7 @@ export default function SponsorSettingsPage() {
   const [settings, setSettings] = useState<SponsorUserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [profileNotFound, setProfileNotFound] = useState(false);
 
   // Form state
   const [jobTitle, setJobTitle] = useState("");
@@ -85,12 +88,19 @@ export default function SponsorSettingsPage() {
           }
         );
 
+        if (response.status === 404) {
+          // User doesn't have a sponsor profile yet - this is OK, show basic info
+          setProfileNotFound(true);
+          return;
+        }
+
         if (!response.ok) {
           throw new Error("Failed to load settings");
         }
 
         const data: SponsorUserSettings = await response.json();
         setSettings(data);
+        setProfileNotFound(false);
 
         // Populate form
         setJobTitle(data.job_title || "");
@@ -101,11 +111,14 @@ export default function SponsorSettingsPage() {
         setNotifyEventUpdates(data.notify_event_updates);
       } catch (error) {
         console.error("Error loading settings:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load your settings. Please try again.",
-        });
+        // Don't show toast for expected scenarios
+        if (!profileNotFound) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load your settings. Please try again.",
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -216,6 +229,16 @@ export default function SponsorSettingsPage() {
         </p>
       </div>
 
+      {profileNotFound && (
+        <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <AlertTitle>Profile Not Set Up</AlertTitle>
+          <AlertDescription>
+            Your sponsor profile hasn&apos;t been configured yet. Please contact your sponsor administrator to be added to the team. You can still view your basic account information below.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Settings */}
         <div className="lg:col-span-2 space-y-6">
@@ -275,11 +298,13 @@ export default function SponsorSettingsPage() {
                   placeholder="e.g. Sales Representative"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
+                  disabled={profileNotFound}
+                  className={profileNotFound ? "bg-muted" : ""}
                 />
               </div>
               <Button
                 onClick={handleSaveProfile}
-                disabled={saving}
+                disabled={saving || profileNotFound}
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Profile
@@ -309,6 +334,7 @@ export default function SponsorSettingsPage() {
                 <Switch
                   checked={notifyNewLeads}
                   onCheckedChange={setNotifyNewLeads}
+                  disabled={profileNotFound}
                 />
               </div>
               <Separator />
@@ -322,6 +348,7 @@ export default function SponsorSettingsPage() {
                 <Switch
                   checked={notifyHotLeads}
                   onCheckedChange={setNotifyHotLeads}
+                  disabled={profileNotFound}
                 />
               </div>
               <Separator />
@@ -335,6 +362,7 @@ export default function SponsorSettingsPage() {
                 <Switch
                   checked={notifyDailySummary}
                   onCheckedChange={setNotifyDailySummary}
+                  disabled={profileNotFound}
                 />
               </div>
               <Separator />
@@ -348,6 +376,7 @@ export default function SponsorSettingsPage() {
                 <Switch
                   checked={notifyEventUpdates}
                   onCheckedChange={setNotifyEventUpdates}
+                  disabled={profileNotFound}
                 />
               </div>
             </CardContent>
@@ -373,6 +402,8 @@ export default function SponsorSettingsPage() {
                   placeholder={user?.email || ""}
                   value={notificationEmail}
                   onChange={(e) => setNotificationEmail(e.target.value)}
+                  disabled={profileNotFound}
+                  className={profileNotFound ? "bg-muted" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
                   Leave blank to use your account email ({user?.email})
@@ -380,7 +411,7 @@ export default function SponsorSettingsPage() {
               </div>
               <Button
                 onClick={handleSavePreferences}
-                disabled={saving}
+                disabled={saving || profileNotFound}
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Preferences
