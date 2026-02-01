@@ -12,6 +12,7 @@ import { OnboardingTour, defaultTourSteps, useOnboardingTour } from './Onboardin
 import { ChartSkeleton, ErrorState, EmptyState } from './LoadingStates';
 import { exportInterventionsAsCSV, exportInterventionsAsJSON } from '../utils/exportReports';
 import { initializeSocket, disconnectSocket } from '@/lib/socket';
+import { useAuthStore } from '@/store/auth.store';
 import styles from './EngagementDashboard.module.css';
 
 interface EngagementDashboardProps {
@@ -55,10 +56,12 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
 
   const { showTour, completeTour, skipTour, resetTour } = useOnboardingTour();
 
+  // Get auth token from store
+  const authToken = useAuthStore((state) => state.token);
+
   // Initialize WebSocket connection for real-time updates
   useEffect(() => {
-    // Initialize socket with auth token if available
-    const authToken = localStorage.getItem('authToken'); // Adjust based on your auth implementation
+    // Initialize socket with auth token from store
     const socket = initializeSocket(authToken || undefined);
 
     console.log('[EngagementDashboard] WebSocket initialized for session:', sessionId);
@@ -68,7 +71,7 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
       // Don't disconnect socket here as it might be used by other components
       // disconnectSocket();
     };
-  }, [sessionId]);
+  }, [sessionId, authToken]);
 
   // Export handlers
   const handleExportCSV = () => {

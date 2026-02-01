@@ -40,7 +40,9 @@ export const EngagementSocketProvider: React.FC<SocketProviderProps> = ({
   useEffect(() => {
     if (!sessionId) return;
 
-    const socketUrl = getSocketUrl();
+    // Connect to the /events namespace where EngagementConductorGateway lives
+    const baseUrl = getSocketUrl();
+    const socketUrl = `${baseUrl}/events`;
     console.log('[EngagementSocket] Connecting to', socketUrl);
 
     const socketConnection = io(socketUrl, {
