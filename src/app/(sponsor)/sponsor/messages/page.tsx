@@ -309,11 +309,11 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Messages</h1>
           <p className="text-muted-foreground">
             {activeSponsorName ? `Send follow-up messages to ${activeSponsorName} leads` : "Send follow-up messages to your captured leads"}
           </p>
@@ -335,8 +335,8 @@ export default function MessagesPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* AI Generation Button */}
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-purple-600" />
                     AI-Powered Message Generator
@@ -349,17 +349,18 @@ export default function MessagesPage() {
                   onClick={handleAIGenerate}
                   disabled={isGenerating || audienceCounts[audience] === 0}
                   variant="default"
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto shrink-0"
+                  size="sm"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
+                      <span className="truncate">Generating...</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Generate with AI
+                      <span className="truncate">Generate with AI</span>
                     </>
                   )}
                 </Button>
@@ -435,6 +436,7 @@ export default function MessagesPage() {
                 <Button
                   onClick={handleSend}
                   disabled={isSending || audienceCounts[audience] === 0}
+                  className="w-full sm:w-auto"
                 >
                   {isSending ? (
                     <>Sending...</>
@@ -461,10 +463,10 @@ export default function MessagesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                 <Button
                   variant="outline"
-                  className="h-auto p-4 text-left flex-col items-start"
+                  className="h-auto p-4 text-left flex flex-col items-start justify-start"
                   onClick={() =>
                     setMessage({
                       subject: "Thank you for visiting our booth!",
@@ -479,7 +481,7 @@ export default function MessagesPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-auto p-4 text-left flex-col items-start"
+                  className="h-auto p-4 text-left flex flex-col items-start justify-start"
                   onClick={() =>
                     setMessage({
                       subject: "Your demo request - Let's schedule!",
@@ -494,7 +496,7 @@ export default function MessagesPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-auto p-4 text-left flex-col items-start"
+                  className="h-auto p-4 text-left flex flex-col items-start justify-start"
                   onClick={() =>
                     setMessage({
                       subject: "Here are the resources you requested",
@@ -509,7 +511,7 @@ export default function MessagesPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-auto p-4 text-left flex-col items-start"
+                  className="h-auto p-4 text-left flex flex-col items-start justify-start"
                   onClick={() =>
                     setMessage({
                       subject: "Quick follow-up from the event",
