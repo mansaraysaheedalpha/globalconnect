@@ -56,6 +56,12 @@ const clientEnvSchema = z.object({
     )
     .optional(),
 
+  // Gateway API URL (for REST calls through Apollo Gateway)
+  NEXT_PUBLIC_GATEWAY_API_URL: z
+    .string()
+    .url('NEXT_PUBLIC_GATEWAY_API_URL must be a valid URL')
+    .optional(),
+
   // App Configuration
   NEXT_PUBLIC_APP_URL: z
     .string()
@@ -95,6 +101,7 @@ function getClientEnv() {
     NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
     NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL,
     NEXT_PUBLIC_AGENT_SERVICE_URL: process.env.NEXT_PUBLIC_AGENT_SERVICE_URL,
+    NEXT_PUBLIC_GATEWAY_API_URL: process.env.NEXT_PUBLIC_GATEWAY_API_URL,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
@@ -198,4 +205,16 @@ export function getSocketUrl(): string {
  */
 export function getAgentServiceUrl(): string {
   return clientEnv.NEXT_PUBLIC_AGENT_SERVICE_URL || 'http://localhost:8003';
+}
+
+/**
+ * Helper to get the gateway API URL (for REST calls through Apollo Gateway)
+ * Falls back to event service URL or localhost
+ */
+export function getGatewayApiUrl(): string {
+  return (
+    clientEnv.NEXT_PUBLIC_GATEWAY_API_URL ||
+    clientEnv.NEXT_PUBLIC_EVENT_SERVICE_URL ||
+    'http://localhost:8000/api/v1'
+  );
 }

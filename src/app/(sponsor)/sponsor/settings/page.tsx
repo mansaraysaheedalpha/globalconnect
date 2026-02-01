@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useSponsorStore } from "@/store/sponsor.store";
+import { getGatewayApiUrl } from "@/lib/env";
 
 interface SponsorUserSettings {
   id: string;
@@ -74,7 +75,7 @@ export default function SponsorSettingsPage() {
 
     const fetchSettings = async () => {
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_API_URL || "http://localhost:8000/api/v1";
+        const API_BASE_URL = getGatewayApiUrl();
         const response = await fetch(
           `${API_BASE_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
           {
@@ -118,7 +119,7 @@ export default function SponsorSettingsPage() {
 
     setSaving(true);
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_API_URL || "http://localhost:8000/api/v1";
+      const API_BASE_URL = getGatewayApiUrl();
       const response = await fetch(
         `${API_BASE_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
         {
@@ -158,7 +159,7 @@ export default function SponsorSettingsPage() {
 
     setSaving(true);
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_API_URL || "http://localhost:8000/api/v1";
+      const API_BASE_URL = getGatewayApiUrl();
       const response = await fetch(
         `${API_BASE_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/preferences`,
         {
