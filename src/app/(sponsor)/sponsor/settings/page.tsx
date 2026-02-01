@@ -74,8 +74,9 @@ export default function SponsorSettingsPage() {
 
     const fetchSettings = async () => {
       try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
+          `${API_BASE_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -117,8 +118,9 @@ export default function SponsorSettingsPage() {
 
     setSaving(true);
     try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
+        `${API_BASE_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/profile`,
         {
           method: "PUT",
           headers: {
@@ -156,8 +158,9 @@ export default function SponsorSettingsPage() {
 
     setSaving(true);
     try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_EVENT_LIFECYCLE_URL || "http://localhost:8000/api/v1";
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/preferences`,
+        `${API_BASE_URL}/sponsor-settings/sponsors/${activeSponsorId}/settings/preferences`,
         {
           method: "PUT",
           headers: {
