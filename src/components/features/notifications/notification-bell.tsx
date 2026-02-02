@@ -15,6 +15,7 @@ import {
 import {
   Notification,
   NotificationType,
+  AgentAnomalyNotification,
 } from "@/hooks/use-notifications";
 import {
   Bell,
@@ -27,6 +28,8 @@ import {
   X,
   CheckCheck,
   ExternalLink,
+  Activity,
+  Bot,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -256,6 +259,10 @@ function getNotificationIcon(type: NotificationType) {
       return MessageSquare;
     case "achievement":
       return Trophy;
+    case "agent_anomaly":
+      return Activity;
+    case "agent_intervention":
+      return Bot;
     default:
       return Bell;
   }
@@ -274,6 +281,25 @@ function getNotificationIconColor(notification: Notification): string {
       default:
         return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
     }
+  }
+
+  // Agent anomaly notifications - color by severity
+  if (notification.type === "agent_anomaly") {
+    const anomaly = notification as AgentAnomalyNotification;
+    switch (anomaly.severity) {
+      case "CRITICAL":
+        return "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400";
+      case "WARNING":
+        return "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400";
+      case "INFO":
+      default:
+        return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+    }
+  }
+
+  // Agent intervention notifications - purple for AI actions
+  if (notification.type === "agent_intervention") {
+    return "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400";
   }
 
   switch (notification.type) {

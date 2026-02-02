@@ -5,6 +5,47 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
 
+// Helper functions for agent notifications
+function getAnomalyTitle(anomalyType: string, severity: string): string {
+  const severityPrefix =
+    severity === "CRITICAL"
+      ? "Critical: "
+      : severity === "WARNING"
+        ? "Warning: "
+        : "";
+  switch (anomalyType) {
+    case "ENGAGEMENT_DROP":
+      return `${severityPrefix}Engagement Dropping`;
+    case "SUDDEN_SPIKE":
+      return `${severityPrefix}Sudden Activity Spike`;
+    case "SENTIMENT_SHIFT":
+      return `${severityPrefix}Sentiment Shift Detected`;
+    case "PARTICIPATION_DECLINE":
+      return `${severityPrefix}Participation Declining`;
+    default:
+      return `${severityPrefix}Anomaly Detected`;
+  }
+}
+
+function getAnomalyMessage(data: {
+  anomaly_type: string;
+  engagement_score: number;
+}): string {
+  const score = Math.round(data.engagement_score * 100);
+  switch (data.anomaly_type) {
+    case "ENGAGEMENT_DROP":
+      return `Engagement score dropped to ${score}%`;
+    case "SUDDEN_SPIKE":
+      return `Unusual activity spike detected (score: ${score}%)`;
+    case "SENTIMENT_SHIFT":
+      return `Audience sentiment has shifted (score: ${score}%)`;
+    case "PARTICIPATION_DECLINE":
+      return `Active participation declining (score: ${score}%)`;
+    default:
+      return `Anomaly detected with engagement score ${score}%`;
+  }
+}
+
 // Notification types
 export type NotificationType =
   | "session_reminder"
@@ -13,7 +54,9 @@ export type NotificationType =
   | "schedule_change"
   | "achievement"
   | "dm"
-  | "mention";
+  | "mention"
+  | "agent_anomaly"
+  | "agent_intervention";
 
 export type NotificationSeverity = "low" | "medium" | "high" | "critical";
 
@@ -64,12 +107,32 @@ export interface ScheduleChangeNotification extends BaseNotification {
   newValue?: string;
 }
 
+// Agent anomaly notification
+export interface AgentAnomalyNotification extends BaseNotification {
+  type: "agent_anomaly";
+  sessionId: string;
+  anomalyType: string;
+  severity: "CRITICAL" | "WARNING" | "INFO";
+  engagementScore: number;
+}
+
+// Agent intervention notification
+export interface AgentInterventionNotification extends BaseNotification {
+  type: "agent_intervention";
+  sessionId: string;
+  interventionType: string;
+  confidence: number;
+  autoApproved: boolean;
+}
+
 // Union type for all notifications
 export type Notification =
   | SessionReminderNotification
   | PersonalNotification
   | EmergencyNotification
   | ScheduleChangeNotification
+  | AgentAnomalyNotification
+  | AgentInterventionNotification
   | BaseNotification;
 
 interface NotificationsState {
@@ -282,6 +345,69 @@ export const useNotifications = (eventId?: string) => {
       }
     );
 
+    // Agent notification (from AI engagement agents)
+    newSocket.on(
+      "agent-notification.new",
+      (data: {
+        id: string;
+        type: "ANOMALY_DETECTED" | "INTERVENTION_EXECUTED";
+        severity: "CRITICAL" | "WARNING" | "INFO";
+        sessionId: string | null;
+        data: {
+          anomaly_type?: string;
+          engagement_score?: number;
+          intervention_type?: string;
+          confidence?: number;
+          auto_approved?: boolean;
+        };
+        createdAt: string;
+      }) => {
+        if (data.type === "ANOMALY_DETECTED") {
+          const notification: AgentAnomalyNotification = {
+            id: data.id,
+            type: "agent_anomaly",
+            title: getAnomalyTitle(data.data.anomaly_type || "", data.severity),
+            message: getAnomalyMessage({
+              anomaly_type: data.data.anomaly_type || "",
+              engagement_score: data.data.engagement_score || 0,
+            }),
+            timestamp: data.createdAt,
+            isRead: false,
+            actionUrl: data.sessionId
+              ? `/dashboard/events/${eventId}/sessions/${data.sessionId}/live`
+              : undefined,
+            sessionId: data.sessionId || "",
+            anomalyType: data.data.anomaly_type || "",
+            severity: data.severity,
+            engagementScore: data.data.engagement_score || 0,
+          };
+          addNotification(notification);
+        } else {
+          const notification: AgentInterventionNotification = {
+            id: data.id,
+            type: "agent_intervention",
+            title: "AI Intervention Executed",
+            message: `${data.data.intervention_type} intervention ${data.data.auto_approved ? "auto-approved" : "executed"} (${Math.round((data.data.confidence || 0) * 100)}% confidence)`,
+            timestamp: data.createdAt,
+            isRead: false,
+            actionUrl: data.sessionId
+              ? `/dashboard/events/${eventId}/sessions/${data.sessionId}/live`
+              : undefined,
+            sessionId: data.sessionId || "",
+            interventionType: data.data.intervention_type || "",
+            confidence: data.data.confidence || 0,
+            autoApproved: data.data.auto_approved || false,
+          };
+          addNotification(notification);
+        }
+      }
+    );
+
+    // Subscribe to agent notifications when eventId is available
+    if (eventId) {
+      newSocket.emit("agent-notifications.subscribe", { eventId });
+    }
+
     // Error handling
     newSocket.on("systemError", (error: { message: string }) => {
       console.error("[Notifications] System error:", error.message);
@@ -296,6 +422,7 @@ export const useNotifications = (eventId?: string) => {
     // Cleanup
     return () => {
       if (eventId) {
+        newSocket.emit("agent-notifications.unsubscribe", { eventId });
         newSocket.emit("event.leave", { eventId });
       }
       newSocket.off("connect");
@@ -304,6 +431,7 @@ export const useNotifications = (eventId?: string) => {
       newSocket.off("notification.session_reminder");
       newSocket.off("notification.personal");
       newSocket.off("notification.emergency");
+      newSocket.off("agent-notification.new");
       newSocket.off("notification.schedule_change");
       newSocket.off("systemError");
       newSocket.off("connect_error");
