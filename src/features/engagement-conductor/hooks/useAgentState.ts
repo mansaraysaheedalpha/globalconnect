@@ -62,7 +62,7 @@ export function useAgentState({
   }
 
   const socket = socketContext?.socket;
-  const isSocketConnected = socketContext?.isConnected ?? false;
+  const subscribeToSession = socketContext?.subscribeToSession;
 
   // Load persisted mode from localStorage on mount
   useEffect(() => {
@@ -74,15 +74,17 @@ export function useAgentState({
 
   // Connect to WebSocket for real-time agent state updates
   useEffect(() => {
-    if (!enabled || !socket || !isSocketConnected) {
+    if (!enabled || !socket) {
       if (!socket) {
         console.warn('[useAgentState] No socket available - make sure component is wrapped in EngagementSocketProvider');
       }
       return;
     }
 
-    // Subscribe to agent events for this session
-    socket.emit('agent:subscribe', { sessionId });
+    // Subscribe to agent events for this session (uses context's queuing mechanism)
+    if (subscribeToSession) {
+      subscribeToSession(sessionId);
+    }
 
     // Listen for agent.status events
     const handleStatusUpdate = (data: { status: AgentStatusType }) => {
@@ -111,14 +113,14 @@ export function useAgentState({
     socket.on('agent.decision', handleDecision);
     socket.on('agent.intervention.executed', handleInterventionExecuted);
 
-    // Cleanup on unmount
+    // Cleanup on unmount - only remove local listeners
+    // The SocketContext handles unsubscription when provider unmounts
     return () => {
       socket.off('agent.status', handleStatusUpdate);
       socket.off('agent.decision', handleDecision);
       socket.off('agent.intervention.executed', handleInterventionExecuted);
-      socket.emit('agent:unsubscribe', { sessionId });
     };
-  }, [sessionId, enabled, socket, isSocketConnected]);
+  }, [sessionId, enabled, socket, subscribeToSession]);
 
   // Update agent status based on intervention state
   useEffect(() => {

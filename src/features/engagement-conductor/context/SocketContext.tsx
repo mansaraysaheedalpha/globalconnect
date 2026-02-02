@@ -67,11 +67,11 @@ export const EngagementSocketProvider: React.FC<SocketProviderProps> = ({
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
   const [error, setError] = useState<string | null>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  const [subscribedSessions, setSubscribedSessions] = useState<Set<string>>(new Set());
 
-  // Use ref to track subscribed sessions for reconnection without causing effect re-runs
+  // Use ref to track subscribed sessions - this avoids stale closure issues in callbacks
   const subscribedSessionsRef = useRef<Set<string>>(new Set());
-  subscribedSessionsRef.current = subscribedSessions;
+  // Track pending subscriptions that need to be sent when socket connects
+  const pendingSubscriptionsRef = useRef<Set<string>>(new Set());
 
   // Initialize socket connection
   useEffect(() => {
@@ -103,11 +103,21 @@ export const EngagementSocketProvider: React.FC<SocketProviderProps> = ({
       setError(null);
       setReconnectAttempts(0);
 
-      // Re-subscribe to sessions after reconnect
-      subscribedSessionsRef.current.forEach((sid) => {
-        socketConnection.emit('agent:subscribe', { sessionId: sid });
-        socketConnection.emit('subscribe:engagement', { sessionId: sid });
-      });
+      // Process any pending subscriptions that were requested before connection
+      const allSessions = new Set([
+        ...subscribedSessionsRef.current,
+        ...pendingSubscriptionsRef.current,
+      ]);
+
+      if (allSessions.size > 0) {
+        console.log('[EngagementSocket] Subscribing to sessions:', Array.from(allSessions));
+        allSessions.forEach((sid) => {
+          socketConnection.emit('agent:subscribe', { sessionId: sid });
+          socketConnection.emit('subscribe:engagement', { sessionId: sid });
+          subscribedSessionsRef.current.add(sid);
+        });
+        pendingSubscriptionsRef.current.clear();
+      }
     });
 
     socketConnection.on('disconnect', (reason) => {
@@ -177,46 +187,49 @@ export const EngagementSocketProvider: React.FC<SocketProviderProps> = ({
 
   // Subscribe to a session's events
   const subscribeToSession = useCallback((sid: string) => {
-    if (!socket?.connected) {
-      console.warn('[EngagementSocket] Cannot subscribe - not connected. Will retry when connected.');
-      // Still track it so we subscribe when connected
-      setSubscribedSessions((prev) => new Set([...prev, sid]));
+    // Already subscribed - no action needed
+    if (subscribedSessionsRef.current.has(sid)) {
       return;
     }
 
-    if (subscribedSessions.has(sid)) {
-      console.log('[EngagementSocket] Already subscribed to session', sid);
+    // Already pending - no action needed
+    if (pendingSubscriptionsRef.current.has(sid)) {
+      return;
+    }
+
+    if (!socket?.connected) {
+      // Queue for subscription when socket connects
+      if (!pendingSubscriptionsRef.current.has(sid)) {
+        console.log('[EngagementSocket] Queueing subscription for session', sid, '(will subscribe when connected)');
+        pendingSubscriptionsRef.current.add(sid);
+      }
       return;
     }
 
     console.log('[EngagementSocket] Subscribing to session', sid);
     socket.emit('agent:subscribe', { sessionId: sid });
     socket.emit('subscribe:engagement', { sessionId: sid });
-
-    setSubscribedSessions((prev) => new Set([...prev, sid]));
-  }, [socket, subscribedSessions]);
+    subscribedSessionsRef.current.add(sid);
+  }, [socket]);
 
   // Unsubscribe from a session's events
   const unsubscribeFromSession = useCallback((sid: string) => {
+    // Remove from pending if not yet subscribed
+    pendingSubscriptionsRef.current.delete(sid);
+
     if (!socket?.connected) {
-      // Still remove from tracked sessions
-      setSubscribedSessions((prev) => {
-        const next = new Set(prev);
-        next.delete(sid);
-        return next;
-      });
+      subscribedSessionsRef.current.delete(sid);
+      return;
+    }
+
+    if (!subscribedSessionsRef.current.has(sid)) {
       return;
     }
 
     console.log('[EngagementSocket] Unsubscribing from session', sid);
     socket.emit('agent:unsubscribe', { sessionId: sid });
     socket.emit('unsubscribe:engagement', { sessionId: sid });
-
-    setSubscribedSessions((prev) => {
-      const next = new Set(prev);
-      next.delete(sid);
-      return next;
-    });
+    subscribedSessionsRef.current.delete(sid);
   }, [socket]);
 
   const value: SocketContextValue = {
