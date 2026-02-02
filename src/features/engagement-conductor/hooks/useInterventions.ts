@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Intervention } from '../types/intervention';
 import { getAgentServiceUrl } from '@/lib/env';
 import { useEngagementSocket } from '../context/SocketContext';
@@ -40,9 +40,33 @@ export const useInterventions = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch intervention history from API
-  const fetchHistory = useCallback(async () => {
+  // Track if initial fetch has been done to prevent duplicate calls
+  const hasFetchedRef = useRef(false);
+  const fetchInProgressRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+
+  // Minimum time between fetches (debounce)
+  const MIN_FETCH_INTERVAL_MS = 5000;
+
+  // Fetch intervention history from API with debouncing
+  const fetchHistory = useCallback(async (force = false) => {
     if (!enabled || !sessionId) return;
+
+    // Debounce: prevent fetching too frequently
+    const now = Date.now();
+    if (!force && now - lastFetchTimeRef.current < MIN_FETCH_INTERVAL_MS) {
+      console.log('[useInterventions] Skipping fetch - too soon since last fetch');
+      return;
+    }
+
+    // Prevent concurrent fetches
+    if (fetchInProgressRef.current) {
+      console.log('[useInterventions] Skipping fetch - already in progress');
+      return;
+    }
+
+    fetchInProgressRef.current = true;
+    lastFetchTimeRef.current = now;
 
     try {
       setIsLoading(true);
@@ -54,6 +78,11 @@ export const useInterventions = ({
       });
 
       if (!response.ok) {
+        // Don't throw on rate limit - just log and continue
+        if (response.status === 429) {
+          console.warn('[useInterventions] Rate limited - will retry later');
+          return;
+        }
         throw new Error(`Failed to fetch intervention history: ${response.statusText}`);
       }
 
@@ -80,11 +109,13 @@ export const useInterventions = ({
 
       setInterventionHistory(interventions);
       setError(null);
+      hasFetchedRef.current = true;
     } catch (err) {
-      console.error('Failed to fetch intervention history:', err);
+      console.error('[useInterventions] Failed to fetch intervention history:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
+      fetchInProgressRef.current = false;
     }
   }, [enabled, sessionId, effectiveApiBaseUrl]);
 
@@ -127,6 +158,18 @@ export const useInterventions = ({
     setPendingIntervention(null);
   }, []);
 
+  // Initial history fetch - only run once when dependencies are ready
+  useEffect(() => {
+    if (!enabled || !sessionId || hasFetchedRef.current) return;
+
+    // Delay initial fetch slightly to avoid race conditions with socket setup
+    const timer = setTimeout(() => {
+      fetchHistory(true); // force initial fetch
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [enabled, sessionId, fetchHistory]);
+
   // Connect to WebSocket and listen for intervention events
   useEffect(() => {
     if (!enabled || !sessionId || !socket) return;
@@ -156,21 +199,24 @@ export const useInterventions = ({
     // Listen for intervention executed (auto-triggered)
     const handleInterventionExecuted = (data: any) => {
       console.log('[useInterventions] Intervention executed:', data);
-      // Refresh history to show the new intervention
+      // Refresh history to show the new intervention (with debounce)
       fetchHistory();
     };
 
     socket.on('agent.intervention', handleInterventionSuggested);
     socket.on('agent.intervention.executed', handleInterventionExecuted);
 
-    // Initial history fetch
-    fetchHistory();
-
     return () => {
       socket.off('agent.intervention', handleInterventionSuggested);
       socket.off('agent.intervention.executed', handleInterventionExecuted);
     };
   }, [enabled, sessionId, socket, subscribeToSession, fetchHistory]);
+
+  // Reset fetch state when sessionId changes
+  useEffect(() => {
+    hasFetchedRef.current = false;
+    lastFetchTimeRef.current = 0;
+  }, [sessionId]);
 
   // Combine socket error with local error
   const combinedError = error || socketError;
