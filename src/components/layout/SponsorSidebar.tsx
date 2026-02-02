@@ -9,13 +9,12 @@ import {
   QrCode,
   BarChart3,
   MessageSquare,
-  Settings,
   Building2,
   FileDown,
   Star,
-  ChevronDown,
   RefreshCw,
   Radio,
+  UsersRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,10 +75,11 @@ const getNavItems = (boothId: string | null, isLive: boolean) => [
     showLiveIndicator: true,
     isLive,
   }] : []),
+  // Team management - visible to all, admin actions gated on page
   {
-    label: "Settings",
-    href: "/sponsor/settings",
-    icon: Settings,
+    label: "Team",
+    href: "/sponsor/team",
+    icon: UsersRound,
   },
 ];
 
@@ -88,8 +88,6 @@ export function SponsorSidebar({ className }: SponsorSidebarProps) {
   const { activeSponsorName, sponsors } = useSponsorStore();
   const { boothId, isLive } = useExpoStaffContext();
   const hasMultipleSponsors = sponsors.length > 1;
-
-  console.log("[SponsorSidebar] Context values:", { boothId, isLive });
 
   const navItems = getNavItems(boothId, isLive);
 

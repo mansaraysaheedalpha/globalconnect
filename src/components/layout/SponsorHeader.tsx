@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, Bell, User, Building2, LogOut } from "lucide-react";
+import { Menu, Bell, Building2, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -158,12 +158,6 @@ export function SponsorHeader({ onOpenSidebar }: SponsorHeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/sponsor/settings" className="flex items-center">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/sponsor/booth" className="flex items-center">
                 <Building2 className="mr-2 h-4 w-4" />
