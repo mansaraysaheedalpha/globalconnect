@@ -109,9 +109,8 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
     boothNumber: "",
   });
 
-  // Form state for inviting representative
+  // Form state for inviting sponsor admin
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("representative");
 
   const handleCreateDefaultTiers = async () => {
     setIsSubmitting(true);
@@ -164,24 +163,20 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
     }
   };
 
-  const handleInviteRepresentative = async () => {
+  const handleInviteSponsorAdmin = async () => {
     if (!selectedSponsor || !inviteEmail) return;
 
     setIsSubmitting(true);
+    // Backend enforces admin role for first invitation from organizer
     const result = await inviteRepresentative(selectedSponsor.id, {
       email: inviteEmail,
-      role: inviteRole,
-      canViewLeads: true,
-      canExportLeads: inviteRole === "admin",
-      canManageBooth: inviteRole === "admin" || inviteRole === "representative",
-      canInviteOthers: inviteRole === "admin",
+      role: "admin", // Backend will enforce this anyway
     });
     setIsSubmitting(false);
 
     if (result) {
       setIsInviteDialogOpen(false);
       setInviteEmail("");
-      setInviteRole("representative");
     }
   };
 
@@ -528,13 +523,13 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
         </Tabs>
       )}
 
-      {/* Invite Representative Dialog */}
+      {/* Invite Sponsor Admin Dialog */}
       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite Representative</DialogTitle>
+            <DialogTitle>Invite Sponsor Admin</DialogTitle>
             <DialogDescription>
-              Invite someone to represent {selectedSponsor?.companyName} at this event.
+              Invite an admin to manage {selectedSponsor?.companyName}&apos;s presence at this event.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -545,29 +540,21 @@ export function SponsorManagement({ eventId, organizationId }: SponsorManagement
                 type="email"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="representative@company.com"
+                placeholder="admin@company.com"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="inviteRole">Role</Label>
-              <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin (Full access)</SelectItem>
-                  <SelectItem value="representative">Representative (View & manage leads)</SelectItem>
-                  <SelectItem value="booth_staff">Booth Staff (View leads only)</SelectItem>
-                  <SelectItem value="viewer">Viewer (Read-only access)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="rounded-lg border bg-muted/50 p-3 text-sm">
+              <p className="font-medium mb-1">This person will be the sponsor admin</p>
+              <p className="text-muted-foreground text-xs">
+                They&apos;ll have full access to manage leads, booth settings, and can invite additional team members from their sponsor portal.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleInviteRepresentative} disabled={!inviteEmail || isSubmitting}>
+            <Button onClick={handleInviteSponsorAdmin} disabled={!inviteEmail || isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Send Invitation
             </Button>
@@ -858,10 +845,12 @@ function SponsorCard({
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onInvite}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite Representative
-              </DropdownMenuItem>
+              {sponsor.representativeCount === 0 && (
+                <DropdownMenuItem onClick={onInvite}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invite Admin
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={onManageInvitations}>
                 <MailOpen className="h-4 w-4 mr-2" />
                 Manage Invitations
