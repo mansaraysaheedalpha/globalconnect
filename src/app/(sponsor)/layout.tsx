@@ -5,7 +5,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SponsorSidebar } from "@/components/layout/SponsorSidebar";
 import { SponsorHeader } from "@/components/layout/SponsorHeader";
 import { ExpoStaffProvider } from "@/providers/expo-staff-provider";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useSponsorStore } from "@/store/sponsor.store";
@@ -23,9 +23,12 @@ export default function SponsorLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { token } = useAuthStore();
-  const { activeSponsorId, setActiveSponsor, setSponsors, clearSponsorContext, sponsors } = useSponsorStore();
+  const { activeSponsorId, setActiveSponsor, setSponsors, clearSponsorContext } = useSponsorStore();
 
-  // Initialize sponsor context on mount
+  // Track if we've already run initialization for this token
+  const hasInitializedRef = useRef<string | null>(null);
+
+  // Initialize sponsor context on mount or token change
   useEffect(() => {
     // Skip initialization on select-event page
     if (pathname === "/sponsor/select-event") {
@@ -36,12 +39,22 @@ export default function SponsorLayout({
     // If no token, let AuthGuard handle it
     if (!token) {
       setIsInitializing(false);
+      hasInitializedRef.current = null;
+      return;
+    }
+
+    // Skip if we've already initialized for this token
+    if (hasInitializedRef.current === token) {
+      setIsInitializing(false);
       return;
     }
 
     // Always fetch sponsors to validate context (even if activeSponsorId exists)
     // This prevents stale localStorage data from causing 404 errors
     const initializeSponsorContext = async () => {
+      // Get current activeSponsorId at time of fetch (avoid stale closure)
+      const currentActiveSponsorId = useSponsorStore.getState().activeSponsorId;
+
       try {
         const res = await fetch(`${API_BASE_URL}/sponsors/my-sponsors`, {
           headers: {
@@ -53,7 +66,7 @@ export default function SponsorLayout({
         if (!res.ok) {
           console.error("Failed to fetch sponsors for context initialization");
           // If we can't validate, clear any potentially stale context
-          if (activeSponsorId) {
+          if (currentActiveSponsorId) {
             clearSponsorContext();
           }
           setIsInitializing(false);
@@ -74,14 +87,14 @@ export default function SponsorLayout({
 
         if (sponsorsData.length === 0) {
           // No sponsors - clear any stale context and show empty state
-          if (activeSponsorId) {
+          if (currentActiveSponsorId) {
             console.log("Clearing stale sponsor context - user has no sponsor memberships");
             clearSponsorContext();
           }
           setIsInitializing(false);
-        } else if (activeSponsorId) {
+        } else if (currentActiveSponsorId) {
           // Validate that current activeSponsorId is still valid
-          const isValidSponsor = sponsorsData.some((s: { id: string }) => s.id === activeSponsorId);
+          const isValidSponsor = sponsorsData.some((s: { id: string }) => s.id === currentActiveSponsorId);
           if (!isValidSponsor) {
             console.log("Clearing stale sponsor context - activeSponsorId not found in user's sponsors");
             clearSponsorContext();
@@ -104,6 +117,9 @@ export default function SponsorLayout({
           // Multiple sponsors - redirect to selection page
           router.push("/sponsor/select-event");
         }
+
+        // Mark as initialized for this token
+        hasInitializedRef.current = token;
       } catch (error) {
         console.error("Error initializing sponsor context:", error);
         setIsInitializing(false);
@@ -111,7 +127,7 @@ export default function SponsorLayout({
     };
 
     initializeSponsorContext();
-  }, [token, activeSponsorId, pathname, router, setActiveSponsor, setSponsors, clearSponsorContext]);
+  }, [token, pathname, router, setActiveSponsor, setSponsors, clearSponsorContext]);
 
   // Show loading state while initializing
   if (isInitializing && pathname !== "/sponsor/select-event") {
