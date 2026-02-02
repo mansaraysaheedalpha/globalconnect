@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useEngagementStream } from '../hooks/useEngagementStream';
 import { useInterventions } from '../hooks/useInterventions';
 import { useAgentState } from '../hooks/useAgentState';
 import { EngagementChart } from './EngagementChart';
 import { InterventionSuggestion } from './InterventionSuggestion';
 import { AgentActivityFeed } from './AgentActivityFeed';
-import { AgentModeToggle } from './AgentModeToggle';
+import { AgentModeToggle, AgentMode } from './AgentModeToggle';
 import { AgentStatus } from './AgentStatus';
 import { DecisionExplainer } from './DecisionExplainer';
 import { OnboardingTour, defaultTourSteps, useOnboardingTour } from './OnboardingTour';
-import { ChartSkeleton, ErrorState, EmptyState } from './LoadingStates';
+import { ChartSkeleton, ErrorState } from './LoadingStates';
 import { exportInterventionsAsCSV, exportInterventionsAsJSON } from '../utils/exportReports';
-import { initializeSocket, disconnectSocket } from '@/lib/socket';
-import { useAuthStore } from '@/store/auth.store';
+import { useEngagementSocket } from '../context/SocketContext';
 import styles from './EngagementDashboard.module.css';
 
 interface EngagementDashboardProps {
@@ -27,6 +26,7 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
   enabled = true,
 }) => {
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [modeChangeError, setModeChangeError] = useState<string | null>(null);
 
   const {
     currentEngagement,
@@ -54,24 +54,29 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
     isChangingMode,
   } = useAgentState({ sessionId, eventId, enabled });
 
-  const { showTour, completeTour, skipTour, resetTour } = useOnboardingTour();
+  const { showTour, completeTour, skipTour } = useOnboardingTour();
 
-  // Get auth token from store
-  const authToken = useAuthStore((state) => state.token);
+  // Get socket connection state from context (provided by EngagementSocketProvider)
+  const {
+    isConnected: socketConnected,
+    connectionState,
+    error: socketError,
+    reconnectAttempts,
+    manualReconnect,
+  } = useEngagementSocket();
 
-  // Initialize WebSocket connection for real-time updates
-  useEffect(() => {
-    // Initialize socket with auth token from store
-    const socket = initializeSocket(authToken || undefined);
-
-    console.log('[EngagementDashboard] WebSocket initialized for session:', sessionId);
-
-    // Cleanup on unmount
-    return () => {
-      // Don't disconnect socket here as it might be used by other components
-      // disconnectSocket();
-    };
-  }, [sessionId, authToken]);
+  // Handle mode change with error handling
+  const handleModeChange = useCallback(async (mode: AgentMode) => {
+    setModeChangeError(null);
+    try {
+      await setAgentMode(mode);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to change agent mode';
+      setModeChangeError(errorMessage);
+      // Auto-clear error after 5 seconds
+      setTimeout(() => setModeChangeError(null), 5000);
+    }
+  }, [setAgentMode]);
 
   // Export handlers
   const handleExportCSV = () => {
@@ -102,29 +107,60 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
     setShowExportMenu(false);
   };
 
-  // Connection status indicator
-  const renderConnectionStatus = () => (
-    <div className={styles.statusBar}>
-      <div className={styles.statusIndicator}>
-        <span
-          className={`${styles.statusDot} ${
-            isConnected ? styles.connected : styles.disconnected
-          }`}
-        />
-        <span className={styles.statusText}>
-          {isConnected ? 'Live' : 'Disconnected'}
-        </span>
-      </div>
-      {engagementHistory.length > 0 && (
-        <span className={styles.dataPoints}>
-          {engagementHistory.length} data points
-        </span>
-      )}
-    </div>
-  );
+  // Combine connection states: socket context + engagement stream
+  const effectiveConnected = socketConnected && isConnected;
+  const effectiveError = socketError || error;
+  const isReconnecting = connectionState === 'reconnecting';
 
-  // Error state
-  if (error) {
+  // Connection status indicator with reconnecting state
+  const renderConnectionStatus = () => {
+    const getStatusText = () => {
+      if (effectiveConnected) return 'Live';
+      if (isReconnecting) return `Reconnecting${reconnectAttempts > 0 ? ` (${reconnectAttempts})` : '...'}`;
+      if (connectionState === 'connecting') return 'Connecting...';
+      return 'Disconnected';
+    };
+
+    const getStatusClass = () => {
+      if (effectiveConnected) return styles.connected;
+      if (isReconnecting || connectionState === 'connecting') return styles.connecting;
+      return styles.disconnected;
+    };
+
+    return (
+      <div className={styles.statusBar}>
+        <div className={styles.statusIndicator}>
+          <span className={`${styles.statusDot} ${getStatusClass()}`} />
+          <span className={styles.statusText}>{getStatusText()}</span>
+        </div>
+        {!effectiveConnected && connectionState === 'error' && (
+          <button
+            onClick={manualReconnect}
+            className={styles.reconnectButton}
+            style={{
+              marginLeft: '8px',
+              padding: '4px 8px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              background: '#f5f5f5',
+            }}
+          >
+            Retry
+          </button>
+        )}
+        {engagementHistory.length > 0 && (
+          <span className={styles.dataPoints}>
+            {engagementHistory.length} data points
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  // Error state (only show if not reconnecting)
+  if (effectiveError && connectionState === 'error') {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -133,15 +169,15 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
         </div>
         <ErrorState
           title="Connection Error"
-          message={`${error}. Make sure the real-time service is running on port 3002`}
-          retry={() => window.location.reload()}
+          message={effectiveError}
+          retry={manualReconnect}
         />
       </div>
     );
   }
 
-  // Loading state
-  if (!isConnected && !error) {
+  // Loading/connecting state
+  if (!effectiveConnected && !effectiveError && (connectionState === 'connecting' || isReconnecting)) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -192,7 +228,7 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
       <div className={styles.agentControlsSection}>
         <AgentModeToggle
           currentMode={agentMode}
-          onModeChange={setAgentMode}
+          onModeChange={handleModeChange}
           disabled={isChangingMode}
         />
         <AgentStatus
@@ -201,6 +237,30 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
           confidenceScore={confidenceScore || undefined}
         />
       </div>
+
+      {/* Mode Change Error Alert */}
+      {modeChangeError && (
+        <div className={styles.alertCard} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
+          <div className={styles.alertIcon}>❌</div>
+          <div className={styles.alertContent}>
+            <h4 style={{ color: '#991b1b' }}>Failed to Change Mode</h4>
+            <p style={{ color: '#b91c1c' }}>{modeChangeError}</p>
+          </div>
+          <button
+            onClick={() => setModeChangeError(null)}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              color: '#991b1b'
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Anomaly Alert */}
       {latestAnomaly && (

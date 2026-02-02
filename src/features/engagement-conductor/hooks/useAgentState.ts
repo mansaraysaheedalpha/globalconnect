@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { getSocket } from '@/lib/socket';
+import { useEngagementSocket } from '../context/SocketContext';
 import { getAgentServiceUrl } from '@/lib/env';
 import { useAuthStore } from '@/store/auth.store';
 import type { AgentMode } from '../components/AgentModeToggle';
@@ -52,20 +52,32 @@ export function useAgentState({
   const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
   const [isChangingMode, setIsChangingMode] = useState(false);
 
-  // Connect to WebSocket for real-time agent state updates
-  useEffect(() => {
-    if (!enabled) return;
+  // Get socket from EngagementSocketProvider context
+  // This must be called unconditionally (React hooks rules)
+  let socketContext: ReturnType<typeof useEngagementSocket> | null = null;
+  try {
+    socketContext = useEngagementSocket();
+  } catch {
+    // Hook is being used outside of EngagementSocketProvider - will use null socket
+  }
 
-    // Load persisted mode from localStorage
+  const socket = socketContext?.socket;
+  const isSocketConnected = socketContext?.isConnected ?? false;
+
+  // Load persisted mode from localStorage on mount
+  useEffect(() => {
     const savedMode = localStorage.getItem(`agent_mode_${sessionId}`) as AgentMode;
     if (savedMode) {
       setAgentModeState(savedMode);
     }
+  }, [sessionId]);
 
-    // Get WebSocket instance
-    const socket = getSocket();
-    if (!socket) {
-      console.warn('WebSocket not initialized. Agent state updates will not work.');
+  // Connect to WebSocket for real-time agent state updates
+  useEffect(() => {
+    if (!enabled || !socket || !isSocketConnected) {
+      if (!socket) {
+        console.warn('[useAgentState] No socket available - make sure component is wrapped in EngagementSocketProvider');
+      }
       return;
     }
 
@@ -86,7 +98,7 @@ export function useAgentState({
     };
 
     // Listen for agent.intervention.executed events
-    const handleInterventionExecuted = (data: any) => {
+    const handleInterventionExecuted = () => {
       // Clear current decision after execution
       setCurrentDecision(null);
       setConfidenceScore(null);
@@ -106,7 +118,7 @@ export function useAgentState({
       socket.off('agent.intervention.executed', handleInterventionExecuted);
       socket.emit('agent:unsubscribe', { sessionId });
     };
-  }, [sessionId, enabled]);
+  }, [sessionId, enabled, socket, isSocketConnected]);
 
   // Update agent status based on intervention state
   useEffect(() => {
@@ -119,33 +131,71 @@ export function useAgentState({
     }
   }, [currentDecision]);
 
-  // Change agent mode (calls backend API)
-  const setAgentMode = useCallback(async (mode: AgentMode) => {
+  // Change agent mode (calls backend API with retry logic)
+  const setAgentMode = useCallback(async (mode: AgentMode, retries = 2) => {
     setIsChangingMode(true);
-    try {
-      // Call backend API to change mode using environment variable
-      const agentServiceUrl = getAgentServiceUrl();
-      const token = useAuthStore.getState().token;
-      const response = await fetch(`${agentServiceUrl}/api/v1/agent/sessions/${sessionId}/mode`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify({ mode })
-      });
 
-      if (!response.ok) {
-        throw new Error(`Failed to change agent mode: ${response.statusText}`);
+    const attemptModeChange = async (attemptsLeft: number): Promise<void> => {
+      try {
+        const agentServiceUrl = getAgentServiceUrl();
+        const token = useAuthStore.getState().token;
+
+        const response = await fetch(`${agentServiceUrl}/api/v1/agent/sessions/${sessionId}/mode`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ mode })
+        });
+
+        if (!response.ok) {
+          // Try to parse error message from response body
+          let errorMessage = response.statusText;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.detail || errorMessage;
+          } catch {
+            // Ignore JSON parse errors
+          }
+
+          // Check for specific error types
+          if (response.status === 401 || response.status === 403) {
+            throw new Error('Authentication required. Please log in again.');
+          } else if (response.status === 400) {
+            throw new Error(`Invalid request: ${errorMessage}`);
+          } else if (response.status >= 500 && attemptsLeft > 0) {
+            // Server error - retry with exponential backoff
+            const delay = (retries - attemptsLeft + 1) * 1000;
+            console.warn(`[useAgentState] Server error, retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return attemptModeChange(attemptsLeft - 1);
+          }
+
+          throw new Error(`Failed to change agent mode: ${errorMessage}`);
+        }
+
+        // Update local state on success
+        setAgentModeState(mode);
+        localStorage.setItem(`agent_mode_${sessionId}`, mode);
+
+        console.log(`[useAgentState] Agent mode changed to ${mode} for session ${sessionId}`);
+      } catch (error) {
+        // Network error - retry if attempts left
+        if (error instanceof TypeError && error.message.includes('fetch') && attemptsLeft > 0) {
+          const delay = (retries - attemptsLeft + 1) * 1000;
+          console.warn(`[useAgentState] Network error, retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return attemptModeChange(attemptsLeft - 1);
+        }
+        throw error;
       }
+    };
 
-      // Update local state
-      setAgentModeState(mode);
-      localStorage.setItem(`agent_mode_${sessionId}`, mode);
-
-      console.log(`Agent mode changed to ${mode} for session ${sessionId}`);
+    try {
+      await attemptModeChange(retries);
     } catch (error) {
-      console.error('Failed to change agent mode:', error);
+      console.error('[useAgentState] Failed to change agent mode:', error);
       throw error;
     } finally {
       setIsChangingMode(false);
