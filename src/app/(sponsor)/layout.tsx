@@ -23,7 +23,7 @@ export default function SponsorLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { token } = useAuthStore();
-  const { activeSponsorId, setActiveSponsor, setSponsors, sponsors } = useSponsorStore();
+  const { activeSponsorId, setActiveSponsor, setSponsors, clearSponsorContext, sponsors } = useSponsorStore();
 
   // Initialize sponsor context on mount
   useEffect(() => {
@@ -39,13 +39,8 @@ export default function SponsorLayout({
       return;
     }
 
-    // If already has active sponsor, skip initialization
-    if (activeSponsorId) {
-      setIsInitializing(false);
-      return;
-    }
-
-    // Fetch sponsors and set context
+    // Always fetch sponsors to validate context (even if activeSponsorId exists)
+    // This prevents stale localStorage data from causing 404 errors
     const initializeSponsorContext = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/sponsors/my-sponsors`, {
@@ -57,6 +52,10 @@ export default function SponsorLayout({
 
         if (!res.ok) {
           console.error("Failed to fetch sponsors for context initialization");
+          // If we can't validate, clear any potentially stale context
+          if (activeSponsorId) {
+            clearSponsorContext();
+          }
           setIsInitializing(false);
           return;
         }
@@ -64,16 +63,37 @@ export default function SponsorLayout({
         const sponsorsData = await res.json();
 
         // Update sponsors in store
-        setSponsors(sponsorsData.map((s: { id: string; event_id: string; company_name: string; company_logo_url?: string }) => ({
+        const mappedSponsors = sponsorsData.map((s: { id: string; event_id: string; company_name: string; company_logo_url?: string }) => ({
           id: s.id,
           eventId: s.event_id,
           companyName: s.company_name,
           companyLogoUrl: s.company_logo_url,
           role: null,
-        })));
+        }));
+        setSponsors(mappedSponsors);
 
         if (sponsorsData.length === 0) {
-          // No sponsors - stay on current page, will show empty state
+          // No sponsors - clear any stale context and show empty state
+          if (activeSponsorId) {
+            console.log("Clearing stale sponsor context - user has no sponsor memberships");
+            clearSponsorContext();
+          }
+          setIsInitializing(false);
+        } else if (activeSponsorId) {
+          // Validate that current activeSponsorId is still valid
+          const isValidSponsor = sponsorsData.some((s: { id: string }) => s.id === activeSponsorId);
+          if (!isValidSponsor) {
+            console.log("Clearing stale sponsor context - activeSponsorId not found in user's sponsors");
+            clearSponsorContext();
+            // Auto-select if only one sponsor, otherwise redirect to selection
+            if (sponsorsData.length === 1) {
+              const sponsor = sponsorsData[0];
+              setActiveSponsor(sponsor.id, sponsor.event_id, sponsor.company_name, null);
+            } else {
+              router.push("/sponsor/select-event");
+              return;
+            }
+          }
           setIsInitializing(false);
         } else if (sponsorsData.length === 1) {
           // Single sponsor - auto-select
@@ -91,7 +111,7 @@ export default function SponsorLayout({
     };
 
     initializeSponsorContext();
-  }, [token, activeSponsorId, pathname, router, setActiveSponsor, setSponsors]);
+  }, [token, activeSponsorId, pathname, router, setActiveSponsor, setSponsors, clearSponsorContext]);
 
   // Show loading state while initializing
   if (isInitializing && pathname !== "/sponsor/select-event") {
