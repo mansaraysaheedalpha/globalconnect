@@ -75,9 +75,7 @@ export function useAgentState({
   // Connect to WebSocket for real-time agent state updates
   useEffect(() => {
     if (!enabled || !socket) {
-      if (!socket) {
-        console.warn('[useAgentState] No socket available - make sure component is wrapped in EngagementSocketProvider');
-      }
+      // Socket may be null on first render while connecting - this is expected
       return;
     }
 
