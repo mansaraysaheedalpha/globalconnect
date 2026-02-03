@@ -170,44 +170,24 @@ export const useInterventions = ({
     return () => clearTimeout(timer);
   }, [enabled, sessionId, fetchHistory]);
 
-  // Connect to WebSocket and listen for intervention events
+  // Connect to WebSocket and listen for intervention execution events
+  // Note: Intervention suggestions are handled by useAgentState via 'agent.decision' events
   useEffect(() => {
     if (!enabled || !sessionId || !socket) return;
 
     // Subscribe to session events (uses shared socket)
     subscribeToSession(sessionId);
 
-    // Listen for intervention suggestions
-    const handleInterventionSuggested = (data: any) => {
-      console.log('[useInterventions] Intervention suggested:', data);
-
-      // Transform to our Intervention type
-      const intervention: Intervention = {
-        id: data.intervention_id,
-        sessionId: data.session_id,
-        type: data.type.replace('agent.intervention.', '').toUpperCase(),
-        status: 'SUGGESTED',
-        confidence: data.metadata?.confidence || 0.8,
-        reasoning: data.metadata?.reason || 'Engagement intervention recommended',
-        params: data.poll || data.prompt || {},
-        timestamp: data.timestamp,
-      };
-
-      setPendingIntervention(intervention);
-    };
-
-    // Listen for intervention executed (auto-triggered)
+    // Listen for intervention executed events to refresh history
     const handleInterventionExecuted = (data: any) => {
       console.log('[useInterventions] Intervention executed:', data);
       // Refresh history to show the new intervention (with debounce)
       fetchHistory();
     };
 
-    socket.on('agent.intervention', handleInterventionSuggested);
     socket.on('agent.intervention.executed', handleInterventionExecuted);
 
     return () => {
-      socket.off('agent.intervention', handleInterventionSuggested);
       socket.off('agent.intervention.executed', handleInterventionExecuted);
     };
   }, [enabled, sessionId, socket, subscribeToSession, fetchHistory]);
