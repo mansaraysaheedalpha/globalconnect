@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
+import { useSessionSocketOptional } from "@/context/SessionSocketContext";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -74,7 +75,11 @@ export const useSessionChat = (
   initialChatOpen: boolean = false,
   sessionName?: string // Optional session title for heatmap display
 ) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  // Try to get shared socket from SessionSocketProvider (if available)
+  const sharedSocketContext = useSessionSocketOptional();
+  const usingSharedSocket = sharedSocketContext !== null;
+
+  const [ownSocket, setOwnSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionChatState>({
     messages: [],
     isConnected: false,
@@ -86,16 +91,54 @@ export const useSessionChat = (
   const [isSending, setIsSending] = useState(false);
   const { token, user } = useAuthStore();
   const messagesRef = useRef<ChatMessage[]>([]);
+  const socketCreatedRef = useRef(false);
+
+  // Determine which socket to use
+  const socket = usingSharedSocket ? sharedSocketContext.socket : ownSocket;
 
   // Keep messagesRef in sync
   useEffect(() => {
     messagesRef.current = state.messages;
   }, [state.messages]);
 
+  // Sync state with shared socket context if using it
   useEffect(() => {
+    if (usingSharedSocket && sharedSocketContext) {
+      setState((prev) => ({
+        ...prev,
+        isConnected: sharedSocketContext.isConnected,
+        isJoined: sharedSocketContext.isJoined,
+        chatOpen: sharedSocketContext.chatOpen,
+        error: sharedSocketContext.error,
+      }));
+    }
+  }, [
+    usingSharedSocket,
+    sharedSocketContext?.isConnected,
+    sharedSocketContext?.isJoined,
+    sharedSocketContext?.chatOpen,
+    sharedSocketContext?.error,
+  ]);
+
+  // Create own socket ONLY if not using shared socket
+  useEffect(() => {
+    // Skip if using shared socket from provider
+    if (usingSharedSocket) {
+      console.log('[useSessionChat] Using shared socket from SessionSocketProvider');
+      return;
+    }
+
     if (!sessionId || !eventId || !token) {
       return;
     }
+
+    // Prevent duplicate socket creation (React StrictMode safety)
+    if (socketCreatedRef.current) {
+      return;
+    }
+
+    console.log('[useSessionChat] Creating own socket connection (no shared provider)');
+    socketCreatedRef.current = true;
 
     const realtimeUrl =
       process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
@@ -103,19 +146,19 @@ export const useSessionChat = (
     const newSocket = io(realtimeUrl, {
       auth: { token: `Bearer ${token}` },
       query: { sessionId, eventId },
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    setSocket(newSocket);
+    setOwnSocket(newSocket);
 
     newSocket.on("connect", () => {
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
     });
 
-    newSocket.on("connectionAcknowledged", (data: { userId: string }) => {
+    newSocket.on("connectionAcknowledged", () => {
       // Join the session room for chat
       newSocket.emit("session.join", { sessionId, eventId }, (response: {
         success: boolean;
@@ -250,6 +293,8 @@ export const useSessionChat = (
 
     // Cleanup
     return () => {
+      console.log('[useSessionChat] Cleaning up own socket connection');
+      socketCreatedRef.current = false;
       newSocket.emit("session.leave", { sessionId });
       newSocket.off("connect");
       newSocket.off("connectionAcknowledged");
@@ -263,7 +308,112 @@ export const useSessionChat = (
       newSocket.off("chat.status.changed");
       newSocket.disconnect();
     };
-  }, [sessionId, eventId, token, initialChatOpen]);
+  }, [usingSharedSocket, sessionId, eventId, token, initialChatOpen]);
+
+  // Set up chat-specific event listeners when using shared socket
+  // (When using own socket, listeners are set up in the socket creation effect above)
+  useEffect(() => {
+    if (!usingSharedSocket || !socket) {
+      return;
+    }
+
+    console.log('[useSessionChat] Setting up chat listeners on shared socket');
+
+    // Handler functions for chat events
+    const handleChatHistory = (data: { messages: ChatMessage[] }) => {
+      if (data?.messages && Array.isArray(data.messages)) {
+        setState((prev) => ({
+          ...prev,
+          messages: data.messages,
+        }));
+      }
+    };
+
+    const handleNewMessage = (message: ChatMessage) => {
+      setState((prev) => {
+        // First check: Does this message already exist by ID? (prevents duplicates)
+        const existingById = prev.messages.find((m) => m.id === message.id);
+        if (existingById) {
+          return {
+            ...prev,
+            messages: prev.messages.map((m) =>
+              m.id === message.id ? message : m
+            ),
+          };
+        }
+
+        // Second check: Find optimistic message to replace
+        const optimisticIndex = prev.messages.findIndex(
+          (m) =>
+            (m as OptimisticMessage).optimisticId &&
+            m.text === message.text &&
+            m.authorId === message.authorId
+        );
+
+        if (optimisticIndex !== -1) {
+          const newMessages = [...prev.messages];
+          newMessages[optimisticIndex] = message;
+          return { ...prev, messages: newMessages };
+        }
+
+        // Third check: Prevent duplicate by timestamp proximity
+        const isDuplicate = prev.messages.some(
+          (m) =>
+            m.text === message.text &&
+            m.authorId === message.authorId &&
+            Math.abs(new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()) < 5000
+        );
+
+        if (isDuplicate) {
+          return prev;
+        }
+
+        return { ...prev, messages: [...prev.messages, message] };
+      });
+    };
+
+    const handleMessageUpdated = (updatedMessage: ChatMessage) => {
+      setState((prev) => ({
+        ...prev,
+        messages: prev.messages.map((msg) =>
+          msg.id === updatedMessage.id ? updatedMessage : msg
+        ),
+      }));
+    };
+
+    const handleMessageDeleted = (data: { messageId: string }) => {
+      setState((prev) => ({
+        ...prev,
+        messages: prev.messages.filter((msg) => msg.id !== data.messageId),
+      }));
+    };
+
+    const handleChatStatusChanged = (data: { sessionId: string; isOpen: boolean }) => {
+      if (data.sessionId === sessionId) {
+        setState((prev) => ({
+          ...prev,
+          chatOpen: data.isOpen,
+        }));
+      }
+    };
+
+    // Register listeners
+    socket.on("chat.history", handleChatHistory);
+    socket.on("chat.message.new", handleNewMessage);
+    socket.on("chat.message.updated", handleMessageUpdated);
+    socket.on("chat.message.deleted", handleMessageDeleted);
+    socket.on("chat.status.changed", handleChatStatusChanged);
+
+    // Cleanup
+    return () => {
+      console.log('[useSessionChat] Removing chat listeners from shared socket');
+      socket.off("chat.history", handleChatHistory);
+      socket.off("chat.message.new", handleNewMessage);
+      socket.off("chat.message.updated", handleMessageUpdated);
+      socket.off("chat.message.deleted", handleMessageDeleted);
+      socket.off("chat.status.changed", handleChatStatusChanged);
+    };
+  }, [usingSharedSocket, socket, sessionId]);
 
   // Send a new message with optimistic update
   const sendMessage = useCallback(
