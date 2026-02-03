@@ -161,7 +161,12 @@ export default function EventDetailPage() {
             <TabsContent value="live" className="mt-4 sm:mt-6">
               <LiveDashboard eventId={event.id} />
             </TabsContent>
-            <TabsContent value="engagement" className="mt-4 sm:mt-6">
+            {/* AI Conductor uses forceMount to keep socket/state alive when switching tabs */}
+            <TabsContent
+              value="engagement"
+              className="mt-4 sm:mt-6 data-[state=inactive]:hidden"
+              forceMount
+            >
               <EngagementConductorPage />
             </TabsContent>
             <TabsContent value="agenda" className="mt-4 sm:mt-6">

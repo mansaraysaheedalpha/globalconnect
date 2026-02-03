@@ -34,7 +34,9 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
     latestAnomaly,
     isConnected,
     error,
-  } = useEngagementStream({ sessionId, enabled });
+    totalDataPoints,
+    sessionDuration,
+  } = useEngagementStream({ sessionId, eventId, enabled });
 
   const {
     pendingIntervention,
