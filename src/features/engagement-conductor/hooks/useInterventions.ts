@@ -192,10 +192,15 @@ export const useInterventions = ({
     };
   }, [enabled, sessionId, socket, subscribeToSession, fetchHistory]);
 
-  // Reset fetch state when sessionId changes
+  // Reset state when sessionId changes - ensures session data isolation
   useEffect(() => {
     hasFetchedRef.current = false;
     lastFetchTimeRef.current = 0;
+    // Clear local state to prevent showing stale data from previous session
+    setInterventionHistory([]);
+    setPendingIntervention(null);
+    setError(null);
+    setIsLoading(true);
   }, [sessionId]);
 
   // Combine socket error with local error

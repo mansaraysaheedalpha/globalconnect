@@ -44,10 +44,13 @@ export const useEngagementStream = ({
   // Local state for latest anomaly (for UI display)
   const [latestAnomaly, setLatestAnomalyLocal] = useState<Anomaly | null>(null);
 
-  // Set this as the active session
+  // Set this as the active session and reset local state when sessionId changes
+  // This ensures session data isolation when switching between sessions
   useEffect(() => {
     if (sessionId) {
       setActiveSession(sessionId);
+      // Clear local anomaly state to prevent showing stale data from previous session
+      setLatestAnomalyLocal(null);
     }
   }, [sessionId, setActiveSession]);
 

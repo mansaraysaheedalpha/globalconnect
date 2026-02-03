@@ -124,6 +124,7 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       title
       startTime
       endTime
+      status
       chatEnabled
       qaEnabled
       pollsEnabled

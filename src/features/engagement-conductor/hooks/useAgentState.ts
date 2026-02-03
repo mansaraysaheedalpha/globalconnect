@@ -64,11 +64,20 @@ export function useAgentState({
   const socket = socketContext?.socket;
   const subscribeToSession = socketContext?.subscribeToSession;
 
-  // Load persisted mode from localStorage on mount
+  // Reset state and load persisted mode when sessionId changes - ensures session data isolation
   useEffect(() => {
+    // Clear session-specific state to prevent showing stale data from previous session
+    setAgentStatus('IDLE');
+    setCurrentDecision(null);
+    setLastActivity(null);
+    setConfidenceScore(null);
+
+    // Load persisted mode for this session
     const savedMode = localStorage.getItem(`agent_mode_${sessionId}`) as AgentMode;
     if (savedMode) {
       setAgentModeState(savedMode);
+    } else {
+      setAgentModeState('MANUAL'); // Reset to default if no saved mode
     }
   }, [sessionId]);
 

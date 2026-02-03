@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://eventdynamics.io';
 const SITE_NAME = 'Event Dynamics';
-const SITE_DESCRIPTION = 'Event Dynamics - The ultimate event management platform for in-person, virtual, and hybrid conferences, expos, and networking. Create immersive experiences with video chat, expo halls, and sponsor booths.';
+const SITE_DESCRIPTION = 'Intelligent Event Orchestration Platform - Create, manage, and orchestrate world-class in-person, virtual, and hybrid events with AI-powered engagement, real-time interactions, and comprehensive analytics.';
 
 export interface SEOConfig {
   title: string;
@@ -135,10 +135,10 @@ export const defaultMetadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/favicon.ico?v=2',
+    apple: '/apple-touch-icon.png?v=2',
   },
-  manifest: '/site.webmanifest',
+  manifest: '/site.webmanifest?v=2',
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -148,7 +148,7 @@ export const defaultMetadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: `${SITE_URL}/og-default.png`,
+        url: `${SITE_URL}/og-default.png?v=2`,
         width: 1200,
         height: 630,
         alt: SITE_NAME,
@@ -159,7 +159,7 @@ export const defaultMetadata: Metadata = {
     card: 'summary_large_image',
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
-    images: [`${SITE_URL}/og-default.png`],
+    images: [`${SITE_URL}/og-default.png?v=2`],
     creator: '@eventdynamics',
     site: '@eventdynamics',
   },
