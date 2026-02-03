@@ -68,6 +68,7 @@ import { ProximityContainer } from "@/components/features/proximity";
 import { IncidentReportForm } from "@/components/features/incidents";
 import { VirtualSessionView, VirtualSession } from "@/components/features/virtual-session";
 import { BreakoutRoomList, RoomAssignmentNotice } from "@/components/features/breakout";
+import { SessionSocketProvider } from "@/context/SessionSocketContext";
 
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
@@ -772,69 +773,78 @@ const SessionCard = ({
             </div>
 
             {/* Interactive Features - show if features are enabled (not ended sessions) */}
+            {/* Wrapped in SessionSocketProvider to share a single socket across Chat/Q&A/Polls */}
             {!isEnded && hasInteractiveFeatures && (
-              <div className="flex flex-col gap-2">
-                {/* Session Chat */}
-                {chatEnabled && (
-                  <AttendeeChatDialog
-                    session={session}
-                    eventId={eventId}
-                    liveChatOpen={liveChatOpen}
-                    setLiveChatOpen={setLiveChatOpen}
-                  />
-                )}
+              <SessionSocketProvider
+                sessionId={session.id}
+                eventId={eventId}
+                initialChatOpen={liveChatOpen}
+                initialQaOpen={liveQaOpen}
+                initialPollsOpen={livePollsOpen}
+              >
+                <div className="flex flex-col gap-2">
+                  {/* Session Chat */}
+                  {chatEnabled && (
+                    <AttendeeChatDialog
+                      session={session}
+                      eventId={eventId}
+                      liveChatOpen={liveChatOpen}
+                      setLiveChatOpen={setLiveChatOpen}
+                    />
+                  )}
 
-                {/* Session Q&A */}
-                {qaEnabled && (
-                  <AttendeeQADialog
-                    session={session}
-                    eventId={eventId}
-                    liveQaOpen={liveQaOpen}
-                    setLiveQaOpen={setLiveQaOpen}
-                  />
-                )}
+                  {/* Session Q&A */}
+                  {qaEnabled && (
+                    <AttendeeQADialog
+                      session={session}
+                      eventId={eventId}
+                      liveQaOpen={liveQaOpen}
+                      setLiveQaOpen={setLiveQaOpen}
+                    />
+                  )}
 
-                {/* Session Polls */}
-                {pollsEnabled && (
-                  <AttendeePollsDialog
-                    session={session}
-                    eventId={eventId}
-                    livePollsOpen={livePollsOpen}
-                    setLivePollsOpen={setLivePollsOpen}
-                  />
-                )}
+                  {/* Session Polls */}
+                  {pollsEnabled && (
+                    <AttendeePollsDialog
+                      session={session}
+                      eventId={eventId}
+                      livePollsOpen={livePollsOpen}
+                      setLivePollsOpen={setLivePollsOpen}
+                    />
+                  )}
 
-                {/* Session Presentation */}
-                {presentationEnabled && (
-                  <AttendeePresentationDialog
-                    session={session}
-                    eventId={eventId}
-                    organizationId={organizationId}
-                    livePresentationActive={livePresentationActive}
-                  />
-                )}
+                  {/* Session Presentation */}
+                  {presentationEnabled && (
+                    <AttendeePresentationDialog
+                      session={session}
+                      eventId={eventId}
+                      organizationId={organizationId}
+                      livePresentationActive={livePresentationActive}
+                    />
+                  )}
 
-                {/* Breakout Rooms - available for live sessions when enabled */}
-                {isLive && session.breakoutEnabled && (
-                  <AttendeeBreakoutRoomsDialog
-                    session={session}
-                    eventId={eventId}
-                    userId={userId}
-                  />
-                )}
+                  {/* Breakout Rooms - available for live sessions when enabled */}
+                  {isLive && session.breakoutEnabled && (
+                    <AttendeeBreakoutRoomsDialog
+                      session={session}
+                      eventId={eventId}
+                      userId={userId}
+                    />
+                  )}
 
-                {/* Report Issue Button - Always available for live/upcoming sessions */}
-                <IncidentReportForm
-                  sessionId={session.id}
-                  eventId={eventId}
-                  trigger={
-                    <Button variant="outline" size="sm" className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
-                      <AlertTriangle className="h-4 w-4" />
-                      Report Issue
-                    </Button>
-                  }
-                />
-              </div>
+                  {/* Report Issue Button - Always available for live/upcoming sessions */}
+                  <IncidentReportForm
+                    sessionId={session.id}
+                    eventId={eventId}
+                    trigger={
+                      <Button variant="outline" size="sm" className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
+                        <AlertTriangle className="h-4 w-4" />
+                        Report Issue
+                      </Button>
+                    }
+                  />
+                </div>
+              </SessionSocketProvider>
             )}
           </div>
         </div>

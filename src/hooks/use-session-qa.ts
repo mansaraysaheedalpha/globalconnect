@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
+import { useSessionSocketOptional } from "@/context/SessionSocketContext";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -89,7 +90,11 @@ export const useSessionQA = (
   initialQaOpen: boolean = false,
   sessionName?: string // Optional session title for heatmap display
 ) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  // Try to get shared socket from SessionSocketProvider (if available)
+  const sharedSocketContext = useSessionSocketOptional();
+  const usingSharedSocket = sharedSocketContext !== null;
+
+  const [ownSocket, setOwnSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionQAState>({
     questions: [],
     isConnected: false,
@@ -101,16 +106,54 @@ export const useSessionQA = (
   const [isSending, setIsSending] = useState(false);
   const { token, user } = useAuthStore();
   const questionsRef = useRef<Question[]>([]);
+  const socketCreatedRef = useRef(false);
+
+  // Determine which socket to use
+  const socket = usingSharedSocket ? sharedSocketContext.socket : ownSocket;
 
   // Keep questionsRef in sync
   useEffect(() => {
     questionsRef.current = state.questions;
   }, [state.questions]);
 
+  // Sync state with shared socket context if using it
   useEffect(() => {
+    if (usingSharedSocket && sharedSocketContext) {
+      setState((prev) => ({
+        ...prev,
+        isConnected: sharedSocketContext.isConnected,
+        isJoined: sharedSocketContext.isJoined,
+        qaOpen: sharedSocketContext.qaOpen,
+        error: sharedSocketContext.error,
+      }));
+    }
+  }, [
+    usingSharedSocket,
+    sharedSocketContext?.isConnected,
+    sharedSocketContext?.isJoined,
+    sharedSocketContext?.qaOpen,
+    sharedSocketContext?.error,
+  ]);
+
+  // Create own socket ONLY if not using shared socket
+  useEffect(() => {
+    // Skip if using shared socket from provider
+    if (usingSharedSocket) {
+      console.log('[useSessionQA] Using shared socket from SessionSocketProvider');
+      return;
+    }
+
     if (!sessionId || !eventId || !token) {
       return;
     }
+
+    // Prevent duplicate socket creation (React StrictMode safety)
+    if (socketCreatedRef.current) {
+      return;
+    }
+
+    console.log('[useSessionQA] Creating own socket connection (no shared provider)');
+    socketCreatedRef.current = true;
 
     const realtimeUrl =
       process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
@@ -119,19 +162,19 @@ export const useSessionQA = (
     const newSocket = io(realtimeUrl, {
       auth: { token: `Bearer ${token}` },
       query: { sessionId, eventId }, // eventId is the parent event for analytics tracking
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    setSocket(newSocket);
+    setOwnSocket(newSocket);
 
     newSocket.on("connect", () => {
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
     });
 
-    newSocket.on("connectionAcknowledged", (data: { userId: string }) => {
+    newSocket.on("connectionAcknowledged", () => {
       // Join the session room for Q&A
       // Use callback to handle registration validation response
       newSocket.emit("session.join", { sessionId, eventId }, (response: {
@@ -241,6 +284,8 @@ export const useSessionQA = (
 
     // Cleanup
     return () => {
+      console.log('[useSessionQA] Cleaning up own socket connection');
+      socketCreatedRef.current = false;
       newSocket.emit("session.leave", { sessionId });
       newSocket.off("connect");
       newSocket.off("connectionAcknowledged");
@@ -254,7 +299,87 @@ export const useSessionQA = (
       newSocket.off("qa.status.changed");
       newSocket.disconnect();
     };
-  }, [sessionId, eventId, token, initialQaOpen]);
+  }, [usingSharedSocket, sessionId, eventId, token, initialQaOpen]);
+
+  // Set up Q&A-specific event listeners when using shared socket
+  useEffect(() => {
+    if (!usingSharedSocket || !socket) {
+      return;
+    }
+
+    console.log('[useSessionQA] Setting up Q&A listeners on shared socket');
+
+    // Handler functions for Q&A events
+    const handleQAHistory = (data: { questions: Question[] }) => {
+      if (data?.questions && Array.isArray(data.questions)) {
+        setState((prev) => ({
+          ...prev,
+          questions: data.questions,
+        }));
+      }
+    };
+
+    const handleNewQuestion = (question: Question) => {
+      setState((prev) => {
+        const optimisticIndex = prev.questions.findIndex(
+          (q) =>
+            (q as OptimisticQuestion).isOptimistic &&
+            q.text === question.text &&
+            q.authorId === question.authorId
+        );
+
+        if (optimisticIndex !== -1) {
+          const newQuestions = [...prev.questions];
+          newQuestions[optimisticIndex] = question;
+          return { ...prev, questions: newQuestions };
+        }
+
+        return { ...prev, questions: [...prev.questions, question] };
+      });
+    };
+
+    const handleQuestionUpdated = (updatedQuestion: Question) => {
+      setState((prev) => ({
+        ...prev,
+        questions: prev.questions.map((q) =>
+          q.id === updatedQuestion.id ? { ...q, ...updatedQuestion } : q
+        ),
+      }));
+    };
+
+    const handleQuestionRemoved = (data: { questionId: string }) => {
+      setState((prev) => ({
+        ...prev,
+        questions: prev.questions.filter((q) => q.id !== data.questionId),
+      }));
+    };
+
+    const handleQAStatusChanged = (data: { sessionId: string; isOpen: boolean }) => {
+      if (data.sessionId === sessionId) {
+        setState((prev) => ({
+          ...prev,
+          qaOpen: data.isOpen,
+        }));
+      }
+    };
+
+    // Register listeners
+    socket.on("qa.history", handleQAHistory);
+    socket.on("qa.question.new", handleNewQuestion);
+    socket.on("qna.question.updated", handleQuestionUpdated);
+    socket.on("qna.question.removed", handleQuestionRemoved);
+    socket.on("qa.status.changed", handleQAStatusChanged);
+
+    // Cleanup
+    return () => {
+      console.log('[useSessionQA] Removing Q&A listeners from shared socket');
+      socket.off("qa.history", handleQAHistory);
+      socket.off("qa.question.new", handleNewQuestion);
+      socket.off("qna.question.updated", handleQuestionUpdated);
+      socket.off("qna.question.removed", handleQuestionRemoved);
+      socket.off("qa.status.changed", handleQAStatusChanged);
+    };
+  }, [usingSharedSocket, socket, sessionId]);
 
   // Ask a new question with optimistic update
   const askQuestion = useCallback(

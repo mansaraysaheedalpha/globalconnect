@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
+import { useSessionSocketOptional } from "@/context/SessionSocketContext";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -160,7 +161,11 @@ export const useSessionPolls = (
   eventId: string,
   initialPollsOpen: boolean = false
 ) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  // Try to get shared socket from SessionSocketProvider (if available)
+  const sharedSocketContext = useSessionSocketOptional();
+  const usingSharedSocket = sharedSocketContext !== null;
+
+  const [ownSocket, setOwnSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionPollsState>({
     polls: new Map(),
     userVotes: new Map(),
@@ -177,6 +182,10 @@ export const useSessionPolls = (
   const [isClosing, setIsClosing] = useState<string | null>(null); // pollId being closed
   const { token, user } = useAuthStore();
   const pollsRef = useRef<Map<string, Poll>>(new Map());
+  const socketCreatedRef = useRef(false);
+
+  // Determine which socket to use
+  const socket = usingSharedSocket ? sharedSocketContext.socket : ownSocket;
 
   // Keep pollsRef in sync
   useEffect(() => {
@@ -188,7 +197,33 @@ export const useSessionPolls = (
     setState((prev) => ({ ...prev, pollsOpen: initialPollsOpen }));
   }, [initialPollsOpen]);
 
+  // Sync state with shared socket context if using it
   useEffect(() => {
+    if (usingSharedSocket && sharedSocketContext) {
+      setState((prev) => ({
+        ...prev,
+        isConnected: sharedSocketContext.isConnected,
+        isJoined: sharedSocketContext.isJoined,
+        pollsOpen: sharedSocketContext.pollsOpen,
+        error: sharedSocketContext.error,
+      }));
+    }
+  }, [
+    usingSharedSocket,
+    sharedSocketContext?.isConnected,
+    sharedSocketContext?.isJoined,
+    sharedSocketContext?.pollsOpen,
+    sharedSocketContext?.error,
+  ]);
+
+  // Create own socket ONLY if not using shared socket
+  useEffect(() => {
+    // Skip if using shared socket from provider
+    if (usingSharedSocket) {
+      console.log('[useSessionPolls] Using shared socket from SessionSocketProvider');
+      return;
+    }
+
     if (!sessionId || !eventId || !token) {
       console.log("[Polls] Missing required params", {
         sessionId,
@@ -198,7 +233,13 @@ export const useSessionPolls = (
       return;
     }
 
-    console.log("[Polls] Initializing socket connection for session:", sessionId);
+    // Prevent duplicate socket creation (React StrictMode safety)
+    if (socketCreatedRef.current) {
+      return;
+    }
+
+    console.log('[useSessionPolls] Creating own socket connection (no shared provider)');
+    socketCreatedRef.current = true;
 
     const realtimeUrl =
       process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events";
@@ -206,24 +247,21 @@ export const useSessionPolls = (
     const newSocket = io(realtimeUrl, {
       auth: { token: `Bearer ${token}` },
       query: { sessionId, eventId },
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    setSocket(newSocket);
+    setOwnSocket(newSocket);
 
     newSocket.on("connect", () => {
       console.log("[Polls] Socket connected:", newSocket.id);
       setState((prev) => ({ ...prev, isConnected: true, error: null }));
     });
 
-    newSocket.on("connectionAcknowledged", (data: { userId: string }) => {
-      console.log("[Polls] Connection acknowledged, userId:", data.userId);
-
-      // Join the session room for polls
-      console.log("[Polls] Joining session room:", sessionId);
+    newSocket.on("connectionAcknowledged", () => {
+      console.log("[Polls] Connection acknowledged, joining session room:", sessionId);
 
       newSocket.emit(
         "session.join",
@@ -372,7 +410,8 @@ export const useSessionPolls = (
 
     // Cleanup
     return () => {
-      console.log("[Polls] Cleaning up socket connection");
+      console.log("[Polls] Cleaning up own socket connection");
+      socketCreatedRef.current = false;
       newSocket.emit("session.leave", { sessionId });
       newSocket.off("connect");
       newSocket.off("connectionAcknowledged");
@@ -388,7 +427,105 @@ export const useSessionPolls = (
       newSocket.off("connect_error");
       newSocket.disconnect();
     };
-  }, [sessionId, eventId, token, initialPollsOpen]);
+  }, [usingSharedSocket, sessionId, eventId, token, initialPollsOpen]);
+
+  // Set up Polls-specific event listeners when using shared socket
+  useEffect(() => {
+    if (!usingSharedSocket || !socket) {
+      return;
+    }
+
+    console.log('[useSessionPolls] Setting up Polls listeners on shared socket');
+
+    // Handler functions for Polls events
+    const handlePollHistory = (data: PollHistoryPayload) => {
+      if (data?.polls && Array.isArray(data.polls)) {
+        const newPolls = new Map<string, Poll>();
+        const newUserVotes = new Map<string, string>();
+
+        data.polls.forEach(({ poll, userVotedForOptionId }) => {
+          newPolls.set(poll.id, poll);
+          if (userVotedForOptionId) {
+            newUserVotes.set(poll.id, userVotedForOptionId);
+          }
+        });
+
+        setState((prev) => ({
+          ...prev,
+          polls: newPolls,
+          userVotes: newUserVotes,
+        }));
+      }
+    };
+
+    const handlePollOpened = (poll: Poll) => {
+      setState((prev) => {
+        const newPolls = new Map(prev.polls);
+        newPolls.set(poll.id, poll);
+        return { ...prev, polls: newPolls };
+      });
+    };
+
+    const handlePollResultsUpdated = (envelope: PollResultEnvelope) => {
+      setState((prev) => {
+        const newPolls = new Map(prev.polls);
+        newPolls.set(envelope.poll.id, envelope.poll);
+
+        const newUserVotes = new Map(prev.userVotes);
+        if (envelope.userVotedForOptionId) {
+          newUserVotes.set(envelope.poll.id, envelope.userVotedForOptionId);
+        }
+
+        return { ...prev, polls: newPolls, userVotes: newUserVotes };
+      });
+    };
+
+    const handlePollClosed = (envelope: PollResultEnvelope) => {
+      setState((prev) => {
+        const newPolls = new Map(prev.polls);
+        newPolls.set(envelope.poll.id, { ...envelope.poll, isActive: false });
+        return { ...prev, polls: newPolls };
+      });
+    };
+
+    const handleGiveawayWinner = (result: GiveawayResult) => {
+      setState((prev) => ({ ...prev, latestGiveaway: result }));
+    };
+
+    const handleQuizGiveawayResults = (result: QuizGiveawayResult) => {
+      setState((prev) => ({ ...prev, latestQuizGiveaway: result }));
+    };
+
+    const handlePollsStatusChanged = (data: PollsStatusPayload) => {
+      if (data.sessionId === sessionId) {
+        setState((prev) => ({
+          ...prev,
+          pollsOpen: data.isOpen,
+        }));
+      }
+    };
+
+    // Register listeners
+    socket.on("poll.history", handlePollHistory);
+    socket.on("poll.opened", handlePollOpened);
+    socket.on("poll.results.updated", handlePollResultsUpdated);
+    socket.on("poll.closed", handlePollClosed);
+    socket.on("poll.giveaway.winner", handleGiveawayWinner);
+    socket.on("quiz.giveaway.results", handleQuizGiveawayResults);
+    socket.on("polls.status.changed", handlePollsStatusChanged);
+
+    // Cleanup
+    return () => {
+      console.log('[useSessionPolls] Removing Polls listeners from shared socket');
+      socket.off("poll.history", handlePollHistory);
+      socket.off("poll.opened", handlePollOpened);
+      socket.off("poll.results.updated", handlePollResultsUpdated);
+      socket.off("poll.closed", handlePollClosed);
+      socket.off("poll.giveaway.winner", handleGiveawayWinner);
+      socket.off("quiz.giveaway.results", handleQuizGiveawayResults);
+      socket.off("polls.status.changed", handlePollsStatusChanged);
+    };
+  }, [usingSharedSocket, socket, sessionId]);
 
   // Create a new poll (organizer/speaker)
   // Supports quiz mode with correct answer marking
