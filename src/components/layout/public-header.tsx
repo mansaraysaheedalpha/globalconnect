@@ -27,6 +27,8 @@ import {
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils";
 import { Menu, X, LayoutDashboard, LogOut, User, ChevronRight } from "lucide-react";
+import { SolutionsMegaMenu } from "@/components/navigation/solutions-mega-menu";
+import { SolutionsMobileMenu } from "@/components/navigation/solutions-mobile-menu";
 
 export function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -66,7 +68,6 @@ export function PublicHeader() {
 
   const navLinks = [
     { href: "/events", label: "Discover Events" },
-    { href: "/solutions", label: "Solutions" },
     { href: "/pricing", label: "Pricing" },
     { href: "/company", label: "The Company" },
   ];
@@ -134,6 +135,8 @@ export function PublicHeader() {
                 {link.label}
               </Link>
             ))}
+            {/* Solutions Mega Menu */}
+            <SolutionsMegaMenu isScrolled={scrolled} currentPath={pathname} />
           </nav>
 
           {/* Right Side Actions */}
@@ -306,6 +309,12 @@ export function PublicHeader() {
                     <ChevronRight className="h-4 w-4 opacity-50" />
                   </Link>
                 ))}
+
+                {/* Solutions Mobile Menu */}
+                <SolutionsMobileMenu
+                  onNavigate={() => setMobileMenuOpen(false)}
+                  currentPath={pathname}
+                />
               </div>
 
               <div className="pt-4 mt-4 border-t border-border/50 space-y-3">
