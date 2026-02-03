@@ -162,10 +162,23 @@ export const useSessionChat = (
     // New message received
     newSocket.on("chat.message.new", (message: ChatMessage) => {
       setState((prev) => {
-        // Check if this message matches an optimistic message
+        // First check: Does this message already exist by ID? (prevents duplicates)
+        const existingById = prev.messages.find((m) => m.id === message.id);
+        if (existingById) {
+          // Message already exists - update it with the server version
+          return {
+            ...prev,
+            messages: prev.messages.map((m) =>
+              m.id === message.id ? message : m
+            ),
+          };
+        }
+
+        // Second check: Find optimistic message to replace
+        // Match by text + authorId + optimisticId still present (was locally created)
         const optimisticIndex = prev.messages.findIndex(
           (m) =>
-            (m as OptimisticMessage).isOptimistic &&
+            (m as OptimisticMessage).optimisticId && // Has an optimistic ID
             m.text === message.text &&
             m.authorId === message.authorId
         );
@@ -177,7 +190,21 @@ export const useSessionChat = (
           return { ...prev, messages: newMessages };
         }
 
-        // No optimistic match, just add the new message
+        // Third check: Prevent duplicate by checking for same text + author + recent timestamp
+        // This handles race conditions where optimistic message was modified
+        const isDuplicate = prev.messages.some(
+          (m) =>
+            m.text === message.text &&
+            m.authorId === message.authorId &&
+            Math.abs(new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()) < 5000
+        );
+
+        if (isDuplicate) {
+          // Already have this message (duplicate broadcast or race condition)
+          return prev;
+        }
+
+        // No match found, add as new message
         return { ...prev, messages: [...prev.messages, message] };
       });
     });
@@ -335,6 +362,18 @@ export const useSessionChat = (
           setIsSending(false);
 
           if (response?.success) {
+            // Update optimistic message with real ID from server
+            // This enables deduplication when the broadcast arrives
+            if (response.messageId) {
+              setState((prev) => ({
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === optimisticId
+                    ? { ...m, id: response.messageId!, optimisticId: undefined, isOptimistic: false }
+                    : m
+                ),
+              }));
+            }
             resolve(true);
           } else {
             const errorMsg = typeof response?.error === "string"
