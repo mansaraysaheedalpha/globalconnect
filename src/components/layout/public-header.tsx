@@ -66,8 +66,9 @@ export function PublicHeader() {
 
   const navLinks = [
     { href: "/events", label: "Discover Events" },
-    { href: "#features", label: "Features" },
-    { href: "#benefits", label: "Why Us" },
+    { href: "/solutions", label: "Solutions" },
+    { href: "/pricing", label: "Pricing" },
+    { href: "/company", label: "The Company" },
   ];
 
   return (
