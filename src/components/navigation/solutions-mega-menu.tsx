@@ -84,30 +84,30 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
       {/* Mega Menu Dropdown */}
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - covers entire screen, click to close */}
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-[45]"
             onClick={handleClose}
+            aria-hidden="true"
           />
 
-          {/* Menu Content */}
+          {/* Menu Content - positioned below header */}
           <div
             className={cn(
-              "fixed left-0 right-0 z-50 mt-2 animate-slide-down",
-              "origin-top"
+              "fixed left-0 right-0 z-[55]",
+              "origin-top animate-mega-menu-enter"
             )}
-            style={{ top: isScrolled ? "64px" : "80px" }}
+            style={{ top: isScrolled ? "72px" : "88px" }}
           >
             <div className="container mx-auto px-4 md:px-6">
               <div
                 className={cn(
-                  "bg-background/95 backdrop-blur-xl",
-                  "border border-border/50 rounded-xl shadow-2xl",
-                  "overflow-hidden"
+                  "bg-background border border-border/50 rounded-xl shadow-2xl",
+                  "max-h-[calc(100vh-140px)] flex flex-col"
                 )}
               >
-                {/* Columns Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0">
+                {/* Columns Grid - scrollable */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 overflow-y-auto flex-1 max-h-[calc(100vh-220px)]">
                   {solutionsMenuData.map((column, index) => (
                     <MegaMenuColumnComponent
                       key={column.title}

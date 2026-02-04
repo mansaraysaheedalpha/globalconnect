@@ -17,14 +17,14 @@ export function MegaMenuColumnComponent({ column, onItemClick, isLast }: MegaMen
   return (
     <div
       className={cn(
-        "flex flex-col h-full p-6 lg:p-7 transition-colors duration-200",
+        "flex flex-col p-5 lg:p-6 transition-colors duration-200",
         "hover:bg-muted/30",
         !isLast && "border-r border-border/50"
       )}
     >
-      {/* Column Header */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-foreground mb-1">
+      {/* Column Header - sticky */}
+      <div className="mb-4 pb-2 border-b border-border/30">
+        <h2 className="text-base font-semibold text-foreground mb-0.5">
           {column.title}
         </h2>
         <p className="text-xs text-muted-foreground">
@@ -32,8 +32,8 @@ export function MegaMenuColumnComponent({ column, onItemClick, isLast }: MegaMen
         </p>
       </div>
 
-      {/* Groups */}
-      <div className="flex-1 space-y-6 overflow-y-auto">
+      {/* Groups - scrollable area */}
+      <div className="flex-1 space-y-5 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
         {column.groups.map((group, index) => (
           <MegaMenuGroupComponent
             key={`${group.title}-${index}`}
@@ -43,8 +43,8 @@ export function MegaMenuColumnComponent({ column, onItemClick, isLast }: MegaMen
         ))}
       </div>
 
-      {/* CTA */}
-      <div className="mt-6 pt-4 border-t border-border/50">
+      {/* CTA - sticky at bottom */}
+      <div className="mt-4 pt-3 border-t border-border/50 bg-background">
         <Link
           href={column.cta.href}
           onClick={onItemClick}

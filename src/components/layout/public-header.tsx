@@ -119,7 +119,7 @@ export function PublicHeader() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-1 md:flex relative z-[60]">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -128,7 +128,7 @@ export function PublicHeader() {
                   "relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
                   scrolled
                     ? "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    : "text-white/80 hover:text-white hover:bg-white/10",
+                    : "text-white/90 hover:text-white hover:bg-white/10",
                   pathname === link.href && (scrolled ? "text-foreground bg-muted" : "text-white bg-white/10")
                 )}
               >
