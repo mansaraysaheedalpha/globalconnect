@@ -1,7 +1,7 @@
 // src/components/navigation/solutions-mega-menu.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,24 +16,44 @@ interface SolutionsMegaMenuProps {
 export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isActive = currentPath.startsWith("/solutions");
 
-  const handleMouseEnter = () => {
+  const clearCloseTimeout = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
     }
+  }, []);
+
+  const startCloseTimeout = useCallback(() => {
+    clearCloseTimeout();
+    timeoutRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 150); // Short delay for smooth transition between trigger and menu
+  }, [clearCloseTimeout]);
+
+  const handleTriggerMouseEnter = () => {
+    clearCloseTimeout();
     setIsOpen(true);
   };
 
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsOpen(false);
-    }, 300);
+  const handleTriggerMouseLeave = () => {
+    startCloseTimeout();
+  };
+
+  const handleMenuMouseEnter = () => {
+    clearCloseTimeout();
+  };
+
+  const handleMenuMouseLeave = () => {
+    startCloseTimeout();
   };
 
   const handleClose = () => {
+    clearCloseTimeout();
     setIsOpen(false);
   };
 
@@ -41,7 +61,7 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setIsOpen(false);
+        handleClose();
       }
     };
 
@@ -51,23 +71,30 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
     }
   }, [isOpen]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <div
-      className="relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      ref={menuRef}
-    >
+    <>
       {/* Trigger Button */}
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
+        onMouseEnter={handleTriggerMouseEnter}
+        onMouseLeave={handleTriggerMouseLeave}
         className={cn(
           "relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
           "flex items-center gap-1 group",
           isScrolled
             ? "text-muted-foreground hover:text-foreground hover:bg-muted"
-            : "text-white/80 hover:text-white hover:bg-white/10",
-          isActive && (isScrolled ? "text-foreground bg-muted" : "text-white bg-white/10")
+            : "text-white/90 hover:text-white hover:bg-white/10",
+          (isActive || isOpen) && (isScrolled ? "text-foreground bg-muted" : "text-white bg-white/10")
         )}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -84,15 +111,18 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
       {/* Mega Menu Dropdown */}
       {isOpen && (
         <>
-          {/* Backdrop - covers entire screen, click to close */}
+          {/* Backdrop - click to close (NOT hover tracked) */}
           <div
             className="fixed inset-0 z-[45]"
             onClick={handleClose}
             aria-hidden="true"
           />
 
-          {/* Menu Content - positioned below header */}
+          {/* Menu Content - positioned below header, with its own hover tracking */}
           <div
+            ref={menuRef}
+            onMouseEnter={handleMenuMouseEnter}
+            onMouseLeave={handleMenuMouseLeave}
             className={cn(
               "fixed left-0 right-0 z-[55]",
               "origin-top animate-mega-menu-enter"
@@ -151,6 +181,6 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }
