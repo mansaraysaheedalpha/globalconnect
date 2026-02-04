@@ -78,17 +78,17 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
       {/* Mega Menu Dropdown */}
       {isOpen && (
         <>
-          {/* Invisible bridge to connect trigger to menu */}
+          {/* Invisible bridge to connect trigger to menu - extends down to reach the dropdown */}
           <div
-            className="absolute left-0 right-0 h-4"
-            style={{ top: "100%" }}
+            className="absolute left-1/2 -translate-x-1/2 w-[200px]"
+            style={{ top: "100%", height: isScrolled ? "32px" : "48px" }}
           />
 
-          {/* Backdrop - click to close */}
+          {/* Backdrop - click to close, starts below header */}
           <div
-            className="fixed inset-0 z-[45]"
+            className="fixed left-0 right-0 bottom-0 z-[45]"
+            style={{ top: isScrolled ? "72px" : "88px" }}
             onClick={handleClose}
-            onMouseEnter={handleMouseLeave}
             aria-hidden="true"
           />
 
