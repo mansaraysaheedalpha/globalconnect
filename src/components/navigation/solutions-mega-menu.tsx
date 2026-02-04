@@ -86,7 +86,7 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
 
           {/* Backdrop - click to close */}
           <div
-            className="fixed inset-0 z-[45]"
+            className="fixed inset-0 z-[100]"
             onClick={handleClose}
             onMouseEnter={handleMouseLeave}
             aria-hidden="true"
@@ -95,10 +95,10 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
           {/* Menu Content */}
           <div
             className={cn(
-              "fixed left-0 right-0 z-[55]",
+              "fixed left-0 right-0 z-[110]",
               "origin-top animate-mega-menu-enter"
             )}
-            style={{ top: isScrolled ? "72px" : "88px" }}
+            style={{ top: isScrolled ? "80px" : "80px" }}
           >
             <div className="container mx-auto px-4 md:px-6">
               <div

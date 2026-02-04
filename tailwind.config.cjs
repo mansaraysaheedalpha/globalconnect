@@ -162,6 +162,14 @@ module.exports = {
           "0%": { transform: "scale(1)", opacity: "1" },
           "75%, 100%": { transform: "scale(1.5)", opacity: "0" },
         },
+        "mega-menu-enter": {
+          "0%": { opacity: "0", transform: "translateY(-8px) scale(0.98)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        "mega-menu-exit": {
+          "0%": { opacity: "1", transform: "translateY(0) scale(1)" },
+          "100%": { opacity: "0", transform: "translateY(-8px) scale(0.98)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -183,6 +191,8 @@ module.exports = {
         "ripple": "ripple 0.6s linear forwards",
         "shake": "shake 0.5s ease-in-out",
         "ping-soft": "ping-soft 1s cubic-bezier(0, 0, 0.2, 1) infinite",
+        "mega-menu-enter": "mega-menu-enter 0.2s ease-out forwards",
+        "mega-menu-exit": "mega-menu-exit 0.15s ease-in forwards",
       },
        textShadow: {
         sm: '1px 1px 2px var(--tw-shadow-color)',
