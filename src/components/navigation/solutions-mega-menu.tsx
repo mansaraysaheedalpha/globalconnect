@@ -1,7 +1,7 @@
 // src/components/navigation/solutions-mega-menu.tsx
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,45 +15,19 @@ interface SolutionsMegaMenuProps {
 
 export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const isActive = currentPath.startsWith("/solutions");
 
-  const clearCloseTimeout = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
-    }
-  }, []);
-
-  const startCloseTimeout = useCallback(() => {
-    clearCloseTimeout();
-    timeoutRef.current = setTimeout(() => {
-      setIsOpen(false);
-    }, 150); // Short delay for smooth transition between trigger and menu
-  }, [clearCloseTimeout]);
-
-  const handleTriggerMouseEnter = () => {
-    clearCloseTimeout();
+  const handleMouseEnter = () => {
     setIsOpen(true);
   };
 
-  const handleTriggerMouseLeave = () => {
-    startCloseTimeout();
-  };
-
-  const handleMenuMouseEnter = () => {
-    clearCloseTimeout();
-  };
-
-  const handleMenuMouseLeave = () => {
-    startCloseTimeout();
+  const handleMouseLeave = () => {
+    setIsOpen(false);
   };
 
   const handleClose = () => {
-    clearCloseTimeout();
     setIsOpen(false);
   };
 
@@ -71,23 +45,16 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
     }
   }, [isOpen]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
   return (
-    <>
+    <div
+      ref={containerRef}
+      className="relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Trigger Button */}
       <button
-        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={handleTriggerMouseEnter}
-        onMouseLeave={handleTriggerMouseLeave}
         className={cn(
           "relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
           "flex items-center gap-1 group",
@@ -111,18 +78,22 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
       {/* Mega Menu Dropdown */}
       {isOpen && (
         <>
-          {/* Backdrop - click to close (NOT hover tracked) */}
+          {/* Invisible bridge to connect trigger to menu */}
+          <div
+            className="absolute left-0 right-0 h-4"
+            style={{ top: "100%" }}
+          />
+
+          {/* Backdrop - click to close */}
           <div
             className="fixed inset-0 z-[45]"
             onClick={handleClose}
+            onMouseEnter={handleMouseLeave}
             aria-hidden="true"
           />
 
-          {/* Menu Content - positioned below header, with its own hover tracking */}
+          {/* Menu Content */}
           <div
-            ref={menuRef}
-            onMouseEnter={handleMenuMouseEnter}
-            onMouseLeave={handleMenuMouseLeave}
             className={cn(
               "fixed left-0 right-0 z-[55]",
               "origin-top animate-mega-menu-enter"
@@ -181,6 +152,6 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
