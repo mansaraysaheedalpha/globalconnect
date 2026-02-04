@@ -69,6 +69,9 @@ import { IncidentReportForm } from "@/components/features/incidents";
 import { VirtualSessionView, VirtualSession } from "@/components/features/virtual-session";
 import { BreakoutRoomList, RoomAssignmentNotice } from "@/components/features/breakout";
 import { SessionSocketProvider } from "@/context/SessionSocketContext";
+import { ReactionBar } from "@/components/features/reaction-bar";
+import { FloatingReactions } from "@/components/features/floating-reactions";
+import { useSessionReactions } from "@/hooks/use-session-reactions";
 
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
@@ -630,6 +633,14 @@ const SessionCard = ({
   const isEnded = session.status === "ENDED";
   const isUpcoming = session.status === "UPCOMING";
 
+  // Reactions hook for live sessions
+  const {
+    sendReaction,
+    getPopularEmojis,
+    floatingEmojis,
+    isConnected: reactionsConnected,
+  } = useSessionReactions(session.id, eventId);
+
   // Check if features are enabled (default to true for backwards compatibility)
   const chatEnabled = session.chatEnabled !== false;
   const qaEnabled = session.qaEnabled !== false;
@@ -830,6 +841,27 @@ const SessionCard = ({
                       eventId={eventId}
                       userId={userId}
                     />
+                  )}
+
+                  {/* Live Reactions - available for live sessions */}
+                  {isLive && (
+                    <div className="relative">
+                      <div className="flex items-center gap-2 p-3 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-purple-900 dark:text-purple-100 mb-2">
+                            React with emojis
+                          </p>
+                          <ReactionBar
+                            onReaction={sendReaction}
+                            popularEmojis={getPopularEmojis()}
+                            disabled={!reactionsConnected}
+                            variant="horizontal"
+                          />
+                        </div>
+                      </div>
+                      {/* Floating reactions overlay */}
+                      <FloatingReactions emojis={floatingEmojis} />
+                    </div>
                   )}
 
                   {/* Report Issue Button - Always available for live/upcoming sessions */}
