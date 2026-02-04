@@ -808,7 +808,7 @@ function AnomalyDetectionSection() {
 }
 
 // ============================================================================
-// INTERVENTIONS SECTION
+// INTERVENTIONS SECTION - Interactive Showcase Design
 // ============================================================================
 function InterventionsSection() {
   const ref = useRef(null);
@@ -818,35 +818,61 @@ function InterventionsSection() {
     {
       icon: BarChart3,
       title: "AI-Generated Polls",
+      shortTitle: "Polls",
       description: "Contextually relevant polls generated based on session content and audience interests",
-      improvement: "+12%",
+      example: '"What topic should we explore next?"',
+      improvement: 12,
       color: "from-purple-500 to-indigo-500",
+      bgColor: "bg-purple-500",
+      lightBg: "bg-purple-500/10",
+      textColor: "text-purple-500",
     },
     {
       icon: MessageSquare,
       title: "Smart Chat Prompts",
+      shortTitle: "Chat",
       description: "Conversation starters that spark discussion and re-engage passive attendees",
-      improvement: "+8%",
+      example: '"Share your biggest takeaway so far!"',
+      improvement: 8,
       color: "from-blue-500 to-cyan-500",
+      bgColor: "bg-blue-500",
+      lightBg: "bg-blue-500/10",
+      textColor: "text-blue-500",
     },
     {
       icon: Bell,
       title: "Targeted Notifications",
+      shortTitle: "Alerts",
       description: "Personalized alerts that bring attention back to key moments",
-      improvement: "+5%",
+      example: '"Live Q&A starting now - ask your question!"',
+      improvement: 5,
       color: "from-amber-500 to-orange-500",
+      bgColor: "bg-amber-500",
+      lightBg: "bg-amber-500/10",
+      textColor: "text-amber-500",
     },
     {
       icon: Trophy,
       title: "Gamification Triggers",
+      shortTitle: "Rewards",
       description: "Points, badges, and challenges that motivate continued participation",
-      improvement: "+15%",
+      example: '"Bonus points for the next 5 questions!"',
+      improvement: 15,
       color: "from-green-500 to-emerald-500",
+      bgColor: "bg-green-500",
+      lightBg: "bg-green-500/10",
+      textColor: "text-green-500",
     },
   ];
 
   return (
     <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[150px]" />
+      </div>
+
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <motion.div
           initial="hidden"
@@ -858,50 +884,224 @@ function InterventionsSection() {
             Smart Interventions
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            4 Powerful Ways to Re-Engage Your Audience
+            Your AI Arsenal for Engagement Recovery
           </h2>
           <p className="text-lg text-muted-foreground">
-            Each intervention is selected by our AI based on context, audience behavior,
-            and historical performance data
+            When attention drops, the AI deploys the right intervention at the right moment
           </p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
+        {/* Desktop: Interactive Showcase */}
+        <div className="hidden lg:block">
+          <div className="relative max-w-6xl mx-auto">
+            {/* Central engagement indicator */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.6 }}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+            >
+              <div className="relative">
+                {/* Pulsing warning ring */}
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-red-500/20"
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ width: "120px", height: "120px", marginLeft: "-60px", marginTop: "-60px", left: "50%", top: "50%" }}
+                />
+                {/* Recovery ring */}
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-green-500/20"
+                  animate={{ scale: [1, 1.5, 1], opacity: [0, 0.5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                  style={{ width: "120px", height: "120px", marginLeft: "-60px", marginTop: "-60px", left: "50%", top: "50%" }}
+                />
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-500 via-amber-500 to-green-500 flex items-center justify-center shadow-2xl">
+                  <div className="w-20 h-20 rounded-full bg-background flex flex-col items-center justify-center">
+                    <Activity className="w-6 h-6 text-foreground mb-1" />
+                    <span className="text-xs font-medium">Engagement</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Intervention cards in 2x2 grid around center */}
+            <div className="grid grid-cols-2 gap-x-32 gap-y-8">
+              {interventions.map((intervention, index) => {
+                const isLeft = index % 2 === 0;
+                const isTop = index < 2;
+
+                return (
+                  <motion.div
+                    key={intervention.title}
+                    initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
+                    animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: isLeft ? -50 : 50 }}
+                    transition={{ duration: 0.6, delay: 0.2 + index * 0.1 }}
+                    className={cn(
+                      "relative group",
+                      isLeft ? "pr-16" : "pl-16",
+                      !isTop && "mt-8"
+                    )}
+                  >
+                    {/* Connection line to center */}
+                    <div
+                      className={cn(
+                        "absolute top-1/2 h-0.5 bg-gradient-to-r",
+                        isLeft
+                          ? "right-0 w-16 from-transparent to-primary/30"
+                          : "left-0 w-16 from-primary/30 to-transparent"
+                      )}
+                    />
+                    {/* Animated pulse on line */}
+                    <motion.div
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full",
+                        intervention.bgColor
+                      )}
+                      animate={{
+                        x: isLeft ? [0, 64] : [-64, 0],
+                        opacity: [1, 0],
+                      }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: index * 0.3 }}
+                      style={{ [isLeft ? "right" : "left"]: 0 }}
+                    />
+
+                    <div className={cn(
+                      "relative p-6 rounded-2xl border bg-card transition-all duration-300",
+                      "hover:shadow-xl hover:border-primary/30 group-hover:scale-[1.02]"
+                    )}>
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={cn(
+                          "flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg",
+                          intervention.color
+                        )}>
+                          <intervention.icon className="h-7 w-7 text-white" />
+                        </div>
+                        {/* Impact badge */}
+                        <div className={cn(
+                          "flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-bold",
+                          intervention.lightBg,
+                          intervention.textColor
+                        )}>
+                          <TrendingUp className="w-4 h-4" />
+                          +{intervention.improvement}%
+                        </div>
+                      </div>
+
+                      {/* Title & Description */}
+                      <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
+                        {intervention.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {intervention.description}
+                      </p>
+
+                      {/* Example prompt */}
+                      <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                        <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">
+                          Example
+                        </div>
+                        <p className="text-sm italic text-foreground/80">
+                          {intervention.example}
+                        </p>
+                      </div>
+
+                      {/* Impact bar */}
+                      <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">Engagement Impact</span>
+                          <span className={intervention.textColor}>+{intervention.improvement}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <motion.div
+                            className={cn("h-full rounded-full bg-gradient-to-r", intervention.color)}
+                            initial={{ width: 0 }}
+                            animate={isInView ? { width: `${intervention.improvement * 5}%` } : { width: 0 }}
+                            transition={{ duration: 1, delay: 0.5 + index * 0.15, ease: "easeOut" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile/Tablet: Stacked cards with visual impact */}
+        <div className="lg:hidden space-y-6">
           {interventions.map((intervention, index) => (
             <motion.div
               key={intervention.title}
-              variants={fadeInUp}
-              className="group relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <div className="h-full rounded-2xl border bg-card p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-primary/30 text-center">
-                {/* Icon */}
+              <div className="relative p-5 rounded-2xl border bg-card overflow-hidden">
+                {/* Gradient accent */}
                 <div className={cn(
-                  "mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg mb-6",
+                  "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r",
                   intervention.color
-                )}>
-                  <intervention.icon className="h-8 w-8 text-white" />
-                </div>
+                )} />
 
-                {/* Improvement stat */}
-                <div className="inline-block px-3 py-1 rounded-full bg-green-500/10 text-green-600 text-sm font-semibold mb-4">
-                  {intervention.improvement} engagement
-                </div>
+                <div className="flex items-start gap-4">
+                  {/* Icon */}
+                  <div className={cn(
+                    "flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg",
+                    intervention.color
+                  )}>
+                    <intervention.icon className="h-6 w-6 text-white" />
+                  </div>
 
-                {/* Content */}
-                <h3 className="text-lg font-semibold mb-3 group-hover:text-primary transition-colors">
-                  {intervention.title}
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {intervention.description}
-                </p>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-semibold">{intervention.title}</h3>
+                      <span className={cn(
+                        "text-sm font-bold",
+                        intervention.textColor
+                      )}>
+                        +{intervention.improvement}%
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {intervention.description}
+                    </p>
+
+                    {/* Impact bar */}
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        className={cn("h-full rounded-full bg-gradient-to-r", intervention.color)}
+                        initial={{ width: 0 }}
+                        animate={isInView ? { width: `${intervention.improvement * 5}%` } : { width: 0 }}
+                        transition={{ duration: 1, delay: 0.3 + index * 0.1 }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           ))}
+        </div>
+
+        {/* Bottom summary */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className="mt-16 text-center"
+        >
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-green-500/10 border border-green-500/20">
+            <div className="flex items-center gap-1">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              <span className="text-lg font-bold text-green-500">+40%</span>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              Combined engagement boost when AI selects the optimal intervention
+            </span>
+          </div>
         </motion.div>
       </div>
     </section>
