@@ -374,7 +374,7 @@ function SolutionSection() {
 }
 
 // ============================================================================
-// HOW IT WORKS SECTION
+// HOW IT WORKS SECTION - Orbital Flow Design
 // ============================================================================
 function HowItWorksSection() {
   const ref = useRef(null);
@@ -385,48 +385,71 @@ function HowItWorksSection() {
       number: "01",
       icon: Eye,
       title: "Perceive",
-      description: "Collects real-time signals: chat activity, poll responses, reactions, and user presence every 5 seconds",
+      description: "Collects real-time signals every 5 seconds",
       color: "from-blue-500 to-cyan-500",
+      bgColor: "bg-blue-500",
+      position: "top-0 left-1/2 -translate-x-1/2 -translate-y-1/2",
+      mobileOrder: 1,
     },
     {
       number: "02",
       icon: Brain,
       title: "Analyze",
-      description: "AI processes signals to calculate engagement scores and detect anomalies using ML algorithms",
+      description: "AI calculates engagement scores",
       color: "from-purple-500 to-pink-500",
+      bgColor: "bg-purple-500",
+      position: "top-1/4 right-0 translate-x-1/2 -translate-y-1/2",
+      mobileOrder: 2,
     },
     {
       number: "03",
       icon: AlertTriangle,
       title: "Detect",
-      description: "Identifies 4 anomaly types: sudden drops, gradual decline, low engagement, and mass exits",
+      description: "Identifies anomalies instantly",
       color: "from-orange-500 to-red-500",
+      bgColor: "bg-orange-500",
+      position: "bottom-1/4 right-0 translate-x-1/2 translate-y-1/2",
+      mobileOrder: 3,
     },
     {
       number: "04",
       icon: Lightbulb,
       title: "Decide",
-      description: "Selects optimal intervention based on context, history, and Thompson Sampling learning",
+      description: "Selects optimal intervention",
       color: "from-amber-500 to-yellow-500",
+      bgColor: "bg-amber-500",
+      position: "bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2",
+      mobileOrder: 4,
     },
     {
       number: "05",
       icon: Zap,
       title: "Act",
-      description: "Executes intervention: generates polls, sends chat prompts, triggers notifications, or activates gamification",
+      description: "Executes smart interventions",
       color: "from-green-500 to-emerald-500",
+      bgColor: "bg-green-500",
+      position: "bottom-1/4 left-0 -translate-x-1/2 translate-y-1/2",
+      mobileOrder: 5,
     },
     {
       number: "06",
       icon: RefreshCw,
       title: "Learn",
-      description: "Measures intervention effectiveness and continuously improves recommendations",
+      description: "Improves continuously",
       color: "from-indigo-500 to-violet-500",
+      bgColor: "bg-indigo-500",
+      position: "top-1/4 left-0 -translate-x-1/2 -translate-y-1/2",
+      mobileOrder: 6,
     },
   ];
 
   return (
     <section className="py-24 bg-gradient-to-b from-muted/30 to-background relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px]" />
+      </div>
+
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <motion.div
           initial="hidden"
@@ -438,48 +461,221 @@ function HowItWorksSection() {
             How It Works
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            The 6-Step AI Workflow
+            The Continuous AI Loop
           </h2>
           <p className="text-lg text-muted-foreground">
-            A continuous loop of perception, analysis, and action that keeps your audience engaged
+            A perpetual cycle of perception, analysis, and action that never sleeps
           </p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {steps.map((step, index) => (
+        {/* Desktop: Orbital Visualization */}
+        <div className="hidden lg:block">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="relative max-w-4xl mx-auto aspect-square"
+          >
+            {/* Outer orbital ring */}
+            <div className="absolute inset-8 rounded-full border-2 border-dashed border-primary/20" />
+
+            {/* Animated orbital ring */}
             <motion.div
-              key={step.title}
-              variants={fadeInUp}
-              className="group relative"
+              className="absolute inset-8 rounded-full border-2 border-primary/40"
+              style={{ borderStyle: "solid", borderWidth: "2px" }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* Inner glow ring */}
+            <div className="absolute inset-24 rounded-full bg-gradient-to-br from-primary/10 to-purple-500/10 blur-xl" />
+
+            {/* Center AI Brain */}
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             >
-              <div className="h-full rounded-2xl border bg-card p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 overflow-hidden">
-                {/* Step number */}
-                <div className="absolute top-4 right-4 text-6xl font-bold text-muted/20 group-hover:text-primary/10 transition-colors">
-                  {step.number}
+              <div className="relative">
+                {/* Pulsing rings */}
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-primary/20"
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ width: "160px", height: "160px", marginLeft: "-80px", marginTop: "-80px", left: "50%", top: "50%" }}
+                />
+                <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary via-purple-600 to-indigo-600 flex items-center justify-center shadow-2xl shadow-primary/30">
+                  <Brain className="w-14 h-14 text-white" />
                 </div>
-
-                {/* Icon */}
-                <div className={cn(
-                  "relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg mb-6",
-                  step.color
-                )}>
-                  <step.icon className="h-7 w-7 text-white" />
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                  <span className="text-sm font-semibold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                    AI Engine
+                  </span>
                 </div>
-
-                {/* Content */}
-                <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
-                  {step.title}
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {step.description}
-                </p>
               </div>
             </motion.div>
+
+            {/* Orbital Steps */}
+            {steps.map((step, index) => {
+              // Calculate position on circle
+              const angle = (index * 60 - 90) * (Math.PI / 180); // Start from top, 60 degrees apart
+              const radius = 42; // percentage from center
+              const x = 50 + radius * Math.cos(angle);
+              const y = 50 + radius * Math.sin(angle);
+
+              return (
+                <motion.div
+                  key={step.title}
+                  className="absolute z-10"
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+                >
+                  <div className="relative -translate-x-1/2 -translate-y-1/2 group cursor-pointer">
+                    {/* Connection line to center */}
+                    <motion.div
+                      className="absolute top-1/2 left-1/2 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-primary/10 origin-left -z-10"
+                      style={{
+                        width: `${radius * 2}%`,
+                        transform: `rotate(${180 + (index * 60 - 90)}deg)`,
+                      }}
+                      initial={{ scaleX: 0 }}
+                      animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
+                      transition={{ duration: 0.8, delay: 0.5 + index * 0.1 }}
+                    />
+
+                    {/* Step node */}
+                    <div className="relative">
+                      {/* Glow effect on hover */}
+                      <div className={cn(
+                        "absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300",
+                        step.bgColor
+                      )} />
+
+                      <div className={cn(
+                        "relative w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-lg transition-all duration-300",
+                        "group-hover:scale-110 group-hover:shadow-xl",
+                        step.color
+                      )}>
+                        <step.icon className="w-9 h-9 text-white" />
+                      </div>
+
+                      {/* Step number badge */}
+                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-background border-2 border-border flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </div>
+                    </div>
+
+                    {/* Label */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 text-center whitespace-nowrap">
+                      <div className="font-semibold text-sm">{step.title}</div>
+                      <div className="text-xs text-muted-foreground max-w-[120px] mx-auto">
+                        {step.description}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+
+            {/* Animated flow particles */}
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary/50"
+                style={{ left: "50%", top: "8%" }}
+                animate={{
+                  offsetDistance: ["0%", "100%"],
+                  opacity: [0, 1, 1, 0],
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  delay: i * 2,
+                  ease: "linear",
+                }}
+                initial={{ offsetPath: "path('M 0,0 A 180,180 0 1,1 0,360 A 180,180 0 1,1 0,0')" }}
+              />
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Mobile/Tablet: Vertical Flow Timeline */}
+        <div className="lg:hidden">
+          <div className="relative max-w-md mx-auto">
+            {/* Vertical line */}
+            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 via-orange-500 via-amber-500 via-green-500 to-indigo-500" />
+
+            {/* Steps */}
+            <div className="space-y-8">
+              {steps.map((step, index) => (
+                <motion.div
+                  key={step.title}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="relative flex items-start gap-6 pl-4"
+                >
+                  {/* Node on timeline */}
+                  <div className={cn(
+                    "relative z-10 flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg",
+                    step.color
+                  )}>
+                    <step.icon className="w-6 h-6 text-white" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 pb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        STEP {step.number}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-1">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Loop back indicator */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+                transition={{ duration: 0.5, delay: 0.7 }}
+                className="relative flex items-center gap-6 pl-4"
+              >
+                <div className="relative z-10 flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-lg">
+                  <RefreshCw className="w-6 h-6 text-white animate-spin-slow" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-primary">
+                    Continuous loop — the cycle never stops
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className="mt-16 flex flex-wrap justify-center gap-8 lg:gap-16"
+        >
+          {[
+            { value: "5s", label: "Cycle Time" },
+            { value: "24/7", label: "Always Active" },
+            { value: "100%", label: "Automated" },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                {stat.value}
+              </div>
+              <div className="text-sm text-muted-foreground">{stat.label}</div>
+            </div>
           ))}
         </motion.div>
       </div>
