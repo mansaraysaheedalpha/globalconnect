@@ -3,6 +3,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -340,8 +341,20 @@ function LiveDemoPanel() {
 function HeroSection() {
   return (
     <section className="relative min-h-[100vh] flex items-center justify-center text-white overflow-hidden">
-      {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 -z-10" />
+      {/* Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute top-0 left-0 w-full h-full object-cover -z-10"
+        poster="/gamification_dashboard.png"
+      >
+        <source src="/game_hero.mp4" type="video/mp4" />
+      </video>
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-purple-900/60 to-black/80 -z-10" />
 
       {/* Animated Gradient Orbs */}
       <div className="absolute inset-0 overflow-hidden -z-5 pointer-events-none">
@@ -547,18 +560,6 @@ function ProblemSection() {
     },
   ];
 
-  // Generate scattered disengaged attendees
-  const disengagedPeople = Array.from({ length: 20 }, (_, i) => ({
-    id: i,
-    x: 10 + Math.random() * 80,
-    y: 15 + Math.random() * 70,
-    delay: Math.random() * 2,
-    size: 8 + Math.random() * 6,
-    isSleeping: i % 5 === 0,
-    isBored: i % 4 === 0,
-    isDistracted: i % 3 === 0,
-  }));
-
   return (
     <section className="py-24 lg:py-32 bg-gradient-to-b from-slate-950 via-slate-900 to-background relative overflow-hidden">
       {/* Animated gradient background */}
@@ -623,145 +624,49 @@ function ProblemSection() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="relative order-2 lg:order-1"
           >
-            <div className="relative aspect-square max-w-lg mx-auto">
-              {/* Outer glow ring */}
-              <div className="absolute inset-0 rounded-full border border-red-500/20" />
+            <div className="relative max-w-lg mx-auto">
+              {/* Glow effect behind image */}
               <motion.div
-                className="absolute inset-4 rounded-full border border-dashed border-orange-500/30"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-              />
-              <motion.div
-                className="absolute inset-8 rounded-full border border-dashed border-amber-500/20"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+                className="absolute -inset-4 bg-gradient-to-r from-red-500/20 via-orange-500/20 to-amber-500/20 rounded-3xl blur-2xl"
+                animate={{ opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 4, repeat: Infinity }}
               />
 
-              {/* Central label */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <motion.div
-                  className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 flex items-center justify-center backdrop-blur-sm"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  <div className="text-center">
-                    <div className="text-red-400 text-xs md:text-sm font-medium uppercase tracking-wider">No</div>
-                    <div className="text-white text-lg md:text-xl font-bold">Engagement</div>
-                  </div>
-                </motion.div>
+              {/* Image container with border */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-red-500/20 shadow-2xl shadow-red-500/10">
+                <Image
+                  src="/disengaged.png"
+                  alt="Disengaged attendees at virtual events"
+                  width={800}
+                  height={800}
+                  className="w-full h-auto"
+                  priority
+                />
+
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
               </div>
-
-              {/* Scattered disengaged people */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-                {/* Broken/faded lines representing lack of interaction */}
-                {Array.from({ length: 10 }, (_, i) => (
-                  <motion.line
-                    key={`line-${i}`}
-                    x1={`${15 + Math.random() * 30}%`}
-                    y1={`${20 + Math.random() * 60}%`}
-                    x2={`${55 + Math.random() * 30}%`}
-                    y2={`${20 + Math.random() * 60}%`}
-                    stroke="url(#brokenGradient)"
-                    strokeWidth="0.3"
-                    strokeDasharray="2,6"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={isInView ? {
-                      pathLength: [0, 0.3, 0.1],
-                      opacity: [0, 0.3, 0.1]
-                    } : {}}
-                    transition={{
-                      duration: 4,
-                      delay: Math.random() * 2,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }}
-                  />
-                ))}
-
-                <defs>
-                  <linearGradient id="brokenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
-                    <stop offset="50%" stopColor="#f97316" stopOpacity="0.1" />
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-
-                {/* Scattered people with states */}
-                {disengagedPeople.map((person) => (
-                  <motion.g key={person.id}>
-                    <motion.circle
-                      cx={`${person.x}%`}
-                      cy={`${person.y}%`}
-                      r={person.size / 2}
-                      className={cn(
-                        person.isSleeping ? "fill-slate-700" :
-                        person.isBored ? "fill-slate-600" :
-                        person.isDistracted ? "fill-slate-500" : "fill-slate-600"
-                      )}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={isInView ? {
-                        opacity: [0.3, 0.5, 0.3],
-                        scale: 1,
-                      } : {}}
-                      transition={{
-                        duration: 3 + Math.random() * 2,
-                        delay: person.delay,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    />
-                    {/* Sleeping Z's */}
-                    {person.isSleeping && (
-                      <motion.text
-                        x={`${person.x + 2}%`}
-                        y={`${person.y - 2}%`}
-                        className="fill-slate-500 text-[3px] font-bold"
-                        initial={{ opacity: 0 }}
-                        animate={isInView ? { opacity: [0, 0.8, 0], y: [0, -3, 0] } : {}}
-                        transition={{ duration: 2, delay: person.delay + 0.5, repeat: Infinity }}
-                      >
-                        z
-                      </motion.text>
-                    )}
-                    {/* Bored face */}
-                    {person.isBored && !person.isSleeping && (
-                      <motion.text
-                        x={`${person.x}%`}
-                        y={`${person.y + 0.5}%`}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="fill-orange-400 text-[3px]"
-                        initial={{ opacity: 0 }}
-                        animate={isInView ? { opacity: [0, 0.6, 0] } : {}}
-                        transition={{ duration: 3, delay: person.delay + 1, repeat: Infinity }}
-                      >
-                        😐
-                      </motion.text>
-                    )}
-                  </motion.g>
-                ))}
-              </svg>
 
               {/* Floating warning badges */}
               <motion.div
-                className="absolute top-8 right-4 md:right-8 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-medium"
-                animate={{ y: [0, -5, 0], opacity: [0.7, 1, 0.7] }}
+                className="absolute top-4 right-4 md:top-8 md:right-8 px-3 py-1.5 rounded-full bg-red-500/90 backdrop-blur-sm border border-red-400/50 text-white text-xs font-medium shadow-lg"
+                animate={{ y: [0, -5, 0], opacity: [0.9, 1, 0.9] }}
                 transition={{ duration: 3, repeat: Infinity }}
               >
                 <Eye className="h-3 w-3 inline mr-1" />
                 Low Engagement
               </motion.div>
               <motion.div
-                className="absolute bottom-12 left-2 md:left-4 px-3 py-1.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-medium"
-                animate={{ y: [0, 5, 0], opacity: [0.7, 1, 0.7] }}
+                className="absolute bottom-8 left-2 md:bottom-12 md:left-4 px-3 py-1.5 rounded-full bg-orange-500/90 backdrop-blur-sm border border-orange-400/50 text-white text-xs font-medium shadow-lg"
+                animate={{ y: [0, 5, 0], opacity: [0.9, 1, 0.9] }}
                 transition={{ duration: 3.5, repeat: Infinity, delay: 1 }}
               >
                 <Coffee className="h-3 w-3 inline mr-1" />
                 Passive Viewing
               </motion.div>
               <motion.div
-                className="absolute top-1/3 left-4 md:left-8 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-medium"
-                animate={{ y: [0, -3, 0], opacity: [0.7, 1, 0.7] }}
+                className="absolute top-1/3 left-2 md:left-4 px-3 py-1.5 rounded-full bg-amber-500/90 backdrop-blur-sm border border-amber-400/50 text-white text-xs font-medium shadow-lg"
+                animate={{ y: [0, -3, 0], opacity: [0.9, 1, 0.9] }}
                 transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
               >
                 <MousePointer className="h-3 w-3 inline mr-1" />
@@ -1250,6 +1155,157 @@ function PointsSystemSection() {
             </div>
           </div>
         </motion.div>
+
+        {/* Point Cards Visual */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="mt-16 max-w-4xl mx-auto"
+        >
+          <div className="relative">
+            {/* Glow effect */}
+            <motion.div
+              className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 rounded-3xl blur-2xl"
+              animate={{ opacity: [0.2, 0.4, 0.2] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            />
+
+            {/* Image container */}
+            <div className="relative rounded-2xl overflow-hidden border-2 border-amber-500/20 shadow-2xl shadow-amber-500/10">
+              <Image
+                src="/point_cards.png"
+                alt="Point actions and rewards system"
+                width={1200}
+                height={600}
+                className="w-full h-auto"
+                priority
+              />
+
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent" />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// PLATFORM SHOWCASE SECTION - Dashboard Preview
+// ============================================================================
+function PlatformShowcaseSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 -z-10">
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-amber-500/5 rounded-full blur-[200px]"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 15, repeat: Infinity }}
+        />
+      </div>
+
+      <div className="container mx-auto px-4 md:px-6" ref={ref}>
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center max-w-3xl mx-auto mb-12"
+        >
+          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full border border-amber-500/20">
+            The Platform
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+            Powerful Dashboard,{" "}
+            <span className="bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent">
+              Simple Experience
+            </span>
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Monitor engagement, track leaderboards, and celebrate achievements—all from one intuitive interface.
+          </p>
+        </motion.div>
+
+        {/* Dashboard Screenshot */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="max-w-5xl mx-auto"
+        >
+          <div className="relative">
+            {/* Glow effect */}
+            <motion.div
+              className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 rounded-3xl blur-2xl"
+              animate={{ opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            />
+
+            {/* Browser frame */}
+            <div className="relative rounded-2xl overflow-hidden border-2 border-border/50 bg-background shadow-2xl">
+              {/* Browser header */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <div className="px-4 py-1 rounded-md bg-background/50 text-xs text-muted-foreground flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    app.eventdynamics.com/gamification
+                  </div>
+                </div>
+              </div>
+
+              {/* Screenshot */}
+              <div className="relative">
+                <Image
+                  src="/gamification_dashboard.png"
+                  alt="Gamification Dashboard"
+                  width={1920}
+                  height={1080}
+                  className="w-full h-auto"
+                  priority
+                />
+
+                {/* Gradient fade at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+              </div>
+            </div>
+          </div>
+
+          {/* Feature highlights below */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            {[
+              { icon: Trophy, label: "Live Leaderboards", color: "text-amber-500" },
+              { icon: Award, label: "Achievement Tracking", color: "text-purple-500" },
+              { icon: TrendingUp, label: "Real-time Stats", color: "text-cyan-500" },
+              { icon: Users, label: "Team Management", color: "text-green-500" },
+            ].map((item, index) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.7 + index * 0.1 }}
+                className="flex items-center gap-2 p-3 rounded-xl bg-card/50 border"
+              >
+                <item.icon className={cn("h-5 w-5", item.color)} />
+                <span className="text-sm font-medium">{item.label}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
@@ -1605,132 +1661,67 @@ function AchievementsSection() {
             ))}
           </motion.div>
 
-          {/* Celebration Preview - Phone Mockup */}
+          {/* Celebration Preview - Achievement Image */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative mx-auto max-w-xs"
+            className="relative mx-auto max-w-md"
           >
-            {/* Phone Frame */}
-            <div className="relative">
-              {/* Glow behind phone */}
-              <motion.div
-                className="absolute -inset-8 bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-amber-500/30 rounded-[3rem] blur-3xl"
-                animate={{ opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 3, repeat: Infinity }}
+            {/* Glow behind image */}
+            <motion.div
+              className="absolute -inset-4 bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-amber-500/30 rounded-3xl blur-2xl"
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+
+            {/* Achievement Image */}
+            <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500/30 shadow-2xl shadow-purple-500/20">
+              <Image
+                src="/achievement.png"
+                alt="Achievement celebration screen"
+                width={800}
+                height={800}
+                className="w-full h-auto"
+                priority
               />
 
-              {/* Phone bezel */}
-              <div className="relative bg-slate-900 rounded-[2.5rem] p-3 shadow-2xl">
-                {/* Notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-6 bg-slate-900 rounded-b-2xl z-20" />
+              {/* Animated overlay effects */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-t from-purple-900/30 via-transparent to-transparent"
+                animate={{ opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
 
-                {/* Screen */}
-                <div className="relative bg-slate-800 rounded-[2rem] overflow-hidden aspect-[9/19]">
-                  {/* Normal State */}
-                  <div className={cn(
-                    "absolute inset-0 p-4 transition-opacity duration-500",
-                    showCelebration ? "opacity-0" : "opacity-100"
-                  )}>
-                    <div className="text-center pt-8">
-                      <div className="h-16 w-16 rounded-2xl bg-slate-700 mx-auto mb-4 flex items-center justify-center">
-                        <Award className="h-8 w-8 text-slate-500" />
-                      </div>
-                      <div className="text-white font-medium">Keep engaging...</div>
-                      <div className="text-slate-400 text-sm mt-1">35/50 points</div>
-                    </div>
-                  </div>
-
-                  {/* Celebration State */}
-                  <AnimatePresence>
-                    {showCelebration && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 bg-gradient-to-b from-purple-900/95 via-slate-900/95 to-slate-900/95 flex items-center justify-center"
-                      >
-                        {/* Confetti */}
-                        {[...Array(30)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            className={cn(
-                              "absolute w-2 h-2 rounded-full",
-                              i % 4 === 0 ? "bg-amber-400" :
-                              i % 4 === 1 ? "bg-purple-400" :
-                              i % 4 === 2 ? "bg-cyan-400" : "bg-pink-400"
-                            )}
-                            initial={{
-                              x: "50%",
-                              y: "40%",
-                              opacity: 0,
-                              scale: 0,
-                            }}
-                            animate={{
-                              x: `${Math.random() * 100}%`,
-                              y: `${Math.random() * 100}%`,
-                              opacity: [0, 1, 1, 0],
-                              scale: [0, 1, 1, 0.5],
-                              rotate: Math.random() * 360,
-                            }}
-                            transition={{
-                              duration: 2,
-                              delay: i * 0.03,
-                              repeat: Infinity,
-                              repeatDelay: 2,
-                            }}
-                          />
-                        ))}
-
-                        {/* Achievement content */}
-                        <div className="text-center p-6 relative z-10">
-                          <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
-                          >
-                            <div className="relative inline-block">
-                              <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-2xl shadow-amber-500/50">
-                                <Star className="h-12 w-12 text-white" />
-                              </div>
-                              <motion.div
-                                className="absolute -inset-2 rounded-2xl border-2 border-amber-400"
-                                animate={{ scale: [1, 1.15, 1], opacity: [1, 0, 1] }}
-                                transition={{ duration: 1.5, repeat: Infinity }}
-                              />
-                              <motion.div
-                                className="absolute -inset-4 rounded-2xl border border-amber-400/50"
-                                animate={{ scale: [1, 1.25, 1], opacity: [0.5, 0, 0.5] }}
-                                transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                              />
-                            </div>
-                          </motion.div>
-
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                            className="mt-6"
-                          >
-                            <div className="text-amber-400 font-bold text-sm tracking-wider">ACHIEVEMENT UNLOCKED</div>
-                            <div className="text-white text-2xl font-bold mt-2">Engaged Attendee</div>
-                            <div className="text-slate-400 text-sm mt-2">You earned 50+ points!</div>
-                          </motion.div>
-
-                          <motion.button
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 1 }}
-                            onClick={() => setShowCelebration(false)}
-                            className="mt-6 px-6 py-2 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium"
-                          >
-                            Awesome!
-                          </motion.button>
-                        </div>
-                      </motion.div>
+              {/* Confetti overlay animation */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {[...Array(15)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className={cn(
+                      "absolute w-2 h-2 rounded-full",
+                      i % 4 === 0 ? "bg-amber-400" :
+                      i % 4 === 1 ? "bg-purple-400" :
+                      i % 4 === 2 ? "bg-cyan-400" : "bg-pink-400"
                     )}
-                  </AnimatePresence>
-                </div>
+                    initial={{
+                      x: `${50 + (Math.random() - 0.5) * 30}%`,
+                      y: "110%",
+                      opacity: 0,
+                    }}
+                    animate={{
+                      y: "-10%",
+                      opacity: [0, 1, 1, 0],
+                      rotate: Math.random() * 360,
+                    }}
+                    transition={{
+                      duration: 3,
+                      delay: i * 0.2,
+                      repeat: Infinity,
+                      repeatDelay: 1,
+                    }}
+                  />
+                ))}
               </div>
             </div>
 
@@ -1743,7 +1734,7 @@ function AchievementsSection() {
             >
               <div className="text-sm font-medium">Full-Screen Celebration</div>
               <div className="text-xs text-muted-foreground mt-1">
-                {showCelebration ? "Click 'Awesome!' to reset" : "Watch the magic happen..."}
+                Confetti, animations, and that winning feeling
               </div>
             </motion.div>
           </motion.div>
@@ -1770,7 +1761,7 @@ function TeamSection() {
     <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Team Leaderboard */}
+          {/* Team Competition Image */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
@@ -1778,45 +1769,26 @@ function TeamSection() {
             className="order-2 lg:order-1"
           >
             <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-green-500/20 to-cyan-500/20 rounded-3xl blur-2xl" />
+              {/* Glow effect */}
+              <motion.div
+                className="absolute -inset-4 bg-gradient-to-r from-green-500/20 via-cyan-500/20 to-blue-500/20 rounded-3xl blur-2xl"
+                animate={{ opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              />
 
-              <div className="relative rounded-2xl border bg-card overflow-hidden shadow-2xl">
-                <div className="px-4 md:px-6 py-4 bg-gradient-to-r from-green-500/10 to-cyan-500/10 border-b flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-green-400" />
-                    <span className="font-semibold">Team Standings</span>
-                  </div>
-                </div>
+              {/* Image container */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-green-500/20 shadow-2xl shadow-green-500/10">
+                <Image
+                  src="/team.png"
+                  alt="Team competition and collaboration"
+                  width={800}
+                  height={600}
+                  className="w-full h-auto"
+                  priority
+                />
 
-                <div className="divide-y">
-                  {teams.map((team, i) => (
-                    <motion.div
-                      key={team.name}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={isInView ? { opacity: 1, y: 0 } : {}}
-                      transition={{ delay: 0.3 + i * 0.1 }}
-                      className="px-4 md:px-6 py-4 flex items-center gap-3 md:gap-4"
-                    >
-                      <div className="w-6 md:w-8 text-center font-bold text-lg flex-shrink-0">
-                        {i === 0 ? "🏆" : i === 1 ? "🥈" : "🥉"}
-                      </div>
-                      <div className={cn(
-                        "h-10 w-10 md:h-12 md:w-12 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0",
-                        team.color
-                      )}>
-                        <Users className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm md:text-base truncate">{team.name}</div>
-                        <div className="text-xs md:text-sm text-muted-foreground">{team.members} members</div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-bold text-base md:text-lg">{team.points.toLocaleString()}</div>
-                        <div className="text-xs text-muted-foreground">total points</div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
               </div>
             </div>
           </motion.div>
@@ -2042,6 +2014,7 @@ export default function GamificationPage() {
     <main className="flex-1">
       <HeroSection />
       <ProblemSection />
+      <PlatformShowcaseSection />
       <PointsSystemSection />
       <LeaderboardSection />
       <AchievementsSection />
