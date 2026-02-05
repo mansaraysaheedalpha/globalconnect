@@ -838,33 +838,132 @@ function LiveLeadFeed() {
 // ============================================================================
 // HERO SECTION
 // ============================================================================
+// FLOATING LEAD NOTIFICATION - Sponsor-specific floating elements
+// ============================================================================
+function FloatingLeadNotification({
+  name,
+  company,
+  intent,
+  delay,
+  position
+}: {
+  name: string;
+  company: string;
+  intent: "hot" | "warm" | "cold";
+  delay: number;
+  position: { top?: string; bottom?: string; left?: string; right?: string };
+}) {
+  const intentColors = {
+    hot: { bg: "bg-red-500/20", border: "border-red-500/40", dot: "bg-red-500", text: "text-red-400" },
+    warm: { bg: "bg-orange-500/20", border: "border-orange-500/40", dot: "bg-orange-500", text: "text-orange-400" },
+    cold: { bg: "bg-blue-500/20", border: "border-blue-500/40", dot: "bg-blue-500", text: "text-blue-400" },
+  };
+
+  const colors = intentColors[intent];
+
+  return (
+    <motion.div
+      className={cn(
+        "absolute hidden xl:flex items-center gap-3 px-4 py-3 rounded-xl backdrop-blur-md border shadow-2xl",
+        colors.bg,
+        colors.border
+      )}
+      style={position}
+      initial={{ opacity: 0, scale: 0.8, y: 20 }}
+      animate={{
+        opacity: [0, 1, 1, 0],
+        scale: [0.8, 1, 1, 0.9],
+        y: [20, 0, 0, -10]
+      }}
+      transition={{
+        duration: 4,
+        delay,
+        repeat: Infinity,
+        repeatDelay: 8,
+        times: [0, 0.1, 0.9, 1]
+      }}
+    >
+      <motion.div
+        className={cn("h-2.5 w-2.5 rounded-full", colors.dot)}
+        animate={{ scale: [1, 1.3, 1] }}
+        transition={{ duration: 1, repeat: Infinity }}
+      />
+      <div className="text-left">
+        <div className="text-sm font-medium text-white">{name}</div>
+        <div className="text-xs text-white/60">{company}</div>
+      </div>
+      <span className={cn("text-xs font-semibold uppercase", colors.text)}>
+        {intent}
+      </span>
+    </motion.div>
+  );
+}
+
+// ============================================================================
 function HeroSection() {
   return (
-    <section className="relative min-h-[95vh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[95vh] flex items-center justify-center text-white overflow-hidden">
       {/* Premium gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/30 to-slate-950 -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950 -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-purple-950/20 via-transparent to-blue-950/30 -z-10" />
 
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden -z-5 pointer-events-none">
         <motion.div
-          className="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-[150px]"
+          className="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[150px]"
           animate={{ x: [0, 80, 0], y: [0, 40, 0], scale: [1, 1.2, 1] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[180px]"
+          className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] bg-purple-500/15 rounded-full blur-[180px]"
           animate={{ x: [0, -60, 0], y: [0, -40, 0], scale: [1, 1.3, 1] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute top-1/2 left-1/3 w-[400px] h-[400px] bg-red-500/5 rounded-full blur-[120px]"
+          className="absolute top-1/2 left-1/3 w-[400px] h-[400px] bg-red-500/10 rounded-full blur-[120px]"
           animate={{ scale: [1, 1.4, 1] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Additional sponsor-specific accent */}
+        <motion.div
+          className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-amber-500/10 rounded-full blur-[100px]"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
       {/* Subtle grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:64px_64px] -z-5" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
+
+      {/* Floating Lead Notifications - Sponsor-specific visual elements */}
+      <FloatingLeadNotification
+        name="Sarah Chen"
+        company="TechCorp Inc."
+        intent="hot"
+        delay={0}
+        position={{ top: "15%", left: "8%" }}
+      />
+      <FloatingLeadNotification
+        name="Michael Brown"
+        company="InnovateCo"
+        intent="warm"
+        delay={2}
+        position={{ top: "25%", right: "5%" }}
+      />
+      <FloatingLeadNotification
+        name="Emily Davis"
+        company="FutureTech"
+        intent="hot"
+        delay={4}
+        position={{ bottom: "30%", left: "5%" }}
+      />
+      <FloatingLeadNotification
+        name="James Wilson"
+        company="DataDriven"
+        intent="cold"
+        delay={6}
+        position={{ bottom: "20%", right: "8%" }}
+      />
 
       {/* Content */}
       <div className="container px-4 md:px-6 max-w-7xl relative z-10 py-20">

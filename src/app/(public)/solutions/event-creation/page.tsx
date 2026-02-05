@@ -1,9 +1,10 @@
 // src/app/(public)/solutions/event-creation/page.tsx
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -40,6 +41,28 @@ import {
   Timer,
   AlertCircle,
   MousePointer,
+  Undo2,
+  Redo2,
+  LayoutGrid,
+  List,
+  Star,
+  Rocket,
+  Gift,
+  Lock,
+  Server,
+  Cloud,
+  Database,
+  Award,
+  Target,
+  Milestone,
+  CircleDot,
+  CheckCircle2,
+  ArrowDown,
+  PhoneCall,
+  Mail,
+  MessageSquare,
+  Crown,
+  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,18 +73,95 @@ const fadeInUp = {
 };
 
 // ============================================================================
-// ANIMATED BACKGROUND ELEMENTS
+// ANIMATED NUMBER COUNTER
+// ============================================================================
+function AnimatedCounter({
+  value,
+  suffix = "",
+  prefix = "",
+  duration = 2
+}: {
+  value: number;
+  suffix?: string;
+  prefix?: string;
+  duration?: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const motionValue = useMotionValue(0);
+  const springValue = useSpring(motionValue, { duration: duration * 1000 });
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  useEffect(() => {
+    if (isInView) {
+      motionValue.set(value);
+    }
+  }, [isInView, value, motionValue]);
+
+  useEffect(() => {
+    const unsubscribe = springValue.on("change", (latest) => {
+      if (ref.current) {
+        ref.current.textContent = `${prefix}${Math.floor(latest).toLocaleString()}${suffix}`;
+      }
+    });
+    return unsubscribe;
+  }, [springValue, prefix, suffix]);
+
+  return <span ref={ref}>{prefix}0{suffix}</span>;
+}
+
+// ============================================================================
+// FLOATING PARTICLES
+// ============================================================================
+function FloatingParticles() {
+  const particles = Array.from({ length: 50 }, (_, i) => ({
+    id: i,
+    size: Math.random() * 4 + 1,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    duration: Math.random() * 20 + 10,
+    delay: Math.random() * 5,
+  }));
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {particles.map((particle) => (
+        <motion.div
+          key={particle.id}
+          className="absolute rounded-full bg-white/20"
+          style={{
+            width: particle.size,
+            height: particle.size,
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            x: [0, Math.random() * 20 - 10, 0],
+            opacity: [0.2, 0.6, 0.2],
+          }}
+          transition={{
+            duration: particle.duration,
+            repeat: Infinity,
+            delay: particle.delay,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED GRID LINES
 // ============================================================================
 function AnimatedGridLines() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Vertical scanning line */}
       <motion.div
         className="absolute top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-500/50 to-transparent"
         animate={{ left: ["0%", "100%"] }}
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
-      {/* Horizontal scanning line */}
       <motion.div
         className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"
         animate={{ top: ["0%", "100%"] }}
@@ -72,36 +172,74 @@ function AnimatedGridLines() {
 }
 
 // ============================================================================
-// LIVE BUILDER DEMO - Interactive drag-and-drop preview
+// GRADIENT BORDER CARD
+// ============================================================================
+function GradientBorderCard({
+  children,
+  className,
+  gradientClassName = "from-blue-500 via-purple-500 to-pink-500"
+}: {
+  children: React.ReactNode;
+  className?: string;
+  gradientClassName?: string;
+}) {
+  return (
+    <div className={cn("relative group", className)}>
+      {/* Animated gradient border */}
+      <motion.div
+        className={cn(
+          "absolute -inset-[1px] rounded-2xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm",
+          gradientClassName
+        )}
+        animate={{
+          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        style={{ backgroundSize: "200% 200%" }}
+      />
+      <div className="relative rounded-2xl border border-border/50 bg-card/95 backdrop-blur-sm overflow-hidden">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ENHANCED LIVE BUILDER DEMO
 // ============================================================================
 function LiveBuilderDemo() {
   const [activeItem, setActiveItem] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
+  const [history, setHistory] = useState<number[][]>([[1, 2, 3, 4]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
   const [items, setItems] = useState([
-    { id: 1, type: "keynote", title: "Keynote Speech", time: "9:00 AM", duration: "45 min", speaker: "Dr. Sarah Chen" },
-    { id: 2, type: "break", title: "Networking Break", time: "9:45 AM", duration: "15 min", speaker: null },
-    { id: 3, type: "workshop", title: "Hands-on Workshop", time: "10:00 AM", duration: "90 min", speaker: "Team Alpha" },
-    { id: 4, type: "panel", title: "Industry Panel", time: "11:30 AM", duration: "60 min", speaker: "Multiple" },
+    { id: 1, type: "keynote", title: "Opening Keynote", time: "9:00 AM", duration: "45 min", speaker: "Dr. Sarah Chen", track: "Main Stage" },
+    { id: 2, type: "break", title: "Networking Break", time: "9:45 AM", duration: "15 min", speaker: null, track: "All" },
+    { id: 3, type: "workshop", title: "Hands-on Workshop", time: "10:00 AM", duration: "90 min", speaker: "Team Alpha", track: "Room A" },
+    { id: 4, type: "panel", title: "Industry Panel", time: "11:30 AM", duration: "60 min", speaker: "Multiple", track: "Main Stage" },
   ]);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
+  // Simulate drag animation
   useEffect(() => {
-    // Simulate drag animation
     const interval = setInterval(() => {
       setDraggedIndex(prev => {
         if (prev === null) return 1;
         if (prev === 1) {
-          // Swap items
-          setItems(prev => {
-            const newItems = [...prev];
+          setItems(prevItems => {
+            const newItems = [...prevItems];
             [newItems[1], newItems[2]] = [newItems[2], newItems[1]];
             return newItems;
           });
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 1500);
           return null;
         }
         return null;
       });
-    }, 4000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -140,6 +278,10 @@ function LiveBuilderDemo() {
               transition={{ duration: 1.5, repeat: Infinity }}
             />
             <span className="text-sm font-medium text-white">Visual Agenda Builder</span>
+            {/* Beta badge */}
+            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded">
+              BETA
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
@@ -148,22 +290,59 @@ function LiveBuilderDemo() {
           </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="px-4 py-2 border-b border-white/10 flex items-center gap-3">
+        {/* Enhanced Toolbar */}
+        <div className="px-4 py-2 border-b border-white/10 flex items-center gap-2">
+          <div className="flex items-center gap-1 mr-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10"
+              disabled={historyIndex === 0}
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10"
+              disabled={historyIndex === history.length - 1}
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <div className="h-4 w-px bg-white/20" />
           <Button size="sm" variant="ghost" className="h-7 text-xs text-white/70 hover:text-white hover:bg-white/10">
             <Plus className="h-3 w-3 mr-1" />
-            Add Session
+            Add
           </Button>
           <Button size="sm" variant="ghost" className="h-7 text-xs text-white/70 hover:text-white hover:bg-white/10">
             <Copy className="h-3 w-3 mr-1" />
-            Duplicate
+            Clone
           </Button>
           <div className="flex-1" />
-          <span className="text-xs text-white/40">Drag to reorder</span>
+          {/* View toggle */}
+          <div className="flex items-center gap-1 p-0.5 rounded-md bg-white/10">
+            <Button
+              size="sm"
+              variant="ghost"
+              className={cn("h-6 w-6 p-0", viewMode === "list" ? "bg-white/20 text-white" : "text-white/50")}
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-3 w-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={cn("h-6 w-6 p-0", viewMode === "timeline" ? "bg-white/20 text-white" : "text-white/50")}
+              onClick={() => setViewMode("timeline")}
+            >
+              <LayoutGrid className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
         {/* Session List */}
-        <div className="p-4 space-y-2">
+        <div className="p-4 space-y-2 min-h-[280px]">
           <AnimatePresence mode="popLayout">
             {items.map((item, index) => {
               const colors = typeColors[item.type];
@@ -204,12 +383,8 @@ function LiveBuilderDemo() {
                         <span>{item.time}</span>
                         <span>•</span>
                         <span>{item.duration}</span>
-                        {item.speaker && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">{item.speaker}</span>
-                          </>
-                        )}
+                        <span>•</span>
+                        <span className="text-white/40">{item.track}</span>
                       </div>
                     </div>
                     <AnimatePresence>
@@ -228,7 +403,6 @@ function LiveBuilderDemo() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Drag indicator */}
                   {isDragging && (
                     <motion.div
                       className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1 rounded bg-blue-500 text-white text-xs"
@@ -242,6 +416,21 @@ function LiveBuilderDemo() {
                 </motion.div>
               );
             })}
+          </AnimatePresence>
+
+          {/* Success notification */}
+          <AnimatePresence>
+            {showSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/90 text-white text-sm shadow-lg"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Session reordered
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
@@ -277,6 +466,9 @@ function HeroSection() {
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-blue-950/60 to-black/90 -z-10" />
 
+      {/* Floating Particles */}
+      <FloatingParticles />
+
       {/* Animated Gradient Orbs */}
       <div className="absolute inset-0 overflow-hidden -z-5 pointer-events-none">
         <motion.div
@@ -307,20 +499,24 @@ function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left: Text Content */}
           <div className="text-center lg:text-left">
-            {/* Badges */}
+            {/* Early Access Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-8"
             >
+              <motion.span
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm border border-amber-500/30 text-sm font-medium"
+                animate={{ boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 0 8px rgba(251, 191, 36, 0.1)", "0 0 0 0 rgba(251, 191, 36, 0)"] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Gift className="h-4 w-4 text-amber-400" />
+                Free During Beta
+              </motion.span>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 text-sm font-medium">
                 <Calendar className="h-4 w-4 text-blue-400" />
                 Event Planning Suite
-              </span>
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/20 backdrop-blur-sm border border-purple-500/30 text-sm font-medium">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                Smart Templates
               </span>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-sm font-medium">
                 For Organizers
@@ -373,7 +569,8 @@ function HeroSection() {
                 asChild
               >
                 <Link href="/auth/register">
-                  Start Creating Free
+                  <Rocket className="mr-2 h-5 w-5" />
+                  Join Early Access
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
@@ -383,13 +580,34 @@ function HeroSection() {
                 asChild
               >
                 <Link href="/contact?demo=event-planning">
-                  <Play className="mr-2 h-5 w-5" />
-                  Watch Demo
+                  <PhoneCall className="mr-2 h-5 w-5" />
+                  Book Personal Demo
                 </Link>
               </Button>
             </motion.div>
 
-            {/* Stats Row */}
+            {/* Trust Badges */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-sm text-neutral-400"
+            >
+              <div className="flex items-center gap-1.5">
+                <CheckCircle className="h-4 w-4 text-green-400" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Lock className="h-4 w-4 text-blue-400" />
+                <span>SOC 2 Ready</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-purple-400" />
+                <span>GDPR Compliant</span>
+              </div>
+            </motion.div>
+
+            {/* Stats Row with Animated Counters */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -397,9 +615,9 @@ function HeroSection() {
               className="mt-12 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0"
             >
               {[
-                { value: "75%", label: "Time Saved" },
-                { value: "50+", label: "Templates" },
-                { value: "100K+", label: "Events Created" },
+                { value: 75, suffix: "%", label: "Time Saved" },
+                { value: 50, suffix: "+", label: "Templates" },
+                { value: 50000, suffix: "", label: "Max Attendees", prefix: "" },
               ].map((stat, index) => (
                 <motion.div
                   key={stat.label}
@@ -409,7 +627,7 @@ function HeroSection() {
                   className="text-center lg:text-left"
                 >
                   <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    {stat.value}
+                    <AnimatedCounter value={stat.value} suffix={stat.suffix} prefix={stat.prefix || ""} />
                   </div>
                   <div className="text-sm text-neutral-400 mt-1">{stat.label}</div>
                 </motion.div>
@@ -448,7 +666,7 @@ function HeroSection() {
 }
 
 // ============================================================================
-// PROBLEM SECTION - Event Planning Chaos
+// PROBLEM SECTION
 // ============================================================================
 function ProblemSection() {
   const ref = useRef(null);
@@ -457,24 +675,27 @@ function ProblemSection() {
   const problems = [
     {
       icon: Timer,
-      stat: "40+",
-      suffix: " hours",
+      stat: 40,
+      suffix: "+",
+      unit: " hours",
       title: "Manual Setup Time",
       description: "Traditional event planning tools require endless clicking, copying, and manual data entry across disconnected systems",
       color: "red",
     },
     {
       icon: AlertCircle,
-      stat: "68",
+      stat: 68,
       suffix: "%",
+      unit: "",
       title: "Scheduling Conflicts",
       description: "Without smart conflict detection, overlapping sessions and speaker double-bookings derail event quality",
       color: "orange",
     },
     {
       icon: RefreshCw,
-      stat: "5x",
-      suffix: "",
+      stat: 5,
+      suffix: "x",
+      unit: "",
       title: "Repeated Work",
       description: "Every event starts from scratch—no templates, no blueprints, no way to leverage past success",
       color: "amber",
@@ -521,7 +742,7 @@ function ProblemSection() {
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
             Event Planning{" "}
             <span className="relative">
-              <span className="text-red-500">Shouldn't Be</span>
+              <span className="text-red-500">Shouldn&apos;t Be</span>
               <motion.span
                 className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-orange-500 rounded-full"
                 initial={{ scaleX: 0 }}
@@ -547,68 +768,63 @@ function ProblemSection() {
               transition={{ duration: 0.6, delay: 0.2 + index * 0.15 }}
               className="group"
             >
-              <div className={cn(
-                "relative rounded-2xl border p-6 h-full transition-all duration-300 overflow-hidden",
-                "bg-card/80 backdrop-blur-sm hover:shadow-xl",
-                problem.color === "red" && "border-red-500/20 hover:border-red-500/40 hover:shadow-red-500/10",
-                problem.color === "orange" && "border-orange-500/20 hover:border-orange-500/40 hover:shadow-orange-500/10",
-                problem.color === "amber" && "border-amber-500/20 hover:border-amber-500/40 hover:shadow-amber-500/10"
-              )}>
-                {/* Icon */}
-                <div className="relative mb-4">
-                  <motion.div
-                    className={cn(
-                      "absolute inset-0 rounded-xl blur-md",
-                      problem.color === "red" && "bg-red-500/30",
-                      problem.color === "orange" && "bg-orange-500/30",
-                      problem.color === "amber" && "bg-amber-500/30"
-                    )}
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
-                  />
-                  <div className={cn(
-                    "relative flex h-14 w-14 items-center justify-center rounded-xl",
-                    problem.color === "red" && "bg-red-500/10",
-                    problem.color === "orange" && "bg-orange-500/10",
-                    problem.color === "amber" && "bg-amber-500/10"
-                  )}>
-                    <problem.icon className={cn(
-                      "h-7 w-7",
-                      problem.color === "red" && "text-red-500",
-                      problem.color === "orange" && "text-orange-500",
-                      problem.color === "amber" && "text-amber-500"
-                    )} />
+              <GradientBorderCard gradientClassName={
+                problem.color === "red" ? "from-red-500 to-orange-500" :
+                problem.color === "orange" ? "from-orange-500 to-amber-500" :
+                "from-amber-500 to-yellow-500"
+              }>
+                <div className="p-6">
+                  {/* Icon */}
+                  <div className="relative mb-4">
+                    <motion.div
+                      className={cn(
+                        "absolute inset-0 rounded-xl blur-md",
+                        problem.color === "red" && "bg-red-500/30",
+                        problem.color === "orange" && "bg-orange-500/30",
+                        problem.color === "amber" && "bg-amber-500/30"
+                      )}
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+                    />
+                    <div className={cn(
+                      "relative flex h-14 w-14 items-center justify-center rounded-xl",
+                      problem.color === "red" && "bg-red-500/10",
+                      problem.color === "orange" && "bg-orange-500/10",
+                      problem.color === "amber" && "bg-amber-500/10"
+                    )}>
+                      <problem.icon className={cn(
+                        "h-7 w-7",
+                        problem.color === "red" && "text-red-500",
+                        problem.color === "orange" && "text-orange-500",
+                        problem.color === "amber" && "text-amber-500"
+                      )} />
+                    </div>
                   </div>
-                </div>
 
-                {/* Stat */}
-                <div className="flex items-baseline gap-1 mb-2">
-                  <motion.span
-                    className={cn(
+                  {/* Animated Stat */}
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className={cn(
                       "text-4xl font-bold tabular-nums",
                       problem.color === "red" && "text-red-500",
                       problem.color === "orange" && "text-orange-500",
                       problem.color === "amber" && "text-amber-500"
-                    )}
-                    initial={{ opacity: 0 }}
-                    animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                    transition={{ delay: 0.4 + index * 0.1 }}
-                  >
-                    {problem.stat}
-                  </motion.span>
-                  <span className={cn(
-                    "text-xl font-bold",
-                    problem.color === "red" && "text-red-500",
-                    problem.color === "orange" && "text-orange-500",
-                    problem.color === "amber" && "text-amber-500"
-                  )}>
-                    {problem.suffix}
-                  </span>
-                </div>
+                    )}>
+                      <AnimatedCounter value={problem.stat} suffix={problem.suffix} />
+                    </span>
+                    <span className={cn(
+                      "text-xl font-bold",
+                      problem.color === "red" && "text-red-500",
+                      problem.color === "orange" && "text-orange-500",
+                      problem.color === "amber" && "text-amber-500"
+                    )}>
+                      {problem.unit}
+                    </span>
+                  </div>
 
-                <h3 className="text-lg font-semibold mb-2">{problem.title}</h3>
-                <p className="text-sm text-muted-foreground">{problem.description}</p>
-              </div>
+                  <h3 className="text-lg font-semibold mb-2">{problem.title}</h3>
+                  <p className="text-sm text-muted-foreground">{problem.description}</p>
+                </div>
+              </GradientBorderCard>
             </motion.div>
           ))}
         </div>
@@ -733,19 +949,24 @@ function SolutionShowcaseSection() {
                 </div>
               </div>
 
-              {/* Screenshot placeholder */}
+              {/* Dashboard UI Mockup */}
               <div className="relative aspect-[16/9] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
-                {/* Placeholder UI mockup */}
                 <div className="absolute inset-0 p-6 flex gap-4">
                   {/* Sidebar */}
                   <div className="w-64 shrink-0 bg-slate-800/50 rounded-xl p-4 space-y-3">
                     <div className="h-8 w-3/4 bg-slate-700/50 rounded animate-pulse" />
                     <div className="space-y-2">
                       {[1, 2, 3, 4, 5].map(i => (
-                        <div key={i} className={cn("h-10 rounded-lg flex items-center px-3 gap-2", i === 1 ? "bg-blue-500/20 border border-blue-500/30" : "bg-slate-700/30")}>
+                        <motion.div
+                          key={i}
+                          className={cn("h-10 rounded-lg flex items-center px-3 gap-2", i === 1 ? "bg-blue-500/20 border border-blue-500/30" : "bg-slate-700/30")}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={isInView ? { opacity: 1, x: 0 } : {}}
+                          transition={{ delay: 0.3 + i * 0.1 }}
+                        >
                           <div className="h-4 w-4 rounded bg-slate-600/50" />
                           <div className="h-3 flex-1 bg-slate-600/50 rounded" />
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   </div>
@@ -755,7 +976,10 @@ function SolutionShowcaseSection() {
                     <div className="flex items-center justify-between">
                       <div className="h-8 w-48 bg-slate-700/50 rounded" />
                       <div className="flex gap-2">
-                        <div className="h-9 w-24 bg-blue-500/30 rounded-lg" />
+                        <motion.div
+                          className="h-9 w-24 bg-blue-500/30 rounded-lg"
+                          whileHover={{ scale: 1.05 }}
+                        />
                         <div className="h-9 w-24 bg-slate-700/50 rounded-lg" />
                       </div>
                     </div>
@@ -769,12 +993,13 @@ function SolutionShowcaseSection() {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={isInView ? { opacity: 1, scale: 1 } : {}}
                             transition={{ delay: 0.5 + i * 0.1 }}
+                            whileHover={{ scale: 1.02 }}
                             className={cn(
-                              "rounded-lg p-3 space-y-2",
-                              i === 0 ? "bg-purple-500/20 border border-purple-500/30 h-32" :
-                              i === 1 ? "bg-blue-500/20 border border-blue-500/30 h-24" :
-                              i === 2 ? "bg-green-500/20 border border-green-500/30 h-28" :
-                              "bg-amber-500/20 border border-amber-500/30 h-20"
+                              "rounded-lg p-3 space-y-2 cursor-pointer transition-all",
+                              i === 0 ? "bg-purple-500/20 border border-purple-500/30 h-32 hover:border-purple-500/50" :
+                              i === 1 ? "bg-blue-500/20 border border-blue-500/30 h-24 hover:border-blue-500/50" :
+                              i === 2 ? "bg-green-500/20 border border-green-500/30 h-28 hover:border-green-500/50" :
+                              "bg-amber-500/20 border border-amber-500/30 h-20 hover:border-amber-500/50"
                             )}
                           >
                             <div className="h-3 w-3/4 bg-white/20 rounded" />
@@ -945,30 +1170,28 @@ function FeaturesSection() {
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
                 className="group"
               >
-                <div className={cn(
-                  "h-full rounded-2xl border p-6 transition-all duration-300",
-                  "bg-card/50 backdrop-blur-sm hover:bg-card hover:shadow-xl",
-                  styles.border
-                )}>
-                  {/* Icon */}
-                  <div className={cn("inline-flex h-12 w-12 items-center justify-center rounded-xl mb-4", styles.bg)}>
-                    <feature.icon className={cn("h-6 w-6", styles.text)} />
+                <GradientBorderCard gradientClassName={styles.gradient}>
+                  <div className="p-6">
+                    {/* Icon */}
+                    <div className={cn("inline-flex h-12 w-12 items-center justify-center rounded-xl mb-4", styles.bg)}>
+                      <feature.icon className={cn("h-6 w-6", styles.text)} />
+                    </div>
+
+                    {/* Title & Description */}
+                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
+
+                    {/* Feature items */}
+                    <ul className="space-y-2">
+                      {feature.items.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <CheckCircle className={cn("h-4 w-4 shrink-0", styles.text)} />
+                          <span className="text-muted-foreground">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-
-                  {/* Title & Description */}
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
-
-                  {/* Feature items */}
-                  <ul className="space-y-2">
-                    {feature.items.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className={cn("h-4 w-4 shrink-0", styles.text)} />
-                        <span className="text-muted-foreground">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                </GradientBorderCard>
               </motion.div>
             );
           })}
@@ -1042,7 +1265,7 @@ function EventFormatsSection() {
             Any Event, Any Format
           </h2>
           <p className="text-lg text-muted-foreground">
-            Whether your audience is around the corner or around the world, we've got you covered
+            Whether your audience is around the corner or around the world, we&apos;ve got you covered
           </p>
         </motion.div>
 
@@ -1056,74 +1279,64 @@ function EventFormatsSection() {
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
               className="group relative"
             >
-              {/* Card glow */}
-              <div className={cn(
-                "absolute -inset-px rounded-2xl bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm",
-                format.gradient
-              )} />
-
-              <div className="relative h-full rounded-2xl border border-border/50 bg-card p-6 overflow-hidden">
-                {/* Background gradient on hover */}
-                <div className={cn(
-                  "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-5 transition-opacity duration-500",
-                  format.gradient
-                )} />
-
-                {/* Icon */}
-                <div className={cn("relative mb-6")}>
-                  <div className={cn(
-                    "inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg",
-                    format.gradient
-                  )}>
-                    <format.icon className="h-8 w-8 text-white" />
+              <GradientBorderCard gradientClassName={format.gradient}>
+                <div className="p-6">
+                  {/* Icon */}
+                  <div className={cn("relative mb-6")}>
+                    <div className={cn(
+                      "inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg",
+                      format.gradient
+                    )}>
+                      <format.icon className="h-8 w-8 text-white" />
+                    </div>
                   </div>
-                </div>
 
-                {/* Content */}
-                <h3 className="text-2xl font-bold mb-3 relative">{format.title}</h3>
-                <p className="text-muted-foreground mb-6 relative">{format.description}</p>
+                  {/* Content */}
+                  <h3 className="text-2xl font-bold mb-3 relative">{format.title}</h3>
+                  <p className="text-muted-foreground mb-6 relative">{format.description}</p>
 
-                {/* Features */}
-                <ul className="space-y-3 relative">
-                  {format.features.map((feature, i) => (
-                    <motion.li
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -10 }}
-                      transition={{ duration: 0.3, delay: 0.3 + i * 0.1 }}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <CheckCircle className={cn("h-4 w-4 shrink-0",
-                        format.color === "purple" && "text-purple-500",
-                        format.color === "blue" && "text-blue-500",
-                        format.color === "amber" && "text-amber-500"
-                      )} />
-                      <span className="text-muted-foreground">{feature}</span>
-                    </motion.li>
-                  ))}
-                </ul>
+                  {/* Features */}
+                  <ul className="space-y-3 relative">
+                    {format.features.map((feature, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -10 }}
+                        transition={{ duration: 0.3, delay: 0.3 + i * 0.1 }}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <CheckCircle className={cn("h-4 w-4 shrink-0",
+                          format.color === "purple" && "text-purple-500",
+                          format.color === "blue" && "text-blue-500",
+                          format.color === "amber" && "text-amber-500"
+                        )} />
+                        <span className="text-muted-foreground">{feature}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
 
-                {/* Learn more link */}
-                <motion.div
-                  className="mt-6 relative"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <Link
-                    href={`/solutions/${format.title.toLowerCase().replace(" ", "-")}`}
-                    className={cn(
-                      "inline-flex items-center gap-1 text-sm font-medium transition-colors",
-                      format.color === "purple" && "text-purple-500 hover:text-purple-400",
-                      format.color === "blue" && "text-blue-500 hover:text-blue-400",
-                      format.color === "amber" && "text-amber-500 hover:text-amber-400"
-                    )}
+                  {/* Learn more link */}
+                  <motion.div
+                    className="mt-6 relative"
+                    initial={{ opacity: 0 }}
+                    animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+                    transition={{ delay: 0.6 }}
                   >
-                    Learn more
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </motion.div>
-              </div>
+                    <Link
+                      href={`/solutions/${format.title.toLowerCase().replace(" ", "-")}`}
+                      className={cn(
+                        "inline-flex items-center gap-1 text-sm font-medium transition-colors",
+                        format.color === "purple" && "text-purple-500 hover:text-purple-400",
+                        format.color === "blue" && "text-blue-500 hover:text-blue-400",
+                        format.color === "amber" && "text-amber-500 hover:text-amber-400"
+                      )}
+                    >
+                      Learn more
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </motion.div>
+                </div>
+              </GradientBorderCard>
             </motion.div>
           ))}
         </div>
@@ -1133,23 +1346,88 @@ function EventFormatsSection() {
 }
 
 // ============================================================================
-// INTEGRATION SECTION
+// INTEGRATION PARTNERS SECTION
 // ============================================================================
-function IntegrationSection() {
+function IntegrationPartnersSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   const integrations = [
-    { icon: Mic2, label: "Speaker Management", desc: "Invite, manage, and coordinate with speakers", link: "/solutions/speaker-management" },
-    { icon: CalendarDays, label: "Session Builder", desc: "Visual multi-track agenda creation", link: "/solutions/session-builder" },
-    { icon: Ticket, label: "Registration & Ticketing", desc: "Multi-tier tickets with payments", link: "/solutions/registration-ticketing" },
-    { icon: BarChart3, label: "Analytics", desc: "Real-time event performance insights", link: "/solutions/analytics" },
-    { icon: Users, label: "Engagement Tools", desc: "Polls, Q&A, chat, and gamification", link: "/solutions/engagement-conductor" },
-    { icon: Building2, label: "Virtual Booths", desc: "Sponsor exhibition spaces", link: "/solutions/virtual-booth" },
+    { name: "Zoom", category: "Video" },
+    { name: "Google Calendar", category: "Calendar" },
+    { name: "Slack", category: "Communication" },
+    { name: "Stripe", category: "Payments" },
+    { name: "HubSpot", category: "CRM" },
+    { name: "Salesforce", category: "CRM" },
+    { name: "Mailchimp", category: "Email" },
+    { name: "Zapier", category: "Automation" },
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background via-muted/30 to-background relative overflow-hidden" ref={ref}>
+    <section className="py-16 bg-muted/30 relative overflow-hidden" ref={ref}>
+      <div className="container mx-auto px-4 md:px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          className="text-center mb-10"
+        >
+          <span className="text-sm text-muted-foreground uppercase tracking-wider">
+            Integrates with your favorite tools
+          </span>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ delay: 0.2 }}
+          className="flex flex-wrap justify-center items-center gap-8 md:gap-12"
+        >
+          {integrations.map((integration, index) => (
+            <motion.div
+              key={integration.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.1 * index }}
+              whileHover={{ scale: 1.1 }}
+              className="flex flex-col items-center gap-2 group cursor-pointer"
+            >
+              <div className="h-12 w-12 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground group-hover:border-primary/50 group-hover:text-primary transition-all shadow-sm">
+                <span className="text-lg font-bold">{integration.name[0]}</span>
+              </div>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{integration.name}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ delay: 0.5 }}
+          className="text-center text-sm text-muted-foreground mt-8"
+        >
+          + 50 more integrations coming soon
+        </motion.p>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// BUILT BY EXPERTS SECTION
+// ============================================================================
+function BuiltByExpertsSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const credentials = [
+    { icon: Award, stat: "20+", label: "Years Combined Experience" },
+    { icon: Calendar, stat: "500+", label: "Events Organized" },
+    { icon: Users, stat: "1M+", label: "Attendees Served" },
+    { icon: Building2, stat: "Fortune 500", label: "Enterprise Background" },
+  ];
+
+  return (
+    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden" ref={ref}>
       <div className="container mx-auto px-4 md:px-6">
         <motion.div
           initial="hidden"
@@ -1157,67 +1435,37 @@ function IntegrationSection() {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
-            Seamless Integration
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
+            <Heart className="h-4 w-4" />
+            Built by Event Professionals
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            One Platform, Complete Control
+            We&apos;ve Been in Your Shoes
           </h2>
           <p className="text-lg text-muted-foreground">
-            Event Planning Suite connects seamlessly with every other feature you need
+            Our team has organized hundreds of events—from startup meetups to 10,000+ attendee conferences.
+            We built the tool we wished existed.
           </p>
         </motion.div>
 
-        {/* Central hub visualization */}
-        <div className="relative max-w-4xl mx-auto">
-          {/* Central node */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
-            transition={{ duration: 0.6 }}
-            className="relative z-10 mx-auto w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-xl shadow-blue-500/30"
-          >
-            <div className="text-center text-white">
-              <Calendar className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-2" />
-              <span className="text-xs md:text-sm font-semibold">Event Planning</span>
-            </div>
-          </motion.div>
-
-          {/* Integration cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8 md:mt-12">
-            {integrations.map((item, index) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                whileHover={{ scale: 1.03, y: -4 }}
-              >
-                <Link href={item.link}>
-                  <div className="relative h-full rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 hover:bg-card hover:shadow-lg transition-all cursor-pointer group">
-                    {/* Connection line (visual only) */}
-                    <motion.div
-                      className="absolute top-0 left-1/2 w-px h-0 bg-gradient-to-b from-blue-500/50 to-transparent -translate-x-1/2 -translate-y-full"
-                      animate={isInView ? { height: 24 } : { height: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1 }}
-                    />
-
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-                        <item.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{item.label}</h4>
-                        <p className="text-xs text-muted-foreground">{item.desc}</p>
-                      </div>
-                    </div>
-
-                    <ArrowUpRight className="absolute top-3 right-3 h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+          {credentials.map((cred, index) => (
+            <motion.div
+              key={cred.label}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.1 * index }}
+              className="text-center"
+            >
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+                <cred.icon className="h-7 w-7 text-primary" />
+              </div>
+              <div className="text-3xl font-bold mb-1">
+                <AnimatedCounter value={parseInt(cred.stat) || 0} suffix={cred.stat.replace(/[0-9]/g, '')} />
+              </div>
+              <div className="text-sm text-muted-foreground">{cred.label}</div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
@@ -1225,48 +1473,45 @@ function IntegrationSection() {
 }
 
 // ============================================================================
-// WHY CHOOSE US SECTION (Replaces Testimonials for new platform)
+// ROADMAP PREVIEW SECTION
 // ============================================================================
-function WhyChooseUsSection() {
+function RoadmapSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const reasons = [
+  const roadmapItems = [
     {
-      icon: Zap,
-      title: "Launch 75% Faster",
-      description: "What used to take weeks now takes days. Our visual builder and templates eliminate repetitive setup work.",
-      stat: "75%",
-      statLabel: "Time Saved",
-      color: "blue",
+      phase: "Now",
+      status: "live",
+      title: "Core Platform",
+      items: ["Event Builder", "Session Management", "Speaker Portal", "Registration"],
+      icon: CheckCircle2,
     },
     {
-      icon: Shield,
-      title: "Enterprise-Grade Security",
-      description: "SOC 2 compliant with end-to-end encryption, SSO support, and granular access controls for your team.",
-      stat: "99.9%",
-      statLabel: "Uptime SLA",
-      color: "emerald",
+      phase: "Q1 2026",
+      status: "building",
+      title: "Engagement Suite",
+      items: ["Live Polls", "Q&A System", "Chat", "Gamification"],
+      icon: Rocket,
     },
     {
-      icon: TrendingUp,
-      title: "Scales With You",
-      description: "From 50-person workshops to 50,000-attendee conferences—the same intuitive platform handles it all.",
-      stat: "50K+",
-      statLabel: "Max Attendees",
-      color: "purple",
+      phase: "Q2 2026",
+      status: "planned",
+      title: "AI Features",
+      items: ["Smart Scheduling", "Attendee Matching", "Content Recommendations", "Auto-Captions"],
+      icon: Sparkles,
+    },
+    {
+      phase: "Q3 2026",
+      status: "planned",
+      title: "Enterprise",
+      items: ["SSO/SAML", "Custom Contracts", "Dedicated Support", "On-Premise Option"],
+      icon: Building2,
     },
   ];
 
-  const colorStyles: Record<string, { bg: string; text: string; gradient: string }> = {
-    blue: { bg: "bg-blue-500/10", text: "text-blue-500", gradient: "from-blue-500 to-cyan-500" },
-    emerald: { bg: "bg-emerald-500/10", text: "text-emerald-500", gradient: "from-emerald-500 to-green-500" },
-    purple: { bg: "bg-purple-500/10", text: "text-purple-500", gradient: "from-purple-500 to-pink-500" },
-  };
-
   return (
     <section className="py-24 relative overflow-hidden" ref={ref}>
-      {/* Background */}
       <div className="absolute inset-0 -z-10">
         <motion.div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[200px]"
@@ -1282,59 +1527,72 @@ function WhyChooseUsSection() {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
-            Why Choose Us
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
+            <Milestone className="h-4 w-4" />
+            Product Roadmap
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            Built for Modern Event Teams
+            What We&apos;re Building
           </h2>
           <p className="text-lg text-muted-foreground">
-            The platform that grows with your ambitions—from your first event to your thousandth
+            Join us on the journey. Early adopters get to shape the product with their feedback.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {reasons.map((reason, index) => {
-            const styles = colorStyles[reason.color];
-            return (
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-6">
+            {roadmapItems.map((item, index) => (
               <motion.div
-                key={reason.title}
+                key={item.phase}
                 initial={{ opacity: 0, y: 30 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                transition={{ duration: 0.5, delay: 0.15 * index }}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                className="relative group"
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.15 * index }}
               >
-                <div className="h-full rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6 hover:bg-card hover:shadow-xl transition-all text-center">
-                  {/* Icon */}
-                  <motion.div
-                    className={cn("inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-6 bg-gradient-to-br", styles.gradient)}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 400 }}
-                  >
-                    <reason.icon className="h-8 w-8 text-white" />
-                  </motion.div>
+                <GradientBorderCard gradientClassName={
+                  item.status === "live" ? "from-green-500 to-emerald-500" :
+                  item.status === "building" ? "from-blue-500 to-purple-500" :
+                  "from-slate-500 to-slate-400"
+                }>
+                  <div className="p-5">
+                    {/* Status badge */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className={cn(
+                        "px-2 py-1 text-xs font-medium rounded-full",
+                        item.status === "live" && "bg-green-500/20 text-green-500",
+                        item.status === "building" && "bg-blue-500/20 text-blue-500",
+                        item.status === "planned" && "bg-slate-500/20 text-slate-400"
+                      )}>
+                        {item.status === "live" ? "Live" : item.status === "building" ? "In Progress" : "Planned"}
+                      </span>
+                      <item.icon className={cn(
+                        "h-5 w-5",
+                        item.status === "live" && "text-green-500",
+                        item.status === "building" && "text-blue-500",
+                        item.status === "planned" && "text-slate-400"
+                      )} />
+                    </div>
 
-                  {/* Stat */}
-                  <div className="mb-4">
-                    <motion.div
-                      className={cn("text-4xl font-bold", styles.text)}
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                      transition={{ delay: 0.3 + index * 0.1, type: "spring" }}
-                    >
-                      {reason.stat}
-                    </motion.div>
-                    <div className="text-sm text-muted-foreground">{reason.statLabel}</div>
+                    <div className="text-sm text-muted-foreground mb-1">{item.phase}</div>
+                    <h3 className="text-lg font-semibold mb-3">{item.title}</h3>
+
+                    <ul className="space-y-2">
+                      {item.items.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CircleDot className={cn(
+                            "h-3 w-3",
+                            item.status === "live" && "text-green-500",
+                            item.status === "building" && "text-blue-500",
+                            item.status === "planned" && "text-slate-400"
+                          )} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-
-                  {/* Title & Description */}
-                  <h3 className="text-xl font-semibold mb-2">{reason.title}</h3>
-                  <p className="text-sm text-muted-foreground">{reason.description}</p>
-                </div>
+                </GradientBorderCard>
               </motion.div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -1342,11 +1600,70 @@ function WhyChooseUsSection() {
 }
 
 // ============================================================================
-// FINAL CTA SECTION
+// TECHNOLOGY STACK SECTION
 // ============================================================================
-function CTASection() {
+function TechStackSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const techHighlights = [
+    { icon: Server, title: "Enterprise Infrastructure", description: "Built on AWS with auto-scaling" },
+    { icon: Shield, title: "SOC 2 Ready", description: "Security-first architecture" },
+    { icon: Database, title: "99.9% Uptime SLA", description: "Multi-region redundancy" },
+    { icon: Cloud, title: "Global CDN", description: "Fast load times worldwide" },
+  ];
+
+  return (
+    <section className="py-16 bg-slate-950 text-white relative overflow-hidden" ref={ref}>
+      {/* Background pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      <div className="container mx-auto px-4 md:px-6 relative">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          className="text-center mb-10"
+        >
+          <span className="text-sm text-slate-400 uppercase tracking-wider">
+            Enterprise-Grade Infrastructure
+          </span>
+        </motion.div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+          {techHighlights.map((tech, index) => (
+            <motion.div
+              key={tech.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.1 * index }}
+              className="text-center"
+            >
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 mb-3">
+                <tech.icon className="h-6 w-6 text-blue-400" />
+              </div>
+              <h4 className="font-semibold mb-1">{tech.title}</h4>
+              <p className="text-sm text-slate-400">{tech.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// EARLY ACCESS CTA SECTION
+// ============================================================================
+function EarlyAccessSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const benefits = [
+    "Lock in founding member pricing forever",
+    "Direct access to the founding team",
+    "Shape the product roadmap with your feedback",
+    "Priority support and onboarding",
+  ];
 
   return (
     <section className="py-24 relative overflow-hidden" ref={ref}>
@@ -1365,46 +1682,74 @@ function CTASection() {
         />
       </div>
 
+      {/* Floating particles */}
+      <FloatingParticles />
+
       {/* Grid pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto text-center"
-        >
+        <div className="max-w-4xl mx-auto">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={isInView ? { scale: 1 } : { scale: 0 }}
-            transition={{ duration: 0.5, type: "spring" }}
-            className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 mb-8 shadow-lg shadow-blue-500/30"
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            className="text-center mb-12"
           >
-            <Calendar className="h-10 w-10 text-white" />
+            {/* Founding member badge */}
+            <motion.div
+              className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
+              animate={{ boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 0 12px rgba(251, 191, 36, 0.1)", "0 0 0 0 rgba(251, 191, 36, 0)"] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Crown className="h-5 w-5 text-amber-400" />
+              <span className="text-amber-300 font-semibold">Founding Member Offer</span>
+            </motion.div>
+
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
+              Join Our{" "}
+              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                Early Access
+              </span>
+              {" "}Program
+            </h2>
+
+            <p className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
+              Be among the first to experience the future of event planning.
+              Free during beta, with exclusive benefits for founding members.
+            </p>
+
+            {/* Benefits */}
+            <div className="grid sm:grid-cols-2 gap-4 max-w-xl mx-auto mb-10 text-left">
+              {benefits.map((benefit, index) => (
+                <motion.div
+                  key={benefit}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={isInView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                  className="flex items-center gap-3"
+                >
+                  <CheckCircle className="h-5 w-5 text-green-400 shrink-0" />
+                  <span className="text-neutral-300">{benefit}</span>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
 
-          <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-            Ready to Transform Your{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Event Planning
-            </span>
-            ?
-          </h2>
-
-          <p className="text-lg md:text-xl text-neutral-300 mb-10 max-w-2xl mx-auto">
-            Join thousands of event professionals who have streamlined their workflow
-            with our Event Planning Suite. Start your free trial today.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.5 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
             <Button
               size="lg"
-              className="group bg-white text-slate-900 hover:bg-neutral-100 h-14 px-8 text-lg shadow-lg"
+              className="group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white h-14 px-8 text-lg shadow-lg shadow-amber-500/25"
               asChild
             >
               <Link href="/auth/register">
-                Start Free Trial
+                <Rocket className="mr-2 h-5 w-5" />
+                Join Early Access — It&apos;s Free
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
@@ -1415,32 +1760,37 @@ function CTASection() {
               asChild
             >
               <Link href="/contact?demo=event-planning">
-                Schedule Demo
+                <PhoneCall className="mr-2 h-5 w-5" />
+                Book Personal Demo
               </Link>
             </Button>
-          </div>
+          </motion.div>
 
           {/* Trust badges */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-12 flex flex-wrap items-center justify-center gap-6 text-neutral-400 text-sm"
+            animate={isInView ? { opacity: 1 } : {}}
+            transition={{ delay: 0.7 }}
+            className="mt-10 flex flex-wrap items-center justify-center gap-6 text-neutral-400 text-sm"
           >
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              <span>SOC 2 Compliant</span>
+              <span>SOC 2 Ready</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
               <span>No credit card required</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <span>Free for teams up to 5</span>
+              <Gift className="h-5 w-5" />
+              <span>Free during beta</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              <span>GDPR Compliant</span>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -1457,9 +1807,11 @@ export default function EventCreationPage() {
       <SolutionShowcaseSection />
       <FeaturesSection />
       <EventFormatsSection />
-      <IntegrationSection />
-      <WhyChooseUsSection />
-      <CTASection />
+      <IntegrationPartnersSection />
+      <BuiltByExpertsSection />
+      <RoadmapSection />
+      <TechStackSection />
+      <EarlyAccessSection />
     </div>
   );
 }

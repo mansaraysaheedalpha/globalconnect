@@ -163,11 +163,7 @@ export const solutionsMenuData: MenuColumn[] = [
             name: "Live Engagement",
             description: "Real-time chat, Q&A, polls, and emoji reactions",
             href: "/solutions/chat-reactions",
-          },
-          {
-            name: "Gamification",
-            description: "Earn points, unlock achievements, and climb leaderboards",
-            href: "/solutions/gamification",
+            isPopular: true,
           },
         ],
       },
