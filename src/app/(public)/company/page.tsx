@@ -375,12 +375,12 @@ function WhatWeBuildSection() {
         {/* Orbital Visualization Container */}
         <div className="relative w-full max-w-[500px] md:max-w-[600px] lg:max-w-[700px] mx-auto aspect-square">
 
-          {/* Static orbital track ring */}
+          {/* Static orbital track ring - at 42% radius means inset of 8% */}
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={isInView ? { scale: 1, opacity: 1 } : {}}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="absolute inset-[15%] rounded-full border border-white/10"
+            className="absolute inset-[8%] rounded-full border border-white/10"
           />
 
           {/* Second orbital track */}
@@ -388,7 +388,7 @@ function WhatWeBuildSection() {
             initial={{ scale: 0, opacity: 0 }}
             animate={isInView ? { scale: 1, opacity: 1 } : {}}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="absolute inset-[17%] rounded-full border border-dashed border-white/5"
+            className="absolute inset-[10%] rounded-full border border-dashed border-white/5"
           />
 
           {/* Center - Event Dynamics (Fixed, not rotating) */}
@@ -432,23 +432,26 @@ function WhatWeBuildSection() {
               ease: "linear",
             }}
           >
-            {/* Orbiting nodes - each positioned at their angle on the orbit */}
+            {/* Orbiting nodes - positioned using trigonometry */}
             {capabilities.map((cap, index) => {
               const angle = nodeAngles[index];
-              // Radius is roughly 35% of the container (to be at the orbital track)
-              // We need to use a CSS calc for responsive sizing
+              // Convert angle to radians and calculate position
+              // Radius is 42% from center to place nodes at the orbital edge
+              const radian = (angle * Math.PI) / 180;
+              const radius = 42; // percentage from center
+              const x = 50 + radius * Math.cos(radian); // 50% is center
+              const y = 50 + radius * Math.sin(radian);
+
               return (
                 <motion.div
                   key={cap.label}
                   initial={{ scale: 0, opacity: 0 }}
                   animate={isInView ? { scale: 1, opacity: 1 } : {}}
                   transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                  className="absolute"
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
                   style={{
-                    top: "50%",
-                    left: "50%",
-                    // Position on orbit and counter-rotate to keep upright
-                    transform: `rotate(${angle}deg) translateX(calc(35% + 50px)) rotate(-${angle}deg) translate(-50%, -50%)`,
+                    left: `${x}%`,
+                    top: `${y}%`,
                   }}
                 >
                   {/* Counter-rotate the content so it stays upright */}
@@ -501,8 +504,8 @@ function WhatWeBuildSection() {
             {/* Lines from center to each orbital position */}
             {nodeAngles.map((angle, i) => {
               const rad = (angle * Math.PI) / 180;
-              const x2 = 50 + 35 * Math.cos(rad);
-              const y2 = 50 + 35 * Math.sin(rad);
+              const x2 = 50 + 42 * Math.cos(rad);
+              const y2 = 50 + 42 * Math.sin(rad);
               return (
                 <motion.line
                   key={i}
