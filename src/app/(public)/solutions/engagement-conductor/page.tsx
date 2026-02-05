@@ -313,25 +313,35 @@ function ProblemSection() {
 }
 
 // ============================================================================
-// PLATFORM SHOWCASE SECTION - Bento Grid with Multiple Images
+// PLATFORM SHOWCASE SECTION - Immersive 3D-like Design with Animations
 // ============================================================================
 function PlatformShowcaseSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const capabilities = [
-    { icon: Eye, label: "Real-Time Monitoring", color: "text-blue-500" },
-    { icon: Brain, label: "AI-Powered Analysis", color: "text-purple-500" },
-    { icon: Zap, label: "Instant Interventions", color: "text-amber-500" },
-    { icon: RefreshCw, label: "Continuous Learning", color: "text-green-500" },
+  const floatingStats = [
+    { value: "99.9%", label: "Uptime", icon: Activity, color: "from-green-500 to-emerald-500" },
+    { value: "<5s", label: "Detection", icon: Zap, color: "from-amber-500 to-orange-500" },
+    { value: "24/7", label: "Monitoring", icon: Eye, color: "from-blue-500 to-cyan-500" },
+    { value: "AI", label: "Powered", icon: Brain, color: "from-purple-500 to-pink-500" },
   ];
 
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Background effects */}
+      {/* Animated Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px]" />
+        <motion.div
+          className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-purple-500/10 rounded-full blur-[150px]"
+          animate={{ scale: [1, 1.2, 1], x: [0, 50, 0], y: [0, -30, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[150px]"
+          animate={{ scale: [1.2, 1, 1.2], x: [0, -50, 0], y: [0, 30, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--primary-rgb),0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--primary-rgb),0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
@@ -341,183 +351,248 @@ function PlatformShowcaseSection() {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full">
+          <motion.span
+            className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full border border-purple-500/20"
+            animate={{ boxShadow: ["0 0 0 0 rgba(168, 85, 247, 0)", "0 0 0 8px rgba(168, 85, 247, 0.1)", "0 0 0 0 rgba(168, 85, 247, 0)"] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
             The Platform
-          </span>
+          </motion.span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            AI That Watches, Learns, and Acts
+            AI That{" "}
+            <span className="relative">
+              <span className="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 bg-clip-text text-transparent">
+                Watches, Learns, and Acts
+              </span>
+              <motion.span
+                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 rounded-full"
+                initial={{ scaleX: 0 }}
+                animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              />
+            </span>
           </h2>
           <p className="text-lg text-muted-foreground">
             From intelligent monitoring to autonomous intervention—see the complete platform in action
           </p>
         </motion.div>
 
-        {/* Bento Grid Layout */}
-        <div className="max-w-6xl mx-auto">
-          {/* Desktop Bento Grid */}
-          <div className="hidden lg:grid grid-cols-12 grid-rows-6 gap-4 h-[700px]">
-            {/* Main Dashboard - Large Left Panel */}
+        {/* Desktop: Immersive Layered Design */}
+        <div className="hidden lg:block">
+          <div className="relative max-w-6xl mx-auto">
+            {/* Floating Stats - positioned around the main content */}
+            {floatingStats.map((stat, index) => {
+              const positions = [
+                { top: "5%", left: "-5%" },
+                { top: "15%", right: "-5%" },
+                { bottom: "20%", left: "-8%" },
+                { bottom: "10%", right: "-3%" },
+              ];
+              const pos = positions[index];
+
+              return (
+                <motion.div
+                  key={stat.label}
+                  className="absolute z-30"
+                  style={pos as React.CSSProperties}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1, type: "spring" }}
+                >
+                  <motion.div
+                    className="relative"
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 3 + index * 0.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <div className={cn(
+                      "px-4 py-3 rounded-2xl bg-background/80 backdrop-blur-xl border shadow-2xl",
+                      "hover:scale-110 transition-transform cursor-pointer"
+                    )}>
+                      <div className="flex items-center gap-3">
+                        <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center", stat.color)}>
+                          <stat.icon className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold">{stat.value}</div>
+                          <div className="text-xs text-muted-foreground">{stat.label}</div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Glow effect */}
+                    <div className={cn("absolute inset-0 rounded-2xl bg-gradient-to-br opacity-20 blur-xl -z-10", stat.color)} />
+                  </motion.div>
+                </motion.div>
+              );
+            })}
+
+            {/* Main Dashboard - Hero Image with 3D effect */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="col-span-7 row-span-6 relative group"
+              initial={{ opacity: 0, y: 50, rotateX: 10 }}
+              animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 50, rotateX: 10 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative z-10 perspective-1000"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity" />
-              <div className="relative h-full rounded-2xl overflow-hidden border-2 border-border/50 bg-background shadow-2xl">
-                {/* Browser Header */}
-                <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
+              {/* Glow behind */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-cyan-500/30 rounded-3xl blur-2xl opacity-60" />
+
+              <div className="relative rounded-2xl overflow-hidden border-2 border-white/10 bg-background shadow-[0_20px_70px_-15px_rgba(0,0,0,0.3)]">
+                {/* Browser Chrome */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-muted/80 to-muted/50 border-b border-border/50 backdrop-blur-sm">
                   <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                    <motion.div className="w-3 h-3 rounded-full bg-red-500" whileHover={{ scale: 1.2 }} />
+                    <motion.div className="w-3 h-3 rounded-full bg-yellow-500" whileHover={{ scale: 1.2 }} />
+                    <motion.div className="w-3 h-3 rounded-full bg-green-500" whileHover={{ scale: 1.2 }} />
                   </div>
                   <div className="flex-1 flex justify-center">
-                    <div className="px-4 py-1 rounded-md bg-background/50 text-xs text-muted-foreground">
+                    <motion.div
+                      className="px-4 py-1.5 rounded-lg bg-background/50 text-xs text-muted-foreground flex items-center gap-2"
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                       dashboard.eventdynamics.com/conductor
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
-                <div className="relative h-[calc(100%-44px)]">
+
+                {/* Screenshot */}
+                <div className="relative">
                   <Image
                     src="/engagement-dashboard-screenshot.png"
                     alt="AI Engagement Conductor Dashboard"
-                    fill
-                    className="object-cover object-top"
+                    width={1920}
+                    height={1080}
+                    className="w-full h-auto"
                     priority
                   />
-                  {/* Gradient overlay at bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background/90 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      Live Dashboard
-                    </div>
-                  </div>
+
+                  {/* Animated scan line effect */}
+                  <motion.div
+                    className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"
+                    animate={{ top: ["0%", "100%"] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  />
+
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
                 </div>
               </div>
             </motion.div>
 
-            {/* AI Visualization - Top Right */}
+            {/* AI Visualization - Floating card overlapping */}
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="col-span-5 row-span-4 relative group"
+              initial={{ opacity: 0, x: 100, rotate: 5 }}
+              animate={isInView ? { opacity: 1, x: 0, rotate: 3 } : { opacity: 0, x: 100, rotate: 5 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              whileHover={{ rotate: 0, scale: 1.02 }}
+              className="absolute -bottom-8 -right-8 w-[400px] z-20"
             >
-              <div className="h-full rounded-2xl overflow-hidden border border-border/50 bg-card shadow-xl relative">
+              <div className="relative rounded-2xl overflow-hidden border border-purple-500/30 shadow-2xl shadow-purple-500/20">
                 <Image
                   src="/Gemini_Generated_Image_wihwe6wihwe6wihw.png"
-                  alt="AI Learning System Visualization"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt="AI Learning System"
+                  width={800}
+                  height={600}
+                  className="w-full h-auto"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
+                {/* Animated content overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                      <Brain className="h-4 w-4 text-purple-400" />
+                  <motion.div
+                    className="flex items-center gap-3 mb-3"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <motion.div
+                      className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Brain className="h-5 w-5 text-white" />
+                    </motion.div>
+                    <div>
+                      <div className="text-white font-semibold">Thompson Sampling AI</div>
+                      <div className="text-white/60 text-xs">Reinforcement Learning Engine</div>
                     </div>
-                    <span className="text-white font-semibold">Thompson Sampling AI</span>
+                  </motion.div>
+
+                  {/* Animated learning progress */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-white/70">
+                      <span>Model Optimization</span>
+                      <span>Active</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                        animate={{ width: ["30%", "80%", "50%", "90%", "30%"] }}
+                        transition={{ duration: 4, repeat: Infinity }}
+                      />
+                    </div>
                   </div>
-                  <p className="text-white/70 text-sm">
-                    Reinforcement learning that optimizes interventions with each session
-                  </p>
                 </div>
               </div>
-            </motion.div>
-
-            {/* Capabilities Cards - Bottom Right */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="col-span-5 row-span-2 grid grid-cols-2 gap-4"
-            >
-              {capabilities.map((cap, index) => (
-                <motion.div
-                  key={cap.label}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
-                  className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 flex items-center gap-3 hover:border-primary/30 hover:bg-card transition-all"
-                >
-                  <div className={cn("h-10 w-10 rounded-lg bg-muted flex items-center justify-center", cap.color)}>
-                    <cap.icon className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm font-medium">{cap.label}</span>
-                </motion.div>
-              ))}
             </motion.div>
           </div>
+        </div>
 
-          {/* Mobile/Tablet Stacked Layout */}
-          <div className="lg:hidden space-y-6">
-            {/* Dashboard Screenshot */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.6 }}
-              className="relative rounded-2xl overflow-hidden border-2 border-border/50 bg-background shadow-xl"
-            >
-              <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="px-3 py-0.5 rounded-md bg-background/50 text-xs text-muted-foreground">
-                    Live Dashboard
-                  </div>
-                </div>
+        {/* Mobile Layout */}
+        <div className="lg:hidden space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            className="relative rounded-2xl overflow-hidden border-2 border-border/50 shadow-xl"
+          >
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b border-border/50">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                <div className="w-2 h-2 rounded-full bg-green-500" />
               </div>
-              <Image
-                src="/engagement-dashboard-screenshot.png"
-                alt="AI Engagement Conductor Dashboard"
-                width={1920}
-                height={1080}
-                className="w-full h-auto"
-              />
-            </motion.div>
-
-            {/* AI Visualization */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="relative rounded-2xl overflow-hidden border border-border/50 shadow-xl aspect-video"
-            >
-              <Image
-                src="/Gemini_Generated_Image_wihwe6wihwe6wihw.png"
-                alt="AI Learning System"
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-purple-400" />
-                  <span className="text-white font-medium text-sm">Thompson Sampling AI</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Capabilities Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {capabilities.map((cap, index) => (
-                <motion.div
-                  key={cap.label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                  transition={{ duration: 0.4, delay: 0.2 + index * 0.05 }}
-                  className="rounded-xl border bg-card p-3 flex items-center gap-2"
-                >
-                  <cap.icon className={cn("h-5 w-5", cap.color)} />
-                  <span className="text-xs font-medium">{cap.label}</span>
-                </motion.div>
-              ))}
+              <div className="flex-1 text-center text-xs text-muted-foreground">Live Dashboard</div>
             </div>
+            <Image
+              src="/engagement-dashboard-screenshot.png"
+              alt="Dashboard"
+              width={1920}
+              height={1080}
+              className="w-full h-auto"
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ delay: 0.1 }}
+            className="relative rounded-2xl overflow-hidden border border-purple-500/30 shadow-xl aspect-video"
+          >
+            <Image src="/Gemini_Generated_Image_wihwe6wihwe6wihw.png" alt="AI System" fill className="object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+              <Brain className="h-5 w-5 text-purple-400" />
+              <span className="text-white text-sm font-medium">AI Learning Engine</span>
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {floatingStats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                transition={{ delay: 0.2 + index * 0.05 }}
+                className="p-3 rounded-xl border bg-card flex items-center gap-3"
+              >
+                <div className={cn("h-9 w-9 rounded-lg bg-gradient-to-br flex items-center justify-center", stat.color)}>
+                  <stat.icon className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </div>
@@ -804,32 +879,40 @@ function HowItWorksSection() {
 }
 
 // ============================================================================
-// INTELLIGENCE & IMPACT SECTION - Combined Anomaly Detection + Results
+// INTELLIGENCE & IMPACT SECTION - Dynamic Flow with Animated Connections
 // ============================================================================
 function IntelligenceImpactSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   const anomalies = [
-    { icon: AlertTriangle, title: "Sudden Drop", severity: "Critical", color: "text-red-500", bg: "bg-red-500/10" },
-    { icon: TrendingUp, title: "Gradual Decline", severity: "Warning", color: "text-orange-500", bg: "bg-orange-500/10" },
-    { icon: Activity, title: "Low Engagement", severity: "Warning", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-    { icon: Users, title: "Mass Exit", severity: "Critical", color: "text-red-600", bg: "bg-red-500/10" },
+    { icon: AlertTriangle, title: "Sudden Drop", severity: "Critical", color: "text-red-500", gradientColor: "from-red-500 to-red-600" },
+    { icon: TrendingUp, title: "Gradual Decline", severity: "Warning", color: "text-orange-500", gradientColor: "from-orange-500 to-orange-600" },
+    { icon: Activity, title: "Low Engagement", severity: "Warning", color: "text-yellow-500", gradientColor: "from-yellow-500 to-yellow-600" },
+    { icon: Users, title: "Mass Exit", severity: "Critical", color: "text-red-600", gradientColor: "from-red-600 to-red-700" },
   ];
 
   const metrics = [
-    { label: "Engagement Increase", value: "+47%", color: "text-green-500" },
-    { label: "Drop-off Reduction", value: "-62%", color: "text-green-500" },
-    { label: "Session Duration", value: "+35%", color: "text-green-500" },
-    { label: "Success Rate", value: "89%", color: "text-purple-500" },
+    { label: "Engagement", value: 47, suffix: "%", prefix: "+", color: "text-green-500" },
+    { label: "Drop-off", value: 62, suffix: "%", prefix: "-", color: "text-green-500" },
+    { label: "Duration", value: 35, suffix: "%", prefix: "+", color: "text-green-500" },
+    { label: "Success", value: 89, suffix: "%", prefix: "", color: "text-purple-500" },
   ];
 
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Background */}
+      {/* Animated Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-green-500/5 rounded-full blur-[150px]" />
+        <motion.div
+          className="absolute top-1/4 left-0 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-[150px]"
+          animate={{ x: [0, 100, 0], scale: [1, 1.2, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-0 w-[600px] h-[600px] bg-green-500/10 rounded-full blur-[150px]"
+          animate={{ x: [0, -100, 0], scale: [1.2, 1, 1.2] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
@@ -839,127 +922,275 @@ function IntelligenceImpactSection() {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-gradient-to-r from-orange-500/10 to-green-500/10 text-orange-600 dark:text-orange-400 rounded-full border border-orange-500/20">
+          <motion.span
+            className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium rounded-full border"
+            style={{ background: "linear-gradient(90deg, rgba(249,115,22,0.1) 0%, rgba(34,197,94,0.1) 100%)" }}
+            animate={{ boxShadow: ["0 0 0 0 rgba(249,115,22,0)", "0 0 0 8px rgba(249,115,22,0.1)", "0 0 0 0 rgba(34,197,94,0)"] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
             Intelligence & Impact
-          </span>
+            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          </motion.span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            Detect Problems. Deliver Results.
+            <span className="text-orange-500">Detect</span> Problems.{" "}
+            <span className="text-green-500">Deliver</span> Results.
           </h2>
           <p className="text-lg text-muted-foreground">
-            Real-time anomaly detection powers immediate intervention—see the transformation in engagement
+            Real-time anomaly detection powers immediate intervention—watch the transformation unfold
           </p>
         </motion.div>
 
-        {/* Split Visual: Detection → Results */}
-        <div className="max-w-6xl mx-auto">
-          {/* Desktop: Side by Side with Arrow Flow */}
-          <div className="hidden lg:block">
-            <div className="grid grid-cols-2 gap-8 items-stretch">
+        {/* Desktop: Immersive Flow Design */}
+        <div className="hidden lg:block">
+          <div className="relative max-w-6xl mx-auto">
+            {/* Animated Connection Line */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ minHeight: "500px" }}>
+              <defs>
+                <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f97316" />
+                  <stop offset="50%" stopColor="#eab308" />
+                  <stop offset="100%" stopColor="#22c55e" />
+                </linearGradient>
+              </defs>
+              <motion.path
+                d="M 250 250 Q 500 150 750 250"
+                stroke="url(#flowGradient)"
+                strokeWidth="3"
+                fill="none"
+                strokeLinecap="round"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={isInView ? { pathLength: 1, opacity: 0.5 } : { pathLength: 0, opacity: 0 }}
+                transition={{ duration: 1.5, delay: 0.5 }}
+              />
+              {/* Animated particles along path */}
+              {[0, 1, 2].map((i) => (
+                <motion.circle
+                  key={i}
+                  r="6"
+                  fill="url(#flowGradient)"
+                  initial={{ opacity: 0 }}
+                  animate={isInView ? {
+                    opacity: [0, 1, 1, 0],
+                    offsetDistance: ["0%", "100%"],
+                  } : { opacity: 0 }}
+                  transition={{
+                    duration: 2,
+                    delay: 1 + i * 0.7,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  style={{ offsetPath: "path('M 250 250 Q 500 150 750 250')" }}
+                />
+              ))}
+            </svg>
+
+            <div className="grid grid-cols-2 gap-16 items-center relative">
               {/* Left: Detection Panel */}
               <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
+                initial={{ opacity: 0, x: -50, rotateY: -10 }}
+                animate={isInView ? { opacity: 1, x: 0, rotateY: 0 } : { opacity: 0, x: -50, rotateY: -10 }}
+                transition={{ duration: 0.8, delay: 0.1 }}
                 className="relative"
               >
-                <div className="absolute -top-3 left-6 z-10 px-4 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full">
-                  Detect
-                </div>
-                <div className="h-full rounded-2xl border-2 border-orange-500/30 bg-card overflow-hidden shadow-xl">
-                  {/* Anomaly Image */}
-                  <div className="relative h-56">
+                {/* Glow effect */}
+                <div className="absolute -inset-4 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-3xl blur-2xl" />
+
+                <div className="relative rounded-2xl border-2 border-orange-500/30 bg-card overflow-hidden shadow-2xl">
+                  {/* Header with pulsing indicator */}
+                  <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-orange-500/10 to-transparent border-b border-orange-500/20">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <AlertTriangle className="h-5 w-5 text-white" />
+                      </motion.div>
+                      <div>
+                        <div className="font-semibold">Anomaly Detection</div>
+                        <div className="text-xs text-muted-foreground">Real-time monitoring active</div>
+                      </div>
+                    </div>
+                    <motion.div
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30"
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <span className="h-2 w-2 rounded-full bg-orange-500" />
+                      <span className="text-xs font-medium text-orange-500">SCANNING</span>
+                    </motion.div>
+                  </div>
+
+                  {/* Anomaly Image with scan effect */}
+                  <div className="relative h-48 overflow-hidden">
                     <Image
                       src="/Gemini_Generated_Image_wod3nrwod3nrwod3.png"
-                      alt="Anomaly Detection Visualization"
+                      alt="Anomaly Detection"
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+                    {/* Scan line */}
+                    <motion.div
+                      className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent"
+                      animate={{ top: ["0%", "100%", "0%"] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
                   </div>
 
-                  {/* Anomaly Types */}
-                  <div className="p-6 -mt-8 relative z-10">
-                    <h3 className="text-lg font-semibold mb-4">4 Anomaly Types Detected</h3>
+                  {/* Anomaly Cards with stagger animation */}
+                  <div className="p-5">
                     <div className="grid grid-cols-2 gap-3">
                       {anomalies.map((anomaly, index) => (
                         <motion.div
                           key={anomaly.title}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                          transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
-                          className="flex items-center gap-2 p-3 rounded-lg border bg-background"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                          transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          className="relative p-3 rounded-xl border bg-background/50 backdrop-blur-sm cursor-pointer overflow-hidden group"
                         >
-                          <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", anomaly.bg)}>
-                            <anomaly.icon className={cn("h-4 w-4", anomaly.color)} />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium">{anomaly.title}</div>
-                            <div className={cn("text-xs", anomaly.color)}>{anomaly.severity}</div>
+                          {/* Animated border glow on hover */}
+                          <motion.div
+                            className={cn("absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-20 transition-opacity rounded-xl", anomaly.gradientColor)}
+                          />
+                          <div className="relative flex items-center gap-3">
+                            <div className={cn("h-9 w-9 rounded-lg bg-gradient-to-br flex items-center justify-center", anomaly.gradientColor)}>
+                              <anomaly.icon className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium">{anomaly.title}</div>
+                              <motion.div
+                                className={cn("text-xs font-semibold", anomaly.color)}
+                                animate={{ opacity: [1, 0.5, 1] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                              >
+                                {anomaly.severity}
+                              </motion.div>
+                            </div>
                           </div>
                         </motion.div>
                       ))}
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4 text-green-500" />
-                      <span>Detection in <span className="font-bold text-green-500">5 seconds</span></span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
 
-              {/* Center: Arrow Connection */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden lg:flex"
-              >
-                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-orange-500 to-green-500 shadow-xl">
-                  <ArrowRight className="h-8 w-8 text-white" />
+                    {/* Detection speed indicator */}
+                    <motion.div
+                      className="mt-4 flex items-center justify-center gap-2 py-2 rounded-lg bg-green-500/10 border border-green-500/20"
+                      initial={{ opacity: 0 }}
+                      animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+                      transition={{ delay: 0.8 }}
+                    >
+                      <Zap className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">Detection in</span>
+                      <motion.span
+                        className="text-lg font-bold text-green-500"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      >
+                        5s
+                      </motion.span>
+                    </motion.div>
+                  </div>
                 </div>
               </motion.div>
 
               {/* Right: Results Panel */}
               <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                initial={{ opacity: 0, x: 50, rotateY: 10 }}
+                animate={isInView ? { opacity: 1, x: 0, rotateY: 0 } : { opacity: 0, x: 50, rotateY: 10 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
                 className="relative"
               >
-                <div className="absolute -top-3 left-6 z-10 px-4 py-1.5 bg-green-500 text-white text-sm font-semibold rounded-full">
-                  Transform
-                </div>
-                <div className="h-full rounded-2xl border-2 border-green-500/30 bg-card overflow-hidden shadow-xl">
-                  {/* Before/After Chart */}
-                  <div className="relative h-56">
-                    <Image
-                      src="/before_after.png"
-                      alt="Before and After Engagement Comparison"
-                      fill
-                      className="object-cover object-center"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-                    {/* Legend overlay */}
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <span className="px-2 py-1 rounded-full bg-red-500/20 text-red-500 text-xs font-medium">Without AI</span>
-                      <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-500 text-xs font-medium">With AI</span>
+                {/* Glow effect */}
+                <div className="absolute -inset-4 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-3xl blur-2xl" />
+
+                <div className="relative rounded-2xl border-2 border-green-500/30 bg-card overflow-hidden shadow-2xl">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-green-500/10 to-transparent border-b border-green-500/20">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center"
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                      >
+                        <TrendingUp className="h-5 w-5 text-white" />
+                      </motion.div>
+                      <div>
+                        <div className="font-semibold">Engagement Transformed</div>
+                        <div className="text-xs text-muted-foreground">AI interventions active</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-xs font-medium text-green-500">OPTIMIZED</span>
                     </div>
                   </div>
 
-                  {/* Metrics */}
-                  <div className="p-6 -mt-8 relative z-10">
-                    <h3 className="text-lg font-semibold mb-4">Proven Impact</h3>
+                  {/* Before/After with overlay labels */}
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src="/before_after.png"
+                      alt="Before After"
+                      fill
+                      className="object-cover object-center"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
+
+                    {/* Animated comparison labels */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between">
+                      <motion.span
+                        className="px-3 py-1.5 rounded-full bg-red-500/90 text-white text-xs font-medium backdrop-blur-sm"
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={isInView ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        Without AI
+                      </motion.span>
+                      <motion.span
+                        className="px-3 py-1.5 rounded-full bg-green-500/90 text-white text-xs font-medium backdrop-blur-sm"
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={isInView ? { x: 0, opacity: 1 } : { x: 20, opacity: 0 }}
+                        transition={{ delay: 0.7 }}
+                      >
+                        With AI Conductor
+                      </motion.span>
+                    </div>
+                  </div>
+
+                  {/* Animated Metrics */}
+                  <div className="p-5">
                     <div className="grid grid-cols-2 gap-3">
                       {metrics.map((metric, index) => (
                         <motion.div
                           key={metric.label}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                          transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
-                          className="text-center p-3 rounded-lg border bg-background"
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+                          transition={{ duration: 0.5, delay: 0.8 + index * 0.1, type: "spring" }}
+                          whileHover={{ scale: 1.05 }}
+                          className="relative p-4 rounded-xl border bg-background/50 backdrop-blur-sm text-center overflow-hidden group"
                         >
-                          <div className={cn("text-2xl font-bold", metric.color)}>{metric.value}</div>
-                          <div className="text-xs text-muted-foreground">{metric.label}</div>
+                          {/* Background pulse on hover */}
+                          <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <motion.div
+                            className={cn("text-3xl font-bold", metric.color)}
+                            initial={{ opacity: 0 }}
+                            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+                            transition={{ delay: 1 + index * 0.1 }}
+                          >
+                            {metric.prefix}{metric.value}{metric.suffix}
+                          </motion.div>
+                          <div className="text-xs text-muted-foreground mt-1">{metric.label}</div>
+
+                          {/* Animated bar */}
+                          <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+                              initial={{ width: 0 }}
+                              animate={isInView ? { width: `${metric.value}%` } : { width: 0 }}
+                              transition={{ duration: 1, delay: 1.2 + index * 0.1 }}
+                            />
+                          </div>
                         </motion.div>
                       ))}
                     </div>
@@ -967,101 +1198,123 @@ function IntelligenceImpactSection() {
                 </div>
               </motion.div>
             </div>
-          </div>
 
-          {/* Mobile: Stacked with Visual Flow */}
-          <div className="lg:hidden space-y-6">
-            {/* Detection Panel */}
+            {/* Center floating action */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.5 }}
-              className="relative rounded-2xl border-2 border-orange-500/30 bg-card overflow-hidden"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+              transition={{ duration: 0.5, delay: 0.6, type: "spring" }}
             >
-              <div className="absolute top-3 left-3 z-10 px-3 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full">
-                Detect
-              </div>
-              <div className="relative h-40">
-                <Image
-                  src="/Gemini_Generated_Image_wod3nrwod3nrwod3.png"
-                  alt="Anomaly Detection"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-              </div>
-              <div className="p-4 -mt-4 relative z-10">
-                <div className="grid grid-cols-2 gap-2">
-                  {anomalies.map((anomaly) => (
-                    <div key={anomaly.title} className="flex items-center gap-2 p-2 rounded-lg border bg-background">
-                      <anomaly.icon className={cn("h-4 w-4", anomaly.color)} />
-                      <span className="text-xs font-medium">{anomaly.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Arrow */}
-            <div className="flex justify-center">
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-                className="w-10 h-10 rounded-full bg-gradient-to-b from-orange-500 to-green-500 flex items-center justify-center shadow-lg"
+                className="relative"
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
               >
-                <ChevronRight className="h-5 w-5 text-white rotate-90" />
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-green-500 rounded-full blur-xl opacity-50" />
               </motion.div>
-            </div>
-
-            {/* Results Panel */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="relative rounded-2xl border-2 border-green-500/30 bg-card overflow-hidden"
-            >
-              <div className="absolute top-3 left-3 z-10 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
-                Transform
-              </div>
-              <div className="relative h-40">
-                <Image
-                  src="/before_after.png"
-                  alt="Before After Comparison"
-                  fill
-                  className="object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-              </div>
-              <div className="p-4 -mt-4 relative z-10">
-                <div className="grid grid-cols-4 gap-2">
-                  {metrics.map((metric) => (
-                    <div key={metric.label} className="text-center">
-                      <div className={cn("text-lg font-bold", metric.color)}>{metric.value}</div>
-                      <div className="text-[10px] text-muted-foreground leading-tight">{metric.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <motion.div
+                className="relative w-20 h-20 rounded-full bg-gradient-to-r from-orange-500 via-yellow-500 to-green-500 flex items-center justify-center shadow-2xl"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <ArrowRight className="h-10 w-10 text-white" />
+              </motion.div>
             </motion.div>
           </div>
+        </div>
 
-          {/* Key Insight */}
+        {/* Mobile Layout */}
+        <div className="lg:hidden space-y-4">
+          {/* Detection Panel */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-12 text-center"
+            className="rounded-2xl border-2 border-orange-500/30 bg-card overflow-hidden"
           >
-            <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-500/5 via-background to-green-500/5 border">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              <p className="text-sm md:text-base">
-                <span className="font-semibold">Engagement dips detected and corrected within seconds</span>
-                <span className="text-muted-foreground"> — before attendees even think about leaving</span>
-              </p>
+            <div className="px-4 py-3 bg-gradient-to-r from-orange-500/10 to-transparent border-b border-orange-500/20 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              <span className="font-semibold">Detect</span>
+            </div>
+            <div className="relative h-32">
+              <Image src="/Gemini_Generated_Image_wod3nrwod3nrwod3.png" alt="Detection" fill className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+            </div>
+            <div className="p-3 grid grid-cols-2 gap-2">
+              {anomalies.map((a) => (
+                <div key={a.title} className="flex items-center gap-2 p-2 rounded-lg border bg-background/50">
+                  <a.icon className={cn("h-4 w-4", a.color)} />
+                  <span className="text-xs font-medium">{a.title}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Arrow */}
+          <motion.div
+            className="flex justify-center py-2"
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <motion.div
+              className="w-12 h-12 rounded-full bg-gradient-to-b from-orange-500 to-green-500 flex items-center justify-center shadow-xl"
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              <ChevronRight className="h-6 w-6 text-white rotate-90" />
+            </motion.div>
+          </motion.div>
+
+          {/* Results Panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-2xl border-2 border-green-500/30 bg-card overflow-hidden"
+          >
+            <div className="px-4 py-3 bg-gradient-to-r from-green-500/10 to-transparent border-b border-green-500/20 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              <span className="font-semibold">Transform</span>
+            </div>
+            <div className="relative h-32">
+              <Image src="/before_after.png" alt="Results" fill className="object-cover object-center" />
+              <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+            </div>
+            <div className="p-3 grid grid-cols-4 gap-2">
+              {metrics.map((m) => (
+                <div key={m.label} className="text-center">
+                  <div className={cn("text-lg font-bold", m.color)}>{m.prefix}{m.value}{m.suffix}</div>
+                  <div className="text-[9px] text-muted-foreground">{m.label}</div>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>
+
+        {/* Key Insight */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 1.2 }}
+          className="mt-12 text-center"
+        >
+          <motion.div
+            className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-500/5 via-yellow-500/5 to-green-500/5 border backdrop-blur-sm"
+            whileHover={{ scale: 1.02 }}
+          >
+            <motion.div
+              animate={{ rotate: [0, 15, -15, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Sparkles className="h-6 w-6 text-amber-500" />
+            </motion.div>
+            <p className="text-sm md:text-base">
+              <span className="font-semibold">Engagement dips detected and corrected in seconds</span>
+              <span className="text-muted-foreground"> — before attendees leave</span>
+            </p>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
