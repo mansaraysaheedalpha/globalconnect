@@ -1,42 +1,35 @@
 // src/app/(public)/solutions/event-creation/page.tsx
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  Play,
   Calendar,
   Clock,
   Users,
-  Zap,
   Sparkles,
   CheckCircle,
   Layout,
   Copy,
   Globe,
   Palette,
-  FileText,
   Eye,
   Layers,
   Settings,
   CalendarDays,
   Mic2,
   Ticket,
-  BarChart3,
   Building2,
   Video,
   MapPin,
   Monitor,
   Shield,
-  TrendingUp,
   RefreshCw,
-  ArrowUpRight,
-  Grip,
-  Plus,
+  PlusCircle,
   GripVertical,
   Timer,
   AlertCircle,
@@ -45,7 +38,6 @@ import {
   Redo2,
   LayoutGrid,
   List,
-  Star,
   Rocket,
   Gift,
   Lock,
@@ -53,14 +45,10 @@ import {
   Cloud,
   Database,
   Award,
-  Target,
   Milestone,
   CircleDot,
   CheckCircle2,
-  ArrowDown,
   PhoneCall,
-  Mail,
-  MessageSquare,
   Crown,
   Heart,
 } from "lucide-react";
@@ -210,8 +198,6 @@ function GradientBorderCard({
 function LiveBuilderDemo() {
   const [activeItem, setActiveItem] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
-  const [history, setHistory] = useState<number[][]>([[1, 2, 3, 4]]);
-  const [historyIndex, setHistoryIndex] = useState(0);
   const [items, setItems] = useState([
     { id: 1, type: "keynote", title: "Opening Keynote", time: "9:00 AM", duration: "45 min", speaker: "Dr. Sarah Chen", track: "Main Stage" },
     { id: 2, type: "break", title: "Networking Break", time: "9:45 AM", duration: "15 min", speaker: null, track: "All" },
@@ -296,23 +282,23 @@ function LiveBuilderDemo() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10"
-              disabled={historyIndex === 0}
+              className="h-7 w-7 p-0 text-white/30"
+              disabled
             >
               <Undo2 className="h-3.5 w-3.5" />
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10"
-              disabled={historyIndex === history.length - 1}
+              className="h-7 w-7 p-0 text-white/30"
+              disabled
             >
               <Redo2 className="h-3.5 w-3.5" />
             </Button>
           </div>
           <div className="h-4 w-px bg-white/20" />
           <Button size="sm" variant="ghost" className="h-7 text-xs text-white/70 hover:text-white hover:bg-white/10">
-            <Plus className="h-3 w-3 mr-1" />
+            <PlusCircle className="h-3 w-3 mr-1" />
             Add
           </Button>
           <Button size="sm" variant="ghost" className="h-7 text-xs text-white/70 hover:text-white hover:bg-white/10">
@@ -624,9 +610,9 @@ function HeroSection() {
               className="mt-12 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0"
             >
               {[
-                { value: 75, suffix: "%", label: "Time Saved" },
-                { value: 50, suffix: "+", label: "Templates" },
-                { value: 50000, suffix: "", label: "Max Attendees", prefix: "" },
+                { value: 12, suffix: "+", label: "Tab Features" },
+                { value: 100, suffix: "%", label: "Free in Beta" },
+                { value: 10000, suffix: "+", label: "Attendees Supported", prefix: "" },
               ].map((stat, index) => (
                 <motion.div
                   key={stat.label}
@@ -871,10 +857,10 @@ function SolutionShowcaseSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   const features = [
-    { value: "Drag & Drop", label: "Visual Builder", icon: Grip, color: "from-blue-500 to-cyan-500" },
-    { value: "50+", label: "Templates", icon: Layers, color: "from-purple-500 to-pink-500" },
-    { value: "Real-time", label: "Collaboration", icon: Users, color: "from-green-500 to-emerald-500" },
-    { value: "Smart", label: "Scheduling", icon: Calendar, color: "from-amber-500 to-orange-500" },
+    { value: "Visual", label: "Event Builder", icon: Layout, color: "from-blue-500 to-cyan-500" },
+    { value: "Reusable", label: "Blueprints", icon: Layers, color: "from-purple-500 to-pink-500" },
+    { value: "Live", label: "Dashboard", icon: Eye, color: "from-green-500 to-emerald-500" },
+    { value: "Session", label: "Management", icon: Calendar, color: "from-amber-500 to-orange-500" },
   ];
 
   return (
@@ -953,81 +939,116 @@ function SolutionShowcaseSection() {
                     whileHover={{ scale: 1.05 }}
                   >
                     <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    app.eventdynamics.com/events/create
+                    eventdynamics.io/dashboard/events
                   </motion.div>
                 </div>
               </div>
 
-              {/* Dashboard UI Mockup */}
+              {/* Dashboard UI Mockup - Reflects actual platform */}
               <div className="relative aspect-[16/9] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
-                <div className="absolute inset-0 p-6 flex gap-4">
-                  {/* Sidebar */}
-                  <div className="w-64 shrink-0 bg-slate-800/50 rounded-xl p-4 space-y-3">
-                    <div className="h-8 w-3/4 bg-slate-700/50 rounded animate-pulse" />
-                    <div className="space-y-2">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <motion.div
-                          key={i}
-                          className={cn("h-10 rounded-lg flex items-center px-3 gap-2", i === 1 ? "bg-blue-500/20 border border-blue-500/30" : "bg-slate-700/30")}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={isInView ? { opacity: 1, x: 0 } : {}}
-                          transition={{ delay: 0.3 + i * 0.1 }}
-                        >
-                          <div className="h-4 w-4 rounded bg-slate-600/50" />
-                          <div className="h-3 flex-1 bg-slate-600/50 rounded" />
-                        </motion.div>
-                      ))}
+                <div className="absolute inset-0 p-4 flex flex-col gap-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={isInView ? { opacity: 1 } : {}}
+                        className="text-white font-semibold text-lg"
+                      >
+                        Tech Summit 2026
+                      </motion.div>
+                      <span className="px-2 py-0.5 text-[10px] bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
+                        LIVE
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-8 px-3 bg-blue-500/80 rounded-md text-white text-xs flex items-center gap-1">
+                        <PlusCircle className="h-3 w-3" />
+                        Add Session
+                      </div>
                     </div>
                   </div>
 
-                  {/* Main content */}
-                  <div className="flex-1 bg-slate-800/30 rounded-xl p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="h-8 w-48 bg-slate-700/50 rounded" />
-                      <div className="flex gap-2">
-                        <motion.div
-                          className="h-9 w-24 bg-blue-500/30 rounded-lg"
-                          whileHover={{ scale: 1.05 }}
-                        />
-                        <div className="h-9 w-24 bg-slate-700/50 rounded-lg" />
-                      </div>
-                    </div>
+                  {/* Tabs - Real tabs from platform */}
+                  <div className="flex gap-1 overflow-x-auto pb-1">
+                    {["Live", "Agenda", "Attendees", "Tickets", "Sponsors"].map((tab, i) => (
+                      <motion.div
+                        key={tab}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ delay: 0.2 + i * 0.05 }}
+                        className={cn(
+                          "px-3 py-1.5 text-xs rounded-md whitespace-nowrap",
+                          i === 0 ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
+                        )}
+                      >
+                        {tab}
+                      </motion.div>
+                    ))}
+                  </div>
 
-                    {/* Timeline mockup */}
-                    <div className="flex-1 grid grid-cols-4 gap-4 mt-6">
-                      {["Track A", "Track B", "Track C", "Networking"].map((track, i) => (
-                        <div key={track} className="space-y-3">
-                          <div className="h-6 bg-slate-700/50 rounded text-xs text-slate-400 flex items-center justify-center">{track}</div>
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                            transition={{ delay: 0.5 + i * 0.1 }}
-                            whileHover={{ scale: 1.02 }}
-                            className={cn(
-                              "rounded-lg p-3 space-y-2 cursor-pointer transition-all",
-                              i === 0 ? "bg-purple-500/20 border border-purple-500/30 h-32 hover:border-purple-500/50" :
-                              i === 1 ? "bg-blue-500/20 border border-blue-500/30 h-24 hover:border-blue-500/50" :
-                              i === 2 ? "bg-green-500/20 border border-green-500/30 h-28 hover:border-green-500/50" :
-                              "bg-amber-500/20 border border-amber-500/30 h-20 hover:border-amber-500/50"
-                            )}
-                          >
-                            <div className="h-3 w-3/4 bg-white/20 rounded" />
-                            <div className="h-2 w-1/2 bg-white/10 rounded" />
-                          </motion.div>
-                          {i !== 3 && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                              transition={{ delay: 0.7 + i * 0.1 }}
-                              className="bg-slate-700/30 rounded-lg p-3 h-16 space-y-2"
-                            >
-                              <div className="h-2 w-2/3 bg-white/10 rounded" />
-                              <div className="h-2 w-1/3 bg-white/10 rounded" />
-                            </motion.div>
-                          )}
-                        </div>
+                  {/* Main Content Grid */}
+                  <div className="flex-1 grid grid-cols-3 gap-4">
+                    {/* Left: Sessions List */}
+                    <div className="col-span-2 space-y-3">
+                      <div className="text-xs text-slate-400 mb-2">Sessions</div>
+                      {[
+                        { title: "Opening Keynote", time: "9:00 AM", status: "live", speaker: "Dr. Sarah Chen" },
+                        { title: "Workshop: API Design", time: "10:30 AM", status: "upcoming", speaker: "Mike Johnson" },
+                        { title: "Panel: Future of AI", time: "2:00 PM", status: "upcoming", speaker: "Multiple" },
+                      ].map((session, i) => (
+                        <motion.div
+                          key={session.title}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={isInView ? { opacity: 1, x: 0 } : {}}
+                          transition={{ delay: 0.4 + i * 0.1 }}
+                          className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600/50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-white text-sm font-medium">{session.title}</div>
+                              <div className="text-slate-400 text-xs mt-0.5">{session.time} • {session.speaker}</div>
+                            </div>
+                            <span className={cn(
+                              "px-2 py-0.5 text-[10px] rounded-full",
+                              session.status === "live"
+                                ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                : "bg-slate-700/50 text-slate-400"
+                            )}>
+                              {session.status === "live" ? "LIVE" : "Upcoming"}
+                            </span>
+                          </div>
+                        </motion.div>
                       ))}
                     </div>
+
+                    {/* Right: Event Details Sidebar */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={isInView ? { opacity: 1, x: 0 } : {}}
+                      transition={{ delay: 0.5 }}
+                      className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/30"
+                    >
+                      <div className="text-xs text-slate-400 mb-3">Event Details</div>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-xs">
+                          <CalendarDays className="h-3.5 w-3.5 text-blue-400" />
+                          <span className="text-slate-300">Mar 15-17, 2026</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Users className="h-3.5 w-3.5 text-purple-400" />
+                          <span className="text-slate-300">1,247 Attendees</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Mic2 className="h-3.5 w-3.5 text-amber-400" />
+                          <span className="text-slate-300">24 Sessions</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Ticket className="h-3.5 w-3.5 text-green-400" />
+                          <span className="text-slate-300">$45,890 Revenue</span>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
 
@@ -1039,7 +1060,7 @@ function SolutionShowcaseSection() {
                 />
 
                 {/* Bottom gradient */}
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
               </div>
             </div>
           </motion.div>
@@ -1094,42 +1115,42 @@ function FeaturesSection() {
       title: "Visual Event Builder",
       description: "Design your event agenda with an intuitive visual interface. No technical skills required.",
       color: "blue",
-      items: ["Multi-track scheduling", "Conflict detection", "Time zone support"],
+      items: ["Session management", "Speaker assignments", "Schedule overview"],
     },
     {
       icon: Copy,
-      title: "Smart Templates",
-      description: "Start from 50+ professionally designed templates or save your own as reusable blueprints.",
+      title: "Event Blueprints",
+      description: "Save successful events as reusable blueprints. Launch new events faster by building on what worked.",
       color: "purple",
-      items: ["Conference templates", "Workshop formats", "Webinar layouts"],
+      items: ["Save as blueprint", "Reuse configurations", "Quick event launch"],
     },
     {
       icon: Globe,
-      title: "Multi-Language Pages",
-      description: "Create event pages in multiple languages to reach your global audience effectively.",
+      title: "Real-Time Translation",
+      description: "Break language barriers with built-in translation support for chat and content.",
       color: "emerald",
-      items: ["Auto-translation", "RTL support", "Regional formatting"],
+      items: ["Chat translation", "Multi-language support", "Global accessibility"],
     },
     {
       icon: Palette,
-      title: "Custom Branding",
-      description: "Match your brand perfectly with custom colors, logos, fonts, and complete white-label options.",
+      title: "Event Customization",
+      description: "Customize your event pages with your branding, colors, and event details.",
       color: "pink",
-      items: ["Brand kit upload", "Custom domains", "Theme editor"],
+      items: ["Custom event pages", "Logo upload", "Brand colors"],
     },
     {
-      icon: FileText,
-      title: "Clone & Duplicate",
-      description: "Instantly duplicate past events as starting points. Never rebuild from scratch again.",
+      icon: Ticket,
+      title: "Ticketing & Registration",
+      description: "Manage ticket types, pricing tiers, and attendee registration all in one place.",
       color: "amber",
-      items: ["Full event cloning", "Selective copying", "Version history"],
+      items: ["Multiple ticket types", "Promo codes", "Attendee management"],
     },
     {
       icon: Eye,
-      title: "Draft & Preview",
-      description: "Work on drafts without affecting live events. Preview exactly how attendees will see it.",
+      title: "Live Event Dashboard",
+      description: "Monitor your event in real-time with live attendee counts, session status, and engagement metrics.",
       color: "cyan",
-      items: ["Safe draft mode", "Live preview", "Mobile preview"],
+      items: ["Live monitoring", "Real-time stats", "Session controls"],
     },
   ];
 
@@ -1361,15 +1382,15 @@ function IntegrationPartnersSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const integrations = [
+  const liveIntegrations = [
+    { name: "Stripe", category: "Payments", live: true },
+  ];
+
+  const comingSoon = [
     { name: "Zoom", category: "Video" },
     { name: "Google Calendar", category: "Calendar" },
     { name: "Slack", category: "Communication" },
-    { name: "Stripe", category: "Payments" },
     { name: "HubSpot", category: "CRM" },
-    { name: "Salesforce", category: "CRM" },
-    { name: "Mailchimp", category: "Email" },
-    { name: "Zapier", category: "Automation" },
   ];
 
   return (
@@ -1381,41 +1402,61 @@ function IntegrationPartnersSection() {
           className="text-center mb-10"
         >
           <span className="text-sm text-muted-foreground uppercase tracking-wider">
-            Integrates with your favorite tools
+            Payments powered by
           </span>
         </motion.div>
 
+        {/* Live Integration - Stripe */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.2 }}
-          className="flex flex-wrap justify-center items-center gap-8 md:gap-12"
+          className="flex justify-center mb-10"
         >
-          {integrations.map((integration, index) => (
+          {liveIntegrations.map((integration) => (
             <motion.div
               key={integration.name}
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.1 * index }}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.05 }}
               className="flex flex-col items-center gap-2 group cursor-pointer"
             >
-              <div className="h-12 w-12 rounded-xl bg-background border border-border/50 flex items-center justify-center text-muted-foreground group-hover:border-primary/50 group-hover:text-primary transition-all shadow-sm">
-                <span className="text-lg font-bold">{integration.name[0]}</span>
+              <div className="h-16 w-16 rounded-xl bg-background border-2 border-green-500/50 flex items-center justify-center text-green-500 shadow-lg shadow-green-500/10">
+                <span className="text-2xl font-bold">S</span>
               </div>
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{integration.name}</span>
+              <span className="text-sm font-medium">{integration.name}</span>
+              <span className="text-xs text-green-500 flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" /> Live
+              </span>
             </motion.div>
           ))}
         </motion.div>
 
-        <motion.p
+        {/* Coming Soon */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.5 }}
-          className="text-center text-sm text-muted-foreground mt-8"
+          transition={{ delay: 0.4 }}
+          className="text-center"
         >
-          + 50 more integrations coming soon
-        </motion.p>
+          <p className="text-sm text-muted-foreground mb-4">Coming soon</p>
+          <div className="flex flex-wrap justify-center items-center gap-6">
+            {comingSoon.map((integration, index) => (
+              <motion.div
+                key={integration.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.5 + 0.1 * index }}
+                className="flex flex-col items-center gap-2 opacity-50"
+              >
+                <div className="h-10 w-10 rounded-lg bg-muted border border-border/50 flex items-center justify-center text-muted-foreground">
+                  <span className="text-sm font-bold">{integration.name[0]}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{integration.name}</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );
