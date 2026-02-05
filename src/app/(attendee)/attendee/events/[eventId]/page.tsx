@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
 import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/registrations.graphql";
@@ -895,8 +895,19 @@ const SessionCard = ({
 
 export default function AttendeeEventPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const eventId = params.eventId as string;
   const { user } = useAuthStore();
+
+  // Deep link parameters for auto-join
+  const targetSessionId = searchParams.get('session');
+  const autoJoin = searchParams.get('autoJoin') === 'true';
+  const joinSource = searchParams.get('source');
+
+  // State for auto-join virtual session
+  const [autoJoinSession, setAutoJoinSession] = React.useState<Session | null>(null);
+  const [showAutoJoinSession, setShowAutoJoinSession] = React.useState(false);
+  const [hasProcessedAutoJoin, setHasProcessedAutoJoin] = React.useState(false);
 
   const { data, loading, error } = useQuery(GET_ATTENDEE_EVENT_DETAILS_QUERY, {
     variables: { eventId },
@@ -1014,6 +1025,40 @@ export default function AttendeeEventPage() {
   const liveSessions = sortedSessions.filter((s) => s.status === "LIVE");
   const upcomingSessions = sortedSessions.filter((s) => s.status === "UPCOMING");
   const endedSessions = sortedSessions.filter((s) => s.status === "ENDED");
+
+  // Auto-join effect for deep links
+  React.useEffect(() => {
+    if (!targetSessionId || hasProcessedAutoJoin || sessions.length === 0) return;
+
+    const session = sessions.find(s => s.id === targetSessionId);
+    if (!session) return;
+
+    // Mark as processed to avoid re-triggering
+    setHasProcessedAutoJoin(true);
+
+    // Track analytics
+    if (joinSource) {
+      console.log('[Analytics] session_join_attempt', { sessionId: targetSessionId, source: joinSource });
+    }
+
+    // Auto-join for virtual sessions
+    if (autoJoin) {
+      const effectiveStreamingUrl = session.streamingUrl || event.virtualSettings?.streamingUrl;
+      const hasRecording = session.status === 'ENDED' && !!session.recordingUrl;
+      const isLiveOrUpcoming = session.status === 'LIVE' || session.status === 'UPCOMING';
+
+      if ((isLiveOrUpcoming && effectiveStreamingUrl) || hasRecording) {
+        setAutoJoinSession(session);
+        setShowAutoJoinSession(true);
+      }
+    }
+
+    // Scroll to the target session card
+    setTimeout(() => {
+      const element = document.getElementById(`session-card-${targetSessionId}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [targetSessionId, autoJoin, joinSource, sessions, hasProcessedAutoJoin, event.virtualSettings]);
 
   return (
     <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
@@ -1196,7 +1241,7 @@ export default function AttendeeEventPage() {
             />
             <StaggerContainer className="space-y-3">
               {liveSessions.map((session, index) => (
-                <StaggerItem key={session.id}>
+                <StaggerItem key={session.id} id={`session-card-${session.id}`}>
                   <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
@@ -1214,7 +1259,7 @@ export default function AttendeeEventPage() {
             />
             <StaggerContainer className="space-y-3">
               {upcomingSessions.map((session, index) => (
-                <StaggerItem key={session.id}>
+                <StaggerItem key={session.id} id={`session-card-${session.id}`}>
                   <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
@@ -1244,7 +1289,7 @@ export default function AttendeeEventPage() {
             />
             <StaggerContainer className="space-y-3">
               {endedSessions.map((session, index) => (
-                <StaggerItem key={session.id}>
+                <StaggerItem key={session.id} id={`session-card-${session.id}`}>
                   <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
@@ -1305,6 +1350,33 @@ export default function AttendeeEventPage() {
         position="bottom-left"
         className="left-4 sm:left-6"
       />
+
+      {/* Auto-Join Virtual Session View (from deep link) */}
+      {autoJoinSession && (
+        <VirtualSessionView
+          session={{
+            id: autoJoinSession.id,
+            title: autoJoinSession.title,
+            startTime: autoJoinSession.startTime,
+            endTime: autoJoinSession.endTime,
+            status: autoJoinSession.status,
+            sessionType: autoJoinSession.sessionType,
+            streamingUrl: autoJoinSession.streamingUrl || event.virtualSettings?.streamingUrl,
+            recordingUrl: autoJoinSession.recordingUrl,
+            broadcastOnly: autoJoinSession.broadcastOnly,
+            chatEnabled: autoJoinSession.chatEnabled,
+            qaEnabled: autoJoinSession.qaEnabled,
+            pollsEnabled: autoJoinSession.pollsEnabled,
+            chatOpen: autoJoinSession.chatOpen,
+            qaOpen: autoJoinSession.qaOpen,
+            pollsOpen: autoJoinSession.pollsOpen,
+            speakers: autoJoinSession.speakers,
+          }}
+          eventId={eventId}
+          isOpen={showAutoJoinSession}
+          onClose={() => setShowAutoJoinSession(false)}
+        />
+      )}
     </PageTransition>
   );
 }

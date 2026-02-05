@@ -11,7 +11,6 @@ import {
   Calendar,
   Clock,
   Users,
-  Sparkles,
   CheckCircle,
   Layout,
   Copy,
@@ -23,7 +22,6 @@ import {
   CalendarDays,
   Mic2,
   Ticket,
-  Building2,
   Video,
   MapPin,
   Monitor,
@@ -39,18 +37,11 @@ import {
   LayoutGrid,
   List,
   Rocket,
-  Gift,
-  Lock,
   Server,
   Cloud,
   Database,
-  Award,
-  Milestone,
   CircleDot,
   CheckCircle2,
-  PhoneCall,
-  Crown,
-  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -1376,146 +1367,82 @@ function EventFormatsSection() {
 }
 
 // ============================================================================
-// INTEGRATION PARTNERS SECTION
+// CTA SECTION
 // ============================================================================
-function IntegrationPartnersSection() {
+function CTASection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const liveIntegrations = [
-    { name: "Stripe", category: "Payments", live: true },
-  ];
-
-  const comingSoon = [
-    { name: "Zoom", category: "Video" },
-    { name: "Google Calendar", category: "Calendar" },
-    { name: "Slack", category: "Communication" },
-    { name: "HubSpot", category: "CRM" },
-  ];
-
   return (
-    <section className="py-16 bg-muted/30 relative overflow-hidden" ref={ref}>
-      <div className="container mx-auto px-4 md:px-6">
+    <section className="py-24 relative overflow-hidden" ref={ref}>
+      {/* Background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-950 via-slate-900 to-purple-950" />
+      <div className="absolute inset-0 -z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          className="text-center mb-10"
-        >
-          <span className="text-sm text-muted-foreground uppercase tracking-wider">
-            Payments powered by
-          </span>
-        </motion.div>
-
-        {/* Live Integration - Stripe */}
+          className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[180px]"
+          animate={{ scale: [1, 1.3, 1], x: [0, 50, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.2 }}
-          className="flex justify-center mb-10"
-        >
-          {liveIntegrations.map((integration) => (
-            <motion.div
-              key={integration.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              whileHover={{ scale: 1.05 }}
-              className="flex flex-col items-center gap-2 group cursor-pointer"
-            >
-              <div className="h-16 w-16 rounded-xl bg-background border-2 border-green-500/50 flex items-center justify-center text-green-500 shadow-lg shadow-green-500/10">
-                <span className="text-2xl font-bold">S</span>
-              </div>
-              <span className="text-sm font-medium">{integration.name}</span>
-              <span className="text-xs text-green-500 flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" /> Live
-              </span>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Coming Soon */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.4 }}
-          className="text-center"
-        >
-          <p className="text-sm text-muted-foreground mb-4">Coming soon</p>
-          <div className="flex flex-wrap justify-center items-center gap-6">
-            {comingSoon.map((integration, index) => (
-              <motion.div
-                key={integration.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.5 + 0.1 * index }}
-                className="flex flex-col items-center gap-2 opacity-50"
-              >
-                <div className="h-10 w-10 rounded-lg bg-muted border border-border/50 flex items-center justify-center text-muted-foreground">
-                  <span className="text-sm font-bold">{integration.name[0]}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">{integration.name}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[150px]"
+          animate={{ scale: [1.3, 1, 1.3], x: [0, -50, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
-    </section>
-  );
-}
 
-// ============================================================================
-// BUILT BY EXPERTS SECTION
-// ============================================================================
-function BuiltByExpertsSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+      {/* Floating particles */}
+      <FloatingParticles />
 
-  const credentials = [
-    { icon: Award, stat: "20+", label: "Years Combined Experience" },
-    { icon: Calendar, stat: "500+", label: "Events Organized" },
-    { icon: Users, stat: "1M+", label: "Attendees Served" },
-    { icon: Building2, stat: "Fortune 500", label: "Enterprise Background" },
-  ];
+      <div className="container mx-auto px-4 md:px-6 relative z-10">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+          >
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
+              Ready to Create Your{" "}
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Next Event
+              </span>
+              ?
+            </h2>
 
-  return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden" ref={ref}>
-      <div className="container mx-auto px-4 md:px-6">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
-        >
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
-            <Heart className="h-4 w-4" />
-            Built by Event Professionals
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            We&apos;ve Been in Your Shoes
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Our team has organized hundreds of events—from startup meetups to 10,000+ attendee conferences.
-            We built the tool we wished existed.
-          </p>
-        </motion.div>
+            <p className="text-lg md:text-xl text-neutral-300 mb-10 max-w-2xl mx-auto">
+              Everything you need is already built and waiting for you.
+              Sign up now and start planning your event in minutes.
+            </p>
+          </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-          {credentials.map((cred, index) => (
-            <motion.div
-              key={cred.label}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.1 * index }}
-              className="text-center"
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <Button
+              size="lg"
+              className="group bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white h-14 px-8 text-lg shadow-lg shadow-blue-500/25"
+              asChild
             >
-              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
-                <cred.icon className="h-7 w-7 text-primary" />
-              </div>
-              <div className="text-3xl font-bold mb-1">
-                <AnimatedCounter value={parseInt(cred.stat) || 0} suffix={cred.stat.replace(/[0-9]/g, '')} />
-              </div>
-              <div className="text-sm text-muted-foreground">{cred.label}</div>
-            </motion.div>
-          ))}
+              <Link href="/auth/register">
+                <Rocket className="mr-2 h-5 w-5" />
+                Get Started Free
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/30 text-white hover:bg-white/10 h-14 px-8 text-lg"
+              asChild
+            >
+              <Link href="/events">
+                <Eye className="mr-2 h-5 w-5" />
+                Explore Events
+              </Link>
+            </Button>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -1523,7 +1450,7 @@ function BuiltByExpertsSection() {
 }
 
 // ============================================================================
-// ROADMAP PREVIEW SECTION
+// ROADMAP SECTION - All Features Live
 // ============================================================================
 function RoadmapSection() {
   const ref = useRef(null);
@@ -1531,32 +1458,32 @@ function RoadmapSection() {
 
   const roadmapItems = [
     {
-      phase: "Now",
+      phase: "Live",
       status: "live",
       title: "Core Platform",
       items: ["Event Builder", "Session Management", "Speaker Portal", "Registration"],
       icon: CheckCircle2,
     },
     {
-      phase: "Q1 2026",
-      status: "building",
+      phase: "Live",
+      status: "live",
       title: "Engagement Suite",
       items: ["Live Polls", "Q&A System", "Chat", "Gamification"],
-      icon: Rocket,
+      icon: CheckCircle2,
     },
     {
-      phase: "Q2 2026",
-      status: "planned",
+      phase: "Live",
+      status: "live",
       title: "AI Features",
-      items: ["Smart Scheduling", "Attendee Matching", "Content Recommendations", "Auto-Captions"],
-      icon: Sparkles,
+      items: ["AI Conductor", "Attendee Matching", "Smart Interventions", "Live Captions"],
+      icon: CheckCircle2,
     },
     {
-      phase: "Q3 2026",
-      status: "planned",
-      title: "Enterprise",
-      items: ["SSO/SAML", "Custom Contracts", "Dedicated Support", "On-Premise Option"],
-      icon: Building2,
+      phase: "Live",
+      status: "live",
+      title: "Enterprise Ready",
+      items: ["Analytics Dashboard", "Sponsor Management", "Expo Hall", "Monetization"],
+      icon: CheckCircle2,
     },
   ];
 
@@ -1577,15 +1504,15 @@ function RoadmapSection() {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
-            <Milestone className="h-4 w-4" />
-            Product Roadmap
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400 rounded-full">
+            <CheckCircle2 className="h-4 w-4" />
+            Fully Built
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            What We&apos;re Building
+            What&apos;s Already Live
           </h2>
           <p className="text-lg text-muted-foreground">
-            Join us on the journey. Early adopters get to shape the product with their feedback.
+            All features are built and ready to use. Start creating your events today.
           </p>
         </motion.div>
 
@@ -1702,151 +1629,6 @@ function TechStackSection() {
 }
 
 // ============================================================================
-// EARLY ACCESS CTA SECTION
-// ============================================================================
-function EarlyAccessSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const benefits = [
-    "Lock in founding member pricing forever",
-    "Direct access to the founding team",
-    "Shape the product roadmap with your feedback",
-    "Priority support and onboarding",
-  ];
-
-  return (
-    <section className="py-24 relative overflow-hidden" ref={ref}>
-      {/* Background */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-950 via-slate-900 to-purple-950" />
-      <div className="absolute inset-0 -z-10">
-        <motion.div
-          className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[180px]"
-          animate={{ scale: [1, 1.3, 1], x: [0, 50, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[150px]"
-          animate={{ scale: [1.3, 1, 1.3], x: [0, -50, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-
-      {/* Floating particles */}
-      <FloatingParticles />
-
-      {/* Grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
-
-      <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            className="text-center mb-12"
-          >
-            {/* Founding member badge */}
-            <motion.div
-              className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
-              animate={{ boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 0 12px rgba(251, 191, 36, 0.1)", "0 0 0 0 rgba(251, 191, 36, 0)"] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Crown className="h-5 w-5 text-amber-400" />
-              <span className="text-amber-300 font-semibold">Founding Member Offer</span>
-            </motion.div>
-
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-              Join Our{" "}
-              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                Early Access
-              </span>
-              {" "}Program
-            </h2>
-
-            <p className="text-lg md:text-xl text-neutral-300 mb-8 max-w-2xl mx-auto">
-              Be among the first to experience the future of event planning.
-              Free during beta, with exclusive benefits for founding members.
-            </p>
-
-            {/* Benefits */}
-            <div className="grid sm:grid-cols-2 gap-4 max-w-xl mx-auto mb-10 text-left">
-              {benefits.map((benefit, index) => (
-                <motion.div
-                  key={benefit}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className="flex items-center gap-3"
-                >
-                  <CheckCircle className="h-5 w-5 text-green-400 shrink-0" />
-                  <span className="text-neutral-300">{benefit}</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.5 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <Button
-              size="lg"
-              className="group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white h-14 px-8 text-lg shadow-lg shadow-amber-500/25"
-              asChild
-            >
-              <Link href="/auth/register">
-                <Rocket className="mr-2 h-5 w-5" />
-                Join Early Access — It&apos;s Free
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white/30 text-white hover:bg-white/10 h-14 px-8 text-lg"
-              asChild
-            >
-              <Link href="/contact?demo=event-planning">
-                <PhoneCall className="mr-2 h-5 w-5" />
-                Book Personal Demo
-              </Link>
-            </Button>
-          </motion.div>
-
-          {/* Trust badges */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
-            transition={{ delay: 0.7 }}
-            className="mt-10 flex flex-wrap items-center justify-center gap-6 text-neutral-400 text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              <span>SOC 2 Ready</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              <span>No credit card required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Gift className="h-5 w-5" />
-              <span>Free during beta</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              <span>GDPR Compliant</span>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
 // MAIN PAGE COMPONENT
 // ============================================================================
 export default function EventCreationPage() {
@@ -1857,11 +1639,9 @@ export default function EventCreationPage() {
       <SolutionShowcaseSection />
       <FeaturesSection />
       <EventFormatsSection />
-      <IntegrationPartnersSection />
-      <BuiltByExpertsSection />
       <RoadmapSection />
       <TechStackSection />
-      <EarlyAccessSection />
+      <CTASection />
     </div>
   );
 }
