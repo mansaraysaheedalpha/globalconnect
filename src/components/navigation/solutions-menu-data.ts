@@ -212,19 +212,6 @@ export const solutionsMenuData: MenuColumn[] = [
         ],
       },
       {
-        title: "AI Platform",
-        badge: "What Makes Us Different",
-        items: [
-          {
-            name: "AI Capabilities",
-            description: "Engagement AI, smart matching, profile enrichment, and translation",
-            href: "/solutions/ai-conductor",
-            isAI: true,
-            isHighlight: true,
-          },
-        ],
-      },
-      {
         title: "Enterprise",
         items: [
           {
