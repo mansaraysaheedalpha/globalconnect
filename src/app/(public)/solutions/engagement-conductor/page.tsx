@@ -1,7 +1,7 @@
 // src/app/(public)/solutions/engagement-conductor/page.tsx
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Play,
+  Pause,
   Sparkles,
   Brain,
   Eye,
@@ -31,6 +32,8 @@ import {
   Lightbulb,
   RefreshCw,
   ChevronRight,
+  Bot,
+  GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +55,726 @@ const scaleIn = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
 };
+
+// ============================================================================
+// INTERACTIVE AI MONITORING DEMO
+// ============================================================================
+
+interface EngagementDataPoint {
+  time: string;
+  engagement: number;
+  predicted: number;
+  anomaly: boolean;
+  intervention?: string;
+}
+
+const interventionOptions = [
+  { type: "poll", label: "Launch Interactive Poll", icon: BarChart3 },
+  { type: "qa", label: "Open Q&A Session", icon: MessageSquare },
+  { type: "gamification", label: "Trigger Gamification", icon: Target },
+  { type: "breakout", label: "Suggest Breakout Rooms", icon: Users },
+];
+
+function LiveAIMonitoringDemo() {
+  const [isRunning, setIsRunning] = useState(true);
+  const [mode, setMode] = useState<"autonomous" | "supervised" | "manual">("autonomous");
+  const [dataPoints, setDataPoints] = useState<EngagementDataPoint[]>([]);
+  const [currentEngagement, setCurrentEngagement] = useState(78);
+  const [anomalyDetected, setAnomalyDetected] = useState(false);
+  const [interventionActive, setInterventionActive] = useState(false);
+  const [interventionType, setInterventionType] = useState("");
+  const [aiThinking, setAiThinking] = useState(false);
+  const [aiDecision, setAiDecision] = useState("");
+
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      setDataPoints((prev) => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString("en-US", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+
+        const baseEngagement = 75;
+        const noise = Math.random() * 20 - 10;
+        const trend = Math.sin(prev.length * 0.1) * 15;
+        let newEngagement = Math.max(30, Math.min(100, baseEngagement + noise + trend));
+
+        const isAnomaly = Math.random() < 0.08 && prev.length > 5;
+        if (isAnomaly) {
+          newEngagement = Math.max(30, newEngagement - 25);
+        }
+
+        const predicted = baseEngagement + Math.sin((prev.length + 3) * 0.1) * 15;
+        setCurrentEngagement(Math.round(newEngagement));
+
+        if (isAnomaly && mode !== "manual") {
+          setAnomalyDetected(true);
+          setAiThinking(true);
+
+          setTimeout(() => {
+            setAiThinking(false);
+            const selectedIntervention =
+              interventionOptions[Math.floor(Math.random() * interventionOptions.length)];
+            setInterventionType(selectedIntervention.type);
+            setAiDecision(
+              `Thompson Sampling selected: ${selectedIntervention.label} (UCB: 0.${Math.floor(Math.random() * 30 + 70)})`
+            );
+
+            if (mode === "autonomous") {
+              setInterventionActive(true);
+              setTimeout(() => {
+                setInterventionActive(false);
+                setAnomalyDetected(false);
+                setAiDecision("");
+              }, 3000);
+            }
+          }, 1500);
+        }
+
+        const newPoint: EngagementDataPoint = {
+          time: timeStr,
+          engagement: newEngagement,
+          predicted: predicted,
+          anomaly: isAnomaly,
+          intervention: isAnomaly ? interventionType : undefined,
+        };
+
+        return [...prev, newPoint].slice(-20);
+      });
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [isRunning, mode, interventionType]);
+
+  const maxEngagement = Math.max(100, ...dataPoints.map((d) => Math.max(d.engagement, d.predicted)));
+
+  return (
+    <div className="bg-black/60 backdrop-blur-xl rounded-2xl border border-purple-500/30 p-6 shadow-2xl">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-amber-500 flex items-center justify-center">
+            <Brain className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold">AI Engagement Monitor</h3>
+            <p className="text-purple-400 text-sm">Real-time anomaly detection</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsRunning(!isRunning)}
+            className={cn(
+              "p-2 rounded-lg transition-all",
+              isRunning ? "bg-green-500/20 text-green-400" : "bg-neutral-700 text-neutral-400"
+            )}
+          >
+            {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setDataPoints([])}
+            className="p-2 rounded-lg bg-neutral-700 text-neutral-400 hover:bg-neutral-600 transition-all"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        {(["autonomous", "supervised", "manual"] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              mode === m ? "bg-purple-500 text-white" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+            )}
+          >
+            {m.charAt(0).toUpperCase() + m.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-neutral-800/50 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-neutral-400 text-sm mb-1">
+            <Activity className="w-4 h-4" />
+            Current
+          </div>
+          <div className={cn(
+            "text-2xl font-bold",
+            currentEngagement > 70 ? "text-green-400" : currentEngagement > 50 ? "text-yellow-400" : "text-red-400"
+          )}>
+            {currentEngagement}%
+          </div>
+        </div>
+        <div className="bg-neutral-800/50 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-neutral-400 text-sm mb-1">
+            <TrendingUp className="w-4 h-4" />
+            Trend
+          </div>
+          <div className="text-2xl font-bold text-purple-400">
+            {currentEngagement > 70 ? "+5.2%" : "-3.1%"}
+          </div>
+        </div>
+        <div className="bg-neutral-800/50 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-neutral-400 text-sm mb-1">
+            <Shield className="w-4 h-4" />
+            Interventions
+          </div>
+          <div className="text-2xl font-bold text-amber-400">
+            {dataPoints.filter((d) => d.anomaly).length}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative h-48 mb-6 bg-neutral-800/30 rounded-xl p-4">
+        <svg className="w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
+          {[0, 25, 50, 75, 100].map((y) => (
+            <line
+              key={y}
+              x1="0"
+              y1={150 - (y / 100) * 150}
+              x2="400"
+              y2={150 - (y / 100) * 150}
+              stroke="rgba(148, 163, 184, 0.1)"
+              strokeWidth="1"
+            />
+          ))}
+
+          {dataPoints.length > 1 && (
+            <path
+              d={dataPoints
+                .map((point, i) => {
+                  const x = (i / (dataPoints.length - 1)) * 400;
+                  const y = 150 - (point.predicted / maxEngagement) * 150;
+                  return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+                })
+                .join(" ")}
+              fill="none"
+              stroke="rgba(168, 85, 247, 0.5)"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+            />
+          )}
+
+          {dataPoints.length > 1 && (
+            <path
+              d={dataPoints
+                .map((point, i) => {
+                  const x = (i / (dataPoints.length - 1)) * 400;
+                  const y = 150 - (point.engagement / maxEngagement) * 150;
+                  return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+                })
+                .join(" ")}
+              fill="none"
+              stroke="url(#engagementGradientDemo)"
+              strokeWidth="3"
+            />
+          )}
+
+          {dataPoints.map((point, i) => {
+            if (!point.anomaly) return null;
+            const x = (i / Math.max(dataPoints.length - 1, 1)) * 400;
+            const y = 150 - (point.engagement / maxEngagement) * 150;
+            return (
+              <g key={i}>
+                <circle cx={x} cy={y} r="8" fill="rgba(239, 68, 68, 0.3)" />
+                <circle cx={x} cy={y} r="4" fill="#ef4444" />
+              </g>
+            );
+          })}
+
+          <defs>
+            <linearGradient id="engagementGradientDemo" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#f59e0b" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div className="absolute top-2 right-2 flex gap-4 text-xs">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-0.5 bg-gradient-to-r from-purple-500 to-amber-500" />
+            <span className="text-neutral-400">Actual</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-0.5 bg-purple-500/50" />
+            <span className="text-neutral-400">Predicted</span>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {(anomalyDetected || aiThinking || interventionActive) && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-xl p-4 mb-4"
+          >
+            <div className="flex items-start gap-3">
+              {aiThinking ? (
+                <>
+                  <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <Brain className="w-4 h-4 text-yellow-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="text-yellow-400 font-medium">AI Analyzing...</div>
+                    <div className="text-neutral-400 text-sm">Evaluating intervention options via Thompson Sampling</div>
+                  </div>
+                </>
+              ) : interventionActive ? (
+                <>
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div>
+                    <div className="text-green-400 font-medium">Intervention Deployed</div>
+                    <div className="text-neutral-400 text-sm">{aiDecision}</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-red-400 font-medium">Anomaly Detected</div>
+                    <div className="text-neutral-400 text-sm mb-3">Engagement dropped below threshold</div>
+                    {mode === "supervised" && (
+                      <div className="flex gap-2 flex-wrap">
+                        {interventionOptions.map((int) => (
+                          <button
+                            key={int.type}
+                            onClick={() => {
+                              setInterventionActive(true);
+                              setAiDecision(`Manual: ${int.label}`);
+                              setTimeout(() => {
+                                setInterventionActive(false);
+                                setAnomalyDetected(false);
+                              }, 2000);
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition-all"
+                          >
+                            <int.icon className="w-3 h-3" />
+                            {int.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="text-sm text-neutral-500 bg-neutral-800/30 rounded-lg p-3">
+        {mode === "autonomous" && (
+          <>
+            <span className="text-purple-400 font-medium">Autonomous Mode:</span>{" "}
+            AI automatically detects anomalies and deploys optimal interventions without human approval.
+          </>
+        )}
+        {mode === "supervised" && (
+          <>
+            <span className="text-purple-400 font-medium">Supervised Mode:</span>{" "}
+            AI suggests interventions but requires human approval before deployment.
+          </>
+        )}
+        {mode === "manual" && (
+          <>
+            <span className="text-purple-400 font-medium">Manual Mode:</span>{" "}
+            Monitoring only - all interventions must be manually triggered by the operator.
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// THOMPSON SAMPLING VISUALIZATION
+// ============================================================================
+
+interface ArmData {
+  name: string;
+  icon: React.ElementType;
+  successes: number;
+  failures: number;
+  color: string;
+}
+
+function ThompsonSamplingDemo() {
+  const [arms, setArms] = useState<ArmData[]>([
+    { name: "Interactive Poll", icon: BarChart3, successes: 45, failures: 12, color: "purple" },
+    { name: "Q&A Session", icon: MessageSquare, successes: 38, failures: 15, color: "blue" },
+    { name: "Gamification", icon: Target, successes: 52, failures: 8, color: "green" },
+    { name: "Breakout Rooms", icon: Users, successes: 28, failures: 22, color: "amber" },
+  ]);
+  const [selectedArm, setSelectedArm] = useState<number | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  const calculateUCB = (successes: number, failures: number) => {
+    const total = successes + failures;
+    const mean = successes / total;
+    const bonus = Math.sqrt((2 * Math.log(200)) / total);
+    return Math.min(1, mean + bonus);
+  };
+
+  const simulateSelection = useCallback(() => {
+    setIsSimulating(true);
+
+    const samples = arms.map((arm) => {
+      const alpha = arm.successes + 1;
+      const beta = arm.failures + 1;
+      const sample = alpha / (alpha + beta) + (Math.random() - 0.5) * 0.3 * (1 / Math.sqrt(alpha + beta));
+      return Math.max(0, Math.min(1, sample));
+    });
+
+    const maxIdx = samples.indexOf(Math.max(...samples));
+    setSelectedArm(maxIdx);
+
+    setTimeout(() => {
+      const success = Math.random() > 0.35;
+      setArms((prev) =>
+        prev.map((arm, i) =>
+          i === maxIdx
+            ? { ...arm, successes: arm.successes + (success ? 1 : 0), failures: arm.failures + (success ? 0 : 1) }
+            : arm
+        )
+      );
+      setIsSimulating(false);
+      setTimeout(() => setSelectedArm(null), 1000);
+    }, 1500);
+  }, [arms]);
+
+  return (
+    <div className="bg-black/60 backdrop-blur-xl rounded-2xl border border-amber-500/30 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <GitBranch className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold">Thompson Sampling</h3>
+            <p className="text-amber-400 text-sm">Multi-armed bandit optimization</p>
+          </div>
+        </div>
+        <button
+          onClick={simulateSelection}
+          disabled={isSimulating}
+          className={cn(
+            "px-4 py-2 rounded-lg font-medium transition-all",
+            isSimulating ? "bg-neutral-700 text-neutral-500 cursor-not-allowed" : "bg-amber-500 text-white hover:bg-amber-600"
+          )}
+        >
+          {isSimulating ? "Sampling..." : "Simulate Selection"}
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {arms.map((arm, idx) => {
+          const ucb = calculateUCB(arm.successes, arm.failures);
+          const total = arm.successes + arm.failures;
+          const successRate = arm.successes / total;
+          const IconComponent = arm.icon;
+
+          return (
+            <motion.div
+              key={arm.name}
+              animate={{
+                scale: selectedArm === idx ? 1.02 : 1,
+                borderColor: selectedArm === idx ? "rgb(245, 158, 11)" : "rgba(148, 163, 184, 0.2)",
+              }}
+              className={cn(
+                "bg-neutral-800/50 rounded-xl p-4 border-2 transition-all",
+                selectedArm === idx ? "border-amber-500" : "border-neutral-700/50"
+              )}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", `bg-${arm.color}-500/20`)}>
+                    <IconComponent className={cn("w-4 h-4", `text-${arm.color}-400`)} />
+                  </div>
+                  <span className="text-white font-medium">{arm.name}</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-neutral-400 text-xs">UCB Score</div>
+                  <div className="text-amber-400 font-mono font-bold">{ucb.toFixed(3)}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <div className="text-neutral-500 text-xs mb-1">Success Rate</div>
+                  <div className="text-green-400 font-medium">{(successRate * 100).toFixed(1)}%</div>
+                </div>
+                <div>
+                  <div className="text-neutral-500 text-xs mb-1">Trials</div>
+                  <div className="text-neutral-300 font-medium">{total}</div>
+                </div>
+                <div>
+                  <div className="text-neutral-500 text-xs mb-1">Confidence</div>
+                  <div className="h-2 bg-neutral-700 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, total / 0.8)}%` }}
+                      className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {selectedArm === idx && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 pt-3 border-t border-neutral-700">
+                  <div className="flex items-center gap-2 text-amber-400 text-sm">
+                    <Sparkles className="w-4 h-4" />
+                    Selected for intervention
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 text-sm text-neutral-500 bg-neutral-800/30 rounded-lg p-3">
+        <span className="text-amber-400 font-medium">How it works:</span>{" "}
+        Thompson Sampling balances exploration and exploitation by sampling from posterior distributions,
+        naturally favoring interventions with higher success rates while still exploring less-tried options.
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// AI CONTENT GENERATION DEMO
+// ============================================================================
+
+function ContentGenerationDemo() {
+  const [generating, setGenerating] = useState(false);
+  const [contentType, setContentType] = useState<"summary" | "poll" | "qa">("summary");
+  const [generatedContent, setGeneratedContent] = useState("");
+  const [model, setModel] = useState<"sonnet" | "haiku">("sonnet");
+
+  const contentTemplates = {
+    summary: `**Session Highlights - "AI in Healthcare"**
+
+Key takeaways from the past 15 minutes:
+
+1. **Data Privacy Concerns**: Dr. Smith emphasized HIPAA compliance as non-negotiable for any AI implementation
+
+2. **ROI Metrics**: Early adopters seeing 40% reduction in diagnostic time
+
+3. **Audience Questions**: Most interest around integration with existing EHR systems
+
+_Generated by Claude ${model === "sonnet" ? "Sonnet" : "Haiku"} | Confidence: 94%_`,
+    poll: `**Quick Poll: AI Adoption Readiness**
+
+Based on the discussion, here is a relevant poll:
+
+How prepared is your organization for AI integration?
+
+- Already implementing (23%)
+- Planning for next year (45%)
+- Exploring options (28%)
+- Not on our radar (4%)
+
+_Poll generated to re-engage attendees after 12% engagement drop_`,
+    qa: `**Suggested Q&A Prompt**
+
+To stimulate discussion, consider asking:
+
+"Given the privacy concerns raised, what would be your organization's minimum requirements before adopting an AI diagnostic tool?"
+
+This question:
+- Addresses the most discussed topic
+- Encourages personal reflection
+- Should generate 8-12 responses based on audience profile
+
+_Generated to boost Q&A participation_`,
+  };
+
+  const handleGenerate = () => {
+    setGenerating(true);
+    setGeneratedContent("");
+
+    const content = contentTemplates[contentType];
+    let index = 0;
+
+    const interval = setInterval(() => {
+      if (index < content.length) {
+        setGeneratedContent(content.slice(0, index + 1));
+        index++;
+      } else {
+        clearInterval(interval);
+        setGenerating(false);
+      }
+    }, 15);
+  };
+
+  return (
+    <div className="bg-black/60 backdrop-blur-xl rounded-2xl border border-green-500/30 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold">AI Content Generation</h3>
+            <p className="text-green-400 text-sm">Powered by Claude AI</p>
+          </div>
+        </div>
+        <select
+          value={model}
+          onChange={(e) => setModel(e.target.value as "sonnet" | "haiku")}
+          className="bg-neutral-800 text-neutral-300 text-sm rounded-lg px-3 py-1.5 border border-neutral-700"
+        >
+          <option value="sonnet">Claude Sonnet</option>
+          <option value="haiku">Claude Haiku</option>
+        </select>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        {(["summary", "poll", "qa"] as const).map((type) => (
+          <button
+            key={type}
+            onClick={() => {
+              setContentType(type);
+              setGeneratedContent("");
+            }}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              contentType === type ? "bg-green-500 text-white" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+            )}
+          >
+            {type === "summary" && "Session Summary"}
+            {type === "poll" && "Generate Poll"}
+            {type === "qa" && "Q&A Prompt"}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-neutral-800/50 rounded-xl p-4 min-h-[200px] mb-4">
+        {generatedContent ? (
+          <pre className="whitespace-pre-wrap text-neutral-300 font-sans text-sm leading-relaxed">
+            {generatedContent}
+            {generating && <span className="inline-block w-2 h-4 bg-green-400 ml-1 animate-pulse" />}
+          </pre>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-40 text-neutral-500">
+            <Bot className="w-12 h-12 mb-3 opacity-50" />
+            <p>Click Generate to create AI content</p>
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={handleGenerate}
+        disabled={generating}
+        className={cn(
+          "w-full py-3 rounded-xl font-medium transition-all",
+          generating
+            ? "bg-neutral-700 text-neutral-500 cursor-not-allowed"
+            : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90"
+        )}
+      >
+        {generating ? (
+          <span className="flex items-center justify-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            Generating with Claude {model === "sonnet" ? "Sonnet" : "Haiku"}...
+          </span>
+        ) : (
+          <span className="flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            Generate Content
+          </span>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================================
+// INTERACTIVE DEMOS SECTION
+// ============================================================================
+
+function InteractiveDemosSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <section className="py-24 bg-gradient-to-b from-background via-purple-950/10 to-background relative overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <motion.div
+          className="absolute top-1/4 -left-32 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px]"
+          animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 -right-32 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px]"
+          animate={{ x: [0, -50, 0], y: [0, -30, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="container mx-auto px-4 md:px-6" ref={ref}>
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-400 rounded-full border border-purple-500/20">
+            <Zap className="w-4 h-4" />
+            Interactive Demo
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+            Experience AI Monitoring{" "}
+            <span className="bg-gradient-to-r from-purple-400 to-amber-400 bg-clip-text text-transparent">Live</span>
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Watch our AI detect engagement anomalies and deploy interventions in real-time.
+            Toggle between modes to see how the system adapts to different scenarios.
+          </p>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <LiveAIMonitoringDemo />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <ThompsonSamplingDemo />
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="max-w-2xl mx-auto"
+        >
+          <ContentGenerationDemo />
+        </motion.div>
+      </div>
+    </section>
+  );
+}
 
 // ============================================================================
 // HERO SECTION
@@ -289,7 +1012,7 @@ function ProblemSection() {
             {" "}of Virtual Events
           </h2>
           <p className="text-lg text-muted-foreground">
-            By the time you notice engagement dropping, it's already too late.
+            By the time you notice engagement dropping, it&apos;s already too late.
             Attendees have mentally checked out, and recovering their attention is an uphill battle.
           </p>
         </motion.div>
@@ -2026,7 +2749,7 @@ function OperatingModesSection() {
             Control Levels
           </motion.span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            You're Always{" "}
+            You&apos;re Always{" "}
             <span className="relative">
               <span className={cn("bg-gradient-to-r bg-clip-text text-transparent", currentMode.gradient)}>
                 in Control
@@ -2530,6 +3253,7 @@ export default function EngagementConductorPage() {
       <HeroSection />
       <ProblemSection />
       <PlatformShowcaseSection />
+      <InteractiveDemosSection />
       <HowItWorksSection />
       <IntelligenceImpactSection />
       <InterventionsSection />
