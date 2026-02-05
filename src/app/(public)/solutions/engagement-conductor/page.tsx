@@ -1,10 +1,10 @@
 // src/app/(public)/solutions/engagement-conductor/page.tsx
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -14,6 +14,7 @@ import {
   Eye,
   AlertTriangle,
   CheckCircle,
+  Check,
   Zap,
   BarChart3,
   MessageSquare,
@@ -24,6 +25,7 @@ import {
   Clock,
   TrendingUp,
   Users,
+  User,
   Activity,
   Target,
   Lightbulb,
@@ -379,63 +381,19 @@ function PlatformShowcaseSection() {
 
         {/* Desktop: Immersive Layered Design */}
         <div className="hidden lg:block">
-          <div className="relative max-w-6xl mx-auto">
-            {/* Floating Stats - positioned around the main content */}
-            {floatingStats.map((stat, index) => {
-              const positions = [
-                { top: "5%", left: "-5%" },
-                { top: "15%", right: "-5%" },
-                { bottom: "20%", left: "-8%" },
-                { bottom: "10%", right: "-3%" },
-              ];
-              const pos = positions[index];
-
-              return (
-                <motion.div
-                  key={stat.label}
-                  className="absolute z-30"
-                  style={pos as React.CSSProperties}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1, type: "spring" }}
-                >
-                  <motion.div
-                    className="relative"
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ duration: 3 + index * 0.5, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <div className={cn(
-                      "px-4 py-3 rounded-2xl bg-background/80 backdrop-blur-xl border shadow-2xl",
-                      "hover:scale-110 transition-transform cursor-pointer"
-                    )}>
-                      <div className="flex items-center gap-3">
-                        <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center", stat.color)}>
-                          <stat.icon className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <div className="text-xl font-bold">{stat.value}</div>
-                          <div className="text-xs text-muted-foreground">{stat.label}</div>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Glow effect */}
-                    <div className={cn("absolute inset-0 rounded-2xl bg-gradient-to-br opacity-20 blur-xl -z-10", stat.color)} />
-                  </motion.div>
-                </motion.div>
-              );
-            })}
-
-            {/* Main Dashboard - Hero Image with 3D effect */}
+          <div className="relative max-w-5xl mx-auto">
+            {/* Main Dashboard - Centered with constrained width */}
             <motion.div
-              initial={{ opacity: 0, y: 50, rotateX: 10 }}
-              animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 50, rotateX: 10 }}
+              initial={{ opacity: 0, y: 50, rotateX: 8 }}
+              animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 50, rotateX: 8 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative z-10 perspective-1000"
+              className="relative z-10"
+              style={{ perspective: "1200px" }}
             >
               {/* Glow behind */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-cyan-500/30 rounded-3xl blur-2xl opacity-60" />
+              <div className="absolute -inset-6 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 rounded-3xl blur-3xl opacity-70" />
 
-              <div className="relative rounded-2xl overflow-hidden border-2 border-white/10 bg-background shadow-[0_20px_70px_-15px_rgba(0,0,0,0.3)]">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-white/10 bg-background shadow-[0_25px_80px_-15px_rgba(0,0,0,0.4)]">
                 {/* Browser Chrome */}
                 <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-muted/80 to-muted/50 border-b border-border/50 backdrop-blur-sm">
                   <div className="flex gap-1.5">
@@ -454,50 +412,86 @@ function PlatformShowcaseSection() {
                   </div>
                 </div>
 
-                {/* Screenshot */}
-                <div className="relative">
+                {/* Screenshot - constrained */}
+                <div className="relative max-h-[500px] overflow-hidden">
                   <Image
                     src="/engagement-dashboard-screenshot.png"
                     alt="AI Engagement Conductor Dashboard"
-                    width={1920}
-                    height={1080}
-                    className="w-full h-auto"
+                    width={1400}
+                    height={800}
+                    className="w-full h-auto object-cover object-top"
                     priority
                   />
 
                   {/* Animated scan line effect */}
                   <motion.div
-                    className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"
+                    className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/60 to-transparent"
                     animate={{ top: ["0%", "100%"] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                   />
 
-                  {/* Overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                  {/* Overlay gradient for depth */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 </div>
               </div>
             </motion.div>
 
-            {/* AI Visualization - Floating card overlapping */}
+            {/* Floating Stats Row - Below dashboard */}
             <motion.div
-              initial={{ opacity: 0, x: 100, rotate: 5 }}
-              animate={isInView ? { opacity: 1, x: 0, rotate: 3 } : { opacity: 0, x: 100, rotate: 5 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              whileHover={{ rotate: 0, scale: 1.02 }}
-              className="absolute -bottom-8 -right-8 w-[400px] z-20"
+              className="flex justify-center gap-4 mt-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <div className="relative rounded-2xl overflow-hidden border border-purple-500/30 shadow-2xl shadow-purple-500/20">
+              {floatingStats.map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.4, delay: 0.6 + index * 0.1, type: "spring" }}
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  className="relative"
+                >
+                  <div className={cn(
+                    "px-5 py-3 rounded-2xl bg-background/90 backdrop-blur-xl border shadow-lg",
+                    "hover:shadow-xl transition-shadow cursor-pointer"
+                  )}>
+                    <div className="flex items-center gap-3">
+                      <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center", stat.color)}>
+                        <stat.icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <div className="text-xl font-bold">{stat.value}</div>
+                        <div className="text-xs text-muted-foreground">{stat.label}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Glow effect */}
+                  <div className={cn("absolute inset-0 rounded-2xl bg-gradient-to-br opacity-15 blur-xl -z-10", stat.color)} />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* AI Card - Positioned to the right side, overlapping */}
+            <motion.div
+              initial={{ opacity: 0, x: 80, rotate: 4 }}
+              animate={isInView ? { opacity: 1, x: 0, rotate: 2 } : { opacity: 0, x: 80, rotate: 4 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              whileHover={{ rotate: 0, scale: 1.02, y: -4 }}
+              className="absolute -bottom-4 right-8 w-[320px] z-20"
+            >
+              <div className="relative rounded-2xl overflow-hidden border border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black/90">
                 <Image
                   src="/Gemini_Generated_Image_wihwe6wihwe6wihw.png"
                   alt="AI Learning System"
-                  width={800}
-                  height={600}
-                  className="w-full h-auto"
+                  width={640}
+                  height={400}
+                  className="w-full h-auto opacity-60"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
                 {/* Animated content overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-5">
+                <div className="absolute bottom-0 left-0 right-0 p-4">
                   <motion.div
                     className="flex items-center gap-3 mb-3"
                     initial={{ opacity: 0, x: -20 }}
@@ -505,23 +499,29 @@ function PlatformShowcaseSection() {
                     transition={{ delay: 0.8 }}
                   >
                     <motion.div
-                      className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"
+                      className="h-9 w-9 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center"
                       animate={{ rotate: [0, 360] }}
                       transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                     >
-                      <Brain className="h-5 w-5 text-white" />
+                      <Brain className="h-4 w-4 text-white" />
                     </motion.div>
                     <div>
-                      <div className="text-white font-semibold">Thompson Sampling AI</div>
-                      <div className="text-white/60 text-xs">Reinforcement Learning Engine</div>
+                      <div className="text-white font-semibold text-sm">Thompson Sampling AI</div>
+                      <div className="text-white/60 text-xs">Reinforcement Learning</div>
                     </div>
                   </motion.div>
 
                   {/* Animated learning progress */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-white/70">
                       <span>Model Optimization</span>
-                      <span>Active</span>
+                      <motion.span
+                        animate={{ opacity: [1, 0.5, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="text-green-400"
+                      >
+                        Active
+                      </motion.span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
                       <motion.div
@@ -763,10 +763,11 @@ function HowItWorksSection() {
 
               {/* Orbital Steps - positioned around the circle */}
               {steps.map((step, index) => {
-                // Calculate exact positions on the orbit
+                // Calculate positions ON the orbital ring
+                // Ring is at inset 50px in 600px container = radius of 250px from center
                 const angle = (index * 60 - 90) * (Math.PI / 180); // Start from top
-                const orbitRadius = 200; // Distance from center in pixels
-                const centerX = 300; // Center of 600px container
+                const orbitRadius = 250; // Matches the ring exactly
+                const centerX = 300;
                 const centerY = 300;
                 const x = centerX + orbitRadius * Math.cos(angle);
                 const y = centerY + orbitRadius * Math.sin(angle);
@@ -815,19 +816,19 @@ function HowItWorksSection() {
                 );
               })}
 
-              {/* Animated particles circling */}
+              {/* Animated particles circling on the ring */}
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
                   className="absolute w-3 h-3 rounded-full bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/50"
                   style={{ top: "300px", left: "300px" }}
                   animate={{
-                    x: [0, 200, 0, -200, 0],
-                    y: [-200, 0, 200, 0, -200],
+                    x: [0, 250, 0, -250, 0],
+                    y: [-250, 0, 250, 0, -250],
                   }}
                   transition={{
-                    duration: 8,
-                    delay: i * 2.67,
+                    duration: 10,
+                    delay: i * 3.33,
                     repeat: Infinity,
                     ease: "linear",
                   }}
@@ -1663,110 +1664,348 @@ function InterventionsSection() {
 }
 
 // ============================================================================
-// OPERATING MODES SECTION
+// OPERATING MODES SECTION - Interactive Mode Selector with Animations
 // ============================================================================
 function OperatingModesSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [activeMode, setActiveMode] = useState(1); // 0: Manual, 1: Semi-Auto, 2: Auto
+
+  const modes = [
+    {
+      id: 0,
+      name: "Manual",
+      fullName: "Manual Mode",
+      tagline: "Full Human Control",
+      description: "You approve every action. AI provides recommendations with confidence scores, but you make all final decisions.",
+      icon: Settings,
+      color: "blue",
+      gradient: "from-blue-500 to-indigo-600",
+      bgGradient: "from-blue-500/10 to-indigo-500/10",
+      autonomy: 15,
+      features: ["AI suggestions only", "Manual approval required", "Complete oversight"],
+    },
+    {
+      id: 1,
+      name: "Semi-Auto",
+      fullName: "Semi-Auto Mode",
+      tagline: "Collaborative Co-Pilot",
+      description: "AI handles routine interventions automatically. High-impact decisions are escalated to you for approval.",
+      icon: Users,
+      color: "purple",
+      gradient: "from-purple-500 to-pink-600",
+      bgGradient: "from-purple-500/10 to-pink-500/10",
+      autonomy: 60,
+      features: ["Auto low-risk actions", "Human escalation", "Balanced control"],
+      recommended: true,
+    },
+    {
+      id: 2,
+      name: "Auto",
+      fullName: "Autonomous Mode",
+      tagline: "AI-Driven Excellence",
+      description: "AI operates autonomously with real-time monitoring. You can override any decision at any time.",
+      icon: Zap,
+      color: "green",
+      gradient: "from-green-500 to-emerald-600",
+      bgGradient: "from-green-500/10 to-emerald-500/10",
+      autonomy: 95,
+      features: ["Full automation", "Real-time monitoring", "Override capability"],
+    },
+  ];
+
+  const currentMode = modes[activeMode];
 
   return (
     <section className="py-24 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 -z-10">
+        <motion.div
+          key={activeMode}
+          className={cn("absolute inset-0 bg-gradient-to-br opacity-30", currentMode.bgGradient)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          transition={{ duration: 0.5 }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--primary-rgb),0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--primary-rgb),0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      </div>
+
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Image */}
-          <motion.div
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={scaleIn}
-            className="relative order-2 lg:order-1"
+        {/* Header */}
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
+          <motion.span
+            className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-500/20"
+            animate={{ boxShadow: ["0 0 0 0 rgba(99, 102, 241, 0)", "0 0 0 8px rgba(99, 102, 241, 0.1)", "0 0 0 0 rgba(99, 102, 241, 0)"] }}
+            transition={{ duration: 2, repeat: Infinity }}
           >
-            <div className="aspect-[16/9] relative rounded-2xl overflow-hidden border border-border shadow-2xl">
-              <Image
-                src="/Gemini_Generated_Image_7uavm67uavm67uav.png"
-                alt="AI Operating Modes - Manual, Semi-Auto, Auto"
-                fill
-                className="object-cover"
-              />
-            </div>
-          </motion.div>
-
-          {/* Content */}
-          <motion.div
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-            className="order-1 lg:order-2"
-          >
-            <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full">
-              Control Levels
+            Control Levels
+          </motion.span>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+            You're Always{" "}
+            <span className="relative">
+              <span className={cn("bg-gradient-to-r bg-clip-text text-transparent", currentMode.gradient)}>
+                in Control
+              </span>
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
-              You're Always in Control
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Choose how much autonomy to give the AI. Start with full oversight,
-              and increase automation as you build confidence.
-            </p>
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Choose your level of AI autonomy. Start supervised and increase automation as you build confidence.
+          </p>
+        </motion.div>
 
-            <div className="space-y-6">
-              {[
-                {
-                  mode: "Manual Mode",
-                  description: "Full human control. AI suggests, you decide. Every intervention requires your explicit approval.",
-                  confidence: "Low Confidence",
-                  effort: "High Effort",
-                  icon: Settings,
-                  color: "border-blue-500/30 bg-blue-500/5",
-                },
-                {
-                  mode: "Semi-Auto Mode",
-                  description: "Collaborative co-pilot. AI executes low-risk interventions automatically, escalates important decisions to you.",
-                  confidence: "Medium Confidence",
-                  effort: "Shared Effort",
-                  icon: Users,
-                  color: "border-purple-500/30 bg-purple-500/5",
-                  recommended: true,
-                },
-                {
-                  mode: "Auto Mode",
-                  description: "Autonomous execution. AI handles everything with human oversight. You monitor and can override anytime.",
-                  confidence: "High Confidence",
-                  effort: "Low Effort",
-                  icon: Zap,
-                  color: "border-green-500/30 bg-green-500/5",
-                },
-              ].map((item) => (
-                <div
-                  key={item.mode}
+        {/* Mode Selector - Interactive Slider */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="max-w-4xl mx-auto mb-12"
+        >
+          {/* Mode Pills */}
+          <div className="relative flex justify-between items-center mb-8 px-4">
+            {/* Connection Line */}
+            <div className="absolute left-[12%] right-[12%] top-1/2 h-1 bg-border/50 rounded-full -translate-y-1/2" />
+
+            {/* Animated Progress Line */}
+            <motion.div
+              className={cn("absolute left-[12%] top-1/2 h-1 rounded-full bg-gradient-to-r -translate-y-1/2", currentMode.gradient)}
+              initial={{ width: "0%" }}
+              animate={{ width: `${activeMode * 38}%` }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            />
+
+            {modes.map((mode, index) => (
+              <motion.button
+                key={mode.id}
+                onClick={() => setActiveMode(index)}
+                className="relative z-10 flex flex-col items-center group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {/* Pill */}
+                <motion.div
                   className={cn(
-                    "relative p-5 rounded-xl border transition-all hover:shadow-lg",
-                    item.color
+                    "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300",
+                    "border-2 shadow-lg",
+                    activeMode === index
+                      ? cn("border-transparent bg-gradient-to-br text-white shadow-xl", mode.gradient)
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50"
                   )}
+                  animate={activeMode === index ? {
+                    boxShadow: [`0 0 0 0 ${mode.color === 'blue' ? 'rgba(59, 130, 246, 0)' : mode.color === 'purple' ? 'rgba(168, 85, 247, 0)' : 'rgba(34, 197, 94, 0)'}`,
+                                `0 0 20px 4px ${mode.color === 'blue' ? 'rgba(59, 130, 246, 0.3)' : mode.color === 'purple' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
+                                `0 0 0 0 ${mode.color === 'blue' ? 'rgba(59, 130, 246, 0)' : mode.color === 'purple' ? 'rgba(168, 85, 247, 0)' : 'rgba(34, 197, 94, 0)'}`]
+                  } : {}}
+                  transition={{ duration: 2, repeat: Infinity }}
                 >
-                  {item.recommended && (
-                    <span className="absolute -top-3 right-4 px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full">
-                      Recommended
-                    </span>
-                  )}
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center border">
-                      <item.icon className="h-5 w-5 text-foreground" />
+                  <mode.icon className="w-7 h-7" />
+                </motion.div>
+
+                {/* Label */}
+                <span className={cn(
+                  "mt-3 text-sm font-semibold transition-colors",
+                  activeMode === index ? "text-foreground" : "text-muted-foreground"
+                )}>
+                  {mode.name}
+                </span>
+
+                {/* Recommended Badge */}
+                {mode.recommended && (
+                  <motion.span
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute -top-8 px-2 py-0.5 bg-purple-600 text-white text-[10px] font-medium rounded-full"
+                  >
+                    Recommended
+                  </motion.span>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Mode Details Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="max-w-5xl mx-auto"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeMode}
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "relative rounded-3xl border-2 p-8 lg:p-10 overflow-hidden",
+                "bg-gradient-to-br from-background via-background to-muted/30"
+              )}
+            >
+              {/* Animated background glow */}
+              <motion.div
+                className={cn("absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-20 -z-10 bg-gradient-to-br", currentMode.gradient)}
+                animate={{ scale: [1, 1.2, 1], x: [0, 20, 0], y: [0, -20, 0] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              />
+
+              <div className="grid lg:grid-cols-2 gap-10 items-center">
+                {/* Left: Content */}
+                <div>
+                  <div className="flex items-center gap-4 mb-6">
+                    <motion.div
+                      className={cn("w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br text-white", currentMode.gradient)}
+                      animate={{ rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <currentMode.icon className="w-7 h-7" />
+                    </motion.div>
+                    <div>
+                      <h3 className="text-2xl font-bold">{currentMode.fullName}</h3>
+                      <p className={cn("text-sm font-medium bg-gradient-to-r bg-clip-text text-transparent", currentMode.gradient)}>
+                        {currentMode.tagline}
+                      </p>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold mb-1">{item.mode}</h4>
-                      <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                      <div className="flex gap-4 text-xs">
-                        <span className="text-muted-foreground">{item.confidence}</span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-muted-foreground">{item.effort}</span>
+                  </div>
+
+                  <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
+                    {currentMode.description}
+                  </p>
+
+                  {/* Features List */}
+                  <div className="space-y-3">
+                    {currentMode.features.map((feature, index) => (
+                      <motion.div
+                        key={feature}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center gap-3"
+                      >
+                        <div className={cn("w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-br", currentMode.gradient)}>
+                          <Check className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="text-foreground font-medium">{feature}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right: Autonomy Visualization */}
+                <div className="relative">
+                  {/* Autonomy Meter */}
+                  <div className="bg-muted/50 rounded-2xl p-6 border border-border/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-medium text-muted-foreground">AI Autonomy Level</span>
+                      <motion.span
+                        key={currentMode.autonomy}
+                        initial={{ scale: 1.3, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className={cn("text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent", currentMode.gradient)}
+                      >
+                        {currentMode.autonomy}%
+                      </motion.span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="h-4 rounded-full bg-muted overflow-hidden mb-6">
+                      <motion.div
+                        className={cn("h-full rounded-full bg-gradient-to-r", currentMode.gradient)}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${currentMode.autonomy}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                      />
+                    </div>
+
+                    {/* Visual Indicators */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-xl bg-background border border-border/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <User className="w-4 h-4 text-blue-500" />
+                          <span className="text-xs font-medium text-muted-foreground">Human Effort</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {[...Array(5)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              className={cn(
+                                "w-3 h-3 rounded-full",
+                                i < Math.round((100 - currentMode.autonomy) / 20) ? "bg-blue-500" : "bg-muted"
+                              )}
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: i * 0.05 }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-background border border-border/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Brain className="w-4 h-4 text-purple-500" />
+                          <span className="text-xs font-medium text-muted-foreground">AI Autonomy</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {[...Array(5)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              className={cn(
+                                "w-3 h-3 rounded-full",
+                                i < Math.round(currentMode.autonomy / 20) ? "bg-purple-500" : "bg-muted"
+                              )}
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: i * 0.05 }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Activity Simulation */}
+                    <div className="mt-6 p-4 rounded-xl bg-background/80 border border-border/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-medium text-muted-foreground">Simulated Activity</span>
+                        <motion.div
+                          className="flex items-center gap-1.5"
+                          animate={{ opacity: [1, 0.5, 1] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-xs text-green-500">Live</span>
+                        </motion.div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {["Intervention suggested", "Confidence: 87%", activeMode === 0 ? "Awaiting approval..." : activeMode === 1 ? "Auto-approved (low risk)" : "Executed automatically"].map((text, i) => (
+                          <motion.div
+                            key={text}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 + i * 0.15 }}
+                            className="flex items-center gap-2 text-xs"
+                          >
+                            <motion.div
+                              className={cn("w-1.5 h-1.5 rounded-full", i === 2 ? (activeMode === 0 ? "bg-amber-500" : "bg-green-500") : "bg-muted-foreground")}
+                              animate={i === 2 && activeMode === 0 ? { opacity: [1, 0.3, 1] } : {}}
+                              transition={{ duration: 1, repeat: Infinity }}
+                            />
+                            <span className="text-muted-foreground">{text}</span>
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
       </div>
     </section>
   );

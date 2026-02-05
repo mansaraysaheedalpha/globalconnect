@@ -1034,102 +1034,279 @@ function ProfileEnrichmentSection() {
             </div>
           </div>
 
-          {/* Mobile: Vertical Flow */}
-          <div className="lg:hidden space-y-6">
-            {/* Sources */}
+          {/* Mobile: Beautiful Vertical Flow */}
+          <div className="lg:hidden">
+            {/* Section Label */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+              className="text-center mb-6"
+            >
+              <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Data Sources</span>
+            </motion.div>
+
+            {/* Source Platforms - Hexagonal-inspired Grid */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              className="grid grid-cols-3 gap-3"
+              className="relative mb-8"
             >
-              {sources.map((source, index) => (
-                <motion.div
-                  key={source.name}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50"
-                >
-                  <div
-                    className="h-10 w-10 rounded-lg flex items-center justify-center shadow-lg"
-                    style={{ backgroundColor: source.color }}
+              {/* Background glow for sources */}
+              <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent rounded-3xl blur-xl" />
+
+              <div className="relative grid grid-cols-3 gap-2 p-4 rounded-2xl bg-slate-800/30 border border-slate-700/30 backdrop-blur-sm">
+                {sources.map((source, index) => (
+                  <motion.div
+                    key={source.name}
+                    initial={{ opacity: 0, scale: 0, rotate: -10 }}
+                    animate={isInView ? { opacity: 1, scale: 1, rotate: 0 } : { opacity: 0, scale: 0, rotate: -10 }}
+                    transition={{ delay: 0.1 + index * 0.08, type: "spring", stiffness: 200 }}
+                    className="relative group"
                   >
-                    <source.icon className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-xs font-medium text-white text-center">{source.name}</span>
-                </motion.div>
-              ))}
-            </motion.div>
+                    <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50 hover:border-slate-600 transition-all duration-300">
+                      {/* Glow effect on each card */}
+                      <motion.div
+                        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        style={{
+                          background: `radial-gradient(circle at center, ${source.color}20 0%, transparent 70%)`
+                        }}
+                      />
 
-            {/* Arrow down */}
-            <div className="flex justify-center">
-              <motion.div
-                animate={{ y: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="flex flex-col items-center gap-1"
-              >
-                <div className="w-0.5 h-8 bg-gradient-to-b from-cyan-500 to-purple-500" />
-                <ChevronRight className="h-5 w-5 text-purple-500 rotate-90" />
-              </motion.div>
-            </div>
+                      {/* Icon with ring */}
+                      <div className="relative">
+                        <motion.div
+                          className="absolute inset-0 rounded-lg"
+                          style={{ backgroundColor: source.color }}
+                          animate={{
+                            boxShadow: [
+                              `0 0 0 0 ${source.color}40`,
+                              `0 0 0 4px ${source.color}00`,
+                            ]
+                          }}
+                          transition={{ duration: 1.5, repeat: Infinity, delay: index * 0.2 }}
+                        />
+                        <div
+                          className="relative h-11 w-11 rounded-lg flex items-center justify-center shadow-lg"
+                          style={{ backgroundColor: source.color }}
+                        >
+                          <source.icon className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
 
-            {/* AI Core */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-              transition={{ delay: 0.3 }}
-              className="flex justify-center"
-            >
-              <div className="relative">
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-cyan-500/50 flex flex-col items-center justify-center">
-                  <Brain className="h-8 w-8 text-cyan-400" />
-                </div>
-              </div>
-            </motion.div>
+                      <span className="text-xs font-semibold text-white text-center">{source.name}</span>
 
-            {/* Arrow down */}
-            <div className="flex justify-center">
-              <motion.div
-                animate={{ y: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                className="flex flex-col items-center gap-1"
-              >
-                <div className="w-0.5 h-8 bg-gradient-to-b from-purple-500 to-green-500" />
-                <ChevronRight className="h-5 w-5 text-green-500 rotate-90" />
-              </motion.div>
-            </div>
-
-            {/* Output */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ delay: 0.5 }}
-              className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border border-purple-500/20"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white text-sm">Enriched Profile</h4>
-                  <p className="text-xs text-slate-400">AI-generated</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {outputData.slice(0, 4).map((item) => (
-                  <span key={item} className="px-2.5 py-1 text-xs rounded-full bg-slate-800/50 text-slate-300 border border-slate-700/50">
-                    {item}
-                  </span>
+                      {/* Mini data preview */}
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3].map((dot) => (
+                          <motion.div
+                            key={dot}
+                            className="w-1 h-1 rounded-full"
+                            style={{ backgroundColor: source.color }}
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: dot * 0.2 }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
-              <div className="mt-3 flex items-center justify-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                <Star className="h-3.5 w-3.5 text-green-400 fill-green-400" />
-                <span className="text-xs font-semibold text-green-400">Tier 1: Rich Profile</span>
+            </motion.div>
+
+            {/* Animated Flow Connection */}
+            <div className="flex justify-center mb-8">
+              <motion.div
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={isInView ? { opacity: 1, scaleY: 1 } : { opacity: 0, scaleY: 0 }}
+                transition={{ delay: 0.5, duration: 0.3 }}
+                className="relative flex flex-col items-center"
+              >
+                {/* Flowing particles */}
+                <div className="relative h-16 w-8">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-cyan-400"
+                      animate={{
+                        y: [0, 64],
+                        opacity: [0, 1, 1, 0],
+                        scale: [0.5, 1, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        delay: i * 0.4,
+                        ease: "linear",
+                      }}
+                    />
+                  ))}
+                  {/* Static line */}
+                  <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-full bg-gradient-to-b from-cyan-500/50 via-purple-500/50 to-purple-500/50" />
+                </div>
+              </motion.div>
+            </div>
+
+            {/* AI Core - Enhanced Mobile Version */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+              transition={{ delay: 0.6, type: "spring", stiffness: 150 }}
+              className="flex justify-center mb-8"
+            >
+              <div className="relative">
+                {/* Multiple orbital rings */}
+                <motion.div
+                  className="absolute rounded-full border border-cyan-500/20"
+                  style={{ width: 120, height: 120, left: -20, top: -20 }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute rounded-full border border-purple-500/15"
+                  style={{ width: 140, height: 140, left: -30, top: -30 }}
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                />
+
+                {/* Pulsing glow layers */}
+                <motion.div
+                  className="absolute rounded-full bg-cyan-500/20 blur-2xl"
+                  style={{ width: 100, height: 100, left: -10, top: -10 }}
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <motion.div
+                  className="absolute rounded-full bg-purple-500/15 blur-xl"
+                  style={{ width: 80, height: 80 }}
+                  animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
+                />
+
+                {/* Core */}
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border-2 border-cyan-500/50 flex flex-col items-center justify-center shadow-2xl shadow-cyan-500/20">
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  >
+                    <Brain className="h-8 w-8 text-cyan-400" />
+                  </motion.div>
+                  <span className="text-[10px] font-bold text-cyan-400 mt-0.5">AI</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Animated Flow Connection - Down */}
+            <div className="flex justify-center mb-8">
+              <motion.div
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={isInView ? { opacity: 1, scaleY: 1 } : { opacity: 0, scaleY: 0 }}
+                transition={{ delay: 0.8, duration: 0.3 }}
+                className="relative flex flex-col items-center"
+              >
+                <div className="relative h-16 w-8">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-purple-400"
+                      animate={{
+                        y: [0, 64],
+                        opacity: [0, 1, 1, 0],
+                        scale: [0.5, 1, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        delay: 0.5 + i * 0.4,
+                        ease: "linear",
+                      }}
+                    />
+                  ))}
+                  <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-full bg-gradient-to-b from-purple-500/50 via-pink-500/50 to-green-500/50" />
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Section Label */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ delay: 0.9 }}
+              className="text-center mb-4"
+            >
+              <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Enriched Output</span>
+            </motion.div>
+
+            {/* Output Card - Premium Mobile Design */}
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ delay: 1, type: "spring", stiffness: 100 }}
+              className="relative"
+            >
+              {/* Gradient border effect */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-500/30 via-cyan-500/20 to-green-500/30 blur-sm" />
+
+              <div className="relative p-5 rounded-2xl bg-gradient-to-br from-slate-900/95 to-slate-800/95 border border-slate-700/50 backdrop-blur-sm overflow-hidden">
+                {/* Decorative corner accent */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-purple-500/10 to-transparent" />
+
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-5">
+                  <motion.div
+                    className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/20"
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 6, repeat: Infinity }}
+                  >
+                    <Users className="h-6 w-6 text-white" />
+                  </motion.div>
+                  <div>
+                    <h4 className="font-bold text-white">Enriched Profile</h4>
+                    <p className="text-xs text-slate-400">AI-generated insights ready</p>
+                  </div>
+                </div>
+
+                {/* Output data items with animations */}
+                <div className="space-y-2 mb-5">
+                  {outputData.map((item, index) => (
+                    <motion.div
+                      key={item}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                      transition={{ delay: 1.1 + index * 0.1 }}
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/30"
+                    >
+                      <motion.div
+                        className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500"
+                        animate={{ scale: [1, 1.3, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                      />
+                      <span className="text-sm text-slate-300 flex-1">{item}</span>
+                      <motion.div
+                        className="h-1.5 rounded-full bg-gradient-to-r from-purple-500/70 to-cyan-500/70"
+                        initial={{ width: 0 }}
+                        animate={isInView ? { width: 40 + index * 8 } : { width: 0 }}
+                        transition={{ delay: 1.3 + index * 0.1, duration: 0.4 }}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Quality badge - Prominent */}
+                <motion.div
+                  className="flex items-center justify-center gap-2 p-3 rounded-xl bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 border border-green-500/20"
+                  animate={{
+                    boxShadow: [
+                      "0 0 0 0 rgba(34, 197, 94, 0)",
+                      "0 0 20px 2px rgba(34, 197, 94, 0.1)",
+                      "0 0 0 0 rgba(34, 197, 94, 0)",
+                    ]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Star className="h-4 w-4 text-green-400 fill-green-400" />
+                  <span className="text-sm font-bold text-green-400">Tier 1: Rich Profile</span>
+                  <span className="text-xs text-green-400/60 ml-1">(6/6)</span>
+                </motion.div>
               </div>
             </motion.div>
           </div>
