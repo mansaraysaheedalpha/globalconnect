@@ -1364,105 +1364,6 @@ function IndustryBenchmarksSection() {
 }
 
 // ============================================================================
-// FOUNDING CUSTOMER BENEFITS SECTION
-// ============================================================================
-function FoundingCustomerSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const benefits = [
-    { icon: Crown, title: "Priority Support", description: "Direct Slack channel with our engineering team" },
-    { icon: Lightbulb, title: "Feature Influence", description: "Shape the roadmap with your feedback" },
-    { icon: Gift, title: "Lifetime Pricing Lock", description: "Keep your early adopter rates forever" },
-    { icon: Headphones, title: "White-Glove Onboarding", description: "Dedicated setup and training sessions" },
-    { icon: Star, title: "Beta Access", description: "Try new features before anyone else" },
-    { icon: Award, title: "Founding Badge", description: "Recognition as a founding customer" },
-  ];
-
-  return (
-    <section className="py-24 bg-gradient-to-b from-muted/30 via-amber-950/10 to-background relative overflow-hidden" ref={ref}>
-      {/* Background */}
-      <div className="absolute inset-0 -z-10">
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[200px]"
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 15, repeat: Infinity }}
-        />
-      </div>
-
-      <div className="container mx-auto px-4 md:px-6">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
-        >
-          <motion.span
-            className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-medium bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 rounded-full border border-amber-500/30"
-            animate={{ boxShadow: ["0 0 0 0 rgba(245,158,11,0)", "0 0 0 8px rgba(245,158,11,0.1)", "0 0 0 0 rgba(245,158,11,0)"] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Crown className="h-4 w-4" />
-            Limited Availability
-          </motion.span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            Become a{" "}
-            <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-              Founding Customer
-            </span>
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Join the first 50 organizations to shape the future of event engagement
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
-        >
-          {benefits.map((benefit) => (
-            <motion.div
-              key={benefit.title}
-              variants={fadeInUp}
-              className="p-6 rounded-2xl border-2 border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent hover:border-amber-500/40 transition-colors"
-            >
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
-                <benefit.icon className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-bold text-lg mb-2">{benefit.title}</h3>
-              <p className="text-sm text-muted-foreground">{benefit.description}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ delay: 0.5 }}
-          className="mt-12 text-center"
-        >
-          <Button
-            size="lg"
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-14 px-8 text-lg shadow-xl shadow-amber-500/30"
-            asChild
-          >
-            <Link href="/contact?founding=true">
-              Claim Founding Customer Spot
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-          <p className="text-sm text-muted-foreground mt-4">
-            Only <span className="text-amber-500 font-bold">12 spots</span> remaining
-          </p>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
 // PRODUCT ROADMAP TEASER
 // ============================================================================
 function RoadmapTeaserSection() {
@@ -2235,7 +2136,6 @@ export default function LiveEngagementPage() {
       <SpeakerAttendeeView />
       <IndustryBenchmarksSection />
       <InfrastructureSection />
-      <FoundingCustomerSection />
       <RoadmapTeaserSection />
       <BetaTesterSection />
       <CTASection />
