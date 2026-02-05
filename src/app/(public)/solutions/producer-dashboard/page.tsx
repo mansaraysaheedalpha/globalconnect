@@ -54,11 +54,6 @@ const staggerContainer = {
   },
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
-};
-
 // ============================================================================
 // LIVE ENGAGEMENT METER
 // ============================================================================
@@ -954,9 +949,9 @@ function TechnicalSection() {
       description: "Redis Pub/Sub and Kafka for handling millions of concurrent events",
     },
     {
-      icon: Brain,
-      title: "Thompson Sampling",
-      description: "Multi-armed bandit algorithm learns optimal interventions over time",
+      icon: Activity,
+      title: "GraphQL Subscriptions",
+      description: "Live data streaming via GraphQL subscriptions for instant dashboard updates",
     },
     {
       icon: Shield,
