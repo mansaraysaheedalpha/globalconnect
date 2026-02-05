@@ -313,17 +313,25 @@ function ProblemSection() {
 }
 
 // ============================================================================
-// SOLUTION SECTION
+// PLATFORM SHOWCASE SECTION - Bento Grid with Multiple Images
 // ============================================================================
-function SolutionSection() {
+function PlatformShowcaseSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
+  const capabilities = [
+    { icon: Eye, label: "Real-Time Monitoring", color: "text-blue-500" },
+    { icon: Brain, label: "AI-Powered Analysis", color: "text-purple-500" },
+    { icon: Zap, label: "Instant Interventions", color: "text-amber-500" },
+    { icon: RefreshCw, label: "Continuous Learning", color: "text-green-500" },
+  ];
+
   return (
     <section className="py-24 relative overflow-hidden">
+      {/* Background effects */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px]" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
@@ -334,40 +342,184 @@ function SolutionSection() {
           className="text-center max-w-3xl mx-auto mb-16"
         >
           <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full">
-            The Solution
+            The Platform
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
             AI That Watches, Learns, and Acts
           </h2>
           <p className="text-lg text-muted-foreground">
-            The AI Engagement Conductor is your autonomous co-pilot that continuously monitors
-            audience engagement and takes action to prevent drop-off—before it happens.
+            From intelligent monitoring to autonomous intervention—see the complete platform in action
           </p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={scaleIn}
-          className="relative max-w-5xl mx-auto"
-        >
-          <div className="aspect-video relative rounded-2xl overflow-hidden border border-border shadow-2xl shadow-purple-500/10">
-            <Image
-              src="/Gemini_Generated_Image_wihwe6wihwe6wihw.png"
-              alt="AI Learning and Intervention System"
-              fill
-              className="object-cover"
-              priority
-            />
-            {/* Overlay with feature callouts */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-8">
-              <p className="text-white text-lg font-medium text-center">
-                Thompson Sampling reinforcement learning optimizes interventions over time
-              </p>
+        {/* Bento Grid Layout */}
+        <div className="max-w-6xl mx-auto">
+          {/* Desktop Bento Grid */}
+          <div className="hidden lg:grid grid-cols-12 grid-rows-6 gap-4 h-[700px]">
+            {/* Main Dashboard - Large Left Panel */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="col-span-7 row-span-6 relative group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity" />
+              <div className="relative h-full rounded-2xl overflow-hidden border-2 border-border/50 bg-background shadow-2xl">
+                {/* Browser Header */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <div className="flex-1 flex justify-center">
+                    <div className="px-4 py-1 rounded-md bg-background/50 text-xs text-muted-foreground">
+                      dashboard.eventdynamics.com/conductor
+                    </div>
+                  </div>
+                </div>
+                <div className="relative h-[calc(100%-44px)]">
+                  <Image
+                    src="/engagement-dashboard-screenshot.png"
+                    alt="AI Engagement Conductor Dashboard"
+                    fill
+                    className="object-cover object-top"
+                    priority
+                  />
+                  {/* Gradient overlay at bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background/90 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      Live Dashboard
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* AI Visualization - Top Right */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="col-span-5 row-span-4 relative group"
+            >
+              <div className="h-full rounded-2xl overflow-hidden border border-border/50 bg-card shadow-xl relative">
+                <Image
+                  src="/Gemini_Generated_Image_wihwe6wihwe6wihw.png"
+                  alt="AI Learning System Visualization"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <Brain className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <span className="text-white font-semibold">Thompson Sampling AI</span>
+                  </div>
+                  <p className="text-white/70 text-sm">
+                    Reinforcement learning that optimizes interventions with each session
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Capabilities Cards - Bottom Right */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="col-span-5 row-span-2 grid grid-cols-2 gap-4"
+            >
+              {capabilities.map((cap, index) => (
+                <motion.div
+                  key={cap.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                  className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 flex items-center gap-3 hover:border-primary/30 hover:bg-card transition-all"
+                >
+                  <div className={cn("h-10 w-10 rounded-lg bg-muted flex items-center justify-center", cap.color)}>
+                    <cap.icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium">{cap.label}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Mobile/Tablet Stacked Layout */}
+          <div className="lg:hidden space-y-6">
+            {/* Dashboard Screenshot */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6 }}
+              className="relative rounded-2xl overflow-hidden border-2 border-border/50 bg-background shadow-xl"
+            >
+              <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <div className="px-3 py-0.5 rounded-md bg-background/50 text-xs text-muted-foreground">
+                    Live Dashboard
+                  </div>
+                </div>
+              </div>
+              <Image
+                src="/engagement-dashboard-screenshot.png"
+                alt="AI Engagement Conductor Dashboard"
+                width={1920}
+                height={1080}
+                className="w-full h-auto"
+              />
+            </motion.div>
+
+            {/* AI Visualization */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="relative rounded-2xl overflow-hidden border border-border/50 shadow-xl aspect-video"
+            >
+              <Image
+                src="/Gemini_Generated_Image_wihwe6wihwe6wihw.png"
+                alt="AI Learning System"
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-400" />
+                  <span className="text-white font-medium text-sm">Thompson Sampling AI</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Capabilities Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {capabilities.map((cap, index) => (
+                <motion.div
+                  key={cap.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                  transition={{ duration: 0.4, delay: 0.2 + index * 0.05 }}
+                  className="rounded-xl border bg-card p-3 flex items-center gap-2"
+                >
+                  <cap.icon className={cn("h-5 w-5", cap.color)} />
+                  <span className="text-xs font-medium">{cap.label}</span>
+                </motion.div>
+              ))}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -470,135 +622,103 @@ function HowItWorksSection() {
 
         {/* Desktop: Orbital Visualization */}
         <div className="hidden lg:block">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative max-w-4xl mx-auto aspect-square"
-          >
-            {/* Outer orbital ring */}
-            <div className="absolute inset-8 rounded-full border-2 border-dashed border-primary/20" />
-
-            {/* Animated orbital ring */}
+          <div className="relative max-w-3xl mx-auto py-16">
             <motion.div
-              className="absolute inset-8 rounded-full border-2 border-primary/40"
-              style={{ borderStyle: "solid", borderWidth: "2px" }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            />
-
-            {/* Inner glow ring */}
-            <div className="absolute inset-24 rounded-full bg-gradient-to-br from-primary/10 to-purple-500/10 blur-xl" />
-
-            {/* Center AI Brain */}
-            <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative w-full aspect-square"
             >
-              <div className="relative">
-                {/* Pulsing rings */}
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-primary/20"
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{ width: "160px", height: "160px", marginLeft: "-80px", marginTop: "-80px", left: "50%", top: "50%" }}
-                />
-                <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary via-purple-600 to-indigo-600 flex items-center justify-center shadow-2xl shadow-primary/30">
-                  <Brain className="w-14 h-14 text-white" />
-                </div>
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                  <span className="text-sm font-semibold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+              {/* Outer orbital ring */}
+              <div className="absolute inset-[15%] rounded-full border-2 border-dashed border-primary/20" />
+
+              {/* Animated orbital ring */}
+              <motion.div
+                className="absolute inset-[15%] rounded-full border-2 border-primary/40"
+                style={{ borderStyle: "solid", borderWidth: "2px" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              />
+
+              {/* Inner glow ring */}
+              <div className="absolute inset-[30%] rounded-full bg-gradient-to-br from-primary/10 to-purple-500/10 blur-xl" />
+
+              {/* Center AI Brain */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <div className="relative flex flex-col items-center">
+                  {/* Pulsing rings */}
+                  <motion.div
+                    className="absolute rounded-full bg-primary/20"
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    style={{ width: "140px", height: "140px", top: "50%", left: "50%", marginTop: "-70px", marginLeft: "-70px" }}
+                  />
+                  <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary via-purple-600 to-indigo-600 flex items-center justify-center shadow-2xl shadow-primary/30">
+                    <Brain className="w-12 h-12 text-white" />
+                  </div>
+                  <span className="mt-3 text-sm font-semibold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
                     AI Engine
                   </span>
                 </div>
-              </div>
+              </motion.div>
+
+              {/* Orbital Steps */}
+              {steps.map((step, index) => {
+                // Calculate position on circle - using 35% radius for tighter orbit
+                const angle = (index * 60 - 90) * (Math.PI / 180);
+                const radius = 35;
+                const x = 50 + radius * Math.cos(angle);
+                const y = 50 + radius * Math.sin(angle);
+
+                return (
+                  <motion.div
+                    key={step.title}
+                    className="absolute z-10"
+                    style={{ left: `${x}%`, top: `${y}%` }}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+                  >
+                    <div className="relative -translate-x-1/2 -translate-y-1/2 group cursor-pointer">
+                      {/* Step node */}
+                      <div className="relative">
+                        {/* Glow effect on hover */}
+                        <div className={cn(
+                          "absolute inset-0 rounded-xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300",
+                          step.bgColor
+                        )} />
+
+                        <div className={cn(
+                          "relative w-16 h-16 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg transition-all duration-300",
+                          "group-hover:scale-110 group-hover:shadow-xl",
+                          step.color
+                        )}>
+                          <step.icon className="w-7 h-7 text-white" />
+                        </div>
+
+                        {/* Step number badge */}
+                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-background border-2 border-border flex items-center justify-center text-[10px] font-bold">
+                          {index + 1}
+                        </div>
+                      </div>
+
+                      {/* Label */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-center whitespace-nowrap">
+                        <div className="font-semibold text-xs">{step.title}</div>
+                        <div className="text-[10px] text-muted-foreground max-w-[100px] mx-auto leading-tight">
+                          {step.description}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </motion.div>
-
-            {/* Orbital Steps */}
-            {steps.map((step, index) => {
-              // Calculate position on circle
-              const angle = (index * 60 - 90) * (Math.PI / 180); // Start from top, 60 degrees apart
-              const radius = 42; // percentage from center
-              const x = 50 + radius * Math.cos(angle);
-              const y = 50 + radius * Math.sin(angle);
-
-              return (
-                <motion.div
-                  key={step.title}
-                  className="absolute z-10"
-                  style={{ left: `${x}%`, top: `${y}%` }}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                >
-                  <div className="relative -translate-x-1/2 -translate-y-1/2 group cursor-pointer">
-                    {/* Connection line to center */}
-                    <motion.div
-                      className="absolute top-1/2 left-1/2 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-primary/10 origin-left -z-10"
-                      style={{
-                        width: `${radius * 2}%`,
-                        transform: `rotate(${180 + (index * 60 - 90)}deg)`,
-                      }}
-                      initial={{ scaleX: 0 }}
-                      animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
-                      transition={{ duration: 0.8, delay: 0.5 + index * 0.1 }}
-                    />
-
-                    {/* Step node */}
-                    <div className="relative">
-                      {/* Glow effect on hover */}
-                      <div className={cn(
-                        "absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300",
-                        step.bgColor
-                      )} />
-
-                      <div className={cn(
-                        "relative w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-lg transition-all duration-300",
-                        "group-hover:scale-110 group-hover:shadow-xl",
-                        step.color
-                      )}>
-                        <step.icon className="w-9 h-9 text-white" />
-                      </div>
-
-                      {/* Step number badge */}
-                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-background border-2 border-border flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </div>
-                    </div>
-
-                    {/* Label */}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 text-center whitespace-nowrap">
-                      <div className="font-semibold text-sm">{step.title}</div>
-                      <div className="text-xs text-muted-foreground max-w-[120px] mx-auto">
-                        {step.description}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-
-            {/* Animated flow particles */}
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary/50"
-                style={{ left: "50%", top: "8%" }}
-                animate={{
-                  offsetDistance: ["0%", "100%"],
-                  opacity: [0, 1, 1, 0],
-                }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  delay: i * 2,
-                  ease: "linear",
-                }}
-                initial={{ offsetPath: "path('M 0,0 A 180,180 0 1,1 0,360 A 180,180 0 1,1 0,0')" }}
-              />
-            ))}
-          </motion.div>
+          </div>
         </div>
 
         {/* Mobile/Tablet: Vertical Flow Timeline */}
@@ -684,122 +804,262 @@ function HowItWorksSection() {
 }
 
 // ============================================================================
-// ANOMALY DETECTION SECTION
+// INTELLIGENCE & IMPACT SECTION - Combined Anomaly Detection + Results
 // ============================================================================
-function AnomalyDetectionSection() {
+function IntelligenceImpactSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
+  const anomalies = [
+    { icon: AlertTriangle, title: "Sudden Drop", severity: "Critical", color: "text-red-500", bg: "bg-red-500/10" },
+    { icon: TrendingUp, title: "Gradual Decline", severity: "Warning", color: "text-orange-500", bg: "bg-orange-500/10" },
+    { icon: Activity, title: "Low Engagement", severity: "Warning", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+    { icon: Users, title: "Mass Exit", severity: "Critical", color: "text-red-600", bg: "bg-red-500/10" },
+  ];
+
+  const metrics = [
+    { label: "Engagement Increase", value: "+47%", color: "text-green-500" },
+    { label: "Drop-off Reduction", value: "-62%", color: "text-green-500" },
+    { label: "Session Duration", value: "+35%", color: "text-green-500" },
+    { label: "Success Rate", value: "89%", color: "text-purple-500" },
+  ];
+
   return (
     <section className="py-24 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-green-500/5 rounded-full blur-[150px]" />
+      </div>
+
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Content */}
-          <motion.div
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={fadeInUp}
-          >
-            <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-full">
-              Anomaly Detection
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
-              4 Types of Engagement Anomalies Detected in Real-Time
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Our ML algorithms continuously analyze engagement patterns to identify problems
-              the moment they start—not after the damage is done.
-            </p>
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
+          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-gradient-to-r from-orange-500/10 to-green-500/10 text-orange-600 dark:text-orange-400 rounded-full border border-orange-500/20">
+            Intelligence & Impact
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+            Detect Problems. Deliver Results.
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Real-time anomaly detection powers immediate intervention—see the transformation in engagement
+          </p>
+        </motion.div>
 
-            <div className="space-y-4">
-              {[
-                {
-                  icon: AlertTriangle,
-                  title: "Sudden Drop",
-                  description: "Sharp decline in engagement requiring immediate attention",
-                  severity: "Critical",
-                  color: "text-red-500",
-                },
-                {
-                  icon: TrendingUp,
-                  title: "Gradual Decline",
-                  description: "Slow erosion in interaction over time—investigate causes",
-                  severity: "Warning",
-                  color: "text-orange-500",
-                },
-                {
-                  icon: Activity,
-                  title: "Low Engagement",
-                  description: "Flatlined engagement that needs a strategy rework",
-                  severity: "Warning",
-                  color: "text-yellow-500",
-                },
-                {
-                  icon: Users,
-                  title: "Mass Exit",
-                  description: "High volume of users leaving—critical intervention needed",
-                  severity: "Critical",
-                  color: "text-red-600",
-                },
-              ].map((anomaly) => (
-                <div
-                  key={anomaly.title}
-                  className="flex items-start gap-4 p-4 rounded-xl border bg-card hover:border-primary/30 transition-colors"
-                >
-                  <div className={cn("mt-1", anomaly.color)}>
-                    <anomaly.icon className="h-5 w-5" />
+        {/* Split Visual: Detection → Results */}
+        <div className="max-w-6xl mx-auto">
+          {/* Desktop: Side by Side with Arrow Flow */}
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-2 gap-8 items-stretch">
+              {/* Left: Detection Panel */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="relative"
+              >
+                <div className="absolute -top-3 left-6 z-10 px-4 py-1.5 bg-orange-500 text-white text-sm font-semibold rounded-full">
+                  Detect
+                </div>
+                <div className="h-full rounded-2xl border-2 border-orange-500/30 bg-card overflow-hidden shadow-xl">
+                  {/* Anomaly Image */}
+                  <div className="relative h-56">
+                    <Image
+                      src="/Gemini_Generated_Image_wod3nrwod3nrwod3.png"
+                      alt="Anomaly Detection Visualization"
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold">{anomaly.title}</h4>
-                      <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full",
-                        anomaly.severity === "Critical"
-                          ? "bg-red-500/10 text-red-500"
-                          : "bg-yellow-500/10 text-yellow-600"
-                      )}>
-                        {anomaly.severity}
-                      </span>
+
+                  {/* Anomaly Types */}
+                  <div className="p-6 -mt-8 relative z-10">
+                    <h3 className="text-lg font-semibold mb-4">4 Anomaly Types Detected</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {anomalies.map((anomaly, index) => (
+                        <motion.div
+                          key={anomaly.title}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                          transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+                          className="flex items-center gap-2 p-3 rounded-lg border bg-background"
+                        >
+                          <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", anomaly.bg)}>
+                            <anomaly.icon className={cn("h-4 w-4", anomaly.color)} />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">{anomaly.title}</div>
+                            <div className={cn("text-xs", anomaly.color)}>{anomaly.severity}</div>
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
-                    <p className="text-sm text-muted-foreground">{anomaly.description}</p>
+                    <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4 text-green-500" />
+                      <span>Detection in <span className="font-bold text-green-500">5 seconds</span></span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
+              </motion.div>
 
-          {/* Image */}
-          <motion.div
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            variants={scaleIn}
-            className="relative"
-          >
-            <div className="aspect-[4/3] relative rounded-2xl overflow-hidden border border-border shadow-2xl">
-              <Image
-                src="/Gemini_Generated_Image_wod3nrwod3nrwod3.png"
-                alt="Event Engagement Anomalies Detection Panel"
-                fill
-                className="object-cover"
-              />
-            </div>
-            {/* Floating badge */}
-            <motion.div
-              className="absolute -bottom-4 -left-4 bg-card border rounded-xl p-4 shadow-xl"
-              initial={{ opacity: 0, x: -20 }}
-              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+              {/* Center: Arrow Connection */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden lg:flex"
+              >
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-orange-500 to-green-500 shadow-xl">
+                  <ArrowRight className="h-8 w-8 text-white" />
                 </div>
-                <div>
-                  <div className="text-sm font-medium">Detection Speed</div>
-                  <div className="text-2xl font-bold text-green-500">5 seconds</div>
+              </motion.div>
+
+              {/* Right: Results Panel */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative"
+              >
+                <div className="absolute -top-3 left-6 z-10 px-4 py-1.5 bg-green-500 text-white text-sm font-semibold rounded-full">
+                  Transform
+                </div>
+                <div className="h-full rounded-2xl border-2 border-green-500/30 bg-card overflow-hidden shadow-xl">
+                  {/* Before/After Chart */}
+                  <div className="relative h-56">
+                    <Image
+                      src="/before_after.png"
+                      alt="Before and After Engagement Comparison"
+                      fill
+                      className="object-cover object-center"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+                    {/* Legend overlay */}
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <span className="px-2 py-1 rounded-full bg-red-500/20 text-red-500 text-xs font-medium">Without AI</span>
+                      <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-500 text-xs font-medium">With AI</span>
+                    </div>
+                  </div>
+
+                  {/* Metrics */}
+                  <div className="p-6 -mt-8 relative z-10">
+                    <h3 className="text-lg font-semibold mb-4">Proven Impact</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {metrics.map((metric, index) => (
+                        <motion.div
+                          key={metric.label}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                          transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
+                          className="text-center p-3 rounded-lg border bg-background"
+                        >
+                          <div className={cn("text-2xl font-bold", metric.color)}>{metric.value}</div>
+                          <div className="text-xs text-muted-foreground">{metric.label}</div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Mobile: Stacked with Visual Flow */}
+          <div className="lg:hidden space-y-6">
+            {/* Detection Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.5 }}
+              className="relative rounded-2xl border-2 border-orange-500/30 bg-card overflow-hidden"
+            >
+              <div className="absolute top-3 left-3 z-10 px-3 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full">
+                Detect
+              </div>
+              <div className="relative h-40">
+                <Image
+                  src="/Gemini_Generated_Image_wod3nrwod3nrwod3.png"
+                  alt="Anomaly Detection"
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+              </div>
+              <div className="p-4 -mt-4 relative z-10">
+                <div className="grid grid-cols-2 gap-2">
+                  {anomalies.map((anomaly) => (
+                    <div key={anomaly.title} className="flex items-center gap-2 p-2 rounded-lg border bg-background">
+                      <anomaly.icon className={cn("h-4 w-4", anomaly.color)} />
+                      <span className="text-xs font-medium">{anomaly.title}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </motion.div>
+
+            {/* Arrow */}
+            <div className="flex justify-center">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                className="w-10 h-10 rounded-full bg-gradient-to-b from-orange-500 to-green-500 flex items-center justify-center shadow-lg"
+              >
+                <ChevronRight className="h-5 w-5 text-white rotate-90" />
+              </motion.div>
+            </div>
+
+            {/* Results Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="relative rounded-2xl border-2 border-green-500/30 bg-card overflow-hidden"
+            >
+              <div className="absolute top-3 left-3 z-10 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
+                Transform
+              </div>
+              <div className="relative h-40">
+                <Image
+                  src="/before_after.png"
+                  alt="Before After Comparison"
+                  fill
+                  className="object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+              </div>
+              <div className="p-4 -mt-4 relative z-10">
+                <div className="grid grid-cols-4 gap-2">
+                  {metrics.map((metric) => (
+                    <div key={metric.label} className="text-center">
+                      <div className={cn("text-lg font-bold", metric.color)}>{metric.value}</div>
+                      <div className="text-[10px] text-muted-foreground leading-tight">{metric.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Key Insight */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="mt-12 text-center"
+          >
+            <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-500/5 via-background to-green-500/5 border">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              <p className="text-sm md:text-base">
+                <span className="font-semibold">Engagement dips detected and corrected within seconds</span>
+                <span className="text-muted-foreground"> — before attendees even think about leaving</span>
+              </p>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -1288,359 +1548,6 @@ function TransparencySection() {
 }
 
 // ============================================================================
-// SEE IT IN ACTION SECTION - Real Dashboard Showcase
-// ============================================================================
-function SeeItInActionSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const features = [
-    {
-      label: "Agent Mode Toggle",
-      description: "Switch between Manual, Semi-Auto, and Auto modes instantly",
-      position: { top: "8%", left: "15%" },
-      align: "left",
-    },
-    {
-      label: "Live Engagement Score",
-      description: "Real-time engagement tracking with trend indicators",
-      position: { top: "30%", left: "5%" },
-      align: "left",
-    },
-    {
-      label: "Signal Cards",
-      description: "At-a-glance metrics for all engagement signals",
-      position: { top: "55%", left: "8%" },
-      align: "left",
-    },
-    {
-      label: "Active Alerts",
-      description: "Anomaly notifications with severity levels",
-      position: { top: "15%", right: "5%" },
-      align: "right",
-    },
-    {
-      label: "Intervention Queue",
-      description: "Pending and executed interventions with status",
-      position: { top: "45%", right: "3%" },
-      align: "right",
-    },
-    {
-      label: "Engagement Chart",
-      description: "Historical trend with anomaly markers",
-      position: { bottom: "15%", right: "25%" },
-      align: "right",
-    },
-  ];
-
-  return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px]" />
-      </div>
-
-      <div className="container mx-auto px-4 md:px-6" ref={ref}>
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
-        >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full">
-            Live Dashboard
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            See It In Action
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Your command center for real-time engagement monitoring and AI-powered interventions
-          </p>
-        </motion.div>
-
-        {/* Dashboard Screenshot with Callouts */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative max-w-6xl mx-auto"
-        >
-          {/* Glow effect behind the dashboard */}
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-cyan-500/20 to-purple-500/20 rounded-3xl blur-3xl -z-10 scale-105" />
-
-          {/* Dashboard container */}
-          <div className="relative rounded-2xl overflow-hidden border-2 border-border/50 shadow-2xl bg-background">
-            {/* Browser-like header */}
-            <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                <div className="w-3 h-3 rounded-full bg-green-500/80" />
-              </div>
-              <div className="flex-1 flex justify-center">
-                <div className="px-4 py-1 rounded-md bg-background/50 text-xs text-muted-foreground">
-                  dashboard.eventdynamics.com/engagement-conductor
-                </div>
-              </div>
-            </div>
-
-            {/* Screenshot */}
-            <div className="relative">
-              <Image
-                src="/engagement-dashboard-screenshot.png"
-                alt="AI Engagement Conductor Dashboard - Real-time monitoring interface showing engagement scores, alerts, and intervention controls"
-                width={1920}
-                height={1080}
-                className="w-full h-auto"
-                priority
-              />
-
-              {/* Feature callouts - Desktop only */}
-              <div className="hidden lg:block">
-                {features.map((feature, index) => (
-                  <motion.div
-                    key={feature.label}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
-                    className="absolute group"
-                    style={feature.position as React.CSSProperties}
-                  >
-                    {/* Pulse indicator */}
-                    <div className="relative">
-                      <span className="absolute inset-0 rounded-full bg-primary animate-ping-soft opacity-75" />
-                      <span className="relative flex h-4 w-4 rounded-full bg-primary shadow-lg shadow-primary/50" />
-                    </div>
-
-                    {/* Tooltip */}
-                    <div
-                      className={cn(
-                        "absolute top-full mt-2 w-48 p-3 rounded-lg bg-background/95 backdrop-blur-sm border shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-20",
-                        feature.align === "right" ? "right-0" : "left-0"
-                      )}
-                    >
-                      <div className="font-semibold text-sm mb-1">{feature.label}</div>
-                      <div className="text-xs text-muted-foreground">{feature.description}</div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Feature badges - Mobile */}
-          <div className="lg:hidden mt-8 grid grid-cols-2 gap-3">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                transition={{ duration: 0.3, delay: 0.3 + index * 0.05 }}
-                className="flex items-start gap-2 p-3 rounded-lg bg-card border"
-              >
-                <div className="w-2 h-2 mt-1.5 rounded-full bg-primary shrink-0" />
-                <div>
-                  <div className="text-sm font-medium">{feature.label}</div>
-                  <div className="text-xs text-muted-foreground">{feature.description}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Bottom stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="mt-16 flex flex-wrap justify-center gap-8 lg:gap-16"
-        >
-          {[
-            { value: "Real-Time", label: "Data Updates", icon: Activity },
-            { value: "All Metrics", label: "At a Glance", icon: Eye },
-            { value: "One Click", label: "Intervention", icon: Zap },
-          ].map((stat) => (
-            <div key={stat.label} className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <stat.icon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <div className="text-lg font-bold">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            </div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// RESULTS SECTION - Before/After Comparison
-// ============================================================================
-function ResultsSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const metrics = [
-    { label: "Engagement Increase", value: "+47%", color: "text-green-500" },
-    { label: "Drop-off Reduction", value: "-62%", color: "text-green-500" },
-    { label: "Session Duration", value: "+35%", color: "text-green-500" },
-    { label: "Intervention Success", value: "89%", color: "text-purple-500" },
-  ];
-
-  return (
-    <section className="py-24 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[150px]" />
-      </div>
-
-      <div className="container mx-auto px-4 md:px-6" ref={ref}>
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
-        >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400 rounded-full">
-            Proven Results
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            The Transformation Is Real
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            See the dramatic difference AI-powered engagement makes compared to traditional event management
-          </p>
-        </motion.div>
-
-        {/* Before/After Comparison */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="max-w-5xl mx-auto mb-16"
-        >
-          <div className="relative rounded-2xl overflow-hidden border-2 border-border/50 shadow-2xl bg-card">
-            {/* Labels */}
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-6">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-sm font-medium text-red-600 dark:text-red-400">Without AI</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30">
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">With AI Conductor</span>
-              </div>
-            </div>
-
-            {/* Chart Image */}
-            <Image
-              src="/before_after.png"
-              alt="Engagement comparison chart showing dramatic improvement with AI Engagement Conductor - before and after comparison"
-              width={1200}
-              height={600}
-              className="w-full h-auto"
-            />
-
-            {/* Overlay callouts */}
-            <div className="absolute bottom-4 left-4 right-4 flex flex-col sm:flex-row justify-between gap-4">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                transition={{ delay: 0.6 }}
-                className="px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border shadow-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Before</div>
-                    <div className="font-semibold text-red-500">Engagement Crash</div>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
-                transition={{ delay: 0.8 }}
-                className="px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border shadow-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">After</div>
-                    <div className="font-semibold text-green-500">Sustained Engagement</div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Metrics Grid */}
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto"
-        >
-          {metrics.map((metric, index) => (
-            <motion.div
-              key={metric.label}
-              variants={fadeInUp}
-              className="relative group"
-            >
-              <div className="h-full p-6 rounded-2xl border bg-card text-center transition-all duration-300 hover:shadow-xl hover:border-primary/30">
-                {/* Animated background on hover */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                <motion.div
-                  className={cn("text-4xl md:text-5xl font-bold mb-2", metric.color)}
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={isInView ? { scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 + index * 0.1, type: "spring" }}
-                >
-                  {metric.value}
-                </motion.div>
-                <div className="text-sm text-muted-foreground font-medium">
-                  {metric.label}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Testimonial-style quote */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.9 }}
-          className="mt-16 max-w-3xl mx-auto text-center"
-        >
-          <div className="relative p-8 rounded-2xl bg-gradient-to-br from-green-500/5 to-emerald-500/5 border border-green-500/20">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-green-500 text-white text-sm font-medium">
-              Key Insight
-            </div>
-            <p className="text-lg md:text-xl italic text-foreground/90">
-              "Events using AI Engagement Conductor see engagement dips detected and corrected within seconds—
-              before attendees even think about leaving."
-            </p>
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <BarChart3 className="h-4 w-4" />
-              Based on aggregated platform analytics
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
 // ENTERPRISE FEATURES SECTION
 // ============================================================================
 function EnterpriseFeaturesSection() {
@@ -1809,14 +1716,12 @@ export default function EngagementConductorPage() {
     <div className="min-h-screen">
       <HeroSection />
       <ProblemSection />
-      <SolutionSection />
+      <PlatformShowcaseSection />
       <HowItWorksSection />
-      <AnomalyDetectionSection />
+      <IntelligenceImpactSection />
       <InterventionsSection />
       <OperatingModesSection />
       <TransparencySection />
-      <SeeItInActionSection />
-      <ResultsSection />
       <EnterpriseFeaturesSection />
       <CTASection />
     </div>
