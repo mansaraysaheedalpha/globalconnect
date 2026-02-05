@@ -83,7 +83,7 @@ function HeroSection() {
         className="absolute top-0 left-0 w-full h-full object-cover -z-10"
         poster="/placeholder-image.png"
       >
-        <source src="/Futuristic_Network_Visualization.mp4" type="video/mp4" />
+        <source src="/Futuristic_Network_Visualization_Video.mp4" type="video/mp4" />
       </video>
 
       {/* Gradient Overlay */}

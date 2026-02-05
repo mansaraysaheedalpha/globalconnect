@@ -234,47 +234,59 @@ function ProblemSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const problems = [
-    {
-      icon: TrendingUp,
-      stat: "67%",
-      title: "Audience Drop-off",
-      description: "of virtual event attendees leave before the event ends due to declining engagement",
-    },
-    {
-      icon: Clock,
-      stat: "8 min",
-      title: "Attention Span",
-      description: "Average time before attendees start disengaging without active interaction",
-    },
-    {
-      icon: AlertTriangle,
-      stat: "73%",
-      title: "Too Late to Act",
-      description: "of organizers only notice engagement issues after significant audience loss",
-    },
-  ];
+  // Engagement decline data points for the animated graph
+  const engagementData = [100, 95, 88, 75, 60, 45, 33, 28, 25, 22];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
-      {/* Background decoration */}
+    <section className="py-24 bg-gradient-to-b from-background via-red-950/5 to-muted/30 relative overflow-hidden">
+      {/* Animated Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[150px]" />
+        <motion.div
+          className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-red-500/8 rounded-full blur-[180px]"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-500/8 rounded-full blur-[150px]"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.6, 0.4, 0.6] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Warning pattern */}
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_40px,rgba(239,68,68,0.02)_40px,rgba(239,68,68,0.02)_80px)]" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
+        {/* Header */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/10 text-red-600 dark:text-red-400 rounded-full">
+          <motion.span
+            className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/10 text-red-600 dark:text-red-400 rounded-full border border-red-500/20"
+            animate={{ boxShadow: ["0 0 0 0 rgba(239, 68, 68, 0)", "0 0 0 8px rgba(239, 68, 68, 0.1)", "0 0 0 0 rgba(239, 68, 68, 0)"] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <motion.span
+              className="w-2 h-2 rounded-full bg-red-500"
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
             The Problem
-          </span>
+          </motion.span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            The Silent Killer of Virtual Events
+            The Silent{" "}
+            <span className="relative">
+              <span className="text-red-500">Killer</span>
+              <motion.span
+                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-orange-500 rounded-full"
+                initial={{ scaleX: 0 }}
+                animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+              />
+            </span>
+            {" "}of Virtual Events
           </h2>
           <p className="text-lg text-muted-foreground">
             By the time you notice engagement dropping, it's already too late.
@@ -282,32 +294,300 @@ function ProblemSection() {
           </p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid md:grid-cols-3 gap-8"
-        >
-          {problems.map((problem) => (
-            <motion.div
-              key={problem.title}
-              variants={fadeInUp}
-              className="relative group"
-            >
-              <div className="h-full rounded-2xl border border-red-500/20 bg-card p-8 transition-all duration-300 hover:border-red-500/40 hover:shadow-xl hover:shadow-red-500/5">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-red-500/10">
-                    <problem.icon className="h-7 w-7 text-red-500" />
-                  </div>
-                  <div className="text-4xl font-bold text-red-500">
-                    {problem.stat}
+        {/* Main Content: Graph + Stats */}
+        <div className="grid lg:grid-cols-5 gap-8 items-center max-w-6xl mx-auto">
+          {/* Animated Engagement Decline Graph */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="lg:col-span-2 relative"
+          >
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-red-500/20 p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium text-muted-foreground">Typical Event Engagement</span>
+                <motion.div
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />
+                  <span className="text-xs font-medium text-red-500">Declining</span>
+                </motion.div>
+              </div>
+
+              {/* SVG Graph */}
+              <div className="relative h-48">
+                <svg className="w-full h-full" viewBox="0 0 400 180" preserveAspectRatio="none">
+                  {/* Grid lines */}
+                  {[0, 25, 50, 75, 100].map((y) => (
+                    <line
+                      key={y}
+                      x1="40"
+                      y1={160 - (y / 100) * 140}
+                      x2="390"
+                      y2={160 - (y / 100) * 140}
+                      stroke="currentColor"
+                      strokeOpacity="0.1"
+                      strokeDasharray="4 4"
+                    />
+                  ))}
+
+                  {/* Y-axis labels */}
+                  {[0, 50, 100].map((y) => (
+                    <text
+                      key={y}
+                      x="30"
+                      y={165 - (y / 100) * 140}
+                      textAnchor="end"
+                      className="fill-muted-foreground text-[10px]"
+                    >
+                      {y}%
+                    </text>
+                  ))}
+
+                  {/* Gradient fill under the line */}
+                  <defs>
+                    <linearGradient id="engagementGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgb(239, 68, 68)" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="rgb(239, 68, 68)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Area fill */}
+                  <motion.path
+                    d={`M 40 ${160 - (engagementData[0] / 100) * 140} ${engagementData.map((val, i) => `L ${40 + i * 38.9} ${160 - (val / 100) * 140}`).join(" ")} L 390 160 L 40 160 Z`}
+                    fill="url(#engagementGradient)"
+                    initial={{ opacity: 0 }}
+                    animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                  />
+
+                  {/* Main line */}
+                  <motion.path
+                    d={`M 40 ${160 - (engagementData[0] / 100) * 140} ${engagementData.map((val, i) => `L ${40 + i * 38.9} ${160 - (val / 100) * 140}`).join(" ")}`}
+                    fill="none"
+                    stroke="rgb(239, 68, 68)"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0 }}
+                    animate={isInView ? { pathLength: 1 } : { pathLength: 0 }}
+                    transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
+                  />
+
+                  {/* Data points */}
+                  {engagementData.map((val, i) => (
+                    <motion.circle
+                      key={i}
+                      cx={40 + i * 38.9}
+                      cy={160 - (val / 100) * 140}
+                      r="4"
+                      fill="rgb(239, 68, 68)"
+                      initial={{ scale: 0 }}
+                      animate={isInView ? { scale: 1 } : { scale: 0 }}
+                      transition={{ duration: 0.3, delay: 0.5 + i * 0.1 }}
+                    />
+                  ))}
+
+                  {/* Danger zone indicator */}
+                  <rect x="40" y={160 - (33 / 100) * 140} width="350" height={(33 / 100) * 140} fill="rgb(239, 68, 68)" fillOpacity="0.05" />
+                  <line x1="40" y1={160 - (33 / 100) * 140} x2="390" y2={160 - (33 / 100) * 140} stroke="rgb(239, 68, 68)" strokeWidth="1" strokeDasharray="6 4" strokeOpacity="0.5" />
+                  <text x="395" y={160 - (33 / 100) * 140 + 4} className="fill-red-500 text-[9px] font-medium">
+                    Danger
+                  </text>
+                </svg>
+
+                {/* Time labels */}
+                <div className="absolute bottom-0 left-10 right-0 flex justify-between text-[10px] text-muted-foreground">
+                  <span>Start</span>
+                  <span>15m</span>
+                  <span>30m</span>
+                  <span>45m</span>
+                  <span>End</span>
+                </div>
+              </div>
+
+              {/* Bottom stat */}
+              <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Average retention at end</span>
+                <motion.span
+                  className="text-2xl font-bold text-red-500"
+                  initial={{ opacity: 0 }}
+                  animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+                  transition={{ delay: 2 }}
+                >
+                  22%
+                </motion.span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Stats Cards */}
+          <div className="lg:col-span-3 space-y-4">
+            {[
+              {
+                icon: Users,
+                stat: "67",
+                suffix: "%",
+                title: "Audience Drop-off",
+                description: "of virtual event attendees leave before the event ends due to declining engagement",
+                color: "red",
+                delay: 0.3,
+              },
+              {
+                icon: Clock,
+                stat: "8",
+                suffix: " min",
+                title: "Attention Span",
+                description: "Average time before attendees start disengaging without active interaction",
+                color: "orange",
+                delay: 0.5,
+              },
+              {
+                icon: AlertTriangle,
+                stat: "73",
+                suffix: "%",
+                title: "Too Late to Act",
+                description: "of organizers only notice engagement issues after significant audience loss",
+                color: "amber",
+                delay: 0.7,
+              },
+            ].map((problem, index) => (
+              <motion.div
+                key={problem.title}
+                initial={{ opacity: 0, x: 50 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
+                transition={{ duration: 0.6, delay: problem.delay }}
+                className="group"
+              >
+                <div className={cn(
+                  "relative rounded-2xl border p-5 transition-all duration-300 overflow-hidden",
+                  "bg-card/80 backdrop-blur-sm hover:shadow-xl",
+                  problem.color === "red" && "border-red-500/20 hover:border-red-500/40 hover:shadow-red-500/10",
+                  problem.color === "orange" && "border-orange-500/20 hover:border-orange-500/40 hover:shadow-orange-500/10",
+                  problem.color === "amber" && "border-amber-500/20 hover:border-amber-500/40 hover:shadow-amber-500/10"
+                )}>
+                  {/* Animated background on hover */}
+                  <motion.div
+                    className={cn(
+                      "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10",
+                      problem.color === "red" && "bg-gradient-to-r from-red-500/5 to-transparent",
+                      problem.color === "orange" && "bg-gradient-to-r from-orange-500/5 to-transparent",
+                      problem.color === "amber" && "bg-gradient-to-r from-amber-500/5 to-transparent"
+                    )}
+                  />
+
+                  <div className="flex items-center gap-5">
+                    {/* Icon with pulse effect */}
+                    <div className="relative">
+                      <motion.div
+                        className={cn(
+                          "absolute inset-0 rounded-xl blur-md",
+                          problem.color === "red" && "bg-red-500/30",
+                          problem.color === "orange" && "bg-orange-500/30",
+                          problem.color === "amber" && "bg-amber-500/30"
+                        )}
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+                      />
+                      <div className={cn(
+                        "relative flex h-14 w-14 items-center justify-center rounded-xl",
+                        problem.color === "red" && "bg-red-500/10",
+                        problem.color === "orange" && "bg-orange-500/10",
+                        problem.color === "amber" && "bg-amber-500/10"
+                      )}>
+                        <problem.icon className={cn(
+                          "h-7 w-7",
+                          problem.color === "red" && "text-red-500",
+                          problem.color === "orange" && "text-orange-500",
+                          problem.color === "amber" && "text-amber-500"
+                        )} />
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-1 mb-1">
+                        <motion.span
+                          className={cn(
+                            "text-4xl font-bold tabular-nums",
+                            problem.color === "red" && "text-red-500",
+                            problem.color === "orange" && "text-orange-500",
+                            problem.color === "amber" && "text-amber-500"
+                          )}
+                          initial={{ opacity: 0 }}
+                          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+                          transition={{ delay: problem.delay + 0.3 }}
+                        >
+                          {problem.stat}
+                        </motion.span>
+                        <span className={cn(
+                          "text-2xl font-bold",
+                          problem.color === "red" && "text-red-500",
+                          problem.color === "orange" && "text-orange-500",
+                          problem.color === "amber" && "text-amber-500"
+                        )}>
+                          {problem.suffix}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold mb-1">{problem.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{problem.description}</p>
+                    </div>
+
+                    {/* Progress indicator */}
+                    <div className="hidden sm:block">
+                      <svg className="w-16 h-16" viewBox="0 0 64 64">
+                        <circle
+                          cx="32"
+                          cy="32"
+                          r="28"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeOpacity="0.1"
+                          strokeWidth="4"
+                        />
+                        <motion.circle
+                          cx="32"
+                          cy="32"
+                          r="28"
+                          fill="none"
+                          stroke={problem.color === "red" ? "rgb(239, 68, 68)" : problem.color === "orange" ? "rgb(249, 115, 22)" : "rgb(245, 158, 11)"}
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          strokeDasharray={`${parseFloat(problem.stat) * 1.76} 176`}
+                          transform="rotate(-90 32 32)"
+                          initial={{ strokeDasharray: "0 176" }}
+                          animate={isInView ? { strokeDasharray: `${parseFloat(problem.stat) * 1.76} 176` } : { strokeDasharray: "0 176" }}
+                          transition={{ duration: 1.5, delay: problem.delay + 0.2, ease: "easeOut" }}
+                        />
+                      </svg>
+                    </div>
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{problem.title}</h3>
-                <p className="text-muted-foreground">{problem.description}</p>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 1 }}
+          className="mt-12 text-center"
+        >
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20">
+            <motion.div
+              className="w-2 h-2 rounded-full bg-red-500"
+              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <span className="text-sm text-muted-foreground">
+              What if you could{" "}
+              <span className="font-semibold text-foreground">detect and fix engagement issues</span>
+              {" "}before they become critical?
+            </span>
+          </div>
         </motion.div>
       </div>
     </section>
