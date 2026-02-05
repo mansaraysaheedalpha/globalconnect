@@ -325,53 +325,7 @@ function ChapterBlock({ chapter, index }: { chapter: any; index: number }) {
 }
 
 // ============================================================================
-// CAPABILITY NODE COMPONENT
-// ============================================================================
-interface CapabilityNodeProps {
-  cap: {
-    icon: React.ElementType;
-    label: string;
-    sublabel: string;
-    color: string;
-  };
-  index: number;
-  isInView: boolean;
-}
-
-function CapabilityNode({ cap, index, isInView }: CapabilityNodeProps) {
-  return (
-    <motion.div
-      initial={{ scale: 0, opacity: 0 }}
-      animate={isInView ? { scale: 1, opacity: 1 } : {}}
-      transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-      whileHover={{ scale: 1.05 }}
-      className="relative group cursor-pointer"
-    >
-      {/* Glow */}
-      <div className={cn(
-        "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-50 blur-xl group-hover:opacity-80 transition-opacity",
-        cap.color
-      )} />
-
-      {/* Node */}
-      <div className={cn(
-        "relative w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center shadow-2xl",
-        cap.color
-      )}>
-        <cap.icon className="w-7 h-7 md:w-8 md:h-8 text-white mb-1" />
-        <span className="text-[10px] md:text-xs font-semibold text-white text-center leading-tight px-1">
-          {cap.label}
-        </span>
-        <span className="text-[9px] md:text-[10px] text-white/80 text-center">
-          {cap.sublabel}
-        </span>
-      </div>
-    </motion.div>
-  );
-}
-
-// ============================================================================
-// WHAT WE BUILD - Animated Visual Diagram
+// WHAT WE BUILD - Rotating Orbital Diagram
 // ============================================================================
 function WhatWeBuildSection() {
   const ref = useRef(null);
@@ -386,6 +340,9 @@ function WhatWeBuildSection() {
     { icon: TrendingUp, label: "Lead", sublabel: "Scoring", color: "from-red-500 to-pink-500" },
   ];
 
+  // Calculate angles for 6 nodes evenly distributed (360/6 = 60 degrees apart)
+  const nodeAngles = [0, 60, 120, 180, 240, 300];
+
   return (
     <section ref={ref} className="py-32 relative overflow-hidden">
       {/* Background */}
@@ -396,7 +353,7 @@ function WhatWeBuildSection() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          className="text-center max-w-4xl mx-auto mb-24"
+          className="text-center max-w-4xl mx-auto mb-16 md:mb-24"
         >
           <motion.span
             initial={{ opacity: 0, scale: 0.9 }}
@@ -415,76 +372,160 @@ function WhatWeBuildSection() {
           </p>
         </motion.div>
 
-        {/* Central visualization - Grid-based layout for reliability */}
-        <div className="relative max-w-4xl mx-auto px-4">
-          {/* Grid container */}
-          <div className="grid grid-cols-5 gap-4 md:gap-6 items-center justify-items-center py-8">
-            {/* Row 1: AI Engagement at top center */}
-            <div className="col-span-5 flex justify-center">
-              <CapabilityNode cap={capabilities[0]} index={0} isInView={isInView} />
-            </div>
+        {/* Orbital Visualization Container */}
+        <div className="relative w-full max-w-[500px] md:max-w-[600px] lg:max-w-[700px] mx-auto aspect-square">
 
-            {/* Row 2: Lead Scoring (left) and Smart Matchmaking (right) */}
-            <div className="col-span-2 flex justify-end w-full">
-              <CapabilityNode cap={capabilities[5]} index={5} isInView={isInView} />
-            </div>
-            <div className="col-span-1" /> {/* Spacer */}
-            <div className="col-span-2 flex justify-start w-full">
-              <CapabilityNode cap={capabilities[1]} index={1} isInView={isInView} />
-            </div>
+          {/* Static orbital track ring */}
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={isInView ? { scale: 1, opacity: 1 } : {}}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute inset-[15%] rounded-full border border-white/10"
+          />
 
-            {/* Row 3: Center - Event Dynamics */}
-            <div className="col-span-5 flex justify-center py-6">
+          {/* Second orbital track */}
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={isInView ? { scale: 1, opacity: 1 } : {}}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="absolute inset-[17%] rounded-full border border-dashed border-white/5"
+          />
+
+          {/* Center - Event Dynamics (Fixed, not rotating) */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={isInView ? { scale: 1, opacity: 1 } : {}}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="relative"
+            >
+              {/* Pulsing rings */}
               <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={isInView ? { scale: 1, opacity: 1 } : {}}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="relative"
-              >
-                {/* Pulsing rings */}
-                <motion.div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 md:w-48 md:h-48 rounded-full bg-white/10"
-                  animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                <motion.div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 md:w-48 md:h-48 rounded-full bg-white/5"
-                  animate={{ scale: [1.2, 1.6, 1.2], opacity: [0.2, 0, 0.2] }}
-                  transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
-                />
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full bg-white/10"
+                animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              <motion.div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full bg-white/5"
+                animate={{ scale: [1.2, 1.6, 1.2], opacity: [0.2, 0, 0.2] }}
+                transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+              />
 
-                {/* Core */}
-                <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center">
-                  <div className="text-center">
-                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white mx-auto mb-1" />
-                    <span className="text-xs md:text-sm font-semibold text-white">Event</span>
-                    <span className="block text-[10px] md:text-xs text-white/70">Dynamics</span>
-                  </div>
+              {/* Core */}
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
+                <div className="text-center">
+                  <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white mx-auto mb-1" />
+                  <span className="text-xs md:text-sm font-semibold text-white">Event</span>
+                  <span className="block text-[10px] md:text-xs text-white/70">Dynamics</span>
                 </div>
-              </motion.div>
-            </div>
-
-            {/* Row 4: Gamification (left) and 12+ Real-Time (right) */}
-            <div className="col-span-2 flex justify-end w-full">
-              <CapabilityNode cap={capabilities[4]} index={4} isInView={isInView} />
-            </div>
-            <div className="col-span-1" /> {/* Spacer */}
-            <div className="col-span-2 flex justify-start w-full">
-              <CapabilityNode cap={capabilities[2]} index={2} isInView={isInView} />
-            </div>
-
-            {/* Row 5: Proximity at bottom center */}
-            <div className="col-span-5 flex justify-center">
-              <CapabilityNode cap={capabilities[3]} index={3} isInView={isInView} />
-            </div>
+              </div>
+            </motion.div>
           </div>
+
+          {/* Rotating orbital container with all nodes */}
+          <motion.div
+            className="absolute inset-0"
+            animate={isInView ? { rotate: 360 } : {}}
+            transition={{
+              duration: 60,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          >
+            {/* Orbiting nodes - each positioned at their angle on the orbit */}
+            {capabilities.map((cap, index) => {
+              const angle = nodeAngles[index];
+              // Radius is roughly 35% of the container (to be at the orbital track)
+              // We need to use a CSS calc for responsive sizing
+              return (
+                <motion.div
+                  key={cap.label}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                  className="absolute"
+                  style={{
+                    top: "50%",
+                    left: "50%",
+                    // Position on orbit and counter-rotate to keep upright
+                    transform: `rotate(${angle}deg) translateX(calc(35% + 50px)) rotate(-${angle}deg) translate(-50%, -50%)`,
+                  }}
+                >
+                  {/* Counter-rotate the content so it stays upright */}
+                  <motion.div
+                    animate={{ rotate: -360 }}
+                    transition={{
+                      duration: 60,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="relative group cursor-pointer"
+                    >
+                      {/* Glow */}
+                      <div className={cn(
+                        "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-50 blur-xl group-hover:opacity-80 transition-opacity",
+                        cap.color
+                      )} />
+
+                      {/* Node */}
+                      <div className={cn(
+                        "relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center shadow-2xl",
+                        cap.color
+                      )}>
+                        <cap.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-white mb-0.5 md:mb-1" />
+                        <span className="text-[8px] sm:text-[9px] md:text-[10px] lg:text-xs font-semibold text-white text-center leading-tight px-1">
+                          {cap.label}
+                        </span>
+                        <span className="text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] text-white/80 text-center">
+                          {cap.sublabel}
+                        </span>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+
+          {/* Decorative connection lines (static, behind everything) */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none -z-10" viewBox="0 0 100 100">
+            <defs>
+              <radialGradient id="lineGradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              </radialGradient>
+            </defs>
+            {/* Lines from center to each orbital position */}
+            {nodeAngles.map((angle, i) => {
+              const rad = (angle * Math.PI) / 180;
+              const x2 = 50 + 35 * Math.cos(rad);
+              const y2 = 50 + 35 * Math.sin(rad);
+              return (
+                <motion.line
+                  key={i}
+                  x1="50"
+                  y1="50"
+                  x2={x2}
+                  y2={y2}
+                  stroke="url(#lineGradient)"
+                  strokeWidth="0.2"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={isInView ? { pathLength: 1, opacity: 1 } : {}}
+                  transition={{ duration: 1, delay: 0.8 + i * 0.1 }}
+                />
+              );
+            })}
+          </svg>
         </div>
 
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 1 }}
+          transition={{ delay: 1.2 }}
           className="text-center mt-16"
         >
           <Button asChild size="lg" className="group bg-white/10 border border-white/20 text-white hover:bg-white/20 backdrop-blur-sm">

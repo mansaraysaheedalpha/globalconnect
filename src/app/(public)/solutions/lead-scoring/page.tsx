@@ -3,17 +3,13 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Play,
   Sparkles,
-  Brain,
   Flame,
-  Thermometer,
-  Snowflake,
   Bell,
   CheckCircle,
   TrendingUp,
@@ -24,13 +20,11 @@ import {
   Download,
   Mail,
   MessageSquare,
-  BarChart3,
   FileSpreadsheet,
   RefreshCw,
   Shield,
   Wifi,
   Database,
-  ChevronRight,
   Eye,
   MousePointer,
   Video,
@@ -41,11 +35,12 @@ import {
   Building2,
   Star,
   Filter,
-  Search,
-  ArrowUpRight,
   Volume2,
   Layers,
   GitBranch,
+  AlertTriangle,
+  UserX,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -63,41 +58,535 @@ const staggerContainer = {
   },
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
-};
-
 // ============================================================================
-// ANIMATED LEAD SCORE COUNTER
+// CHAOS VISUALIZATION - Event floor with leads fading away
 // ============================================================================
-function AnimatedScoreCounter({ targetScore, delay = 0 }: { targetScore: number; delay?: number }) {
-  const [score, setScore] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+function ChaosVisualization() {
+  const [leads, setLeads] = useState<{ id: number; x: number; y: number; name: string; opacity: number; status: "active" | "fading" | "lost" }[]>([]);
+  const [lostCount, setLostCount] = useState(0);
+  const [totalLost, setTotalLost] = useState(0);
 
   useEffect(() => {
-    if (!isInView) return;
-    const timeout = setTimeout(() => {
-      const duration = 1500;
-      const steps = 60;
-      const increment = targetScore / steps;
-      let current = 0;
-      const interval = setInterval(() => {
-        current += increment;
-        if (current >= targetScore) {
-          setScore(targetScore);
-          clearInterval(interval);
-        } else {
-          setScore(Math.floor(current));
-        }
-      }, duration / steps);
-      return () => clearInterval(interval);
-    }, delay);
-    return () => clearTimeout(timeout);
-  }, [isInView, targetScore, delay]);
+    const names = ["Sarah C.", "Mike B.", "Emily D.", "James W.", "Lisa A.", "Tom K.", "Anna M.", "David R.", "Kate S.", "Chris L."];
 
-  return <span ref={ref}>{score}</span>;
+    // Initialize some leads
+    const initialLeads = Array.from({ length: 8 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 80 + 10,
+      y: Math.random() * 70 + 15,
+      name: names[i % names.length],
+      opacity: 1,
+      status: "active" as const,
+    }));
+    setLeads(initialLeads);
+
+    let leadId = 8;
+    const interval = setInterval(() => {
+      setLeads(prev => {
+        const updated = prev.map(lead => {
+          // Some leads start fading
+          if (lead.status === "active" && Math.random() > 0.7) {
+            return { ...lead, status: "fading" as const, opacity: 0.6 };
+          }
+          // Fading leads eventually get lost
+          if (lead.status === "fading") {
+            const newOpacity = lead.opacity - 0.15;
+            if (newOpacity <= 0) {
+              setLostCount(c => c + 1);
+              setTotalLost(t => t + 1);
+              return { ...lead, status: "lost" as const, opacity: 0 };
+            }
+            return { ...lead, opacity: newOpacity };
+          }
+          return lead;
+        });
+
+        // Remove lost leads and add new ones
+        const activeLeads = updated.filter(l => l.status !== "lost");
+        if (activeLeads.length < 6 && Math.random() > 0.5) {
+          activeLeads.push({
+            id: leadId++,
+            x: Math.random() * 80 + 10,
+            y: Math.random() * 70 + 15,
+            name: names[Math.floor(Math.random() * names.length)],
+            opacity: 1,
+            status: "active",
+          });
+        }
+        return activeLeads;
+      });
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative w-full h-[400px] rounded-2xl bg-gradient-to-br from-slate-900 via-red-950/50 to-slate-900 border border-red-500/20 overflow-hidden">
+      {/* Grid pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      {/* Event floor label */}
+      <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-400">
+        <Building2 className="h-3 w-3" />
+        Virtual Event Floor
+      </div>
+
+      {/* Lost leads counter */}
+      <motion.div
+        className="absolute top-4 right-4 px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/40 backdrop-blur-sm"
+        animate={{ scale: lostCount > 0 ? [1, 1.1, 1] : 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="flex items-center gap-2">
+          <UserX className="h-4 w-4 text-red-400" />
+          <div className="text-right">
+            <div className="text-2xl font-bold text-red-400">{totalLost}</div>
+            <div className="text-xs text-red-300/70">Leads Lost</div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Animated leads on floor */}
+      <AnimatePresence>
+        {leads.map((lead) => (
+          <motion.div
+            key={lead.id}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{
+              opacity: lead.opacity,
+              scale: lead.status === "fading" ? 0.8 : 1,
+              filter: lead.status === "fading" ? "blur(2px)" : "blur(0px)"
+            }}
+            exit={{ opacity: 0, scale: 0 }}
+            style={{ left: `${lead.x}%`, top: `${lead.y}%` }}
+            className="absolute transform -translate-x-1/2 -translate-y-1/2"
+          >
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-full backdrop-blur-sm border transition-all",
+              lead.status === "active" ? "bg-emerald-500/20 border-emerald-500/40" : "bg-red-500/20 border-red-500/40"
+            )}>
+              <div className={cn(
+                "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold",
+                lead.status === "active"
+                  ? "bg-gradient-to-br from-emerald-400 to-emerald-600 text-white"
+                  : "bg-gradient-to-br from-red-400 to-red-600 text-white"
+              )}>
+                {lead.name.split(" ").map(n => n[0]).join("")}
+              </div>
+              <div className="text-sm font-medium text-white">{lead.name}</div>
+              {lead.status === "fading" && (
+                <AlertTriangle className="h-3 w-3 text-red-400 animate-pulse" />
+              )}
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* Warning overlay for fading leads */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-sm">
+        <div className="flex items-center gap-2 text-sm text-red-300">
+          <motion.div
+            className="h-2 w-2 rounded-full bg-red-500"
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+          Leads fading without attention...
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED SCORE GAUGE - Circular gauge with zones
+// ============================================================================
+function AnimatedScoreGauge() {
+  const [currentScore, setCurrentScore] = useState(0);
+  const [interactions, setInteractions] = useState<{ id: number; action: string; points: number }[]>([]);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [intent, setIntent] = useState<"cold" | "warm" | "hot">("cold");
+
+  const allInteractions = [
+    { action: "Visited Booth", points: 10 },
+    { action: "Downloaded Whitepaper", points: 15 },
+    { action: "Watched Demo Video", points: 20 },
+    { action: "Attended Session", points: 15 },
+    { action: "Asked Question in Q&A", points: 20 },
+    { action: "Requested Contact", points: 25 },
+    { action: "Requested Demo", points: 30 },
+    { action: "Scanned QR Code", points: 10 },
+  ];
+
+  useEffect(() => {
+    let interactionId = 0;
+    const interval = setInterval(() => {
+      const interaction = allInteractions[Math.floor(Math.random() * allInteractions.length)];
+
+      setInteractions(prev => [
+        { id: interactionId++, ...interaction },
+        ...prev.slice(0, 3)
+      ]);
+
+      setCurrentScore(prev => {
+        const newScore = Math.min(prev + interaction.points, 100);
+
+        // Update intent level
+        if (newScore >= 70 && prev < 70) {
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 3000);
+        }
+
+        if (newScore >= 70) setIntent("hot");
+        else if (newScore >= 40) setIntent("warm");
+        else setIntent("cold");
+
+        return newScore;
+      });
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // SVG gauge calculations
+  const radius = 120;
+  const strokeWidth = 16;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (currentScore / 100) * circumference;
+
+  const getGaugeColor = () => {
+    if (currentScore >= 70) return "#ef4444"; // red
+    if (currentScore >= 40) return "#f59e0b"; // amber
+    return "#3b82f6"; // blue
+  };
+
+  return (
+    <div className="relative">
+      {/* Celebration effect */}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="absolute -inset-4 z-20 flex items-center justify-center"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 to-orange-500/30 rounded-3xl blur-2xl animate-pulse" />
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className="relative z-10 flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-orange-500 shadow-2xl"
+            >
+              <Trophy className="h-8 w-8 text-yellow-300" />
+              <div>
+                <div className="text-xl font-bold text-white">🔥 HOT LEAD!</div>
+                <div className="text-sm text-white/80">Ready for immediate outreach</div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-col lg:flex-row items-center gap-8">
+        {/* Gauge */}
+        <div className="relative">
+          <svg width="280" height="280" className="transform -rotate-90">
+            {/* Background track */}
+            <circle
+              cx="140"
+              cy="140"
+              r={radius}
+              fill="none"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={strokeWidth}
+            />
+            {/* Cold zone (0-39) - Blue */}
+            <circle
+              cx="140"
+              cy="140"
+              r={radius}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth={strokeWidth}
+              strokeDasharray={`${0.39 * circumference} ${circumference}`}
+              strokeDashoffset={0}
+              opacity={0.3}
+            />
+            {/* Warm zone (40-69) - Amber */}
+            <circle
+              cx="140"
+              cy="140"
+              r={radius}
+              fill="none"
+              stroke="#f59e0b"
+              strokeWidth={strokeWidth}
+              strokeDasharray={`${0.30 * circumference} ${circumference}`}
+              strokeDashoffset={-0.39 * circumference}
+              opacity={0.3}
+            />
+            {/* Hot zone (70-100) - Red */}
+            <circle
+              cx="140"
+              cy="140"
+              r={radius}
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth={strokeWidth}
+              strokeDasharray={`${0.31 * circumference} ${circumference}`}
+              strokeDashoffset={-0.69 * circumference}
+              opacity={0.3}
+            />
+            {/* Progress indicator */}
+            <motion.circle
+              cx="140"
+              cy="140"
+              r={radius}
+              fill="none"
+              stroke={getGaugeColor()}
+              strokeWidth={strokeWidth + 2}
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference - progress}
+              strokeLinecap="round"
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: circumference - progress }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              style={{ filter: "drop-shadow(0 0 8px currentColor)" }}
+            />
+          </svg>
+
+          {/* Center score display */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <motion.div
+              key={currentScore}
+              initial={{ scale: 1.2 }}
+              animate={{ scale: 1 }}
+              className="text-6xl font-bold"
+              style={{ color: getGaugeColor() }}
+            >
+              {currentScore}
+            </motion.div>
+            <div className="text-sm text-muted-foreground mt-1">Intent Score</div>
+            <div className={cn(
+              "mt-2 px-3 py-1 rounded-full text-sm font-bold",
+              intent === "hot" && "bg-red-500/20 text-red-400",
+              intent === "warm" && "bg-amber-500/20 text-amber-400",
+              intent === "cold" && "bg-blue-500/20 text-blue-400",
+            )}>
+              {intent.toUpperCase()}
+            </div>
+          </div>
+        </div>
+
+        {/* Interaction feed */}
+        <div className="flex-1 w-full max-w-sm">
+          <div className="text-sm font-medium text-muted-foreground mb-3">Live Interaction Feed</div>
+          <div className="space-y-2">
+            <AnimatePresence mode="popLayout">
+              {interactions.map((interaction) => (
+                <motion.div
+                  key={interaction.id}
+                  initial={{ opacity: 0, x: -20, height: 0 }}
+                  animate={{ opacity: 1, x: 0, height: "auto" }}
+                  exit={{ opacity: 0, x: 20, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center justify-between p-3 rounded-xl border bg-card"
+                >
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-400" />
+                    <span className="text-sm">{interaction.action}</span>
+                  </div>
+                  <span className="text-lg font-bold bg-gradient-to-r from-red-400 to-amber-400 bg-clip-text text-transparent">
+                    +{interaction.points}
+                  </span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* Zone legend */}
+      <div className="flex items-center justify-center gap-6 mt-6">
+        {[
+          { label: "Cold", range: "0-39", color: "bg-blue-500" },
+          { label: "Warm", range: "40-69", color: "bg-amber-500" },
+          { label: "Hot", range: "70-100", color: "bg-red-500" },
+        ].map((zone) => (
+          <div key={zone.label} className="flex items-center gap-2">
+            <div className={cn("h-3 w-3 rounded-full", zone.color)} />
+            <span className="text-sm text-muted-foreground">{zone.label} ({zone.range})</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED PIPELINE - Flowing leads through stages
+// ============================================================================
+function AnimatedPipeline() {
+  const [flowingLeads, setFlowingLeads] = useState<{ id: number; stage: number; progress: number }[]>([]);
+  const [stageCounts, setStageCounts] = useState([142, 89, 47, 23]);
+  const [conversionRate, setConversionRate] = useState(16.2);
+
+  const stages = [
+    { name: "New", color: "from-blue-500 to-cyan-500", icon: Users },
+    { name: "Contacted", color: "from-purple-500 to-pink-500", icon: MessageSquare },
+    { name: "Qualified", color: "from-amber-500 to-orange-500", icon: Target },
+    { name: "Converted", color: "from-green-500 to-emerald-500", icon: Trophy },
+  ];
+
+  useEffect(() => {
+    let leadId = 0;
+
+    // Generate flowing leads
+    const flowInterval = setInterval(() => {
+      if (Math.random() > 0.3) {
+        setFlowingLeads(prev => [
+          ...prev.filter(l => l.progress < 100),
+          { id: leadId++, stage: 0, progress: 0 }
+        ]);
+      }
+    }, 2000);
+
+    // Animate lead progress
+    const progressInterval = setInterval(() => {
+      setFlowingLeads(prev =>
+        prev.map(lead => {
+          const newProgress = lead.progress + 5;
+          if (newProgress >= 100 && lead.stage < 3) {
+            // Move to next stage with some drop-off
+            if (Math.random() > 0.3) {
+              return { ...lead, stage: lead.stage + 1, progress: 0 };
+            }
+            return { ...lead, progress: 100 }; // Lead drops off
+          }
+          return { ...lead, progress: Math.min(newProgress, 100) };
+        }).filter(l => !(l.progress >= 100 && l.stage === 3))
+      );
+    }, 100);
+
+    // Update stage counts periodically
+    const countInterval = setInterval(() => {
+      setStageCounts(prev => prev.map((count, i) => {
+        const delta = Math.floor(Math.random() * 5) - 2;
+        return Math.max(0, count + delta);
+      }));
+      setConversionRate(prev => {
+        const delta = (Math.random() - 0.5) * 0.4;
+        return Math.max(10, Math.min(25, prev + delta));
+      });
+    }, 3000);
+
+    return () => {
+      clearInterval(flowInterval);
+      clearInterval(progressInterval);
+      clearInterval(countInterval);
+    };
+  }, []);
+
+  return (
+    <div className="relative">
+      {/* Conversion rate banner */}
+      <motion.div
+        className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30"
+        animate={{ scale: [1, 1.02, 1] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        <TrendingUp className="h-4 w-4 text-green-400" />
+        <span className="text-sm font-medium text-green-400">
+          {conversionRate.toFixed(1)}% Conversion Rate
+        </span>
+      </motion.div>
+
+      {/* Pipeline stages */}
+      <div className="relative pt-8">
+        {/* Connection line */}
+        <div className="absolute top-1/2 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 via-amber-500 to-green-500 rounded-full -translate-y-1/2 opacity-30" />
+
+        {/* Flowing leads on the line */}
+        {flowingLeads.map((lead) => {
+          const stageWidth = 100 / 4;
+          const x = (lead.stage * stageWidth) + (lead.progress / 100 * stageWidth);
+          return (
+            <motion.div
+              key={lead.id}
+              className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-white shadow-lg shadow-white/30"
+              style={{ left: `${x}%` }}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0 }}
+            />
+          );
+        })}
+
+        {/* Stage cards */}
+        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stages.map((stage, index) => (
+            <motion.div
+              key={stage.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="relative z-10 text-center"
+            >
+              <motion.div
+                className={cn("h-24 w-24 rounded-2xl bg-gradient-to-br mx-auto mb-4 flex flex-col items-center justify-center shadow-lg relative overflow-hidden", stage.color)}
+                whileHover={{ scale: 1.05 }}
+              >
+                {/* Pulse effect for incoming leads */}
+                {flowingLeads.some(l => l.stage === index && l.progress < 50) && (
+                  <motion.div
+                    className="absolute inset-0 bg-white/20"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.3, 0] }}
+                    transition={{ duration: 0.5 }}
+                  />
+                )}
+                <motion.div
+                  key={stageCounts[index]}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  className="text-3xl font-bold text-white"
+                >
+                  {stageCounts[index]}
+                </motion.div>
+                <stage.icon className="h-5 w-5 text-white/70 mt-1" />
+              </motion.div>
+              <h3 className="text-lg font-semibold mb-1">{stage.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                {index === 0 && "Fresh leads captured"}
+                {index === 1 && "Initial outreach sent"}
+                {index === 2 && "Sales-ready prospects"}
+                {index === 3 && "Deals closed"}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Features List */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        {[
+          { icon: GitBranch, text: "Drag-and-drop stage updates" },
+          { icon: MessageSquare, text: "Follow-up notes & history" },
+          { icon: Star, text: "Star priority leads" },
+          { icon: Filter, text: "Filter by intent & status" },
+        ].map((feature) => (
+          <div key={feature.text} className="flex items-center gap-3 p-4 rounded-xl border bg-card">
+            <feature.icon className="h-5 w-5 text-purple-500 shrink-0" />
+            <span className="text-sm">{feature.text}</span>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
 }
 
 // ============================================================================
@@ -341,40 +830,18 @@ function HeroSection() {
 }
 
 // ============================================================================
-// PROBLEM SECTION
+// PROBLEM SECTION - With Immersive Chaos Visualization
 // ============================================================================
 function ProblemSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const problems = [
-    {
-      icon: Users,
-      stat: "71%",
-      title: "Leads Go Cold",
-      description: "of event leads are never followed up within the critical 24-hour window",
-    },
-    {
-      icon: Clock,
-      stat: "4.2",
-      suffix: "hrs",
-      title: "Manual Scoring Time",
-      description: "Average time sponsors spend manually qualifying leads per event",
-    },
-    {
-      icon: Target,
-      stat: "23%",
-      title: "Missed Opportunities",
-      description: "of high-intent buyers leave booths without being identified as hot leads",
-    },
-  ];
-
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-b from-slate-950 to-slate-900 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[150px]" />
+        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-red-500/10 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[150px]" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
@@ -382,44 +849,57 @@ function ProblemSection() {
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-12"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/10 text-red-600 dark:text-red-400 rounded-full">
+          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/20 text-red-400 rounded-full border border-red-500/30">
             The Problem
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 text-white">
             Manual Lead Management is{" "}
-            <span className="text-red-500">Costing You Deals</span>
+            <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">Costing You Deals</span>
           </h2>
-          <p className="text-lg text-muted-foreground">
-            While you're busy collecting business cards and manually entering data,
+          <p className="text-lg text-slate-400">
+            While you&apos;re busy collecting business cards and manually entering data,
             your hottest prospects are being ignored—or worse, scooped up by competitors.
           </p>
         </motion.div>
 
+        {/* Chaos Visualization */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mb-16"
+        >
+          <ChaosVisualization />
+        </motion.div>
+
+        {/* Stats Grid */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={staggerContainer}
-          className="grid md:grid-cols-3 gap-8"
+          className="grid md:grid-cols-3 gap-6"
         >
-          {problems.map((problem) => (
+          {[
+            { stat: "71%", title: "Leads Go Cold", description: "of event leads are never followed up within the critical 24-hour window", icon: Users },
+            { stat: "4.2hrs", title: "Manual Scoring Time", description: "Average time sponsors spend manually qualifying leads per event", icon: Clock },
+            { stat: "23%", title: "Missed Opportunities", description: "of high-intent buyers leave booths without being identified as hot leads", icon: Target },
+          ].map((item) => (
             <motion.div
-              key={problem.title}
+              key={item.title}
               variants={fadeInUp}
               className="relative group"
             >
-              <div className="h-full rounded-2xl border border-red-500/20 bg-card p-8 transition-all duration-300 hover:border-red-500/40 hover:shadow-xl hover:shadow-red-500/5">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-red-500/10">
-                    <problem.icon className="h-7 w-7 text-red-500" />
+              <div className="h-full rounded-2xl border border-red-500/20 bg-slate-900/50 backdrop-blur-sm p-6 transition-all duration-300 hover:border-red-500/40 hover:shadow-xl hover:shadow-red-500/10">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/20">
+                    <item.icon className="h-6 w-6 text-red-400" />
                   </div>
-                  <div className="text-4xl font-bold text-red-500">
-                    {problem.stat}{problem.suffix || ""}
-                  </div>
+                  <div className="text-3xl font-bold text-red-400">{item.stat}</div>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{problem.title}</h3>
-                <p className="text-muted-foreground">{problem.description}</p>
+                <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-slate-400">{item.description}</p>
               </div>
             </motion.div>
           ))}
@@ -430,7 +910,7 @@ function ProblemSection() {
 }
 
 // ============================================================================
-// INTENT SCORING SECTION
+// INTENT SCORING SECTION - With Animated Score Gauge
 // ============================================================================
 function IntentScoringSection() {
   const ref = useRef(null);
@@ -446,12 +926,6 @@ function IntentScoringSection() {
     { icon: Building2, action: "Booth Visit", points: 10, color: "from-green-500 to-emerald-500" },
     { icon: QrCode, action: "QR Scan", points: 10, color: "from-emerald-500 to-teal-500" },
     { icon: MousePointer, action: "CTA Click", points: 10, color: "from-teal-500 to-cyan-500" },
-  ];
-
-  const intentLevels = [
-    { level: "Hot", range: "70-100", icon: Flame, color: "from-red-500 to-orange-500", bgColor: "bg-red-500/10", textColor: "text-red-500", description: "High-intent buyers ready to purchase" },
-    { level: "Warm", range: "40-69", icon: Thermometer, color: "from-amber-500 to-yellow-500", bgColor: "bg-amber-500/10", textColor: "text-amber-500", description: "Interested prospects needing nurture" },
-    { level: "Cold", range: "0-39", icon: Snowflake, color: "from-blue-500 to-cyan-500", bgColor: "bg-blue-500/10", textColor: "text-blue-500", description: "Early-stage awareness building" },
   ];
 
   return (
@@ -470,7 +944,7 @@ function IntentScoringSection() {
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-12"
         >
           <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/10 text-red-600 dark:text-red-400 rounded-full border border-red-500/20">
             AI Intent Scoring
@@ -487,12 +961,26 @@ function IntentScoringSection() {
           </p>
         </motion.div>
 
+        {/* Animated Score Gauge Demo */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="max-w-4xl mx-auto mb-16 p-8 rounded-3xl border bg-card/50 backdrop-blur-sm"
+        >
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-semibold mb-2">Live Scoring Simulation</h3>
+            <p className="text-sm text-muted-foreground">Watch how interactions accumulate into an intent score</p>
+          </div>
+          <AnimatedScoreGauge />
+        </motion.div>
+
         {/* Interaction Points Grid */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={staggerContainer}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto mb-16"
+          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto"
         >
           {interactions.map((item, index) => (
             <motion.div
@@ -514,35 +1002,6 @@ function IntentScoringSection() {
               </div>
             </motion.div>
           ))}
-        </motion.div>
-
-        {/* Intent Levels */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="max-w-4xl mx-auto"
-        >
-          <div className="grid md:grid-cols-3 gap-6">
-            {intentLevels.map((level, index) => (
-              <motion.div
-                key={level.level}
-                initial={{ opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.5 + index * 0.1 }}
-                className="relative group"
-              >
-                <div className={cn("h-full rounded-2xl border p-6 text-center transition-all duration-300", level.bgColor, "border-current/20 hover:shadow-xl")}>
-                  <div className={cn("h-16 w-16 rounded-2xl bg-gradient-to-br mx-auto mb-4 flex items-center justify-center", level.color)}>
-                    <level.icon className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className={cn("text-2xl font-bold mb-1", level.textColor)}>{level.level}</h3>
-                  <p className="text-sm font-medium text-muted-foreground mb-3">{level.range} points</p>
-                  <p className="text-sm text-muted-foreground">{level.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
       </div>
     </section>
@@ -650,18 +1109,11 @@ function RealTimeAlertsSection() {
 }
 
 // ============================================================================
-// PIPELINE SECTION
+// PIPELINE SECTION - With Animated Flow
 // ============================================================================
 function PipelineSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const stages = [
-    { name: "New", color: "from-blue-500 to-cyan-500", description: "Fresh leads captured", count: 142 },
-    { name: "Contacted", color: "from-purple-500 to-pink-500", description: "Initial outreach sent", count: 89 },
-    { name: "Qualified", color: "from-amber-500 to-orange-500", description: "Sales-ready prospects", count: 47 },
-    { name: "Converted", color: "from-green-500 to-emerald-500", description: "Deals closed", count: 23 },
-  ];
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -674,7 +1126,7 @@ function PipelineSection() {
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-20"
         >
           <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full border border-purple-500/20">
             Lead Pipeline
@@ -691,55 +1143,14 @@ function PipelineSection() {
           </p>
         </motion.div>
 
-        {/* Pipeline Visual */}
+        {/* Animated Pipeline */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="max-w-5xl mx-auto"
         >
-          <div className="relative">
-            {/* Connection Lines - Desktop */}
-            <div className="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 via-amber-500 to-green-500 -translate-y-1/2 z-0 rounded-full" />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
-              {stages.map((stage, index) => (
-                <motion.div
-                  key={stage.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className="text-center"
-                >
-                  <div className={cn("h-24 w-24 rounded-2xl bg-gradient-to-br mx-auto mb-4 flex flex-col items-center justify-center shadow-lg", stage.color)}>
-                    <div className="text-3xl font-bold text-white">{stage.count}</div>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-1">{stage.name}</h3>
-                  <p className="text-sm text-muted-foreground">{stage.description}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Features List */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.6 }}
-            className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
-          >
-            {[
-              { icon: GitBranch, text: "Drag-and-drop stage updates" },
-              { icon: MessageSquare, text: "Follow-up notes & history" },
-              { icon: Star, text: "Star priority leads" },
-              { icon: Filter, text: "Filter by intent & status" },
-            ].map((feature) => (
-              <div key={feature.text} className="flex items-center gap-3 p-4 rounded-xl border bg-card">
-                <feature.icon className="h-5 w-5 text-purple-500 shrink-0" />
-                <span className="text-sm">{feature.text}</span>
-              </div>
-            ))}
-          </motion.div>
+          <AnimatedPipeline />
         </motion.div>
       </div>
     </section>
@@ -752,13 +1163,6 @@ function PipelineSection() {
 function ExportSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const crms = [
-    { name: "Salesforce", logo: "/logos/salesforce.svg" },
-    { name: "HubSpot", logo: "/logos/hubspot.svg" },
-    { name: "Marketo", logo: "/logos/marketo.svg" },
-    { name: "Outreach", logo: "/logos/outreach.svg" },
-  ];
 
   const exportFields = [
     "Name & Contact Info",
@@ -885,7 +1289,7 @@ function ExportSection() {
 }
 
 // ============================================================================
-// TECHNICAL FEATURES SECTION
+// TECHNICAL FEATURES SECTION - Red/Orange Theme
 // ============================================================================
 function TechnicalSection() {
   const ref = useRef(null);
@@ -925,7 +1329,13 @@ function TechnicalSection() {
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-b from-slate-950 to-slate-900 relative overflow-hidden">
+      {/* Background with red/orange theme */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-red-500/10 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[150px]" />
+      </div>
+
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <motion.div
           initial="hidden"
@@ -933,16 +1343,16 @@ function TechnicalSection() {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 rounded-full border border-slate-500/20">
+          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/20 text-red-400 rounded-full border border-red-500/30">
             Enterprise-Grade
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 text-white">
             Built for{" "}
-            <span className="bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-300 dark:to-slate-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
               Reliability & Scale
             </span>
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-slate-400">
             Enterprise-grade infrastructure ensures every lead is captured, scored,
             and delivered—no matter how large your event.
           </p>
@@ -958,15 +1368,15 @@ function TechnicalSection() {
             <motion.div
               key={feature.title}
               variants={fadeInUp}
-              className="p-6 rounded-2xl border bg-card hover:shadow-lg transition-all"
+              className="p-6 rounded-2xl border border-red-500/20 bg-slate-900/50 backdrop-blur-sm hover:border-red-500/40 hover:shadow-lg hover:shadow-red-500/10 transition-all"
             >
               <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center shrink-0">
-                  <feature.icon className="h-6 w-6 text-slate-600 dark:text-slate-300" />
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 flex items-center justify-center shrink-0">
+                  <feature.icon className="h-6 w-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  <h3 className="font-semibold mb-1 text-white">{feature.title}</h3>
+                  <p className="text-sm text-slate-400">{feature.description}</p>
                 </div>
               </div>
             </motion.div>
@@ -1021,7 +1431,7 @@ function CTASection() {
             Start Capturing Hot Leads Today
           </h2>
           <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-            Join thousands of sponsors who've transformed their event ROI with
+            Join thousands of sponsors who&apos;ve transformed their event ROI with
             AI-powered lead intelligence. See the difference real-time scoring makes.
           </p>
 
