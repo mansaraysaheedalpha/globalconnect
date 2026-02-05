@@ -15,6 +15,7 @@ import {
   Clock,
   TrendingUp,
   CheckCircle,
+  CheckCircle2,
   Shield,
   Zap,
   Globe,
