@@ -370,59 +370,58 @@ function WhatWeBuildSection() {
         </motion.div>
 
         {/* Central visualization */}
-        <div className="relative max-w-5xl mx-auto">
-          {/* Central core */}
+        <div className="relative max-w-3xl mx-auto">
+          {/* Orbital ring container */}
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={isInView ? { scale: 1, opacity: 1 } : {}}
-            transition={{ duration: 0.8, delay: 0.3 }}
-          >
-            {/* Pulsing rings */}
-            <motion.div
-              className="absolute inset-0 rounded-full bg-white/10"
-              style={{ width: 200, height: 200, marginLeft: -100, marginTop: -100 }}
-              animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
-            <motion.div
-              className="absolute inset-0 rounded-full bg-white/5"
-              style={{ width: 200, height: 200, marginLeft: -100, marginTop: -100 }}
-              animate={{ scale: [1.2, 1.8, 1.2], opacity: [0.2, 0, 0.2] }}
-              transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
-            />
-
-            {/* Core */}
-            <div className="w-40 h-40 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center">
-              <div className="text-center">
-                <Sparkles className="w-10 h-10 text-white mx-auto mb-2" />
-                <span className="text-sm font-semibold text-white">Event</span>
-                <span className="block text-xs text-white/70">Dynamics</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Orbital ring */}
-          <motion.div
-            className="relative w-full aspect-square max-w-[600px] mx-auto"
-            initial={{ opacity: 0, rotate: -30 }}
-            animate={isInView ? { opacity: 1, rotate: 0 } : {}}
+            className="relative w-full aspect-square"
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : {}}
             transition={{ duration: 1 }}
           >
             {/* Dotted orbit */}
-            <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/10" />
+            <div className="absolute inset-[15%] rounded-full border-2 border-dashed border-white/10" />
 
-            {/* Capability nodes */}
+            {/* Central core - positioned in the exact center */}
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={isInView ? { scale: 1, opacity: 1 } : {}}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
+              {/* Pulsing rings */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-white/10"
+                animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              <motion.div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-white/5"
+                animate={{ scale: [1.2, 1.8, 1.2], opacity: [0.2, 0, 0.2] }}
+                transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+              />
+
+              {/* Core */}
+              <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center">
+                <div className="text-center">
+                  <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white mx-auto mb-2" />
+                  <span className="text-xs md:text-sm font-semibold text-white">Event</span>
+                  <span className="block text-[10px] md:text-xs text-white/70">Dynamics</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Capability nodes - positioned at the edges */}
             {capabilities.map((cap, index) => {
+              // Position nodes in a circle, starting from top
               const angle = (index * 60 - 90) * (Math.PI / 180);
-              const radius = 45; // percentage
+              const radius = 50; // percentage from center to edge
               const x = 50 + radius * Math.cos(angle);
               const y = 50 + radius * Math.sin(angle);
 
               return (
                 <motion.div
                   key={cap.label}
-                  className="absolute"
+                  className="absolute z-10"
                   style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
                   initial={{ scale: 0, opacity: 0 }}
                   animate={isInView ? { scale: 1, opacity: 1 } : {}}
@@ -438,14 +437,14 @@ function WhatWeBuildSection() {
 
                     {/* Node */}
                     <div className={cn(
-                      "relative w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center shadow-2xl",
+                      "relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center shadow-2xl",
                       cap.color
                     )}>
-                      <cap.icon className="w-8 h-8 text-white mb-1" />
-                      <span className="text-[10px] md:text-xs font-semibold text-white text-center leading-tight">
+                      <cap.icon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white mb-1" />
+                      <span className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-white text-center leading-tight px-1">
                         {cap.label}
                       </span>
-                      <span className="text-[10px] md:text-xs text-white/80 text-center">
+                      <span className="text-[8px] sm:text-[10px] md:text-xs text-white/80 text-center">
                         {cap.sublabel}
                       </span>
                     </div>
@@ -454,24 +453,33 @@ function WhatWeBuildSection() {
               );
             })}
 
-            {/* Animated particles on orbit */}
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 rounded-full bg-white/60"
-                style={{ top: '50%', left: '50%' }}
-                animate={{
-                  x: [0, 270, 0, -270, 0].map(v => v * Math.cos(i * (Math.PI * 2 / 3))),
-                  y: [270, 0, -270, 0, 270].map(v => v * Math.sin(i * (Math.PI * 2 / 3)) - 270 + (i === 0 ? 270 : i === 1 ? 0 : -135)),
-                }}
-                transition={{
-                  duration: 8,
-                  repeat: Infinity,
-                  ease: "linear",
-                  delay: i * 2.67,
-                }}
-              />
-            ))}
+            {/* Connecting lines from center to each node */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 5 }}>
+              {capabilities.map((_, index) => {
+                const angle = (index * 60 - 90) * (Math.PI / 180);
+                const innerRadius = 12; // percentage - edge of center circle
+                const outerRadius = 38; // percentage - edge before nodes
+                const x1 = 50 + innerRadius * Math.cos(angle);
+                const y1 = 50 + innerRadius * Math.sin(angle);
+                const x2 = 50 + outerRadius * Math.cos(angle);
+                const y2 = 50 + outerRadius * Math.sin(angle);
+                return (
+                  <motion.line
+                    key={index}
+                    x1={`${x1}%`}
+                    y1={`${y1}%`}
+                    x2={`${x2}%`}
+                    y2={`${y2}%`}
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth="2"
+                    strokeDasharray="4 4"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={isInView ? { pathLength: 1, opacity: 1 } : {}}
+                    transition={{ duration: 0.8, delay: 0.4 + index * 0.1 }}
+                  />
+                );
+              })}
+            </svg>
           </motion.div>
         </div>
 
