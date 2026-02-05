@@ -558,11 +558,11 @@ function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-6 max-w-xl text-lg md:text-xl text-neutral-300 leading-relaxed"
+              className="mt-6 max-w-xl text-lg md:text-xl text-white/90 leading-relaxed"
             >
               From intimate workshops to global conferences—our visual event builder
-              with reusable templates turns weeks of planning into a seamless,
-              drag-and-drop experience.
+              with reusable templates turns weeks of planning into a streamlined,
+              intuitive experience.
             </motion.p>
 
             {/* CTA Buttons */}
