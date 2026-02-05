@@ -1091,8 +1091,8 @@ function FeaturesSection() {
   const features = [
     {
       icon: Layout,
-      title: "Drag-and-Drop Builder",
-      description: "Visually design your event agenda with an intuitive drag-and-drop interface. No technical skills required.",
+      title: "Visual Event Builder",
+      description: "Design your event agenda with an intuitive visual interface. No technical skills required.",
       color: "blue",
       items: ["Multi-track scheduling", "Conflict detection", "Time zone support"],
     },
