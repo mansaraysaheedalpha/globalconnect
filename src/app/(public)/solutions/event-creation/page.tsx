@@ -458,13 +458,17 @@ function HeroSection() {
   return (
     <section className="relative min-h-[95vh] flex items-center justify-center text-white overflow-hidden">
       {/* Background Image */}
-      <div
-        className="absolute top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat -z-10"
-        style={{ backgroundImage: "url('/event-planning-hero.png')" }}
+      <Image
+        src="/event-planning-hero.png"
+        alt="Event Planning Hero"
+        fill
+        priority
+        className="object-cover object-center"
+        style={{ zIndex: -20 }}
       />
 
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-blue-950/60 to-black/90 -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-blue-950/50 to-black/80" style={{ zIndex: -15 }} />
 
       {/* Floating Particles */}
       <FloatingParticles />
