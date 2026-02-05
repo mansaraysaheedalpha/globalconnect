@@ -457,46 +457,51 @@ function LiveBuilderDemo() {
 function HeroSection() {
   return (
     <section className="relative min-h-[95vh] flex items-center justify-center text-white overflow-hidden">
-      {/* Background Image */}
-      <Image
-        src="/event-planning-hero.png"
-        alt="Event Planning Hero"
-        fill
-        priority
-        className="object-cover object-center"
-        style={{ zIndex: -20 }}
-      />
-
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-blue-950/50 to-black/80" style={{ zIndex: -15 }} />
+      {/* Background Layer Container */}
+      <div className="absolute inset-0 z-0">
+        {/* Background Image */}
+        <Image
+          src="/event-planning-hero.png"
+          alt="Event Planning Hero"
+          fill
+          priority
+          className="object-cover object-center"
+        />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-blue-950/40 to-black/70" />
+      </div>
 
       {/* Floating Particles */}
-      <FloatingParticles />
+      <div className="absolute inset-0 z-[1] pointer-events-none">
+        <FloatingParticles />
+      </div>
 
       {/* Animated Gradient Orbs */}
-      <div className="absolute inset-0 overflow-hidden -z-5 pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden z-[2] pointer-events-none">
         <motion.div
-          className="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-blue-500/25 rounded-full blur-[150px]"
+          className="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[150px]"
           animate={{ x: [0, 60, 0], y: [0, 40, 0], scale: [1, 1.2, 1] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-1/4 -right-32 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[150px]"
+          className="absolute bottom-1/4 -right-32 w-[500px] h-[500px] bg-purple-500/15 rounded-full blur-[150px]"
           animate={{ x: [0, -60, 0], y: [0, -40, 0], scale: [1, 1.3, 1] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-indigo-500/15 rounded-full blur-[180px]"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-indigo-500/10 rounded-full blur-[180px]"
           animate={{ scale: [1, 1.3, 1] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
       {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] z-[3] pointer-events-none" />
 
       {/* Animated Grid Lines */}
-      <AnimatedGridLines />
+      <div className="absolute inset-0 z-[4] pointer-events-none">
+        <AnimatedGridLines />
+      </div>
 
       {/* Content */}
       <div className="container px-4 md:px-6 max-w-7xl relative z-10 py-20">
