@@ -134,8 +134,17 @@ function FloatingEmojiReactions() {
 // ============================================================================
 // LIVE CHAT DEMO PANEL
 // ============================================================================
+interface ChatMessage {
+  id: number;
+  author: string;
+  avatar: string;
+  text: string;
+  time: string;
+  reactions: Record<string, number>;
+}
+
 function LiveChatDemo() {
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
       author: "Sarah M.",
@@ -165,7 +174,7 @@ function LiveChatDemo() {
   const [typingIndicator, setTypingIndicator] = useState(false);
 
   useEffect(() => {
-    const newMessages = [
+    const newMessages: Omit<ChatMessage, "id" | "time">[] = [
       {
         author: "Michael T.",
         avatar: "MT",
