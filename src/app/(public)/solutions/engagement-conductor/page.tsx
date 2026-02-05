@@ -286,7 +286,7 @@ function ProblemSection() {
           variants={staggerContainer}
           className="grid md:grid-cols-3 gap-8"
         >
-          {problems.map((problem, index) => (
+          {problems.map((problem) => (
             <motion.div
               key={problem.title}
               variants={fadeInUp}
@@ -697,101 +697,142 @@ function HowItWorksSection() {
 
         {/* Desktop: Orbital Visualization */}
         <div className="hidden lg:block">
-          <div className="relative max-w-3xl mx-auto py-16">
+          <div className="relative max-w-4xl mx-auto" style={{ paddingTop: "60px", paddingBottom: "80px" }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="relative w-full aspect-square"
+              className="relative mx-auto"
+              style={{ width: "600px", height: "600px" }}
             >
-              {/* Outer orbital ring */}
-              <div className="absolute inset-[15%] rounded-full border-2 border-dashed border-primary/20" />
+              {/* Outer orbital ring - dashed */}
+              <div
+                className="absolute rounded-full border-2 border-dashed border-primary/20"
+                style={{ top: "50px", left: "50px", right: "50px", bottom: "50px" }}
+              />
 
               {/* Animated orbital ring */}
               <motion.div
-                className="absolute inset-[15%] rounded-full border-2 border-primary/40"
-                style={{ borderStyle: "solid", borderWidth: "2px" }}
+                className="absolute rounded-full border-2 border-primary/40"
+                style={{ top: "50px", left: "50px", right: "50px", bottom: "50px" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
               />
 
-              {/* Inner glow ring */}
-              <div className="absolute inset-[30%] rounded-full bg-gradient-to-br from-primary/10 to-purple-500/10 blur-xl" />
+              {/* Inner glow */}
+              <div
+                className="absolute rounded-full bg-gradient-to-br from-primary/15 to-purple-500/15 blur-2xl"
+                style={{ top: "150px", left: "150px", right: "150px", bottom: "150px" }}
+              />
 
-              {/* Center AI Brain */}
-              <motion.div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              {/* Center AI Brain - exactly at center */}
+              <div
+                className="absolute z-20"
+                style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
               >
-                <div className="relative flex flex-col items-center">
-                  {/* Pulsing rings */}
+                <motion.div
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  {/* Pulsing ring */}
                   <motion.div
-                    className="absolute rounded-full bg-primary/20"
-                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                    className="absolute rounded-full bg-primary/30"
+                    style={{ width: "160px", height: "160px", top: "50%", left: "50%", marginTop: "-80px", marginLeft: "-80px" }}
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    style={{ width: "140px", height: "140px", top: "50%", left: "50%", marginTop: "-70px", marginLeft: "-70px" }}
                   />
-                  <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary via-purple-600 to-indigo-600 flex items-center justify-center shadow-2xl shadow-primary/30">
+                  {/* Second pulsing ring */}
+                  <motion.div
+                    className="absolute rounded-full bg-purple-500/20"
+                    style={{ width: "180px", height: "180px", top: "50%", left: "50%", marginTop: "-90px", marginLeft: "-90px" }}
+                    animate={{ scale: [1.2, 1.6, 1.2], opacity: [0.3, 0, 0.3] }}
+                    transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+                  />
+                  {/* Brain circle */}
+                  <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary via-purple-600 to-indigo-600 flex items-center justify-center shadow-2xl shadow-primary/40">
                     <Brain className="w-12 h-12 text-white" />
                   </div>
-                  <span className="mt-3 text-sm font-semibold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                </motion.div>
+                {/* Label below - positioned separately */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 whitespace-nowrap">
+                  <span className="text-sm font-semibold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
                     AI Engine
                   </span>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* Orbital Steps */}
+              {/* Orbital Steps - positioned around the circle */}
               {steps.map((step, index) => {
-                // Calculate position on circle - using 35% radius for tighter orbit
-                const angle = (index * 60 - 90) * (Math.PI / 180);
-                const radius = 35;
-                const x = 50 + radius * Math.cos(angle);
-                const y = 50 + radius * Math.sin(angle);
+                // Calculate exact positions on the orbit
+                const angle = (index * 60 - 90) * (Math.PI / 180); // Start from top
+                const orbitRadius = 200; // Distance from center in pixels
+                const centerX = 300; // Center of 600px container
+                const centerY = 300;
+                const x = centerX + orbitRadius * Math.cos(angle);
+                const y = centerY + orbitRadius * Math.sin(angle);
 
                 return (
                   <motion.div
                     key={step.title}
                     className="absolute z-10"
-                    style={{ left: `${x}%`, top: `${y}%` }}
+                    style={{ left: `${x}px`, top: `${y}px`, transform: "translate(-50%, -50%)" }}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
                   >
-                    <div className="relative -translate-x-1/2 -translate-y-1/2 group cursor-pointer">
-                      {/* Step node */}
-                      <div className="relative">
-                        {/* Glow effect on hover */}
-                        <div className={cn(
-                          "absolute inset-0 rounded-xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300",
-                          step.bgColor
-                        )} />
+                    <motion.div
+                      className="relative group cursor-pointer"
+                      whileHover={{ scale: 1.15 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      {/* Glow effect */}
+                      <motion.div
+                        className={cn("absolute inset-0 rounded-xl blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-300", step.bgColor)}
+                      />
 
-                        <div className={cn(
-                          "relative w-16 h-16 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg transition-all duration-300",
-                          "group-hover:scale-110 group-hover:shadow-xl",
-                          step.color
-                        )}>
-                          <step.icon className="w-7 h-7 text-white" />
-                        </div>
+                      {/* Step icon box */}
+                      <div className={cn(
+                        "relative w-16 h-16 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg",
+                        step.color
+                      )}>
+                        <step.icon className="w-7 h-7 text-white" />
+                      </div>
 
-                        {/* Step number badge */}
-                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-background border-2 border-border flex items-center justify-center text-[10px] font-bold">
-                          {index + 1}
-                        </div>
+                      {/* Number badge */}
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-background border-2 border-border flex items-center justify-center text-[10px] font-bold">
+                        {index + 1}
                       </div>
 
                       {/* Label */}
                       <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 text-center whitespace-nowrap">
                         <div className="font-semibold text-xs">{step.title}</div>
-                        <div className="text-[10px] text-muted-foreground max-w-[100px] mx-auto leading-tight">
+                        <div className="text-[10px] text-muted-foreground max-w-[90px] mx-auto leading-tight">
                           {step.description}
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 );
               })}
+
+              {/* Animated particles circling */}
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-3 h-3 rounded-full bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/50"
+                  style={{ top: "300px", left: "300px" }}
+                  animate={{
+                    x: [0, 200, 0, -200, 0],
+                    y: [-200, 0, 200, 0, -200],
+                  }}
+                  transition={{
+                    duration: 8,
+                    delay: i * 2.67,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+              ))}
             </motion.div>
           </div>
         </div>

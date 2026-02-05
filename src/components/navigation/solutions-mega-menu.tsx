@@ -16,20 +16,46 @@ interface SolutionsMegaMenuProps {
 export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isActive = currentPath.startsWith("/solutions");
 
+  const clearCloseTimeout = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
+
   const handleMouseEnter = () => {
+    clearCloseTimeout();
     setIsOpen(true);
   };
 
   const handleMouseLeave = () => {
+    // Small delay to allow moving to dropdown
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 100);
+  };
+
+  const handleMenuMouseEnter = () => {
+    clearCloseTimeout();
+  };
+
+  const handleMenuMouseLeave = () => {
     setIsOpen(false);
   };
 
   const handleClose = () => {
+    clearCloseTimeout();
     setIsOpen(false);
   };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => clearCloseTimeout();
+  }, []);
 
   // Close on escape key
   useEffect(() => {
@@ -78,18 +104,17 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
       {/* Mega Menu Dropdown */}
       {isOpen && (
         <>
-          {/* Invisible bridge to connect trigger to menu */}
-          <div
-            className="absolute left-0 right-0 h-4"
-            style={{ top: "100%" }}
-          />
-
           {/* Backdrop - click to close */}
           <div
             className="fixed inset-0 z-[100]"
             onClick={handleClose}
-            onMouseEnter={handleMouseLeave}
             aria-hidden="true"
+          />
+
+          {/* Invisible bridge to connect trigger to menu - must be above backdrop */}
+          <div
+            className="fixed left-0 right-0 h-24 z-[105]"
+            style={{ top: "56px" }}
           />
 
           {/* Menu Content */}
@@ -99,6 +124,8 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
               "origin-top animate-mega-menu-enter"
             )}
             style={{ top: isScrolled ? "80px" : "80px" }}
+            onMouseEnter={handleMenuMouseEnter}
+            onMouseLeave={handleMenuMouseLeave}
           >
             <div className="container mx-auto px-4 md:px-6">
               <div
