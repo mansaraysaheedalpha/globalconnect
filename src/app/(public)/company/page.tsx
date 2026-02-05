@@ -3,7 +3,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -18,193 +18,179 @@ import {
   Rocket,
   MapPin,
   Network,
-  Shield,
-  Clock,
   TrendingUp,
   Lightbulb,
   CheckCircle,
-  ChevronRight,
   Wifi,
-  BarChart3,
   MessageSquare,
   Activity,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-  },
-};
-
 // ============================================================================
-// HERO SECTION
+// HERO SECTION - Cinematic Full-Screen
 // ============================================================================
 function HeroSection() {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"]
+  });
+
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
+  const y = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
+
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center text-center text-white overflow-hidden">
+    <section ref={ref} className="relative min-h-screen flex items-center justify-center text-center text-white overflow-hidden">
       {/* Animated Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950 -z-10" />
 
-      {/* Animated mesh gradient */}
-      <div className="absolute inset-0 -z-5">
+      {/* Large animated gradient orbs */}
+      <div className="absolute inset-0 -z-5 overflow-hidden">
         <motion.div
-          className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-purple-500/20 rounded-full blur-[200px]"
+          className="absolute -top-1/4 -left-1/4 w-[80vw] h-[80vw] max-w-[1200px] max-h-[1200px] bg-purple-500/20 rounded-full blur-[200px]"
           animate={{
             x: [0, 100, 0],
             y: [0, 50, 0],
-            scale: [1, 1.2, 1]
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -bottom-1/4 -right-1/4 w-[70vw] h-[70vw] max-w-[1000px] max-h-[1000px] bg-amber-500/15 rounded-full blur-[180px]"
+          animate={{
+            x: [0, -80, 0],
+            y: [0, -60, 0],
+            scale: [1.1, 1, 1.1]
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-amber-500/15 rounded-full blur-[180px]"
-          animate={{
-            x: [0, -80, 0],
-            y: [0, -60, 0],
-            scale: [1.2, 1, 1.2]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-cyan-500/10 rounded-full blur-[250px]"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] max-w-[900px] max-h-[900px] bg-cyan-500/10 rounded-full blur-[250px]"
           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
-      {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
-
       {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden -z-5 pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(30)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-white/30 rounded-full"
+            className="absolute w-1 h-1 bg-white/40 rounded-full"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
             }}
             animate={{
-              y: [0, -100, 0],
+              y: [0, -150, 0],
               opacity: [0, 1, 0],
+              scale: [0, 1, 0],
             }}
             transition={{
-              duration: 5 + Math.random() * 5,
+              duration: 6 + Math.random() * 6,
               repeat: Infinity,
-              delay: Math.random() * 5,
+              delay: Math.random() * 6,
+              ease: "easeInOut",
             }}
           />
         ))}
       </div>
 
-      {/* Content */}
-      <div className="container px-4 md:px-6 max-w-5xl relative z-10 py-20">
-        {/* Badge */}
+      {/* Content with parallax */}
+      <motion.div
+        style={{ opacity, scale, y }}
+        className="container px-4 md:px-6 max-w-6xl relative z-10"
+      >
+        {/* Location badges */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-wrap items-center justify-center gap-3 mb-8"
+          transition={{ duration: 0.8 }}
+          className="flex flex-wrap items-center justify-center gap-4 mb-10"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/20 backdrop-blur-sm border border-purple-500/30 text-sm font-medium">
+          <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium">
             <MapPin className="h-4 w-4 text-purple-400" />
             Freetown, Sierra Leone
           </span>
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 text-sm font-medium">
+          <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium">
             <Globe className="h-4 w-4 text-amber-400" />
             Built for Africa, Ready for the World
           </span>
         </motion.div>
 
-        {/* Headline */}
+        {/* Main headline - massive typography */}
         <motion.h1
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight max-w-5xl mx-auto leading-tight"
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] mb-8"
         >
-          We're Building the Future of{" "}
-          <span className="relative inline-block">
+          <span className="block">We're Building</span>
+          <span className="block mt-2">
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent">
-              Human Connection
+              The Future
             </span>
-            <motion.span
-              className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 rounded-full"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
-            />
           </span>
+          <span className="block mt-2 text-white/90">of Connection</span>
         </motion.h1>
 
-        {/* Mission Statement */}
+        {/* Mission - clean, no box */}
         <motion.p
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-8 max-w-3xl mx-auto text-lg md:text-xl text-neutral-300 leading-relaxed"
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="max-w-2xl mx-auto text-xl md:text-2xl text-white/70 leading-relaxed font-light"
         >
-          <span className="text-white font-semibold">Our Mission:</span>{" "}
           To transform every event into the best networking opportunity of your life—powered by AI that understands, connects, and engages in real-time.
         </motion.p>
 
-        {/* CTA Buttons */}
+        {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="mt-12 flex flex-col sm:flex-row gap-4 justify-center"
         >
           <Button
             size="lg"
-            className="group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white h-14 px-8 text-lg shadow-lg shadow-purple-500/25"
+            className="group bg-white text-slate-900 hover:bg-white/90 h-14 px-10 text-lg font-semibold shadow-2xl shadow-white/10"
             asChild
           >
             <Link href="/events">
-              Explore the Platform
+              Explore Platform
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
           <Button
             size="lg"
-            className="bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50 h-14 px-8 text-lg backdrop-blur-sm"
+            className="bg-white/5 border border-white/20 text-white hover:bg-white/10 h-14 px-10 text-lg backdrop-blur-sm"
             asChild
           >
-            <Link href="#our-story">
+            <Link href="#story">
               <Play className="mr-2 h-5 w-5" />
               Our Story
             </Link>
           </Button>
         </motion.div>
-      </div>
+      </motion.div>
 
-      {/* Scroll Indicator */}
+      {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="absolute bottom-12 left-1/2 -translate-x-1/2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
+        transition={{ delay: 1.5 }}
       >
         <motion.div
-          className="w-6 h-10 rounded-full border-2 border-white/30 flex justify-center pt-2"
-          animate={{ y: [0, 5, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="flex flex-col items-center gap-2 text-white/50"
         >
-          <motion.div
-            className="w-1.5 h-1.5 rounded-full bg-white"
-            animate={{ y: [0, 12, 0], opacity: [1, 0.3, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
+          <span className="text-xs uppercase tracking-widest">Scroll</span>
+          <ChevronDown className="h-5 w-5" />
         </motion.div>
       </motion.div>
     </section>
@@ -212,235 +198,309 @@ function HeroSection() {
 }
 
 // ============================================================================
-// ORIGIN STORY SECTION
+// ORIGIN STORY - Immersive Narrative Flow
 // ============================================================================
 function OriginStorySection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-20%" });
 
-  const timeline = [
+  const chapters = [
     {
-      icon: Lightbulb,
+      number: "01",
       title: "The Spark",
-      description: "It started with a simple observation: people want to connect. Real connections—the kind that change careers, spark partnerships, and create lifelong relationships. But where do these connections happen?",
-      color: "from-amber-500 to-orange-500",
+      content: "It started with a simple observation: people want to connect. Real connections—the kind that change careers, spark partnerships, and create lifelong relationships.",
+      highlight: "But where do these connections happen?",
+      icon: Lightbulb,
+      color: "text-amber-400",
     },
     {
-      icon: Users,
+      number: "02",
       title: "The Realization",
-      description: "Events. Conferences, meetups, summits—these are where meaningful connections are made. But existing platforms treat networking as an afterthought. We saw an opportunity to make it the main event.",
-      color: "from-purple-500 to-pink-500",
+      content: "Events. Conferences, meetups, summits—these are where meaningful connections are made.",
+      highlight: "But existing platforms treat networking as an afterthought.",
+      icon: Users,
+      color: "text-purple-400",
     },
     {
-      icon: Target,
+      number: "03",
       title: "The Vision",
-      description: "Why settle for just another event app? We dreamed bigger. An all-in-one platform that combines the best of Cvent, Hopin, Bizzabo, and Zoom Events—but smarter, with AI that actually helps people connect.",
-      color: "from-cyan-500 to-blue-500",
+      content: "Why settle for just another event app? We dreamed bigger. An all-in-one platform combining the best of Cvent, Hopin, Bizzabo, and Zoom Events.",
+      highlight: "But smarter. With AI that actually helps people connect.",
+      icon: Target,
+      color: "text-cyan-400",
     },
     {
-      icon: Globe,
+      number: "04",
       title: "Africa First",
-      description: "We chose to build from Africa, for Africa first. Not because we can't compete globally—but because innovation shouldn't only flow one way. Africa deserves world-class technology built with its needs in mind.",
-      color: "from-green-500 to-emerald-500",
+      content: "We chose to build from Africa, for Africa first. Not because we can't compete globally—but because innovation shouldn't only flow one way.",
+      highlight: "Africa deserves world-class technology built with its needs in mind.",
+      icon: Globe,
+      color: "text-green-400",
     },
   ];
 
   return (
-    <section id="our-story" className="py-24 lg:py-32 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[150px]" />
-      </div>
-
-      <div className="container mx-auto px-4 md:px-6" ref={ref}>
-        {/* Header */}
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-20"
-        >
-          <span className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full border border-purple-500/20">
-            <Sparkles className="h-4 w-4" />
-            Our Story
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            From a Dream in Freetown to a{" "}
-            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Global Vision
-            </span>
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Every great company starts with a problem worth solving. Ours began with a question:
-            Why do so many people leave events without making the connections they came for?
-          </p>
-        </motion.div>
-
-        {/* Timeline */}
-        <div className="max-w-4xl mx-auto">
-          <div className="relative">
-            {/* Vertical line */}
-            <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500 via-purple-500 via-cyan-500 to-green-500 md:-translate-x-1/2" />
-
-            {timeline.map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-                animate={isInView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.2 + index * 0.15 }}
-                className={cn(
-                  "relative flex items-start gap-6 md:gap-0 mb-12 last:mb-0",
-                  index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                )}
-              >
-                {/* Icon */}
-                <div className="absolute left-0 md:left-1/2 md:-translate-x-1/2 z-10">
-                  <motion.div
-                    className={cn(
-                      "w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-lg",
-                      item.color
-                    )}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                  >
-                    <item.icon className="h-8 w-8 text-white" />
-                  </motion.div>
-                </div>
-
-                {/* Content */}
-                <div className={cn(
-                  "ml-24 md:ml-0 md:w-1/2",
-                  index % 2 === 0 ? "md:pr-16 md:text-right" : "md:pl-16 md:text-left"
-                )}>
-                  <div className="bg-card rounded-2xl border p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+    <section id="story" className="relative bg-background" ref={ref}>
+      {/* Section header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto px-4 md:px-6 py-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            className="flex items-center gap-4"
+          >
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Our Story</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+          </motion.div>
         </div>
       </div>
+
+      {/* Chapters */}
+      {chapters.map((chapter, index) => (
+        <ChapterBlock key={chapter.number} chapter={chapter} index={index} />
+      ))}
     </section>
   );
 }
 
-// ============================================================================
-// WHAT WE DO SECTION
-// ============================================================================
-function WhatWeDoSection() {
+function ChapterBlock({ chapter, index }: { chapter: any; index: number }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-30%" });
+
+  return (
+    <div ref={ref} className="min-h-[70vh] flex items-center relative overflow-hidden">
+      {/* Background gradient for each chapter */}
+      <motion.div
+        className="absolute inset-0 -z-10"
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : {}}
+        transition={{ duration: 1 }}
+      >
+        <div className={cn(
+          "absolute w-[800px] h-[800px] rounded-full blur-[200px] opacity-20",
+          index % 2 === 0 ? "left-0 -translate-x-1/2" : "right-0 translate-x-1/2",
+          index === 0 && "bg-amber-500",
+          index === 1 && "bg-purple-500",
+          index === 2 && "bg-cyan-500",
+          index === 3 && "bg-green-500",
+        )} style={{ top: "50%", transform: `translateY(-50%) ${index % 2 === 0 ? 'translateX(-50%)' : 'translateX(50%)'}` }} />
+      </motion.div>
+
+      <div className="container mx-auto px-4 md:px-6 py-24">
+        <div className={cn(
+          "grid lg:grid-cols-2 gap-16 items-center",
+          index % 2 === 1 && "lg:grid-flow-col-dense"
+        )}>
+          {/* Number & Icon */}
+          <motion.div
+            initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8 }}
+            className={cn(
+              "relative",
+              index % 2 === 1 && "lg:col-start-2"
+            )}
+          >
+            <span className="text-[12rem] md:text-[16rem] font-bold text-muted-foreground/10 leading-none select-none">
+              {chapter.number}
+            </span>
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            >
+              <div className="w-32 h-32 rounded-full border border-dashed border-muted-foreground/20" />
+            </motion.div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <chapter.icon className={cn("w-16 h-16", chapter.color)} />
+            </div>
+          </motion.div>
+
+          {/* Content */}
+          <motion.div
+            initial={{ opacity: 0, x: index % 2 === 0 ? 50 : -50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className={index % 2 === 1 ? "lg:col-start-1 lg:row-start-1" : ""}
+          >
+            <h2 className={cn("text-4xl md:text-5xl font-bold mb-6", chapter.color)}>
+              {chapter.title}
+            </h2>
+            <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-4">
+              {chapter.content}
+            </p>
+            <p className="text-xl md:text-2xl font-semibold text-foreground">
+              {chapter.highlight}
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// WHAT WE BUILD - Animated Visual Diagram
+// ============================================================================
+function WhatWeBuildSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-20%" });
 
   const capabilities = [
-    {
-      icon: Brain,
-      title: "AI Engagement Conductor",
-      description: "Autonomous AI that monitors engagement in real-time, detects drops before they happen, and intervenes intelligently.",
-      color: "from-purple-500 to-indigo-500",
-    },
-    {
-      icon: Network,
-      title: "Smart Matchmaking",
-      description: "AI-powered networking that enriches profiles from 6+ platforms and connects the right people at the right time.",
-      color: "from-pink-500 to-rose-500",
-    },
-    {
-      icon: Wifi,
-      title: "12+ Real-Time Gateways",
-      description: "True WebSocket infrastructure—chat, Q&A, polls, notifications, proximity—all instant, all the time.",
-      color: "from-cyan-500 to-blue-500",
-    },
-    {
-      icon: MapPin,
-      title: "Proximity Networking",
-      description: "GPS-powered discovery that tells you who's nearby and worth meeting at in-person events.",
-      color: "from-green-500 to-emerald-500",
-    },
-    {
-      icon: BarChart3,
-      title: "Intent-Based Lead Scoring",
-      description: "AI classifies leads as Hot, Warm, or Cold in real-time, with instant alerts for sponsors.",
-      color: "from-amber-500 to-orange-500",
-    },
-    {
-      icon: Activity,
-      title: "Gamification Engine",
-      description: "Points, badges, leaderboards, and team competitions that transform passive attendees into active participants.",
-      color: "from-red-500 to-pink-500",
-    },
+    { icon: Brain, label: "AI Engagement", sublabel: "Conductor", color: "from-purple-500 to-indigo-500" },
+    { icon: Network, label: "Smart", sublabel: "Matchmaking", color: "from-pink-500 to-rose-500" },
+    { icon: Wifi, label: "12+ Real-Time", sublabel: "Gateways", color: "from-cyan-500 to-blue-500" },
+    { icon: MapPin, label: "Proximity", sublabel: "Networking", color: "from-green-500 to-emerald-500" },
+    { icon: Activity, label: "Gamification", sublabel: "Engine", color: "from-amber-500 to-orange-500" },
+    { icon: TrendingUp, label: "Lead", sublabel: "Scoring", color: "from-red-500 to-pink-500" },
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-muted/30 to-background relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px]" />
-      </div>
+    <section ref={ref} className="py-32 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-slate-950 to-background -z-10" />
 
-      <div className="container mx-auto px-4 md:px-6" ref={ref}>
+      <div className="container mx-auto px-4 md:px-6">
+        {/* Header */}
         <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          className="text-center max-w-4xl mx-auto mb-24"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-full border border-cyan-500/20">
+          <motion.span
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : {}}
+            className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium bg-cyan-500/10 text-cyan-400 rounded-full border border-cyan-500/20"
+          >
             <Zap className="h-4 w-4" />
             What We Build
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            Not Just Another Event Platform—An{" "}
-            <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-              Intelligent Operating System
-            </span>
+          </motion.span>
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white">
+            Not Another Event App
           </h2>
-          <p className="text-lg text-muted-foreground">
-            We combined the best of Cvent, Hopin, Bizzabo, and Zoom Events—then added AI that actually thinks.
+          <p className="text-xl md:text-2xl text-slate-400">
+            An intelligent operating system that combines Cvent + Hopin + Bizzabo + Zoom Events—
+            <span className="text-white font-medium">then adds AI that thinks.</span>
           </p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {capabilities.map((capability) => (
+        {/* Central visualization */}
+        <div className="relative max-w-5xl mx-auto">
+          {/* Central core */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={isInView ? { scale: 1, opacity: 1 } : {}}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          >
+            {/* Pulsing rings */}
             <motion.div
-              key={capability.title}
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="group"
-            >
-              <div className="h-full rounded-2xl border bg-card p-6 transition-all duration-300 hover:shadow-xl hover:border-primary/30">
-                <div className={cn(
-                  "w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center mb-5",
-                  capability.color
-                )}>
-                  <capability.icon className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold mb-3">{capability.title}</h3>
-                <p className="text-muted-foreground">{capability.description}</p>
+              className="absolute inset-0 rounded-full bg-white/10"
+              style={{ width: 200, height: 200, marginLeft: -100, marginTop: -100 }}
+              animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+            <motion.div
+              className="absolute inset-0 rounded-full bg-white/5"
+              style={{ width: 200, height: 200, marginLeft: -100, marginTop: -100 }}
+              animate={{ scale: [1.2, 1.8, 1.2], opacity: [0.2, 0, 0.2] }}
+              transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+            />
+
+            {/* Core */}
+            <div className="w-40 h-40 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center">
+              <div className="text-center">
+                <Sparkles className="w-10 h-10 text-white mx-auto mb-2" />
+                <span className="text-sm font-semibold text-white">Event</span>
+                <span className="block text-xs text-white/70">Dynamics</span>
               </div>
-            </motion.div>
-          ))}
-        </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Orbital ring */}
+          <motion.div
+            className="relative w-full aspect-square max-w-[600px] mx-auto"
+            initial={{ opacity: 0, rotate: -30 }}
+            animate={isInView ? { opacity: 1, rotate: 0 } : {}}
+            transition={{ duration: 1 }}
+          >
+            {/* Dotted orbit */}
+            <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/10" />
+
+            {/* Capability nodes */}
+            {capabilities.map((cap, index) => {
+              const angle = (index * 60 - 90) * (Math.PI / 180);
+              const radius = 45; // percentage
+              const x = 50 + radius * Math.cos(angle);
+              const y = 50 + radius * Math.sin(angle);
+
+              return (
+                <motion.div
+                  key={cap.label}
+                  className="absolute"
+                  style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                  whileHover={{ scale: 1.1 }}
+                >
+                  <div className="relative group cursor-pointer">
+                    {/* Glow */}
+                    <div className={cn(
+                      "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-50 blur-xl group-hover:opacity-80 transition-opacity",
+                      cap.color
+                    )} />
+
+                    {/* Node */}
+                    <div className={cn(
+                      "relative w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center shadow-2xl",
+                      cap.color
+                    )}>
+                      <cap.icon className="w-8 h-8 text-white mb-1" />
+                      <span className="text-[10px] md:text-xs font-semibold text-white text-center leading-tight">
+                        {cap.label}
+                      </span>
+                      <span className="text-[10px] md:text-xs text-white/80 text-center">
+                        {cap.sublabel}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+
+            {/* Animated particles on orbit */}
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 rounded-full bg-white/60"
+                style={{ top: '50%', left: '50%' }}
+                animate={{
+                  x: [0, 270, 0, -270, 0].map(v => v * Math.cos(i * (Math.PI * 2 / 3))),
+                  y: [270, 0, -270, 0, 270].map(v => v * Math.sin(i * (Math.PI * 2 / 3)) - 270 + (i === 0 ? 270 : i === 1 ? 0 : -135)),
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "linear",
+                  delay: i * 2.67,
+                }}
+              />
+            ))}
+          </motion.div>
+        </div>
 
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.6 }}
-          className="mt-12 text-center"
+          transition={{ delay: 1 }}
+          className="text-center mt-16"
         >
-          <Button asChild size="lg" variant="outline" className="group">
+          <Button asChild size="lg" variant="outline" className="group border-white/20 text-white hover:bg-white/10">
             <Link href="/solutions/engagement-conductor">
               Explore All Solutions
-              <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
         </motion.div>
@@ -450,220 +510,162 @@ function WhatWeDoSection() {
 }
 
 // ============================================================================
-// DIFFERENTIATORS SECTION
+// DIFFERENTIATORS - Large Typography Blocks
 // ============================================================================
 function DifferentiatorsSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-20%" });
 
   const differentiators = [
     {
+      stat: "5s",
       title: "AI That Actually Thinks",
       description: "Thompson Sampling reinforcement learning means our platform gets smarter with every event. It's not just automation—it's intelligence.",
-      icon: Brain,
-      stat: "5s",
-      statLabel: "Detection Speed",
-      gradient: "from-purple-500 to-indigo-600",
+      color: "text-purple-400",
+      gradient: "from-purple-500/20",
     },
     {
-      title: "Real-Time Everything",
-      description: "12+ WebSocket gateways ensure nothing is delayed. Chat, Q&A, polls, notifications, gamification—all instant.",
-      icon: Zap,
       stat: "12+",
-      statLabel: "Live Gateways",
-      gradient: "from-amber-500 to-orange-600",
+      title: "Real-Time Everything",
+      description: "WebSocket gateways ensure nothing is delayed. Chat, Q&A, polls, notifications, gamification—all instant, all the time.",
+      color: "text-amber-400",
+      gradient: "from-amber-500/20",
     },
     {
+      stat: "100+",
       title: "Africa-First, Global-Ready",
       description: "Built with African needs in mind—Paystack payments, mobile-first design, low-bandwidth optimization—but powerful enough for anywhere.",
-      icon: Globe,
-      stat: "100+",
-      statLabel: "Languages",
-      gradient: "from-green-500 to-emerald-600",
+      color: "text-green-400",
+      gradient: "from-green-500/20",
     },
   ];
 
   return (
-    <section className="py-24 lg:py-32 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-background -z-10" />
-      <div className="absolute inset-0 -z-5">
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[150px]"
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 10, repeat: Infinity }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[120px]"
-          animate={{ scale: [1.2, 1, 1.2] }}
-          transition={{ duration: 8, repeat: Infinity }}
-        />
-      </div>
-
-      <div className="container mx-auto px-4 md:px-6" ref={ref}>
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
-        >
-          <span className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
-            <Target className="h-4 w-4" />
-            What Sets Us Apart
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 text-white">
-            We Don't Just Host Events—We{" "}
-            <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-              Transform Them
-            </span>
-          </h2>
-          <p className="text-lg text-slate-400">
-            Other platforms give you tools. We give you an intelligent system that works alongside you.
-          </p>
-        </motion.div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {differentiators.map((item, index) => (
-            <motion.div
-              key={item.title}
-              initial={{ opacity: 0, y: 50 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.2 + index * 0.15 }}
-              className="relative group"
-            >
-              <div className="h-full rounded-2xl border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm p-8 transition-all duration-300 hover:border-slate-600 hover:bg-slate-900/80">
-                {/* Gradient line at top */}
-                <motion.div
-                  className={cn("absolute top-0 left-6 right-6 h-1 rounded-full bg-gradient-to-r", item.gradient)}
-                  initial={{ scaleX: 0 }}
-                  animate={isInView ? { scaleX: 1 } : {}}
-                  transition={{ duration: 0.8, delay: 0.4 + index * 0.15 }}
-                />
-
-                {/* Icon */}
-                <div className={cn(
-                  "w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-6",
-                  item.gradient
-                )}>
-                  <item.icon className="h-8 w-8 text-white" />
-                </div>
-
-                {/* Content */}
-                <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                <p className="text-slate-400 mb-6 leading-relaxed">{item.description}</p>
-
-                {/* Stat */}
-                <div className="pt-6 border-t border-slate-700/50">
-                  <div className={cn("text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent", item.gradient)}>
-                    {item.stat}
-                  </div>
-                  <div className="text-sm text-slate-500">{item.statLabel}</div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+    <section ref={ref} className="relative">
+      {/* Section header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto px-4 md:px-6 py-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            className="flex items-center gap-4"
+          >
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">What Sets Us Apart</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+          </motion.div>
         </div>
       </div>
+
+      {differentiators.map((item, index) => (
+        <DifferentiatorBlock key={item.title} item={item} index={index} />
+      ))}
     </section>
   );
 }
 
+function DifferentiatorBlock({ item, index }: { item: any; index: number }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-30%" });
+
+  return (
+    <div ref={ref} className="min-h-[60vh] flex items-center relative overflow-hidden border-b border-border/30">
+      {/* Background gradient */}
+      <motion.div
+        className={cn("absolute inset-0 bg-gradient-to-r to-transparent -z-10", item.gradient)}
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : {}}
+        transition={{ duration: 1 }}
+      />
+
+      <div className="container mx-auto px-4 md:px-6 py-20">
+        <div className="grid lg:grid-cols-3 gap-12 items-center">
+          {/* Stat */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.6 }}
+            className="text-center lg:text-left"
+          >
+            <span className={cn("text-[8rem] md:text-[12rem] font-bold leading-none", item.color)}>
+              {item.stat}
+            </span>
+          </motion.div>
+
+          {/* Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-2"
+          >
+            <h3 className="text-3xl md:text-5xl font-bold mb-6">{item.title}</h3>
+            <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl">
+              {item.description}
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================================
-// CORE VALUES SECTION
+// CORE VALUES - Horizontal Scroll / Flow
 // ============================================================================
 function CoreValuesSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-20%" });
 
   const values = [
-    {
-      icon: Heart,
-      title: "Connection First",
-      description: "Everything we build serves human connection. Features don't matter if they don't bring people together.",
-      color: "bg-rose-500",
-    },
-    {
-      icon: Globe,
-      title: "African Innovation, Global Standards",
-      description: "Built in Africa, for the world. We prove that world-class technology can come from anywhere.",
-      color: "bg-green-500",
-    },
-    {
-      icon: Brain,
-      title: "Intelligence Over Features",
-      description: "Smart beats more. We'd rather have one brilliant AI-powered feature than ten mediocre ones.",
-      color: "bg-purple-500",
-    },
-    {
-      icon: Zap,
-      title: "Real-Time or Nothing",
-      description: "If it's not instant, it's not good enough. Delay kills engagement, and we refuse to accept that.",
-      color: "bg-amber-500",
-    },
-    {
-      icon: TrendingUp,
-      title: "Relentless Improvement",
-      description: "Our AI learns from every event. So do we. Yesterday's best is today's baseline.",
-      color: "bg-cyan-500",
-    },
+    { icon: Heart, title: "Connection First", description: "Everything we build serves human connection", color: "bg-rose-500" },
+    { icon: Globe, title: "African Innovation", description: "Built in Africa, for the world", color: "bg-green-500" },
+    { icon: Brain, title: "Intelligence Over Features", description: "Smart beats more, always", color: "bg-purple-500" },
+    { icon: Zap, title: "Real-Time or Nothing", description: "Delay kills engagement", color: "bg-amber-500" },
+    { icon: TrendingUp, title: "Relentless Improvement", description: "Yesterday's best is today's baseline", color: "bg-cyan-500" },
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="container mx-auto px-4 md:px-6" ref={ref}>
+    <section ref={ref} className="py-32 overflow-hidden">
+      <div className="container mx-auto px-4 md:px-6 mb-16">
         <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          className="max-w-3xl"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-full border border-rose-500/20">
-            <Heart className="h-4 w-4" />
-            Our Values
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            What We{" "}
-            <span className="bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">
-              Believe In
-            </span>
+          <span className="text-sm font-medium text-rose-400 uppercase tracking-widest mb-4 block">Our Values</span>
+          <h2 className="text-4xl md:text-6xl font-bold mb-6">
+            What We Believe
           </h2>
-          <p className="text-lg text-muted-foreground">
-            These aren't just words on a wall. They're the decisions we make every day.
+          <p className="text-xl text-muted-foreground">
+            Not just words on a wall. The decisions we make every day.
           </p>
         </motion.div>
+      </div>
 
+      {/* Horizontal flowing values */}
+      <div className="relative">
         <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          className="flex gap-8 px-4 md:px-6"
+          initial={{ x: 0 }}
+          animate={{ x: [0, -50, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         >
-          {values.map((value, index) => (
+          {[...values, ...values].map((value, index) => (
             <motion.div
-              key={value.title}
-              variants={fadeInUp}
-              className={cn(
-                "group relative",
-                index === values.length - 1 && "lg:col-start-2"
-              )}
+              key={`${value.title}-${index}`}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: (index % 5) * 0.1 }}
+              className="flex-shrink-0 w-72 md:w-80"
             >
-              <div className="h-full rounded-2xl border bg-card p-6 transition-all duration-300 hover:shadow-xl hover:border-primary/30">
-                {/* Icon */}
-                <motion.div
-                  className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center mb-5 text-white",
-                    value.color
-                  )}
-                  whileHover={{ rotate: [0, -10, 10, 0] }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <value.icon className="h-6 w-6" />
-                </motion.div>
-
-                <h3 className="text-lg font-semibold mb-2">{value.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {value.description}
-                </p>
+              <div className="flex items-start gap-4">
+                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0", value.color)}>
+                  <value.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">{value.title}</h3>
+                  <p className="text-muted-foreground">{value.description}</p>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -674,113 +676,60 @@ function CoreValuesSection() {
 }
 
 // ============================================================================
-// STATS SECTION
-// ============================================================================
-function StatsSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const stats = [
-    { value: "12+", label: "Real-Time Gateways", description: "WebSocket connections" },
-    { value: "100+", label: "Languages", description: "AI Translation Support" },
-    { value: "5s", label: "Detection Speed", description: "Engagement Monitoring" },
-    { value: "6", label: "Data Sources", description: "Profile Enrichment" },
-  ];
-
-  return (
-    <section className="py-20 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-600 relative overflow-hidden">
-      {/* Animated background */}
-      <motion.div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-        }}
-        animate={{ x: [0, 60], y: [0, 60] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      />
-
-      <div className="container mx-auto px-4 md:px-6 relative z-10" ref={ref}>
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-8"
-        >
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              variants={fadeInUp}
-              className="text-center text-white"
-            >
-              <motion.div
-                className="text-4xl md:text-5xl font-bold mb-2"
-                initial={{ scale: 0 }}
-                animate={isInView ? { scale: 1 } : {}}
-                transition={{ duration: 0.5, delay: 0.2 + index * 0.1, type: "spring" }}
-              >
-                {stat.value}
-              </motion.div>
-              <div className="font-semibold mb-1">{stat.label}</div>
-              <div className="text-sm text-white/70">{stat.description}</div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// CTA SECTION
+// CTA SECTION - Cinematic
 // ============================================================================
 function CTASection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-20%" });
 
   return (
-    <section className="py-24 lg:py-32 relative overflow-hidden">
+    <section ref={ref} className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 -z-10" />
-      <div className="absolute inset-0 -z-5">
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/20 rounded-full blur-[200px]"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity }}
-        />
-      </div>
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-950 via-slate-950 to-slate-950 -z-10" />
 
-      <div className="container mx-auto px-4 md:px-6 relative z-10" ref={ref}>
+      {/* Animated orbs */}
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-500/30 rounded-full blur-[200px]"
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-amber-500/20 rounded-full blur-[180px]"
+        animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 10, repeat: Infinity }}
+      />
+
+      <div className="container mx-auto px-4 md:px-6 relative z-10 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center max-w-4xl mx-auto text-white"
+          transition={{ duration: 0.8 }}
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-sm font-medium mb-8"
-            animate={{ boxShadow: ["0 0 0 0 rgba(255,255,255,0)", "0 0 0 8px rgba(255,255,255,0.1)", "0 0 0 0 rgba(255,255,255,0)"] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium text-white mb-10"
+            animate={{ boxShadow: ["0 0 0 0 rgba(255,255,255,0)", "0 0 0 12px rgba(255,255,255,0.1)", "0 0 0 0 rgba(255,255,255,0)"] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
           >
             <Rocket className="h-4 w-4" />
             Join the Journey
           </motion.div>
 
-          <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-            Ready to Transform How You{" "}
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight">
+            Ready to Transform<br />
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent">
-              Experience Events?
+              How You Connect?
             </span>
           </h2>
 
-          <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-            Whether you're organizing your first meetup or your hundredth conference,
-            Event Dynamics is ready to make it your best one yet.
+          <p className="text-xl md:text-2xl text-white/60 mb-12 max-w-2xl mx-auto font-light">
+            Whether it's your first meetup or your hundredth conference,
+            Event Dynamics makes it your best one yet.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              className="group bg-white text-purple-700 hover:bg-white/90 h-14 px-8 text-lg font-semibold shadow-xl"
+              className="group bg-white text-slate-900 hover:bg-white/90 h-14 px-10 text-lg font-semibold shadow-2xl shadow-white/10"
               asChild
             >
               <Link href="/auth/register">
@@ -790,35 +739,35 @@ function CTASection() {
             </Button>
             <Button
               size="lg"
-              className="bg-white/10 border-2 border-white/30 text-white hover:bg-white/20 hover:border-white/50 h-14 px-8 text-lg backdrop-blur-sm"
+              className="bg-white/5 border border-white/20 text-white hover:bg-white/10 h-14 px-10 text-lg"
               asChild
             >
               <Link href="/contact">
                 <MessageSquare className="mr-2 h-5 w-5" />
-                Contact Us
+                Talk to Us
               </Link>
             </Button>
           </div>
 
-          {/* Trust indicators */}
+          {/* Trust badges */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : {}}
             transition={{ delay: 0.5 }}
-            className="mt-12 flex flex-wrap items-center justify-center gap-8 text-slate-400 text-sm"
+            className="mt-16 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-white/50 text-sm"
           >
-            <div className="flex items-center gap-2">
+            <span className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-400" />
               No credit card required
-            </div>
-            <div className="flex items-center gap-2">
+            </span>
+            <span className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-400" />
-              Free forever plan available
-            </div>
-            <div className="flex items-center gap-2">
+              Free forever plan
+            </span>
+            <span className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-400" />
               Setup in minutes
-            </div>
+            </span>
           </motion.div>
         </motion.div>
       </div>
@@ -834,10 +783,9 @@ export default function CompanyPage() {
     <main className="flex-1">
       <HeroSection />
       <OriginStorySection />
-      <WhatWeDoSection />
+      <WhatWeBuildSection />
       <DifferentiatorsSection />
       <CoreValuesSection />
-      <StatsSection />
       <CTASection />
     </main>
   );

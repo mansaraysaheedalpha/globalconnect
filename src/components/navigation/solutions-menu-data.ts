@@ -33,26 +33,16 @@ export const solutionsMenuData: MenuColumn[] = [
     subtitle: "Plan, execute, and optimize your events",
     groups: [
       {
-        title: "Event Management",
+        title: "Event Planning",
         items: [
           {
-            name: "Event Creation & Templates",
-            description: "Launch events faster with reusable blueprints",
+            name: "Event Planning Suite",
+            description: "Create events, build agendas, and manage speakers in one place",
             href: "/solutions/event-creation",
           },
           {
-            name: "Session & Agenda Builder",
-            description: "Multi-track scheduling with smart capacity control",
-            href: "/solutions/session-builder",
-          },
-          {
-            name: "Speaker Management",
-            description: "Coordinate presenters and presentations effortlessly",
-            href: "/solutions/speaker-management",
-          },
-          {
             name: "Registration & Ticketing",
-            description: "Multi-tier ticketing with dynamic pricing",
+            description: "Multi-tier ticketing with dynamic pricing and payments",
             href: "/solutions/registration-ticketing",
             isPopular: true,
           },
@@ -62,48 +52,29 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Live Event Control",
         items: [
           {
-            name: "Producer Dashboard",
-            description: "Hollywood-style real-time event command center",
+            name: "Live Control Center",
+            description: "Producer dashboard, green room, and moderation tools",
             href: "/solutions/producer-dashboard",
             isHighlight: true,
-          },
-          {
-            name: "Green Room",
-            description: "Pre-session speaker staging area",
-            href: "/solutions/green-room",
-          },
-          {
-            name: "Chat & Q&A Moderation",
-            description: "Approve and manage audience interactions",
-            href: "/solutions/moderation",
           },
         ],
       },
       {
-        title: "Engagement Tools",
+        title: "Engagement",
         items: [
           {
-            name: "AI Engagement Conductor",
-            description: "Autonomous engagement monitoring and recovery",
+            name: "Engagement Engine",
+            description: "AI-powered engagement monitoring with smart interventions",
             href: "/solutions/engagement-conductor",
             isAI: true,
             isHighlight: true,
             isNew: true,
           },
           {
-            name: "Live Polls & Quizzes",
-            description: "Interactive polling with giveaway system",
-            href: "/solutions/polls-quizzes",
-          },
-          {
-            name: "Gamification Engine",
-            description: "Points, badges, and leaderboards that drive engagement",
+            name: "Gamification",
+            description: "Points, badges, leaderboards, and team competitions",
             href: "/solutions/gamification",
-          },
-          {
-            name: "Breakout Rooms",
-            description: "Facilitated small-group discussions with video",
-            href: "/solutions/breakout-rooms",
+            isPopular: true,
           },
         ],
       },
@@ -111,19 +82,9 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Analytics",
         items: [
           {
-            name: "Real-Time Analytics",
-            description: "Live attendance and engagement metrics",
+            name: "Analytics & Insights",
+            description: "Real-time metrics, A/B testing, and custom reports",
             href: "/solutions/analytics",
-          },
-          {
-            name: "A/B Testing",
-            description: "Optimize conversions with variant testing",
-            href: "/solutions/ab-testing",
-          },
-          {
-            name: "Custom Reports",
-            description: "Export data your way - CSV, Excel, PDF",
-            href: "/solutions/reports",
           },
         ],
       },
@@ -143,48 +104,21 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Lead Generation",
         items: [
           {
-            name: "Intent-Based Lead Scoring",
-            description: "AI-powered Hot/Warm/Cold classification",
+            name: "Lead Intelligence",
+            description: "AI-powered scoring, real-time alerts, pipeline tracking, and export",
             href: "/solutions/lead-scoring",
             isAI: true,
             isHighlight: true,
           },
-          {
-            name: "Real-Time Lead Alerts",
-            description: "Instant notifications with sound alerts for hot leads",
-            href: "/solutions/lead-alerts",
-            isHighlight: true,
-            isPopular: true,
-          },
-          {
-            name: "Lead Management Pipeline",
-            description: "Track from New → Contacted → Qualified → Converted",
-            href: "/solutions/lead-pipeline",
-          },
-          {
-            name: "Advanced Lead Export",
-            description: "Export with custom fields in any format",
-            href: "/solutions/lead-export",
-          },
         ],
       },
       {
-        title: "Virtual Booth",
+        title: "Virtual Presence",
         items: [
           {
-            name: "Custom Booth Pages",
-            description: "Branded virtual booth with marketing assets",
+            name: "Sponsor Booth",
+            description: "Branded booth pages, live interactions, and resource distribution",
             href: "/solutions/virtual-booth",
-          },
-          {
-            name: "Live Booth Interaction",
-            description: "Real-time attendee engagement and demos",
-            href: "/solutions/booth-interaction",
-          },
-          {
-            name: "Resource Distribution",
-            description: "Deliver brochures and materials instantly",
-            href: "/solutions/resource-distribution",
           },
         ],
       },
@@ -192,19 +126,9 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Sponsor Tools",
         items: [
           {
-            name: "Direct Attendee Messaging",
-            description: "Tier-based permissions for outreach",
-            href: "/solutions/sponsor-messaging",
-          },
-          {
-            name: "Sponsor Analytics",
-            description: "ROI tracking and performance metrics",
-            href: "/solutions/sponsor-analytics",
-          },
-          {
-            name: "Team Management",
-            description: "Multi-role representative access control",
-            href: "/solutions/sponsor-team",
+            name: "Sponsor Hub",
+            description: "Direct messaging, analytics dashboard, and team management",
+            href: "/solutions/for-sponsors",
           },
         ],
       },
@@ -224,27 +148,11 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Networking",
         items: [
           {
-            name: "AI-Powered Matchmaking",
-            description: "Smart recommendations based on shared interests",
+            name: "Smart Networking",
+            description: "AI matchmaking, proximity discovery, huddles, and messaging",
             href: "/solutions/matchmaking",
             isAI: true,
             isHighlight: true,
-          },
-          {
-            name: "Proximity Networking",
-            description: "Location-based discovery with instant pinging",
-            href: "/solutions/proximity-networking",
-            isHighlight: true,
-          },
-          {
-            name: "Huddles",
-            description: "Join topic-based facilitated discussions",
-            href: "/solutions/huddles",
-          },
-          {
-            name: "Direct Messaging",
-            description: "Private 1:1 chats with read receipts",
-            href: "/solutions/direct-messaging",
           },
         ],
       },
@@ -252,24 +160,14 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Engagement",
         items: [
           {
-            name: "Live Chat & Reactions",
-            description: "Real-time conversations with emoji reactions",
+            name: "Live Engagement",
+            description: "Real-time chat, Q&A, polls, and emoji reactions",
             href: "/solutions/chat-reactions",
           },
           {
-            name: "Q&A System",
-            description: "Submit, upvote, and get answers to your questions",
-            href: "/solutions/qa-system",
-          },
-          {
-            name: "Interactive Polls",
-            description: "Vote and see results in real-time",
-            href: "/solutions/interactive-polls",
-          },
-          {
             name: "Gamification",
-            description: "Earn points and compete on leaderboards",
-            href: "/solutions/attendee-gamification",
+            description: "Earn points, unlock achievements, and climb leaderboards",
+            href: "/solutions/gamification",
           },
         ],
       },
@@ -277,20 +175,10 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Personalization",
         items: [
           {
-            name: "Session Recommendations",
-            description: "AI-suggested sessions based on your interests",
+            name: "Personal Experience",
+            description: "AI session recommendations, tickets, and smart notifications",
             href: "/solutions/session-recommendations",
             isAI: true,
-          },
-          {
-            name: "My Tickets & Offers",
-            description: "Manage registrations and exclusive deals",
-            href: "/solutions/tickets-offers",
-          },
-          {
-            name: "Smart Notifications",
-            description: "Never miss important moments",
-            href: "/solutions/notifications",
           },
         ],
       },
@@ -301,13 +189,13 @@ export const solutionsMenuData: MenuColumn[] = [
     },
   },
 
-  // Column 4: Enterprise & Technology
+  // Column 4: Platform & Enterprise
   {
-    title: "Enterprise & Technology",
+    title: "Platform & Enterprise",
     subtitle: "Built for scale, security, and any event type",
     groups: [
       {
-        title: "Event Types",
+        title: "Event Formats",
         items: [
           {
             name: "Virtual Events",
@@ -328,32 +216,15 @@ export const solutionsMenuData: MenuColumn[] = [
         ],
       },
       {
-        title: "AI & Automation",
+        title: "AI Platform",
         badge: "What Makes Us Different",
         items: [
           {
-            name: "Engagement Conductor",
-            description: "Autonomous anomaly detection and intervention",
+            name: "AI Capabilities",
+            description: "Engagement AI, smart matching, profile enrichment, and translation",
             href: "/solutions/ai-conductor",
             isAI: true,
-          },
-          {
-            name: "Intelligent Interventions",
-            description: "Auto-generated polls and engagement prompts",
-            href: "/solutions/intelligent-interventions",
-            isAI: true,
-          },
-          {
-            name: "Profile Enrichment",
-            description: "Auto-research from LinkedIn and GitHub",
-            href: "/solutions/profile-enrichment",
-            isAI: true,
-          },
-          {
-            name: "Real-Time Translation",
-            description: "Break language barriers with 100+ languages",
-            href: "/solutions/translation",
-            isAI: true,
+            isHighlight: true,
           },
         ],
       },
@@ -361,24 +232,9 @@ export const solutionsMenuData: MenuColumn[] = [
         title: "Enterprise",
         items: [
           {
-            name: "White-Label Branding",
-            description: "Custom branding for your organization",
-            href: "/solutions/white-label",
-          },
-          {
-            name: "Role-Based Access",
-            description: "Granular permissions for team management",
-            href: "/solutions/rbac",
-          },
-          {
-            name: "Advanced Security",
-            description: "2FA, audit logs, and encryption at rest",
-            href: "/solutions/security",
-          },
-          {
-            name: "Multi-Currency Payments",
-            description: "Accept payments globally with Stripe and Paystack",
-            href: "/solutions/payments",
+            name: "Enterprise Suite",
+            description: "White-label, RBAC, security, and multi-currency payments",
+            href: "/solutions/enterprise",
           },
         ],
       },
@@ -393,8 +249,8 @@ export const solutionsMenuData: MenuColumn[] = [
 // Featured banner data
 export const megaMenuBanner = {
   icon: "✨",
-  title: "New: AI Engagement Conductor",
-  description: "Autonomous engagement monitoring that prevents audience drop-off",
+  title: "New: AI Engagement Engine",
+  description: "Autonomous engagement monitoring that prevents audience drop-off with smart interventions",
   buttonText: "See How It Works",
   buttonHref: "/solutions/engagement-conductor",
 };
