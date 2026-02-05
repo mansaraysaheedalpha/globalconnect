@@ -1288,6 +1288,359 @@ function TransparencySection() {
 }
 
 // ============================================================================
+// SEE IT IN ACTION SECTION - Real Dashboard Showcase
+// ============================================================================
+function SeeItInActionSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const features = [
+    {
+      label: "Agent Mode Toggle",
+      description: "Switch between Manual, Semi-Auto, and Auto modes instantly",
+      position: { top: "8%", left: "15%" },
+      align: "left",
+    },
+    {
+      label: "Live Engagement Score",
+      description: "Real-time engagement tracking with trend indicators",
+      position: { top: "30%", left: "5%" },
+      align: "left",
+    },
+    {
+      label: "Signal Cards",
+      description: "At-a-glance metrics for all engagement signals",
+      position: { top: "55%", left: "8%" },
+      align: "left",
+    },
+    {
+      label: "Active Alerts",
+      description: "Anomaly notifications with severity levels",
+      position: { top: "15%", right: "5%" },
+      align: "right",
+    },
+    {
+      label: "Intervention Queue",
+      description: "Pending and executed interventions with status",
+      position: { top: "45%", right: "3%" },
+      align: "right",
+    },
+    {
+      label: "Engagement Chart",
+      description: "Historical trend with anomaly markers",
+      position: { bottom: "15%", right: "25%" },
+      align: "right",
+    },
+  ];
+
+  return (
+    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px]" />
+      </div>
+
+      <div className="container mx-auto px-4 md:px-6" ref={ref}>
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
+          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full">
+            Live Dashboard
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+            See It In Action
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Your command center for real-time engagement monitoring and AI-powered interventions
+          </p>
+        </motion.div>
+
+        {/* Dashboard Screenshot with Callouts */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="relative max-w-6xl mx-auto"
+        >
+          {/* Glow effect behind the dashboard */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-cyan-500/20 to-purple-500/20 rounded-3xl blur-3xl -z-10 scale-105" />
+
+          {/* Dashboard container */}
+          <div className="relative rounded-2xl overflow-hidden border-2 border-border/50 shadow-2xl bg-background">
+            {/* Browser-like header */}
+            <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80" />
+              </div>
+              <div className="flex-1 flex justify-center">
+                <div className="px-4 py-1 rounded-md bg-background/50 text-xs text-muted-foreground">
+                  dashboard.eventdynamics.com/engagement-conductor
+                </div>
+              </div>
+            </div>
+
+            {/* Screenshot */}
+            <div className="relative">
+              <Image
+                src="/engagement-dashboard-screenshot.png"
+                alt="AI Engagement Conductor Dashboard - Real-time monitoring interface showing engagement scores, alerts, and intervention controls"
+                width={1920}
+                height={1080}
+                className="w-full h-auto"
+                priority
+              />
+
+              {/* Feature callouts - Desktop only */}
+              <div className="hidden lg:block">
+                {features.map((feature, index) => (
+                  <motion.div
+                    key={feature.label}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
+                    className="absolute group"
+                    style={feature.position as React.CSSProperties}
+                  >
+                    {/* Pulse indicator */}
+                    <div className="relative">
+                      <span className="absolute inset-0 rounded-full bg-primary animate-ping-soft opacity-75" />
+                      <span className="relative flex h-4 w-4 rounded-full bg-primary shadow-lg shadow-primary/50" />
+                    </div>
+
+                    {/* Tooltip */}
+                    <div
+                      className={cn(
+                        "absolute top-full mt-2 w-48 p-3 rounded-lg bg-background/95 backdrop-blur-sm border shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-20",
+                        feature.align === "right" ? "right-0" : "left-0"
+                      )}
+                    >
+                      <div className="font-semibold text-sm mb-1">{feature.label}</div>
+                      <div className="text-xs text-muted-foreground">{feature.description}</div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Feature badges - Mobile */}
+          <div className="lg:hidden mt-8 grid grid-cols-2 gap-3">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                transition={{ duration: 0.3, delay: 0.3 + index * 0.05 }}
+                className="flex items-start gap-2 p-3 rounded-lg bg-card border"
+              >
+                <div className="w-2 h-2 mt-1.5 rounded-full bg-primary shrink-0" />
+                <div>
+                  <div className="text-sm font-medium">{feature.label}</div>
+                  <div className="text-xs text-muted-foreground">{feature.description}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Bottom stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className="mt-16 flex flex-wrap justify-center gap-8 lg:gap-16"
+        >
+          {[
+            { value: "Real-Time", label: "Data Updates", icon: Activity },
+            { value: "All Metrics", label: "At a Glance", icon: Eye },
+            { value: "One Click", label: "Intervention", icon: Zap },
+          ].map((stat) => (
+            <div key={stat.label} className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <stat.icon className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="text-lg font-bold">{stat.value}</div>
+                <div className="text-sm text-muted-foreground">{stat.label}</div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// RESULTS SECTION - Before/After Comparison
+// ============================================================================
+function ResultsSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const metrics = [
+    { label: "Engagement Increase", value: "+47%", color: "text-green-500" },
+    { label: "Drop-off Reduction", value: "-62%", color: "text-green-500" },
+    { label: "Session Duration", value: "+35%", color: "text-green-500" },
+    { label: "Intervention Success", value: "89%", color: "text-purple-500" },
+  ];
+
+  return (
+    <section className="py-24 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[150px]" />
+      </div>
+
+      <div className="container mx-auto px-4 md:px-6" ref={ref}>
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={fadeInUp}
+          className="text-center max-w-3xl mx-auto mb-16"
+        >
+          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-green-500/10 text-green-600 dark:text-green-400 rounded-full">
+            Proven Results
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+            The Transformation Is Real
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            See the dramatic difference AI-powered engagement makes compared to traditional event management
+          </p>
+        </motion.div>
+
+        {/* Before/After Comparison */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="max-w-5xl mx-auto mb-16"
+        >
+          <div className="relative rounded-2xl overflow-hidden border-2 border-border/50 shadow-2xl bg-card">
+            {/* Labels */}
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-6">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <span className="text-sm font-medium text-red-600 dark:text-red-400">Without AI</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30">
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">With AI Conductor</span>
+              </div>
+            </div>
+
+            {/* Chart Image */}
+            <Image
+              src="/before_after.png"
+              alt="Engagement comparison chart showing dramatic improvement with AI Engagement Conductor - before and after comparison"
+              width={1200}
+              height={600}
+              className="w-full h-auto"
+            />
+
+            {/* Overlay callouts */}
+            <div className="absolute bottom-4 left-4 right-4 flex flex-col sm:flex-row justify-between gap-4">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                transition={{ delay: 0.6 }}
+                className="px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border shadow-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Before</div>
+                    <div className="font-semibold text-red-500">Engagement Crash</div>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
+                transition={{ delay: 0.8 }}
+                className="px-4 py-3 rounded-xl bg-background/90 backdrop-blur-sm border shadow-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">After</div>
+                    <div className="font-semibold text-green-500">Sustained Engagement</div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Metrics Grid */}
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={staggerContainer}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto"
+        >
+          {metrics.map((metric, index) => (
+            <motion.div
+              key={metric.label}
+              variants={fadeInUp}
+              className="relative group"
+            >
+              <div className="h-full p-6 rounded-2xl border bg-card text-center transition-all duration-300 hover:shadow-xl hover:border-primary/30">
+                {/* Animated background on hover */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                <motion.div
+                  className={cn("text-4xl md:text-5xl font-bold mb-2", metric.color)}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 + index * 0.1, type: "spring" }}
+                >
+                  {metric.value}
+                </motion.div>
+                <div className="text-sm text-muted-foreground font-medium">
+                  {metric.label}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Testimonial-style quote */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+          className="mt-16 max-w-3xl mx-auto text-center"
+        >
+          <div className="relative p-8 rounded-2xl bg-gradient-to-br from-green-500/5 to-emerald-500/5 border border-green-500/20">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-green-500 text-white text-sm font-medium">
+              Key Insight
+            </div>
+            <p className="text-lg md:text-xl italic text-foreground/90">
+              "Events using AI Engagement Conductor see engagement dips detected and corrected within seconds—
+              before attendees even think about leaving."
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <BarChart3 className="h-4 w-4" />
+              Based on aggregated platform analytics
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // ENTERPRISE FEATURES SECTION
 // ============================================================================
 function EnterpriseFeaturesSection() {
@@ -1462,6 +1815,8 @@ export default function EngagementConductorPage() {
       <InterventionsSection />
       <OperatingModesSection />
       <TransparencySection />
+      <SeeItInActionSection />
+      <ResultsSection />
       <EnterpriseFeaturesSection />
       <CTASection />
     </div>
