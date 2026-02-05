@@ -3,7 +3,6 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +33,6 @@ import {
   Send,
   ArrowUp,
   Eye,
-  MousePointer,
   Coffee,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -617,7 +615,7 @@ function ProblemSection() {
 
         {/* Main Content - Disengaged Visualization + Stats */}
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left: Disengaged Attendees Visualization */}
+          {/* Left: Disengaged Attendees SVG Visualization */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
@@ -625,26 +623,57 @@ function ProblemSection() {
             className="relative order-2 lg:order-1"
           >
             <div className="relative max-w-lg mx-auto">
-              {/* Glow effect behind image */}
+              {/* Glow effect */}
               <motion.div
                 className="absolute -inset-4 bg-gradient-to-r from-red-500/20 via-orange-500/20 to-amber-500/20 rounded-3xl blur-2xl"
                 animate={{ opacity: [0.3, 0.5, 0.3] }}
                 transition={{ duration: 4, repeat: Infinity }}
               />
 
-              {/* Image container with border */}
-              <div className="relative rounded-2xl overflow-hidden border-2 border-red-500/20 shadow-2xl shadow-red-500/10">
-                <Image
-                  src="/disengaged.png"
-                  alt="Disengaged attendees at virtual events"
-                  width={800}
-                  height={800}
-                  className="w-full h-auto"
-                  priority
-                />
+              {/* SVG Visualization of Disengaged Attendees */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-red-500/20 shadow-2xl shadow-red-500/10 bg-slate-900/80 p-8">
+                <div className="grid grid-cols-3 gap-4">
+                  {[...Array(6)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                      transition={{ delay: 0.5 + i * 0.1 }}
+                      className="relative"
+                    >
+                      {/* Person silhouette */}
+                      <div className="flex flex-col items-center">
+                        {/* Screen */}
+                        <div className="w-full aspect-video bg-slate-800 rounded-lg border border-slate-700 mb-2 overflow-hidden">
+                          <motion.div
+                            className="h-full w-full bg-gradient-to-br from-slate-700 to-slate-800"
+                            animate={{ opacity: [0.5, 0.7, 0.5] }}
+                            transition={{ duration: 2 + i * 0.3, repeat: Infinity }}
+                          />
+                        </div>
+                        {/* Head */}
+                        <motion.div
+                          className="w-8 h-8 rounded-full bg-slate-600 mb-1"
+                          animate={{ y: [0, 2, 0] }}
+                          transition={{ duration: 3, repeat: Infinity, delay: i * 0.2 }}
+                        />
+                        {/* Body */}
+                        <div className="w-12 h-6 rounded-t-full bg-slate-700" />
+                        {/* Status indicator - showing low engagement */}
+                        <motion.div
+                          className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500"
+                          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
 
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+                {/* Text overlay */}
+                <div className="mt-6 text-center">
+                  <p className="text-slate-500 text-sm">6 attendees • 0 interactions • 0 messages</p>
+                </div>
               </div>
 
               {/* Floating warning badges */}
@@ -657,20 +686,12 @@ function ProblemSection() {
                 Low Engagement
               </motion.div>
               <motion.div
-                className="absolute bottom-8 left-2 md:bottom-12 md:left-4 px-3 py-1.5 rounded-full bg-orange-500/90 backdrop-blur-sm border border-orange-400/50 text-white text-xs font-medium shadow-lg"
+                className="absolute bottom-12 left-2 md:bottom-16 md:left-4 px-3 py-1.5 rounded-full bg-orange-500/90 backdrop-blur-sm border border-orange-400/50 text-white text-xs font-medium shadow-lg"
                 animate={{ y: [0, 5, 0], opacity: [0.9, 1, 0.9] }}
                 transition={{ duration: 3.5, repeat: Infinity, delay: 1 }}
               >
                 <Coffee className="h-3 w-3 inline mr-1" />
                 Passive Viewing
-              </motion.div>
-              <motion.div
-                className="absolute top-1/3 left-2 md:left-4 px-3 py-1.5 rounded-full bg-amber-500/90 backdrop-blur-sm border border-amber-400/50 text-white text-xs font-medium shadow-lg"
-                animate={{ y: [0, -3, 0], opacity: [0.9, 1, 0.9] }}
-                transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
-              >
-                <MousePointer className="h-3 w-3 inline mr-1" />
-                No Interaction
               </motion.div>
             </div>
           </motion.div>
@@ -1155,157 +1176,6 @@ function PointsSystemSection() {
             </div>
           </div>
         </motion.div>
-
-        {/* Point Cards Visual */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.5 }}
-          className="mt-16 max-w-4xl mx-auto"
-        >
-          <div className="relative">
-            {/* Glow effect */}
-            <motion.div
-              className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 rounded-3xl blur-2xl"
-              animate={{ opacity: [0.2, 0.4, 0.2] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            />
-
-            {/* Image container */}
-            <div className="relative rounded-2xl overflow-hidden border-2 border-amber-500/20 shadow-2xl shadow-amber-500/10">
-              <Image
-                src="/point_cards.png"
-                alt="Point actions and rewards system"
-                width={1200}
-                height={600}
-                className="w-full h-auto"
-                priority
-              />
-
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent" />
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// PLATFORM SHOWCASE SECTION - Dashboard Preview
-// ============================================================================
-function PlatformShowcaseSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 -z-10">
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-amber-500/5 rounded-full blur-[200px]"
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 15, repeat: Infinity }}
-        />
-      </div>
-
-      <div className="container mx-auto px-4 md:px-6" ref={ref}>
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-12"
-        >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full border border-amber-500/20">
-            The Platform
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            Powerful Dashboard,{" "}
-            <span className="bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent">
-              Simple Experience
-            </span>
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Monitor engagement, track leaderboards, and celebrate achievements—all from one intuitive interface.
-          </p>
-        </motion.div>
-
-        {/* Dashboard Screenshot */}
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="max-w-5xl mx-auto"
-        >
-          <div className="relative">
-            {/* Glow effect */}
-            <motion.div
-              className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 rounded-3xl blur-2xl"
-              animate={{ opacity: [0.3, 0.5, 0.3] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            />
-
-            {/* Browser frame */}
-            <div className="relative rounded-2xl overflow-hidden border-2 border-border/50 bg-background shadow-2xl">
-              {/* Browser header */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border/50">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="px-4 py-1 rounded-md bg-background/50 text-xs text-muted-foreground flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    app.eventdynamics.com/gamification
-                  </div>
-                </div>
-              </div>
-
-              {/* Screenshot */}
-              <div className="relative">
-                <Image
-                  src="/gamification_dashboard.png"
-                  alt="Gamification Dashboard"
-                  width={1920}
-                  height={1080}
-                  className="w-full h-auto"
-                  priority
-                />
-
-                {/* Gradient fade at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
-              </div>
-            </div>
-          </div>
-
-          {/* Feature highlights below */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4"
-          >
-            {[
-              { icon: Trophy, label: "Live Leaderboards", color: "text-amber-500" },
-              { icon: Award, label: "Achievement Tracking", color: "text-purple-500" },
-              { icon: TrendingUp, label: "Real-time Stats", color: "text-cyan-500" },
-              { icon: Users, label: "Team Management", color: "text-green-500" },
-            ].map((item, index) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.7 + index * 0.1 }}
-                className="flex items-center gap-2 p-3 rounded-xl bg-card/50 border"
-              >
-                <item.icon className={cn("h-5 w-5", item.color)} />
-                <span className="text-sm font-medium">{item.label}</span>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
       </div>
     </section>
   );
@@ -1661,68 +1531,110 @@ function AchievementsSection() {
             ))}
           </motion.div>
 
-          {/* Celebration Preview - Achievement Image */}
+          {/* Celebration Preview - Phone Mockup */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative mx-auto max-w-md"
+            className="relative mx-auto max-w-xs"
           >
-            {/* Glow behind image */}
+            {/* Glow effect */}
             <motion.div
-              className="absolute -inset-4 bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-amber-500/30 rounded-3xl blur-2xl"
+              className="absolute -inset-4 bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-amber-500/30 rounded-[3rem] blur-2xl"
               animate={{ opacity: [0.3, 0.6, 0.3] }}
               transition={{ duration: 3, repeat: Infinity }}
             />
 
-            {/* Achievement Image */}
-            <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500/30 shadow-2xl shadow-purple-500/20">
-              <Image
-                src="/achievement.png"
-                alt="Achievement celebration screen"
-                width={800}
-                height={800}
-                className="w-full h-auto"
-                priority
-              />
+            {/* Phone Frame */}
+            <div className="relative bg-slate-900 rounded-[2.5rem] p-2 shadow-2xl border-4 border-slate-800">
+              {/* Screen */}
+              <div className="relative bg-gradient-to-b from-purple-900 via-purple-800 to-slate-900 rounded-[2rem] overflow-hidden aspect-[9/16]">
+                {/* Achievement Content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                  {/* Confetti Animation */}
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {[...Array(20)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className={cn(
+                          "absolute w-2 h-2 rounded-full",
+                          i % 4 === 0 ? "bg-amber-400" :
+                          i % 4 === 1 ? "bg-purple-400" :
+                          i % 4 === 2 ? "bg-cyan-400" : "bg-pink-400"
+                        )}
+                        initial={{
+                          x: `${Math.random() * 100}%`,
+                          y: "-10%",
+                          opacity: 0,
+                        }}
+                        animate={{
+                          y: "110%",
+                          opacity: [0, 1, 1, 0],
+                          rotate: Math.random() * 720 - 360,
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          delay: i * 0.15,
+                          repeat: Infinity,
+                          repeatDelay: 0.5,
+                        }}
+                      />
+                    ))}
+                  </div>
 
-              {/* Animated overlay effects */}
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-t from-purple-900/30 via-transparent to-transparent"
-                animate={{ opacity: [0.3, 0.5, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-
-              {/* Confetti overlay animation */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {[...Array(15)].map((_, i) => (
+                  {/* Trophy Icon */}
                   <motion.div
-                    key={i}
-                    className={cn(
-                      "absolute w-2 h-2 rounded-full",
-                      i % 4 === 0 ? "bg-amber-400" :
-                      i % 4 === 1 ? "bg-purple-400" :
-                      i % 4 === 2 ? "bg-cyan-400" : "bg-pink-400"
-                    )}
-                    initial={{
-                      x: `${50 + (Math.random() - 0.5) * 30}%`,
-                      y: "110%",
-                      opacity: 0,
-                    }}
-                    animate={{
-                      y: "-10%",
-                      opacity: [0, 1, 1, 0],
-                      rotate: Math.random() * 360,
-                    }}
-                    transition={{
-                      duration: 3,
-                      delay: i * 0.2,
-                      repeat: Infinity,
-                      repeatDelay: 1,
-                    }}
-                  />
-                ))}
+                    className="relative mb-4"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-500/50">
+                      <Trophy className="h-12 w-12 text-white" />
+                    </div>
+                    <motion.div
+                      className="absolute -inset-2 rounded-full border-2 border-amber-400/50"
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                  </motion.div>
+
+                  {/* Achievement Text */}
+                  <motion.h3
+                    className="text-xl font-bold text-white text-center mb-2"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    Achievement Unlocked!
+                  </motion.h3>
+                  <motion.div
+                    className="px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    First Connection
+                  </motion.div>
+                  <motion.p
+                    className="text-purple-200 text-sm text-center mt-3"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    +50 Points Earned
+                  </motion.p>
+                </div>
+
+                {/* Screen Shine Effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent"
+                  animate={{ x: ["-100%", "100%"] }}
+                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                />
               </div>
+
+              {/* Phone Notch */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-slate-900 rounded-full" />
             </div>
 
             {/* Caption */}
@@ -1761,7 +1673,7 @@ function TeamSection() {
     <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Team Competition Image */}
+          {/* Team Leaderboard Cards */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
@@ -1776,19 +1688,84 @@ function TeamSection() {
                 transition={{ duration: 4, repeat: Infinity }}
               />
 
-              {/* Image container */}
-              <div className="relative rounded-2xl overflow-hidden border-2 border-green-500/20 shadow-2xl shadow-green-500/10">
-                <Image
-                  src="/team.png"
-                  alt="Team competition and collaboration"
-                  width={800}
-                  height={600}
-                  className="w-full h-auto"
-                  priority
-                />
+              {/* Team Cards */}
+              <div className="relative space-y-4">
+                {teams.map((team, index) => (
+                  <motion.div
+                    key={team.name}
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={isInView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ duration: 0.5, delay: 0.2 + index * 0.15 }}
+                    className="relative"
+                  >
+                    <div className={cn(
+                      "relative overflow-hidden rounded-2xl border bg-card p-4 md:p-5 transition-all hover:shadow-lg",
+                      index === 0 && "border-green-500/30 shadow-lg shadow-green-500/10"
+                    )}>
+                      {/* Rank indicator */}
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-white font-bold text-lg",
+                          team.color
+                        )}>
+                          #{index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h3 className="font-semibold text-base md:text-lg truncate">{team.name}</h3>
+                            <span className={cn(
+                              "font-bold text-lg bg-gradient-to-r bg-clip-text text-transparent",
+                              team.color
+                            )}>
+                              {team.points.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Users className="h-3.5 w-3.5" />
+                              {team.members} members
+                            </span>
+                            {index === 0 && (
+                              <span className="text-xs font-medium text-green-500 flex items-center gap-1">
+                                <Crown className="h-3 w-3" />
+                                Leading
+                              </span>
+                            )}
+                          </div>
+                          {/* Progress bar */}
+                          <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <motion.div
+                              className={cn("h-full bg-gradient-to-r", team.color)}
+                              initial={{ width: 0 }}
+                              animate={isInView ? { width: `${(team.points / 8450) * 100}%` } : {}}
+                              transition={{ duration: 1, delay: 0.5 + index * 0.2 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+                      {/* Decorative gradient line */}
+                      <motion.div
+                        className={cn("absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b", team.color)}
+                        initial={{ scaleY: 0 }}
+                        animate={isInView ? { scaleY: 1 } : {}}
+                        transition={{ duration: 0.5, delay: 0.3 + index * 0.15 }}
+                      />
+                    </div>
+                  </motion.div>
+                ))}
+
+                {/* Join Team CTA */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={isInView ? { opacity: 1 } : {}}
+                  transition={{ delay: 1 }}
+                  className="text-center pt-2"
+                >
+                  <span className="text-sm text-muted-foreground">
+                    Teams update in real-time as members earn points
+                  </span>
+                </motion.div>
               </div>
             </div>
           </motion.div>
@@ -2014,7 +1991,6 @@ export default function GamificationPage() {
     <main className="flex-1">
       <HeroSection />
       <ProblemSection />
-      <PlatformShowcaseSection />
       <PointsSystemSection />
       <LeaderboardSection />
       <AchievementsSection />
