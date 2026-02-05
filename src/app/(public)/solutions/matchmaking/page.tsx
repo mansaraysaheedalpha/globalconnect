@@ -242,7 +242,7 @@ function HeroSection() {
 }
 
 // ============================================================================
-// PROBLEM SECTION
+// PROBLEM SECTION - Immersive Chaos Visualization
 // ============================================================================
 function ProblemSection() {
   const ref = useRef(null);
@@ -251,78 +251,357 @@ function ProblemSection() {
   const problems = [
     {
       icon: Users,
-      stat: "76%",
+      stat: 76,
+      suffix: "%",
       title: "Missed Connections",
       description: "of event attendees leave without meeting the people most relevant to their goals",
+      gradient: "from-red-500 to-orange-500",
     },
     {
       icon: Clock,
-      stat: "2.3hrs",
+      stat: 2.3,
+      suffix: "hrs",
       title: "Wasted Time",
       description: "Average time spent on unproductive conversations at a single conference",
+      gradient: "from-orange-500 to-amber-500",
     },
     {
       icon: Search,
-      stat: "89%",
+      stat: 89,
+      suffix: "%",
       title: "No Discovery Tools",
       description: "of events provide no intelligent way to find relevant people to connect with",
+      gradient: "from-amber-500 to-red-500",
     },
   ];
 
+  // Generate scattered person positions for chaos visualization
+  const scatteredPeople = Array.from({ length: 24 }, (_, i) => ({
+    id: i,
+    x: 10 + Math.random() * 80,
+    y: 15 + Math.random() * 70,
+    delay: Math.random() * 2,
+    size: 6 + Math.random() * 4,
+  }));
+
+  // Generate broken connection lines
+  const brokenLines = Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    x1: 10 + Math.random() * 35,
+    y1: 20 + Math.random() * 60,
+    x2: 55 + Math.random() * 35,
+    y2: 20 + Math.random() * 60,
+    delay: Math.random() * 3,
+  }));
+
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
-      {/* Background decoration */}
+    <section className="py-24 lg:py-32 bg-gradient-to-b from-slate-950 via-slate-900 to-background relative overflow-hidden">
+      {/* Animated gradient background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[150px]" />
+        <motion.div
+          className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-red-500/10 rounded-full blur-[200px]"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.15, 0.1] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-[150px]"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.15, 0.1, 0.15] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
 
+      {/* Noise texture overlay */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')] opacity-50 -z-5" />
+
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
+        {/* Header */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-4xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/10 text-red-600 dark:text-red-400 rounded-full">
+          <motion.span
+            className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium bg-red-500/20 text-red-400 rounded-full border border-red-500/30"
+            animate={{ boxShadow: ["0 0 20px rgba(239,68,68,0.2)", "0 0 40px rgba(239,68,68,0.4)", "0 0 20px rgba(239,68,68,0.2)"] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             The Problem
-          </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-            Networking Shouldn't Feel Like Finding a Needle in a Haystack
+          </motion.span>
+          <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-white">
+            Networking Shouldn't Feel Like{" "}
+            <span className="relative">
+              <span className="bg-gradient-to-r from-red-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">
+                Finding a Needle
+              </span>
+              <motion.span
+                className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-red-500 via-orange-500 to-amber-500"
+                initial={{ scaleX: 0 }}
+                animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+              />
+            </span>
+            {" "}in a Haystack
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">
             Traditional events leave you wandering, hoping to stumble into the right conversations.
             It's inefficient, exhausting, and often disappointing.
           </p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid md:grid-cols-3 gap-8"
-        >
-          {problems.map((problem) => (
-            <motion.div
-              key={problem.title}
-              variants={fadeInUp}
-              className="relative group"
-            >
-              <div className="h-full rounded-2xl border border-red-500/20 bg-card p-8 transition-all duration-300 hover:border-red-500/40 hover:shadow-xl hover:shadow-red-500/5">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-red-500/10">
-                    <problem.icon className="h-7 w-7 text-red-500" />
+        {/* Main Content - Chaos Visualization + Stats */}
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left: Chaos Visualization */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="relative"
+          >
+            <div className="relative aspect-square max-w-lg mx-auto">
+              {/* Outer glow ring */}
+              <div className="absolute inset-0 rounded-full border border-red-500/20" />
+              <motion.div
+                className="absolute inset-4 rounded-full border border-dashed border-orange-500/30"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.div
+                className="absolute inset-8 rounded-full border border-dashed border-amber-500/20"
+                animate={{ rotate: -360 }}
+                transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+              />
+
+              {/* Central chaos label */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <motion.div
+                  className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 flex items-center justify-center backdrop-blur-sm"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <div className="text-center">
+                    <div className="text-red-400 text-xs md:text-sm font-medium uppercase tracking-wider">Traditional</div>
+                    <div className="text-white text-lg md:text-xl font-bold">Chaos</div>
                   </div>
-                  <div className="text-4xl font-bold text-red-500">
-                    {problem.stat}
+                </motion.div>
+              </div>
+
+              {/* Scattered people dots */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                {/* Broken/faded connection lines */}
+                {brokenLines.map((line) => (
+                  <motion.line
+                    key={`line-${line.id}`}
+                    x1={`${line.x1}%`}
+                    y1={`${line.y1}%`}
+                    x2={`${line.x2}%`}
+                    y2={`${line.y2}%`}
+                    stroke="url(#brokenGradient)"
+                    strokeWidth="0.3"
+                    strokeDasharray="2,4"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={isInView ? {
+                      pathLength: [0, 0.5, 0.3],
+                      opacity: [0, 0.4, 0.2]
+                    } : {}}
+                    transition={{
+                      duration: 3,
+                      delay: line.delay,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                  />
+                ))}
+
+                {/* Gradient definitions */}
+                <defs>
+                  <linearGradient id="brokenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.5" />
+                    <stop offset="50%" stopColor="#f97316" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+
+                {/* Scattered people */}
+                {scatteredPeople.map((person) => (
+                  <motion.g key={person.id}>
+                    {/* Person icon simplified as circles */}
+                    <motion.circle
+                      cx={`${person.x}%`}
+                      cy={`${person.y}%`}
+                      r={person.size / 2}
+                      className="fill-slate-600"
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={isInView ? {
+                        opacity: [0.3, 0.6, 0.3],
+                        scale: 1,
+                        x: [0, (Math.random() - 0.5) * 5, 0],
+                        y: [0, (Math.random() - 0.5) * 5, 0]
+                      } : {}}
+                      transition={{
+                        duration: 4 + Math.random() * 2,
+                        delay: person.delay,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                    {/* Question mark on some people */}
+                    {person.id % 4 === 0 && (
+                      <motion.text
+                        x={`${person.x}%`}
+                        y={`${person.y + 0.5}%`}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-red-400 text-[3px] font-bold"
+                        initial={{ opacity: 0 }}
+                        animate={isInView ? { opacity: [0, 1, 0] } : {}}
+                        transition={{ duration: 2, delay: person.delay + 1, repeat: Infinity }}
+                      >
+                        ?
+                      </motion.text>
+                    )}
+                  </motion.g>
+                ))}
+              </svg>
+
+              {/* Floating warning badges */}
+              <motion.div
+                className="absolute top-8 right-8 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-medium"
+                animate={{ y: [0, -5, 0], opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                No Matches Found
+              </motion.div>
+              <motion.div
+                className="absolute bottom-12 left-4 px-3 py-1.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-medium"
+                animate={{ y: [0, 5, 0], opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 3.5, repeat: Infinity, delay: 1 }}
+              >
+                Random Encounters
+              </motion.div>
+              <motion.div
+                className="absolute top-1/3 left-8 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-medium"
+                animate={{ y: [0, -3, 0], opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+              >
+                Time Wasted
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Right: Statistics Cards */}
+          <motion.div
+            initial="hidden"
+            animate={isInView ? "visible" : "hidden"}
+            variants={staggerContainer}
+            className="space-y-6"
+          >
+            {problems.map((problem, index) => (
+              <motion.div
+                key={problem.title}
+                variants={fadeInUp}
+                className="group relative"
+              >
+                <div className="relative overflow-hidden rounded-2xl bg-slate-900/80 border border-slate-700/50 p-6 backdrop-blur-sm transition-all duration-500 hover:border-red-500/30 hover:bg-slate-900">
+                  {/* Animated gradient line on left */}
+                  <motion.div
+                    className={cn(
+                      "absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b",
+                      problem.gradient
+                    )}
+                    initial={{ scaleY: 0 }}
+                    animate={isInView ? { scaleY: 1 } : {}}
+                    transition={{ duration: 0.6, delay: 0.5 + index * 0.2 }}
+                  />
+
+                  <div className="flex items-start gap-6">
+                    {/* Icon with glow */}
+                    <div className="relative shrink-0">
+                      <div className={cn(
+                        "w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center",
+                        problem.gradient
+                      )}>
+                        <problem.icon className="h-7 w-7 text-white" />
+                      </div>
+                      <motion.div
+                        className={cn(
+                          "absolute inset-0 rounded-xl bg-gradient-to-br opacity-50 blur-lg -z-10",
+                          problem.gradient
+                        )}
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] }}
+                        transition={{ duration: 3, repeat: Infinity, delay: index * 0.5 }}
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <motion.span
+                          className={cn(
+                            "text-4xl md:text-5xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+                            problem.gradient
+                          )}
+                          initial={{ opacity: 0 }}
+                          animate={isInView ? { opacity: 1 } : {}}
+                          transition={{ duration: 0.5, delay: 0.8 + index * 0.2 }}
+                        >
+                          {problem.stat}
+                        </motion.span>
+                        <span className={cn(
+                          "text-xl font-semibold bg-gradient-to-r bg-clip-text text-transparent",
+                          problem.gradient
+                        )}>
+                          {problem.suffix}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        {problem.title}
+                      </h3>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        {problem.description}
+                      </p>
+                    </div>
+
+                    {/* Decorative corner */}
+                    <div className="absolute top-0 right-0 w-20 h-20 overflow-hidden rounded-tr-2xl">
+                      <div className={cn(
+                        "absolute -top-10 -right-10 w-20 h-20 bg-gradient-to-br opacity-10",
+                        problem.gradient
+                      )} style={{ transform: "rotate(45deg)" }} />
+                    </div>
+                  </div>
+
+                  {/* Progress bar at bottom */}
+                  <div className="mt-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <motion.div
+                      className={cn("h-full bg-gradient-to-r", problem.gradient)}
+                      initial={{ width: 0 }}
+                      animate={isInView ? { width: `${problem.stat}%` } : {}}
+                      transition={{ duration: 1.5, delay: 1 + index * 0.2, ease: "easeOut" }}
+                    />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{problem.title}</h3>
-                <p className="text-muted-foreground">{problem.description}</p>
-              </div>
+              </motion.div>
+            ))}
+
+            {/* Bottom CTA hint */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 1.5 }}
+              className="flex items-center justify-center gap-2 pt-4 text-slate-500"
+            >
+              <span className="text-sm">There's a better way</span>
+              <motion.div
+                animate={{ y: [0, 4, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <ChevronRight className="h-4 w-4 rotate-90" />
+              </motion.div>
             </motion.div>
-          ))}
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
