@@ -828,7 +828,7 @@ function ProblemSection() {
               variants={fadeInUp}
               className="relative group"
             >
-              <div className="h-full rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-500 hover:border-white/10 hover:bg-white/[0.04]">
+              <div className="h-full rounded-2xl border border-slate-200 dark:border-white/5 bg-card p-6 transition-all duration-500 hover:border-slate-300 dark:hover:border-white/10 hover:shadow-lg">
                 {/* Gradient line at top */}
                 <div className={cn(
                   "absolute top-0 left-6 right-6 h-0.5 bg-gradient-to-r rounded-full opacity-60",
@@ -857,7 +857,7 @@ function ProblemSection() {
                     {problem.stat}
                   </motion.div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2 text-white/90">{problem.title}</h3>
+                <h3 className="text-lg font-semibold mb-2">{problem.title}</h3>
                 <p className="text-sm text-muted-foreground">{problem.description}</p>
               </div>
             </motion.div>
@@ -1240,7 +1240,7 @@ function CommandCenterSection() {
               whileHover={{ scale: 1.05, y: -2 }}
               className="group"
             >
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm hover:border-white/20 hover:bg-white/[0.05] transition-all">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-card hover:border-blue-500/30 hover:shadow-lg transition-all">
                 <div className={cn(
                   "h-9 w-9 rounded-lg bg-gradient-to-br flex items-center justify-center",
                   cap.gradient
@@ -1248,8 +1248,8 @@ function CommandCenterSection() {
                   <cap.icon className="h-4 w-4 text-white" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-medium text-sm text-white/90">{cap.title}</h3>
-                  <p className="text-xs text-white/50 max-w-[180px]">{cap.description}</p>
+                  <h3 className="font-medium text-sm">{cap.title}</h3>
+                  <p className="text-xs text-muted-foreground max-w-[180px]">{cap.description}</p>
                 </div>
               </div>
             </motion.div>
@@ -1576,7 +1576,7 @@ function LiveProductionSection() {
               whileHover={{ scale: 1.05, y: -2 }}
               className="group"
             >
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm hover:border-purple-500/30 hover:bg-white/[0.05] transition-all">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-card hover:border-purple-500/30 hover:shadow-lg transition-all">
                 <div className={cn(
                   "h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center",
                   feature.color
@@ -1584,8 +1584,8 @@ function LiveProductionSection() {
                   <feature.icon className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-medium text-sm text-white/90">{feature.title}</h3>
-                  <p className="text-xs text-white/50">{feature.description}</p>
+                  <h3 className="font-medium text-sm">{feature.title}</h3>
+                  <p className="text-xs text-muted-foreground">{feature.description}</p>
                 </div>
               </div>
             </motion.div>
@@ -1999,7 +1999,7 @@ function TechnicalSection() {
               whileHover={{ scale: 1.02, y: -2 }}
               className="group"
             >
-              <div className="h-full p-5 rounded-xl border border-white/5 bg-white/[0.02] backdrop-blur-sm hover:border-white/10 hover:bg-white/[0.04] transition-all">
+              <div className="h-full p-5 rounded-xl border border-slate-200 dark:border-white/5 bg-card hover:border-slate-300 dark:hover:border-white/10 hover:shadow-lg transition-all">
                 <div className="flex items-start justify-between mb-3">
                   <div className={cn(
                     "h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center",
@@ -2014,8 +2014,8 @@ function TechnicalSection() {
                     {feature.stat}
                   </span>
                 </div>
-                <h3 className="font-semibold text-white/90 mb-1">{feature.title}</h3>
-                <p className="text-sm text-white/50">{feature.description}</p>
+                <h3 className="font-semibold mb-1">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             </motion.div>
           ))}
