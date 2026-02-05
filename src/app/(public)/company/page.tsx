@@ -1,7 +1,7 @@
 // src/app/(public)/company/page.tsx
 "use client";
 
-import { useRef } from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -325,6 +325,52 @@ function ChapterBlock({ chapter, index }: { chapter: any; index: number }) {
 }
 
 // ============================================================================
+// CAPABILITY NODE COMPONENT
+// ============================================================================
+interface CapabilityNodeProps {
+  cap: {
+    icon: React.ElementType;
+    label: string;
+    sublabel: string;
+    color: string;
+  };
+  index: number;
+  isInView: boolean;
+}
+
+function CapabilityNode({ cap, index, isInView }: CapabilityNodeProps) {
+  return (
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={isInView ? { scale: 1, opacity: 1 } : {}}
+      transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+      whileHover={{ scale: 1.05 }}
+      className="relative group cursor-pointer"
+    >
+      {/* Glow */}
+      <div className={cn(
+        "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-50 blur-xl group-hover:opacity-80 transition-opacity",
+        cap.color
+      )} />
+
+      {/* Node */}
+      <div className={cn(
+        "relative w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center shadow-2xl",
+        cap.color
+      )}>
+        <cap.icon className="w-7 h-7 md:w-8 md:h-8 text-white mb-1" />
+        <span className="text-[10px] md:text-xs font-semibold text-white text-center leading-tight px-1">
+          {cap.label}
+        </span>
+        <span className="text-[9px] md:text-[10px] text-white/80 text-center">
+          {cap.sublabel}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================================================
 // WHAT WE BUILD - Animated Visual Diagram
 // ============================================================================
 function WhatWeBuildSection() {
@@ -369,118 +415,69 @@ function WhatWeBuildSection() {
           </p>
         </motion.div>
 
-        {/* Central visualization */}
-        <div className="relative max-w-3xl mx-auto">
-          {/* Orbital ring container */}
-          <motion.div
-            className="relative w-full aspect-square"
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
-            transition={{ duration: 1 }}
-          >
-            {/* Dotted orbit */}
-            <div className="absolute inset-[15%] rounded-full border-2 border-dashed border-white/10" />
+        {/* Central visualization - Grid-based layout for reliability */}
+        <div className="relative max-w-4xl mx-auto px-4">
+          {/* Grid container */}
+          <div className="grid grid-cols-5 gap-4 md:gap-6 items-center justify-items-center py-8">
+            {/* Row 1: AI Engagement at top center */}
+            <div className="col-span-5 flex justify-center">
+              <CapabilityNode cap={capabilities[0]} index={0} isInView={isInView} />
+            </div>
 
-            {/* Central core - positioned in the exact center */}
-            <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={isInView ? { scale: 1, opacity: 1 } : {}}
-              transition={{ duration: 0.8, delay: 0.3 }}
-            >
-              {/* Pulsing rings */}
+            {/* Row 2: Lead Scoring (left) and Smart Matchmaking (right) */}
+            <div className="col-span-2 flex justify-end w-full">
+              <CapabilityNode cap={capabilities[5]} index={5} isInView={isInView} />
+            </div>
+            <div className="col-span-1" /> {/* Spacer */}
+            <div className="col-span-2 flex justify-start w-full">
+              <CapabilityNode cap={capabilities[1]} index={1} isInView={isInView} />
+            </div>
+
+            {/* Row 3: Center - Event Dynamics */}
+            <div className="col-span-5 flex justify-center py-6">
               <motion.div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-white/10"
-                animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-              <motion.div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-white/5"
-                animate={{ scale: [1.2, 1.8, 1.2], opacity: [0.2, 0, 0.2] }}
-                transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
-              />
-
-              {/* Core */}
-              <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center">
-                <div className="text-center">
-                  <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white mx-auto mb-2" />
-                  <span className="text-xs md:text-sm font-semibold text-white">Event</span>
-                  <span className="block text-[10px] md:text-xs text-white/70">Dynamics</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Capability nodes - positioned at the edges */}
-            {capabilities.map((cap, index) => {
-              // Position nodes in a circle, starting from top
-              const angle = (index * 60 - 90) * (Math.PI / 180);
-              const radius = 50; // percentage from center to edge
-              const x = 50 + radius * Math.cos(angle);
-              const y = 50 + radius * Math.sin(angle);
-
-              return (
+                initial={{ scale: 0, opacity: 0 }}
+                animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="relative"
+              >
+                {/* Pulsing rings */}
                 <motion.div
-                  key={cap.label}
-                  className="absolute z-10"
-                  style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={isInView ? { scale: 1, opacity: 1 } : {}}
-                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                  whileHover={{ scale: 1.1 }}
-                >
-                  <div className="relative group cursor-pointer">
-                    {/* Glow */}
-                    <div className={cn(
-                      "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-50 blur-xl group-hover:opacity-80 transition-opacity",
-                      cap.color
-                    )} />
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 md:w-48 md:h-48 rounded-full bg-white/10"
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+                <motion.div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 md:w-48 md:h-48 rounded-full bg-white/5"
+                  animate={{ scale: [1.2, 1.6, 1.2], opacity: [0.2, 0, 0.2] }}
+                  transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+                />
 
-                    {/* Node */}
-                    <div className={cn(
-                      "relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br flex flex-col items-center justify-center shadow-2xl",
-                      cap.color
-                    )}>
-                      <cap.icon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white mb-1" />
-                      <span className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-white text-center leading-tight px-1">
-                        {cap.label}
-                      </span>
-                      <span className="text-[8px] sm:text-[10px] md:text-xs text-white/80 text-center">
-                        {cap.sublabel}
-                      </span>
-                    </div>
+                {/* Core */}
+                <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 flex items-center justify-center">
+                  <div className="text-center">
+                    <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white mx-auto mb-1" />
+                    <span className="text-xs md:text-sm font-semibold text-white">Event</span>
+                    <span className="block text-[10px] md:text-xs text-white/70">Dynamics</span>
                   </div>
-                </motion.div>
-              );
-            })}
+                </div>
+              </motion.div>
+            </div>
 
-            {/* Connecting lines from center to each node */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 5 }}>
-              {capabilities.map((_, index) => {
-                const angle = (index * 60 - 90) * (Math.PI / 180);
-                const innerRadius = 12; // percentage - edge of center circle
-                const outerRadius = 38; // percentage - edge before nodes
-                const x1 = 50 + innerRadius * Math.cos(angle);
-                const y1 = 50 + innerRadius * Math.sin(angle);
-                const x2 = 50 + outerRadius * Math.cos(angle);
-                const y2 = 50 + outerRadius * Math.sin(angle);
-                return (
-                  <motion.line
-                    key={index}
-                    x1={`${x1}%`}
-                    y1={`${y1}%`}
-                    x2={`${x2}%`}
-                    y2={`${y2}%`}
-                    stroke="rgba(255,255,255,0.1)"
-                    strokeWidth="2"
-                    strokeDasharray="4 4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={isInView ? { pathLength: 1, opacity: 1 } : {}}
-                    transition={{ duration: 0.8, delay: 0.4 + index * 0.1 }}
-                  />
-                );
-              })}
-            </svg>
-          </motion.div>
+            {/* Row 4: Gamification (left) and 12+ Real-Time (right) */}
+            <div className="col-span-2 flex justify-end w-full">
+              <CapabilityNode cap={capabilities[4]} index={4} isInView={isInView} />
+            </div>
+            <div className="col-span-1" /> {/* Spacer */}
+            <div className="col-span-2 flex justify-start w-full">
+              <CapabilityNode cap={capabilities[2]} index={2} isInView={isInView} />
+            </div>
+
+            {/* Row 5: Proximity at bottom center */}
+            <div className="col-span-5 flex justify-center">
+              <CapabilityNode cap={capabilities[3]} index={3} isInView={isInView} />
+            </div>
+          </div>
         </div>
 
         {/* CTA */}
