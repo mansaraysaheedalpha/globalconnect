@@ -74,70 +74,37 @@ const scaleIn = {
 function HeroSection() {
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center text-center text-white overflow-hidden">
-      {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 -z-10" />
+      {/* Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute top-0 left-0 w-full h-full object-cover -z-10"
+        poster="/placeholder-image.png"
+      >
+        <source src="/Futuristic_Network_Visualization.mp4" type="video/mp4" />
+      </video>
 
-      {/* Animated Network Lines */}
-      <div className="absolute inset-0 -z-5 overflow-hidden">
-        <svg className="absolute w-full h-full opacity-20" viewBox="0 0 1000 1000">
-          <defs>
-            <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#a855f7" />
-              <stop offset="100%" stopColor="#06b6d4" />
-            </linearGradient>
-          </defs>
-          {/* Network connection lines */}
-          <motion.path
-            d="M100,200 Q300,100 500,200 T900,200"
-            fill="none"
-            stroke="url(#line-gradient)"
-            strokeWidth="2"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-          />
-          <motion.path
-            d="M100,500 Q400,300 600,500 T900,400"
-            fill="none"
-            stroke="url(#line-gradient)"
-            strokeWidth="2"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2.5, repeat: Infinity, repeatType: "reverse", delay: 0.5 }}
-          />
-          <motion.path
-            d="M200,800 Q500,600 700,750 T950,700"
-            fill="none"
-            stroke="url(#line-gradient)"
-            strokeWidth="2"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, repeat: Infinity, repeatType: "reverse", delay: 1 }}
-          />
-        </svg>
-      </div>
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-purple-900/50 to-black/80 -z-10" />
 
-      {/* Animated Gradient Orbs */}
+      {/* Animated Gradient Orbs - subtle enhancement over video */}
       <div className="absolute inset-0 overflow-hidden -z-5 pointer-events-none">
         <motion.div
-          className="absolute top-1/4 -left-32 w-96 h-96 bg-purple-500/30 rounded-full blur-[120px]"
+          className="absolute top-1/4 -left-32 w-96 h-96 bg-purple-500/20 rounded-full blur-[120px]"
           animate={{ x: [0, 50, 0], y: [0, 30, 0], scale: [1, 1.1, 1] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-1/4 -right-32 w-96 h-96 bg-cyan-500/25 rounded-full blur-[120px]"
+          className="absolute bottom-1/4 -right-32 w-96 h-96 bg-cyan-500/15 rounded-full blur-[120px]"
           animate={{ x: [0, -50, 0], y: [0, -30, 0], scale: [1, 1.2, 1] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500/10 rounded-full blur-[150px]"
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
       {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] -z-5" />
 
       {/* Content */}
       <div className="container px-4 md:px-6 max-w-6xl relative z-10 py-20">
@@ -749,7 +716,7 @@ function HowItWorksSection() {
 }
 
 // ============================================================================
-// PROFILE ENRICHMENT SECTION
+// PROFILE ENRICHMENT SECTION - Modern Data Flow Design
 // ============================================================================
 function ProfileEnrichmentSection() {
   const ref = useRef(null);
@@ -759,52 +726,66 @@ function ProfileEnrichmentSection() {
     {
       icon: Linkedin,
       name: "LinkedIn",
-      description: "Professional experience, skills, and endorsements",
-      color: "bg-[#0A66C2]",
+      data: ["Experience", "Skills", "Endorsements"],
+      color: "#0A66C2",
+      angle: -60,
     },
     {
       icon: Github,
       name: "GitHub",
-      description: "Technical skills, projects, and open-source contributions",
-      color: "bg-[#333]",
+      data: ["Repos", "Languages", "Contributions"],
+      color: "#333333",
+      angle: 0,
     },
     {
       icon: Twitter,
       name: "Twitter/X",
-      description: "Interests, thought leadership, and industry engagement",
-      color: "bg-[#000]",
+      data: ["Interests", "Influence", "Topics"],
+      color: "#000000",
+      angle: 60,
     },
     {
       icon: Youtube,
       name: "YouTube",
-      description: "Content creation, speaking engagements, expertise areas",
-      color: "bg-[#FF0000]",
+      data: ["Content", "Expertise", "Reach"],
+      color: "#FF0000",
+      angle: 120,
     },
     {
       icon: Instagram,
       name: "Instagram",
-      description: "Personal brand, visual portfolio, lifestyle indicators",
-      color: "bg-gradient-to-br from-[#833AB4] via-[#FD1D1D] to-[#F77737]",
+      data: ["Brand", "Aesthetic", "Network"],
+      color: "#E4405F",
+      angle: 180,
     },
     {
       icon: Facebook,
       name: "Facebook",
-      description: "Network connections, group memberships, interests",
-      color: "bg-[#1877F2]",
+      data: ["Connections", "Groups", "Interests"],
+      color: "#1877F2",
+      angle: 240,
     },
   ];
 
-  const tiers = [
-    { name: "Tier 1: Rich", sources: "3+ sources", color: "text-green-500", bg: "bg-green-500/10" },
-    { name: "Tier 2: Basic", sources: "1-2 sources", color: "text-amber-500", bg: "bg-amber-500/10" },
-    { name: "Tier 3: Manual", sources: "User input only", color: "text-blue-500", bg: "bg-blue-500/10" },
+  const outputData = [
+    "Professional Background",
+    "Technical Skills",
+    "Industry Interests",
+    "Communication Style",
+    "Network Strength",
+    "Content Expertise",
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section className="py-24 relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-background">
+      {/* Animated background grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+
+      {/* Glow effects */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[150px]" />
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[100px]" />
       </div>
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
@@ -814,80 +795,358 @@ function ProfileEnrichmentSection() {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-full">
-            Profile Enrichment
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-cyan-500/10 text-cyan-400 rounded-full border border-cyan-500/20">
+            <Scan className="h-4 w-4" />
+            LangGraph AI Agent
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 text-white">
             We Know You Better Than You Think
           </h2>
-          <p className="text-lg text-muted-foreground">
-            Our LangGraph-powered AI agent searches 6 platforms to build a comprehensive profile,
-            enabling matches based on real context—not just what you typed.
+          <p className="text-lg text-slate-400">
+            Our AI agent autonomously searches 6 platforms, extracts key insights,
+            and builds a rich profile that powers intelligent matchmaking.
           </p>
         </motion.div>
 
-        {/* Sources Grid */}
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12"
-        >
-          {sources.map((source, index) => (
-            <motion.div
-              key={source.name}
-              variants={fadeInUp}
-              className="relative group"
-            >
-              <div className="h-full p-6 rounded-2xl border bg-card hover:border-primary/30 hover:shadow-xl transition-all duration-300">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={cn(
-                    "h-12 w-12 rounded-xl flex items-center justify-center shadow-lg",
-                    source.color
-                  )}>
-                    <source.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold">{source.name}</h3>
-                </div>
-                <p className="text-muted-foreground text-sm">{source.description}</p>
+        {/* Main Visualization - Data Flow Pipeline */}
+        <div className="max-w-6xl mx-auto">
+          {/* Desktop: Horizontal Flow */}
+          <div className="hidden lg:block">
+            <div className="relative flex items-center justify-between gap-8">
+              {/* Left: Source Platforms */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
+                transition={{ duration: 0.6 }}
+                className="flex-1"
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  {sources.map((source, index) => (
+                    <motion.div
+                      key={source.name}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                      transition={{ delay: 0.1 + index * 0.1 }}
+                      className="group relative"
+                    >
+                      <div className="relative p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm hover:border-slate-600 hover:bg-slate-800/80 transition-all duration-300">
+                        {/* Platform icon */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div
+                            className="h-10 w-10 rounded-lg flex items-center justify-center shadow-lg"
+                            style={{ backgroundColor: source.color }}
+                          >
+                            <source.icon className="h-5 w-5 text-white" />
+                          </div>
+                          <span className="font-semibold text-white text-sm">{source.name}</span>
+                        </div>
 
-                {/* Connection line animation on hover */}
+                        {/* Data points */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {source.data.map((item) => (
+                            <span
+                              key={item}
+                              className="px-2 py-0.5 text-xs rounded-full bg-slate-700/50 text-slate-300"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Animated pulse on hover */}
+                        <motion.div
+                          className="absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
+                          style={{ backgroundColor: source.color }}
+                          animate={{
+                            scale: [1, 1.5, 1],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{ duration: 1.5, repeat: Infinity, delay: index * 0.2 }}
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Center: AI Processing Unit */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="relative flex-shrink-0"
+              >
+                {/* Animated data streams - Left */}
+                <svg className="absolute -left-16 top-1/2 -translate-y-1/2 w-16 h-32" viewBox="0 0 60 120">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <motion.circle
+                      key={`left-${i}`}
+                      cx="0"
+                      cy={10 + i * 20}
+                      r="3"
+                      fill="#06b6d4"
+                      initial={{ cx: 0, opacity: 0 }}
+                      animate={isInView ? {
+                        cx: [0, 60],
+                        opacity: [0, 1, 1, 0],
+                      } : {}}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        delay: i * 0.3,
+                        ease: "linear"
+                      }}
+                    />
+                  ))}
+                  {/* Connection lines */}
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <line
+                      key={`line-left-${i}`}
+                      x1="0"
+                      y1={10 + i * 20}
+                      x2="60"
+                      y2="60"
+                      stroke="rgba(6, 182, 212, 0.2)"
+                      strokeWidth="1"
+                    />
+                  ))}
+                </svg>
+
+                {/* Central AI Core */}
+                <div className="relative">
+                  {/* Outer ring animation */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-cyan-500/30"
+                    style={{ width: 160, height: 160, margin: -20 }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-purple-500/20"
+                    style={{ width: 180, height: 180, margin: -30 }}
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                  />
+
+                  {/* Pulsing glow */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl"
+                    style={{ width: 120, height: 120 }}
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+
+                  {/* Core */}
+                  <div className="relative w-[120px] h-[120px] rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-cyan-500/50 flex flex-col items-center justify-center shadow-2xl shadow-cyan-500/20">
+                    <Brain className="h-10 w-10 text-cyan-400 mb-1" />
+                    <span className="text-xs font-semibold text-cyan-400">AI Engine</span>
+                  </div>
+                </div>
+
+                {/* Animated data streams - Right */}
+                <svg className="absolute -right-16 top-1/2 -translate-y-1/2 w-16 h-32" viewBox="0 0 60 120">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <motion.circle
+                      key={`right-${i}`}
+                      cx="0"
+                      cy="60"
+                      r="3"
+                      fill="#a855f7"
+                      initial={{ cx: 0, opacity: 0 }}
+                      animate={isInView ? {
+                        cx: [0, 60],
+                        cy: [60, 10 + i * 20],
+                        opacity: [0, 1, 1, 0],
+                      } : {}}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        delay: 0.8 + i * 0.3,
+                        ease: "linear"
+                      }}
+                    />
+                  ))}
+                  {/* Connection lines */}
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <line
+                      key={`line-right-${i}`}
+                      x1="0"
+                      y1="60"
+                      x2="60"
+                      y2={10 + i * 20}
+                      stroke="rgba(168, 85, 247, 0.2)"
+                      strokeWidth="1"
+                    />
+                  ))}
+                </svg>
+              </motion.div>
+
+              {/* Right: Enriched Profile Output */}
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="flex-1"
+              >
+                <div className="relative p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border border-purple-500/20 backdrop-blur-sm">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                      <Users className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white">Enriched Profile</h4>
+                      <p className="text-xs text-slate-400">AI-generated insights</p>
+                    </div>
+                  </div>
+
+                  {/* Output data items */}
+                  <div className="space-y-2">
+                    {outputData.map((item, index) => (
+                      <motion.div
+                        key={item}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
+                        transition={{ delay: 0.8 + index * 0.1 }}
+                        className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50"
+                      >
+                        <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500" />
+                        <span className="text-sm text-slate-300">{item}</span>
+                        <motion.div
+                          className="ml-auto h-1.5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500"
+                          initial={{ width: 0 }}
+                          animate={isInView ? { width: `${60 + Math.random() * 40}%` } : { width: 0 }}
+                          transition={{ delay: 1 + index * 0.1, duration: 0.5 }}
+                          style={{ maxWidth: 80 }}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Quality badge */}
+                  <div className="mt-4 flex items-center justify-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <Star className="h-4 w-4 text-green-400 fill-green-400" />
+                    <span className="text-sm font-semibold text-green-400">Tier 1: Rich Profile</span>
+                    <span className="text-xs text-green-400/70">(6/6 sources)</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Mobile: Vertical Flow */}
+          <div className="lg:hidden space-y-6">
+            {/* Sources */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              className="grid grid-cols-3 gap-3"
+            >
+              {sources.map((source, index) => (
                 <motion.div
-                  className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-0.5 bg-primary/50 opacity-0 group-hover:opacity-100 transition-opacity"
-                  initial={{ scaleX: 0 }}
-                  whileHover={{ scaleX: 1 }}
+                  key={source.name}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50"
+                >
+                  <div
+                    className="h-10 w-10 rounded-lg flex items-center justify-center shadow-lg"
+                    style={{ backgroundColor: source.color }}
+                  >
+                    <source.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-xs font-medium text-white text-center">{source.name}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Arrow down */}
+            <div className="flex justify-center">
+              <motion.div
+                animate={{ y: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="flex flex-col items-center gap-1"
+              >
+                <div className="w-0.5 h-8 bg-gradient-to-b from-cyan-500 to-purple-500" />
+                <ChevronRight className="h-5 w-5 text-purple-500 rotate-90" />
+              </motion.div>
+            </div>
+
+            {/* AI Core */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+              transition={{ delay: 0.3 }}
+              className="flex justify-center"
+            >
+              <div className="relative">
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
                 />
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-cyan-500/50 flex flex-col items-center justify-center">
+                  <Brain className="h-8 w-8 text-cyan-400" />
+                </div>
               </div>
             </motion.div>
-          ))}
-        </motion.div>
 
-        {/* Profile Tiers */}
+            {/* Arrow down */}
+            <div className="flex justify-center">
+              <motion.div
+                animate={{ y: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+                className="flex flex-col items-center gap-1"
+              >
+                <div className="w-0.5 h-8 bg-gradient-to-b from-purple-500 to-green-500" />
+                <ChevronRight className="h-5 w-5 text-green-500 rotate-90" />
+              </motion.div>
+            </div>
+
+            {/* Output */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ delay: 0.5 }}
+              className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border border-purple-500/20"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-sm">Enriched Profile</h4>
+                  <p className="text-xs text-slate-400">AI-generated</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {outputData.slice(0, 4).map((item) => (
+                  <span key={item} className="px-2.5 py-1 text-xs rounded-full bg-slate-800/50 text-slate-300 border border-slate-700/50">
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                <Star className="h-3.5 w-3.5 text-green-400 fill-green-400" />
+                <span className="text-xs font-semibold text-green-400">Tier 1: Rich Profile</span>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Bottom insight */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ delay: 0.6 }}
-          className="max-w-3xl mx-auto"
+          transition={{ delay: 1 }}
+          className="mt-12 text-center"
         >
-          <div className="p-6 rounded-2xl border bg-card/50 backdrop-blur-sm">
-            <h4 className="text-lg font-semibold mb-4 text-center">Profile Quality Tiers</h4>
-            <div className="flex flex-wrap justify-center gap-4">
-              {tiers.map((tier) => (
-                <div
-                  key={tier.name}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-full",
-                    tier.bg
-                  )}
-                >
-                  <Star className={cn("h-4 w-4", tier.color)} />
-                  <span className={cn("font-medium text-sm", tier.color)}>{tier.name}</span>
-                  <span className="text-xs text-muted-foreground">({tier.sources})</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              Richer profiles enable better matches. The more we know, the more valuable your connections become.
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm">
+            <Zap className="h-5 w-5 text-cyan-400" />
+            <p className="text-sm text-slate-300">
+              <span className="font-semibold text-white">Automatic enrichment</span>
+              {" "}in the background — no manual input required
             </p>
           </div>
         </motion.div>
