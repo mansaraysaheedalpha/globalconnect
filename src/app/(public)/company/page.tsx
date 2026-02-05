@@ -3,11 +3,10 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  Play,
   Sparkles,
   Brain,
   Zap,
@@ -24,7 +23,6 @@ import {
   Wifi,
   MessageSquare,
   Activity,
-  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,18 +30,8 @@ import { cn } from "@/lib/utils";
 // HERO SECTION - Cinematic Full-Screen
 // ============================================================================
 function HeroSection() {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"]
-  });
-
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
-  const y = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
-
   return (
-    <section ref={ref} className="relative min-h-screen flex items-center justify-center text-center text-white overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center text-center text-white overflow-hidden">
       {/* Animated Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950 -z-10" />
 
@@ -99,52 +87,46 @@ function HeroSection() {
         ))}
       </div>
 
-      {/* Content with parallax */}
-      <motion.div
-        style={{ opacity, scale, y }}
-        className="container px-4 md:px-6 max-w-6xl relative z-10"
-      >
+      {/* Content */}
+      <div className="container px-4 md:px-6 max-w-5xl relative z-10">
         {/* Location badges */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-wrap items-center justify-center gap-4 mb-10"
+          className="flex flex-wrap items-center justify-center gap-4 mb-8"
         >
-          <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium">
             <MapPin className="h-4 w-4 text-purple-400" />
             Freetown, Sierra Leone
           </span>
-          <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium">
             <Globe className="h-4 w-4 text-amber-400" />
-            Built for Africa, Ready for the World
+            Built for Africa
           </span>
         </motion.div>
 
-        {/* Main headline - massive typography */}
+        {/* Main headline - single line with gradient */}
         <motion.h1
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] mb-8"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 px-2"
         >
-          <span className="block">We're Building</span>
-          <span className="block mt-2">
-            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent">
-              The Future
-            </span>
+          We're Building the Future of{" "}
+          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent">
+            Human Connection
           </span>
-          <span className="block mt-2 text-white/90">of Connection</span>
         </motion.h1>
 
-        {/* Mission - clean, no box */}
+        {/* Mission statement */}
         <motion.p
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="max-w-2xl mx-auto text-xl md:text-2xl text-white/70 leading-relaxed font-light"
+          className="max-w-3xl mx-auto text-lg md:text-xl text-white/70 leading-relaxed px-2"
         >
-          To transform every event into the best networking opportunity of your life—powered by AI that understands, connects, and engages in real-time.
+          <span className="text-white font-semibold">Our Mission:</span> To transform every event into the best networking opportunity of your life—powered by AI that understands, connects, and engages in real-time.
         </motion.p>
 
         {/* CTA */}
@@ -152,45 +134,48 @@ function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="mt-12 flex flex-col sm:flex-row gap-4 justify-center"
+          className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
         >
           <Button
             size="lg"
-            className="group bg-white text-slate-900 hover:bg-white/90 h-14 px-10 text-lg font-semibold shadow-2xl shadow-white/10"
+            className="group bg-white text-slate-900 hover:bg-white/90 h-12 px-8 text-base font-semibold shadow-2xl shadow-white/10"
             asChild
           >
             <Link href="/events">
               Explore Platform
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
           <Button
             size="lg"
-            className="bg-white/5 border border-white/20 text-white hover:bg-white/10 h-14 px-10 text-lg backdrop-blur-sm"
+            className="bg-white/5 border border-white/20 text-white hover:bg-white/10 h-12 px-8 text-base backdrop-blur-sm"
             asChild
           >
             <Link href="#story">
-              <Play className="mr-2 h-5 w-5" />
+              <Sparkles className="mr-2 h-4 w-4" />
               Our Story
             </Link>
           </Button>
         </motion.div>
-      </motion.div>
+      </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator - traditional circle with dot */}
       <motion.div
-        className="absolute bottom-12 left-1/2 -translate-x-1/2"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
       >
         <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="flex flex-col items-center gap-2 text-white/50"
+          className="w-6 h-10 rounded-full border-2 border-white/30 flex justify-center pt-2"
+          animate={{ y: [0, 5, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
         >
-          <span className="text-xs uppercase tracking-widest">Scroll</span>
-          <ChevronDown className="h-5 w-5" />
+          <motion.div
+            className="w-1.5 h-1.5 rounded-full bg-white"
+            animate={{ y: [0, 12, 0], opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
         </motion.div>
       </motion.div>
     </section>
@@ -378,9 +363,9 @@ function WhatWeBuildSection() {
           <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white">
             Not Another Event App
           </h2>
-          <p className="text-xl md:text-2xl text-slate-400">
+          <p className="text-xl md:text-2xl text-white/70">
             An intelligent operating system that combines Cvent + Hopin + Bizzabo + Zoom Events—
-            <span className="text-white font-medium">then adds AI that thinks.</span>
+            <span className="text-white font-semibold">then adds AI that thinks.</span>
           </p>
         </motion.div>
 
@@ -497,7 +482,7 @@ function WhatWeBuildSection() {
           transition={{ delay: 1 }}
           className="text-center mt-16"
         >
-          <Button asChild size="lg" variant="outline" className="group border-white/20 text-white hover:bg-white/10">
+          <Button asChild size="lg" className="group bg-white/10 border border-white/20 text-white hover:bg-white/20 backdrop-blur-sm">
             <Link href="/solutions/engagement-conductor">
               Explore All Solutions
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
