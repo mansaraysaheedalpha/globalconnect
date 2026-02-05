@@ -496,6 +496,251 @@ function HeroSection() {
 }
 
 // ============================================================================
+// TOOL SPRAWL CHAOS VISUALIZATION
+// ============================================================================
+function ToolSprawlChaosVisualization() {
+  const [notifications, setNotifications] = useState({
+    chat: 12,
+    qa: 8,
+    polls: 3,
+    stream: 2,
+    analytics: 5,
+  });
+  const [activeAlerts, setActiveAlerts] = useState<number[]>([0, 2]);
+
+  // Simulate incoming notifications
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNotifications(prev => {
+        const keys = Object.keys(prev) as (keyof typeof prev)[];
+        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+        return { ...prev, [randomKey]: prev[randomKey] + 1 };
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Cycle through alerts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveAlerts(prev => {
+        const next = prev.map(i => (i + 1) % 5);
+        return next;
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const tools = [
+    { name: "Chat Tool", icon: MessageSquare, color: "blue", notifications: notifications.chat, position: { top: "5%", left: "5%" }, rotation: -8 },
+    { name: "Q&A Manager", icon: HelpCircle, color: "purple", notifications: notifications.qa, position: { top: "15%", right: "8%" }, rotation: 6 },
+    { name: "Poll Dashboard", icon: BarChart3, color: "green", notifications: notifications.polls, position: { bottom: "25%", left: "2%" }, rotation: -4 },
+    { name: "Stream Monitor", icon: Video, color: "red", notifications: notifications.stream, position: { bottom: "10%", right: "5%" }, rotation: 10 },
+    { name: "Analytics", icon: TrendingUp, color: "orange", notifications: notifications.analytics, position: { top: "45%", right: "0%" }, rotation: -6 },
+  ];
+
+  const colorMap: Record<string, string> = {
+    blue: "from-blue-500/20 to-blue-600/10 border-blue-500/30",
+    purple: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
+    green: "from-green-500/20 to-green-600/10 border-green-500/30",
+    red: "from-red-500/20 to-red-600/10 border-red-500/30",
+    orange: "from-orange-500/20 to-orange-600/10 border-orange-500/30",
+  };
+
+  const iconColorMap: Record<string, string> = {
+    blue: "text-blue-500",
+    purple: "text-purple-500",
+    green: "text-green-500",
+    red: "text-red-500",
+    orange: "text-orange-500",
+  };
+
+  const badgeColorMap: Record<string, string> = {
+    blue: "bg-blue-500",
+    purple: "bg-purple-500",
+    green: "bg-green-500",
+    red: "bg-red-500",
+    orange: "bg-orange-500",
+  };
+
+  return (
+    <div className="relative w-full h-[400px] md:h-[500px]">
+      {/* Chaos background lines */}
+      <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 400 400">
+        <motion.path
+          d="M50,200 Q150,100 200,200 T350,200"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeDasharray="5,5"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <motion.path
+          d="M100,50 Q200,150 200,250 T100,350"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeDasharray="5,5"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+        />
+        <motion.path
+          d="M300,50 Q250,200 300,350"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeDasharray="5,5"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+        />
+      </svg>
+
+      {/* Floating tool windows */}
+      {tools.map((tool, index) => (
+        <motion.div
+          key={tool.name}
+          className="absolute w-48 md:w-56"
+          style={{ ...tool.position }}
+          initial={{ opacity: 0, scale: 0.8, rotate: tool.rotation }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: [0, -8, 0],
+            rotate: [tool.rotation, tool.rotation + 2, tool.rotation],
+          }}
+          transition={{
+            duration: 0.5,
+            delay: index * 0.15,
+            y: { duration: 3 + index * 0.5, repeat: Infinity, ease: "easeInOut" },
+            rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+          }}
+        >
+          <div className={cn(
+            "relative rounded-lg border bg-gradient-to-br backdrop-blur-sm shadow-2xl overflow-hidden",
+            colorMap[tool.color]
+          )}>
+            {/* Window header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-black/20">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
+              </div>
+              <span className="text-xs font-medium text-white/70 truncate flex-1">{tool.name}</span>
+              <tool.icon className={cn("h-3.5 w-3.5", iconColorMap[tool.color])} />
+            </div>
+
+            {/* Window content - fake UI */}
+            <div className="p-3 space-y-2">
+              <div className="h-2 w-3/4 bg-white/10 rounded" />
+              <div className="h-2 w-1/2 bg-white/10 rounded" />
+              <div className="flex gap-2 mt-3">
+                <div className="h-6 w-16 bg-white/5 rounded" />
+                <div className="h-6 w-12 bg-white/5 rounded" />
+              </div>
+            </div>
+
+            {/* Notification badge */}
+            <AnimatePresence>
+              {tool.notifications > 0 && (
+                <motion.div
+                  key={tool.notifications}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className={cn(
+                    "absolute -top-2 -right-2 min-w-[24px] h-6 rounded-full flex items-center justify-center text-xs font-bold text-white px-1.5",
+                    badgeColorMap[tool.color]
+                  )}
+                >
+                  <motion.span
+                    key={tool.notifications}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                  >
+                    {tool.notifications}
+                  </motion.span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Active alert indicator */}
+            {activeAlerts.includes(index) && (
+              <motion.div
+                className="absolute inset-0 rounded-lg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.5, 0] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                style={{ boxShadow: `inset 0 0 30px ${tool.color === 'red' ? '#ef4444' : '#f59e0b'}40` }}
+              />
+            )}
+          </div>
+        </motion.div>
+      ))}
+
+      {/* Center chaos indicator */}
+      <motion.div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.8 }}
+      >
+        <div className="relative">
+          <motion.div
+            className="w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500/50 flex items-center justify-center"
+            animate={{
+              scale: [1, 1.2, 1],
+              borderColor: ["rgba(239,68,68,0.5)", "rgba(239,68,68,0.8)", "rgba(239,68,68,0.5)"],
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <AlertTriangle className="h-8 w-8 text-red-500" />
+          </motion.div>
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-red-500/30"
+            animate={{ scale: [1, 2, 2], opacity: [0.5, 0, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-red-500/30"
+            animate={{ scale: [1, 2, 2], opacity: [0.5, 0, 0] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+          />
+        </div>
+      </motion.div>
+
+      {/* Floating question marks / confusion indicators */}
+      {[...Array(5)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute text-muted-foreground/30"
+          style={{
+            top: `${20 + i * 15}%`,
+            left: `${15 + i * 18}%`,
+          }}
+          animate={{
+            y: [-10, 10, -10],
+            opacity: [0.2, 0.5, 0.2],
+            rotate: [0, 10, 0],
+          }}
+          transition={{
+            duration: 3 + i * 0.5,
+            repeat: Infinity,
+            delay: i * 0.3,
+          }}
+        >
+          <RefreshCw className="h-6 w-6" />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
 // PROBLEM SECTION
 // ============================================================================
 function ProblemSection() {
@@ -508,41 +753,51 @@ function ProblemSection() {
       stat: "47%",
       title: "Engagement Blind Spots",
       description: "of organizers can't see when audiences disengage until it's too late",
+      gradient: "from-blue-500 to-cyan-500",
     },
     {
       icon: Clock,
       stat: "8min",
       title: "Slow Response Time",
       description: "Average time to detect and address engagement issues manually",
+      gradient: "from-purple-500 to-pink-500",
     },
     {
       icon: Layers,
       stat: "5+",
       title: "Tool Sprawl",
       description: "Different tools to manage chat, Q&A, polls, streaming, and analytics",
+      gradient: "from-orange-500 to-red-500",
     },
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-b from-background via-slate-950/50 to-background relative overflow-hidden">
+      {/* Background effects */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[150px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-[180px]" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-[180px]" />
       </div>
+
+      {/* Grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:50px_50px] -z-5" />
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-12"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 rounded-full">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-red-500/10 text-red-400 rounded-full border border-red-500/20">
+            <AlertTriangle className="h-4 w-4" />
             The Challenge
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
             Running Live Events is{" "}
-            <span className="text-blue-500">Flying Blind</span>
+            <span className="bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent">
+              Flying Blind
+            </span>
           </h2>
           <p className="text-lg text-muted-foreground">
             Without a unified command center, you&apos;re switching between tools, missing
@@ -550,35 +805,326 @@ function ProblemSection() {
           </p>
         </motion.div>
 
+        {/* Chaos Visualization */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mb-16"
+        >
+          <ToolSprawlChaosVisualization />
+        </motion.div>
+
+        {/* Problem Stats */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={staggerContainer}
-          className="grid md:grid-cols-3 gap-8"
+          className="grid md:grid-cols-3 gap-6"
         >
-          {problems.map((problem) => (
+          {problems.map((problem, index) => (
             <motion.div
               key={problem.title}
               variants={fadeInUp}
               className="relative group"
             >
-              <div className="h-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-card p-8 transition-all duration-300 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/5">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500/10">
-                    <problem.icon className="h-7 w-7 text-blue-500" />
-                  </div>
-                  <div className="text-4xl font-bold text-blue-500">
+              <div className="h-full rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm p-6 transition-all duration-500 hover:border-white/10 hover:bg-white/[0.04]">
+                {/* Gradient line at top */}
+                <div className={cn(
+                  "absolute top-0 left-6 right-6 h-0.5 bg-gradient-to-r rounded-full opacity-60",
+                  problem.gradient
+                )} />
+
+                <div className="flex items-center gap-4 mb-4 mt-2">
+                  <motion.div
+                    className={cn(
+                      "flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br",
+                      problem.gradient
+                    )}
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                  >
+                    <problem.icon className="h-6 w-6 text-white" />
+                  </motion.div>
+                  <motion.div
+                    className={cn(
+                      "text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+                      problem.gradient
+                    )}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                  >
                     {problem.stat}
-                  </div>
+                  </motion.div>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{problem.title}</h3>
-                <p className="text-muted-foreground">{problem.description}</p>
+                <h3 className="text-lg font-semibold mb-2 text-white/90">{problem.title}</h3>
+                <p className="text-sm text-muted-foreground">{problem.description}</p>
               </div>
             </motion.div>
           ))}
         </motion.div>
       </div>
     </section>
+  );
+}
+
+// ============================================================================
+// COMMAND CENTER DASHBOARD MOCKUP
+// ============================================================================
+function CommandCenterDashboard() {
+  const [activeSession, setActiveSession] = useState(0);
+  const [engagement, setEngagement] = useState(78);
+  const [chatMessages, setChatMessages] = useState(142);
+  const [qaCount, setQaCount] = useState(23);
+
+  // Simulate live updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setEngagement(prev => Math.min(100, Math.max(60, prev + (Math.random() > 0.5 ? 1 : -1))));
+      setChatMessages(prev => prev + Math.floor(Math.random() * 3));
+      setQaCount(prev => prev + (Math.random() > 0.7 ? 1 : 0));
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const sessions = [
+    { name: "Main Stage", viewers: 1247, status: "live", engagement: 82 },
+    { name: "Workshop A", viewers: 342, status: "live", engagement: 91 },
+    { name: "Breakout 1", viewers: 89, status: "live", engagement: 74 },
+    { name: "Networking", viewers: 156, status: "scheduled", engagement: 0 },
+  ];
+
+  return (
+    <div className="relative w-full max-w-5xl mx-auto">
+      {/* Main dashboard container */}
+      <motion.div
+        className="rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-2xl"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        {/* Dashboard Header */}
+        <div className="px-6 py-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-b border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500">
+              <Command className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Producer Command Center</h3>
+              <p className="text-xs text-white/60">Tech Summit 2024 • Live Now</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <motion.div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-500/30"
+              animate={{ opacity: [1, 0.7, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <motion.div
+                className="h-2 w-2 rounded-full bg-red-500"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+              <span className="text-xs font-medium text-red-400">LIVE</span>
+            </motion.div>
+            <span className="text-sm text-white/60">4 Sessions Active</span>
+          </div>
+        </div>
+
+        {/* Dashboard Grid */}
+        <div className="p-4 grid grid-cols-12 gap-4">
+          {/* Sessions Panel */}
+          <div className="col-span-12 md:col-span-4 space-y-3">
+            <div className="text-xs font-medium text-white/50 uppercase tracking-wider px-2">Sessions</div>
+            {sessions.map((session, index) => (
+              <motion.div
+                key={session.name}
+                className={cn(
+                  "p-3 rounded-xl cursor-pointer transition-all",
+                  activeSession === index
+                    ? "bg-blue-500/20 border border-blue-500/40"
+                    : "bg-white/5 border border-white/5 hover:bg-white/10"
+                )}
+                onClick={() => setActiveSession(index)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-sm text-white">{session.name}</span>
+                  {session.status === "live" ? (
+                    <span className="flex items-center gap-1 text-xs text-emerald-400">
+                      <motion.div
+                        className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                        animate={{ opacity: [1, 0.5, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                      />
+                      Live
+                    </span>
+                  ) : (
+                    <span className="text-xs text-white/40">Scheduled</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-xs text-white/60">
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {session.viewers.toLocaleString()}
+                  </span>
+                  {session.status === "live" && (
+                    <div className="flex items-center gap-1">
+                      <Activity className="h-3 w-3 text-cyan-400" />
+                      <span className="text-cyan-400">{session.engagement}%</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Main Monitor */}
+          <div className="col-span-12 md:col-span-5 space-y-3">
+            <div className="text-xs font-medium text-white/50 uppercase tracking-wider px-2">Live Monitor</div>
+            <div className="rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/5 p-4 aspect-video relative overflow-hidden">
+              {/* Fake video preview */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5" />
+              <motion.div
+                className="absolute inset-4 rounded-lg bg-gradient-to-br from-slate-700/50 to-slate-800/50 flex items-center justify-center"
+                animate={{ opacity: [0.5, 0.7, 0.5] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                <Video className="h-12 w-12 text-white/20" />
+              </motion.div>
+              {/* Overlay controls */}
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    className="h-2 w-2 rounded-full bg-red-500"
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  />
+                  <span className="text-xs text-white/80">REC</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-white/60">
+                  <Wifi className="h-3 w-3 text-emerald-400" />
+                  <span>1080p • 60fps</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Controls */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { icon: MessageSquare, label: "Chat", active: true },
+                { icon: HelpCircle, label: "Q&A", active: true },
+                { icon: BarChart3, label: "Polls", active: false },
+                { icon: Film, label: "Record", active: true },
+              ].map((control) => (
+                <motion.button
+                  key={control.label}
+                  className={cn(
+                    "p-2 rounded-lg text-xs flex flex-col items-center gap-1 transition-colors",
+                    control.active
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      : "bg-white/5 text-white/40 border border-white/5"
+                  )}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <control.icon className="h-4 w-4" />
+                  <span>{control.label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Metrics Panel */}
+          <div className="col-span-12 md:col-span-3 space-y-3">
+            <div className="text-xs font-medium text-white/50 uppercase tracking-wider px-2">Live Metrics</div>
+
+            {/* Engagement Gauge */}
+            <div className="rounded-xl bg-white/5 border border-white/5 p-4">
+              <div className="text-xs text-white/50 mb-2">Engagement Score</div>
+              <div className="relative h-24 flex items-center justify-center">
+                <svg className="absolute w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" className="text-white/10" />
+                  <motion.circle
+                    cx="50" cy="50" r="40"
+                    fill="none"
+                    stroke="url(#engagementGradient)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={251.2}
+                    animate={{ strokeDashoffset: 251.2 - (251.2 * engagement) / 100 }}
+                    transition={{ duration: 0.5 }}
+                  />
+                  <defs>
+                    <linearGradient id="engagementGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#06b6d4" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <motion.div
+                  className="text-2xl font-bold text-white"
+                  key={engagement}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                >
+                  {engagement}%
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Live Counters */}
+            <div className="space-y-2">
+              <motion.div
+                className="rounded-lg bg-white/5 border border-white/5 p-3 flex items-center justify-between"
+                key={chatMessages}
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-blue-400" />
+                  <span className="text-xs text-white/60">Chat</span>
+                </div>
+                <motion.span
+                  className="text-sm font-medium text-white"
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                >
+                  {chatMessages}
+                </motion.span>
+              </motion.div>
+
+              <motion.div
+                className="rounded-lg bg-white/5 border border-white/5 p-3 flex items-center justify-between"
+                key={qaCount}
+              >
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-purple-400" />
+                  <span className="text-xs text-white/60">Q&A</span>
+                </div>
+                <motion.span
+                  className="text-sm font-medium text-white"
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                >
+                  {qaCount}
+                </motion.span>
+              </motion.div>
+
+              <div className="rounded-lg bg-white/5 border border-white/5 p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ThumbsUp className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs text-white/60">Reactions</span>
+                </div>
+                <span className="text-sm font-medium text-white">847</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Floating glow effect */}
+      <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 via-cyan-500/10 to-blue-500/20 rounded-3xl blur-3xl -z-10" />
+    </div>
   );
 }
 
@@ -593,53 +1139,69 @@ function CommandCenterSection() {
     {
       icon: Monitor,
       title: "Multi-Session View",
-      description: "See all sessions at a glance with live viewer counts, engagement scores, and status indicators",
+      description: "See all sessions at a glance with live viewer counts and engagement scores",
+      gradient: "from-blue-500 to-cyan-500",
     },
     {
       icon: Activity,
       title: "Real-Time Metrics",
-      description: "Track chat activity, Q&A submissions, poll participation, and reactions as they happen",
+      description: "Track chat, Q&A, polls, and reactions as they happen",
+      gradient: "from-cyan-500 to-teal-500",
     },
     {
       icon: SlidersHorizontal,
       title: "Instant Controls",
-      description: "Toggle chat, Q&A, and polls on any session with one click—changes apply instantly",
+      description: "Toggle features on any session with one click",
+      gradient: "from-teal-500 to-emerald-500",
     },
     {
       icon: Camera,
       title: "Green Room Management",
-      description: "Monitor speaker readiness, manage green room access, and coordinate transitions",
+      description: "Monitor speaker readiness and coordinate transitions",
+      gradient: "from-emerald-500 to-green-500",
     },
     {
       icon: Film,
       title: "Recording & Clips",
-      description: "Start/stop recordings, create highlight clips, and manage session archives",
+      description: "Start/stop recordings and create highlight clips",
+      gradient: "from-violet-500 to-purple-500",
     },
     {
       icon: Bell,
       title: "Live Alerts",
-      description: "Instant notifications for technical issues, moderation flags, and engagement anomalies",
+      description: "Instant notifications for issues and anomalies",
+      gradient: "from-purple-500 to-pink-500",
     },
   ];
 
   return (
     <section className="py-24 relative overflow-hidden">
+      {/* Background */}
       <div className="absolute inset-0 -z-10">
         <motion.div
-          className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[150px]"
+          className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[180px]"
           animate={{ scale: [1, 1.2, 1], x: [0, 50, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         />
+        <motion.div
+          className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[150px]"
+          animate={{ scale: [1, 1.15, 1], x: [0, -30, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
+
+      {/* Grid pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.02)_1px,transparent_1px)] bg-[size:40px_40px] -z-5" />
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-12"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full border border-blue-500/20">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
+            <Command className="h-4 w-4" />
             Command Center
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
@@ -654,31 +1216,273 @@ function CommandCenterSection() {
           </p>
         </motion.div>
 
+        {/* Dashboard Mockup */}
+        <motion.div
+          initial={{ opacity: 0, y: 60 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mb-16"
+        >
+          <CommandCenterDashboard />
+        </motion.div>
+
+        {/* Capability Pills */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={staggerContainer}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto"
         >
           {capabilities.map((cap) => (
             <motion.div
               key={cap.title}
               variants={fadeInUp}
-              whileHover={{ scale: 1.02, y: -3 }}
-              className="relative group"
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group"
             >
-              <div className="h-full rounded-xl border bg-card p-6 transition-all duration-300 hover:shadow-lg hover:border-blue-500/30">
-                <div className={cn("h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4")}>
-                  <cap.icon className="h-6 w-6 text-white" />
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm hover:border-white/20 hover:bg-white/[0.05] transition-all">
+                <div className={cn(
+                  "h-9 w-9 rounded-lg bg-gradient-to-br flex items-center justify-center",
+                  cap.gradient
+                )}>
+                  <cap.icon className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{cap.title}</h3>
-                <p className="text-sm text-muted-foreground">{cap.description}</p>
+                <div className="text-left">
+                  <h3 className="font-medium text-sm text-white/90">{cap.title}</h3>
+                  <p className="text-xs text-white/50 max-w-[180px]">{cap.description}</p>
+                </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
       </div>
     </section>
+  );
+}
+
+// ============================================================================
+// INTERACTIVE RUNSHEET COMPONENT
+// ============================================================================
+function InteractiveRunsheet() {
+  const [activeIndex, setActiveIndex] = useState(1);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedTime(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const sessions = [
+    { time: "9:00 AM", duration: "90 min", title: "Opening Keynote", status: "completed", speaker: "Sarah Chen", engagement: 89, viewers: 1247 },
+    { time: "10:30 AM", duration: "60 min", title: "AI Workshop", status: "live", speaker: "Michael Brown", engagement: 92, viewers: 342 },
+    { time: "12:00 PM", duration: "60 min", title: "Networking Lunch", status: "upcoming", speaker: null, engagement: 0, viewers: 0 },
+    { time: "1:30 PM", duration: "45 min", title: "Panel: Future of Events", status: "upcoming", speaker: "Multiple", engagement: 0, viewers: 0 },
+    { time: "2:30 PM", duration: "30 min", title: "Closing Remarks", status: "upcoming", speaker: "Alex Johnson", engagement: 0, viewers: 0 },
+  ];
+
+  return (
+    <div className="relative max-w-5xl mx-auto">
+      {/* Main Container */}
+      <motion.div
+        className="rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-2xl"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 border-b border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500">
+                <Clapperboard className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">Live Production Runsheet</h3>
+                <p className="text-xs text-white/60">Tech Summit 2024 • Day 1</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Current time indicator */}
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                <Timer className="h-4 w-4 text-purple-400" />
+                <span className="text-sm font-mono text-white/80">Session: {formatTime(elapsedTime)}</span>
+              </div>
+              <motion.div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-500/30"
+                animate={{ opacity: [1, 0.7, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <motion.div
+                  className="h-2 w-2 rounded-full bg-red-500"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
+                <span className="text-xs font-medium text-red-400">ON AIR</span>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="p-4">
+          {sessions.map((session, index) => (
+            <motion.div
+              key={index}
+              className={cn(
+                "relative mb-3 last:mb-0 rounded-xl transition-all cursor-pointer overflow-hidden",
+                activeIndex === index
+                  ? "bg-gradient-to-r from-purple-500/20 via-pink-500/10 to-purple-500/20 border border-purple-500/40"
+                  : session.status === "completed"
+                    ? "bg-white/[0.02] border border-white/5 opacity-60"
+                    : "bg-white/[0.02] border border-white/5 hover:bg-white/[0.04]"
+              )}
+              onClick={() => session.status !== "completed" && setActiveIndex(index)}
+              whileHover={{ scale: session.status !== "completed" ? 1.005 : 1 }}
+            >
+              {/* Progress indicator for live session */}
+              {session.status === "live" && (
+                <motion.div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500/20 to-transparent"
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${Math.min(100, (elapsedTime / 36))}%` }}
+                />
+              )}
+
+              <div className="relative p-4 flex items-center gap-4">
+                {/* Timeline dot and line */}
+                <div className="flex flex-col items-center shrink-0">
+                  <motion.div
+                    className={cn(
+                      "h-4 w-4 rounded-full border-2",
+                      session.status === "live" && "bg-purple-500 border-purple-400",
+                      session.status === "completed" && "bg-emerald-500/50 border-emerald-500/50",
+                      session.status === "upcoming" && "bg-transparent border-white/30"
+                    )}
+                    animate={session.status === "live" ? { scale: [1, 1.2, 1] } : {}}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  />
+                  {index < sessions.length - 1 && (
+                    <div className={cn(
+                      "w-0.5 h-8 mt-1",
+                      session.status === "completed" ? "bg-emerald-500/30" : "bg-white/10"
+                    )} />
+                  )}
+                </div>
+
+                {/* Time column */}
+                <div className="w-24 shrink-0">
+                  <div className="text-sm font-medium text-white/90">{session.time}</div>
+                  <div className="text-xs text-white/40">{session.duration}</div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-medium text-white truncate">{session.title}</h4>
+                    {session.status === "live" && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-xs font-medium shrink-0">
+                        <motion.div
+                          className="h-1.5 w-1.5 rounded-full bg-red-500"
+                          animate={{ opacity: [1, 0.3, 1] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                        />
+                        LIVE
+                      </span>
+                    )}
+                  </div>
+                  {session.speaker && (
+                    <p className="text-sm text-white/50">{session.speaker}</p>
+                  )}
+                </div>
+
+                {/* Stats for live/completed */}
+                {(session.status === "live" || session.status === "completed") && (
+                  <div className="hidden md:flex items-center gap-4 shrink-0">
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-white">{session.viewers.toLocaleString()}</div>
+                      <div className="text-xs text-white/40">Viewers</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={cn(
+                        "text-lg font-semibold",
+                        session.engagement >= 80 ? "text-emerald-400" : session.engagement >= 60 ? "text-yellow-400" : "text-red-400"
+                      )}>
+                        {session.engagement}%
+                      </div>
+                      <div className="text-xs text-white/40">Engagement</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action buttons for active */}
+                {activeIndex === index && session.status !== "completed" && (
+                  <div className="hidden lg:flex items-center gap-2 shrink-0">
+                    <motion.button
+                      className="p-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </motion.button>
+                    <motion.button
+                      className="p-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </motion.button>
+                    <motion.button
+                      className="p-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <SlidersHorizontal className="h-4 w-4" />
+                    </motion.button>
+                  </div>
+                )}
+
+                {/* Status icon */}
+                <div className="shrink-0">
+                  {session.status === "completed" && (
+                    <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  )}
+                  {session.status === "upcoming" && (
+                    <Clock className="h-5 w-5 text-white/30" />
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Quick Actions Footer */}
+        <div className="px-4 py-3 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/40">Quick Actions:</span>
+            <button className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors">
+              Go Live Next
+            </button>
+            <button className="px-3 py-1.5 rounded-lg bg-white/5 text-white/60 text-xs font-medium hover:bg-white/10 transition-colors">
+              Add Break
+            </button>
+          </div>
+          <div className="text-xs text-white/40">
+            3 sessions remaining
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Glow effect */}
+      <div className="absolute -inset-4 bg-gradient-to-r from-purple-500/20 via-pink-500/10 to-purple-500/20 rounded-3xl blur-3xl -z-10" />
+    </div>
   );
 }
 
@@ -693,44 +1497,56 @@ function LiveProductionSection() {
     {
       icon: Video,
       title: "Session Switching",
-      description: "Seamlessly switch between live sessions, manage the runsheet, and coordinate transitions",
+      description: "Seamlessly switch between sessions and coordinate transitions",
       color: "from-blue-500 to-cyan-500",
     },
     {
       icon: Users,
       title: "Breakout Rooms",
-      description: "Create, assign, and manage breakout rooms on the fly during live sessions",
+      description: "Create and manage breakout rooms on the fly",
       color: "from-purple-500 to-pink-500",
     },
     {
       icon: Headphones,
       title: "Green Room",
-      description: "Monitor speaker readiness, manage green room access, and prep speakers before they go live",
+      description: "Monitor and prep speakers before they go live",
       color: "from-amber-500 to-orange-500",
     },
     {
       icon: BarChart3,
       title: "Live Analytics",
-      description: "Real-time audience insights—device breakdown, connection quality, and engagement heatmaps",
+      description: "Real-time audience insights and engagement heatmaps",
       color: "from-emerald-500 to-green-500",
     },
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-muted/30 to-background relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-b from-background via-slate-950/50 to-background relative overflow-hidden">
+      {/* Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[150px]" />
+        <motion.div
+          className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[180px]"
+          animate={{ x: [0, -30, 0], scale: [1, 1.1, 1] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 left-0 w-[500px] h-[500px] bg-pink-500/5 rounded-full blur-[150px]"
+          animate={{ x: [0, 30, 0], scale: [1, 1.15, 1] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
+
+      {/* Grid pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.02)_1px,transparent_1px)] bg-[size:40px_40px] -z-5" />
 
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-12"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full border border-purple-500/20">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-purple-500/10 text-purple-400 rounded-full border border-purple-500/20">
             <Clapperboard className="h-4 w-4" />
             Production Tools
           </span>
@@ -746,93 +1562,43 @@ function LiveProductionSection() {
           </p>
         </motion.div>
 
-        {/* Production Features Grid */}
+        {/* Feature Pills */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={staggerContainer}
-          className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12"
+          className="flex flex-wrap justify-center gap-3 mb-12"
         >
           {productionFeatures.map((feature) => (
             <motion.div
               key={feature.title}
               variants={fadeInUp}
-              whileHover={{ scale: 1.02 }}
-              className="relative group"
+              whileHover={{ scale: 1.05, y: -2 }}
+              className="group"
             >
-              <div className="h-full rounded-2xl border bg-card p-6 transition-all duration-300 hover:shadow-lg hover:border-purple-500/30">
-                <div className="flex items-start gap-4">
-                  <div className={cn("h-14 w-14 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0", feature.color)}>
-                    <feature.icon className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
-                  </div>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm hover:border-purple-500/30 hover:bg-white/[0.05] transition-all">
+                <div className={cn(
+                  "h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center",
+                  feature.color
+                )}>
+                  <feature.icon className="h-5 w-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-medium text-sm text-white/90">{feature.title}</h3>
+                  <p className="text-xs text-white/50">{feature.description}</p>
                 </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Runsheet Preview */}
+        {/* Interactive Runsheet */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="max-w-4xl mx-auto"
+          initial={{ opacity: 0, y: 60 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
         >
-          <div className="rounded-2xl border bg-card overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-b flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-purple-500" />
-                <span className="font-semibold">Live Runsheet</span>
-              </div>
-              <span className="text-sm text-muted-foreground">Tech Summit 2024</span>
-            </div>
-            <div className="p-4 space-y-3">
-              {[
-                { time: "9:00 AM", title: "Opening Keynote", status: "completed", speaker: "Sarah Chen" },
-                { time: "10:30 AM", title: "AI Workshop", status: "live", speaker: "Michael Brown" },
-                { time: "12:00 PM", title: "Networking Lunch", status: "upcoming", speaker: null },
-                { time: "1:30 PM", title: "Panel Discussion", status: "upcoming", speaker: "Multiple" },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex items-center gap-4 p-3 rounded-xl transition-all",
-                    item.status === "live" && "bg-purple-500/10 border border-purple-500/30",
-                    item.status === "completed" && "opacity-60",
-                    item.status === "upcoming" && "bg-muted/30"
-                  )}
-                >
-                  <span className="text-sm font-mono text-muted-foreground w-20">{item.time}</span>
-                  <div className="flex-1">
-                    <span className="font-medium">{item.title}</span>
-                    {item.speaker && (
-                      <span className="text-sm text-muted-foreground ml-2">• {item.speaker}</span>
-                    )}
-                  </div>
-                  {item.status === "live" && (
-                    <span className="flex items-center gap-1.5 px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-medium">
-                      <motion.div
-                        className="h-1.5 w-1.5 rounded-full bg-red-500"
-                        animate={{ opacity: [1, 0.5, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                      />
-                      LIVE
-                    </span>
-                  )}
-                  {item.status === "completed" && (
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  )}
-                  {item.status === "upcoming" && (
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <InteractiveRunsheet />
         </motion.div>
       </div>
     </section>
@@ -931,6 +1697,191 @@ function ModerationSection() {
 }
 
 // ============================================================================
+// REAL-TIME INFRASTRUCTURE VISUALIZATION
+// ============================================================================
+function InfrastructureVisualization() {
+  const [dataPackets, setDataPackets] = useState<{ id: number; path: number }[]>([]);
+  const [metrics, setMetrics] = useState({ latency: 42, throughput: 12847, uptime: 99.99 });
+
+  useEffect(() => {
+    let packetId = 0;
+    const interval = setInterval(() => {
+      setDataPackets(prev => {
+        const newPackets = [...prev, { id: packetId++, path: Math.floor(Math.random() * 3) }];
+        return newPackets.slice(-8);
+      });
+    }, 800);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMetrics({
+        latency: 35 + Math.floor(Math.random() * 20),
+        throughput: 12000 + Math.floor(Math.random() * 2000),
+        uptime: 99.99,
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const nodes = [
+    { id: "client", label: "Clients", icon: Users, x: 10, y: 50, color: "blue" },
+    { id: "gateway", label: "API Gateway", icon: Radio, x: 30, y: 50, color: "cyan" },
+    { id: "websocket", label: "WebSocket", icon: Wifi, x: 50, y: 25, color: "purple" },
+    { id: "kafka", label: "Kafka", icon: Activity, x: 50, y: 75, color: "orange" },
+    { id: "dashboard", label: "Dashboard", icon: Monitor, x: 75, y: 50, color: "emerald" },
+  ];
+
+  const colorMap: Record<string, string> = {
+    blue: "from-blue-500 to-blue-600",
+    cyan: "from-cyan-500 to-cyan-600",
+    purple: "from-purple-500 to-purple-600",
+    orange: "from-orange-500 to-orange-600",
+    emerald: "from-emerald-500 to-emerald-600",
+  };
+
+  return (
+    <div className="relative w-full max-w-4xl mx-auto">
+      <motion.div
+        className="rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-2xl p-6"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-slate-600 to-slate-700">
+              <Cpu className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Real-Time Infrastructure</h3>
+              <p className="text-xs text-white/60">Live data flow visualization</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <div className="text-lg font-bold text-cyan-400">{metrics.latency}ms</div>
+              <div className="text-xs text-white/40">Latency</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-emerald-400">{metrics.throughput.toLocaleString()}</div>
+              <div className="text-xs text-white/40">Events/sec</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-purple-400">{metrics.uptime}%</div>
+              <div className="text-xs text-white/40">Uptime</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Visualization */}
+        <div className="relative h-[280px] rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/5 overflow-hidden">
+          {/* Grid background */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:30px_30px]" />
+
+          {/* Connection lines */}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            {/* Client to Gateway */}
+            <line x1="15" y1="50" x2="28" y2="50" stroke="currentColor" strokeWidth="0.3" className="text-white/20" />
+            {/* Gateway to WebSocket */}
+            <line x1="35" y1="48" x2="47" y2="28" stroke="currentColor" strokeWidth="0.3" className="text-white/20" />
+            {/* Gateway to Kafka */}
+            <line x1="35" y1="52" x2="47" y2="72" stroke="currentColor" strokeWidth="0.3" className="text-white/20" />
+            {/* WebSocket to Dashboard */}
+            <line x1="55" y1="28" x2="70" y2="48" stroke="currentColor" strokeWidth="0.3" className="text-white/20" />
+            {/* Kafka to Dashboard */}
+            <line x1="55" y1="72" x2="70" y2="52" stroke="currentColor" strokeWidth="0.3" className="text-white/20" />
+          </svg>
+
+          {/* Data packets animation */}
+          <AnimatePresence>
+            {dataPackets.map((packet) => {
+              const paths = [
+                { start: { x: 15, y: 50 }, end: { x: 75, y: 50 }, via: [{ x: 32, y: 50 }, { x: 50, y: 25 }] },
+                { start: { x: 15, y: 50 }, end: { x: 75, y: 50 }, via: [{ x: 32, y: 50 }, { x: 50, y: 75 }] },
+                { start: { x: 15, y: 50 }, end: { x: 75, y: 50 }, via: [{ x: 32, y: 50 }, { x: 50, y: 50 }] },
+              ];
+              const path = paths[packet.path];
+              return (
+                <motion.div
+                  key={packet.id}
+                  className="absolute w-2 h-2 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50"
+                  initial={{ left: `${path.start.x}%`, top: `${path.start.y}%`, opacity: 0, scale: 0 }}
+                  animate={{
+                    left: [`${path.start.x}%`, `${path.via[0].x}%`, `${path.via[1].x}%`, `${path.end.x}%`],
+                    top: [`${path.start.y}%`, `${path.via[0].y}%`, `${path.via[1].y}%`, `${path.end.y}%`],
+                    opacity: [0, 1, 1, 0],
+                    scale: [0, 1, 1, 0],
+                  }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
+                />
+              );
+            })}
+          </AnimatePresence>
+
+          {/* Nodes */}
+          {nodes.map((node, index) => (
+            <motion.div
+              key={node.id}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${node.x}%`, top: `${node.y}%` }}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <motion.div
+                className={cn(
+                  "relative flex flex-col items-center gap-1 p-3 rounded-xl bg-gradient-to-br border border-white/10",
+                  colorMap[node.color]
+                )}
+                whileHover={{ scale: 1.1 }}
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 2 + index * 0.3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <node.icon className="h-5 w-5 text-white" />
+                <span className="text-[10px] font-medium text-white whitespace-nowrap">{node.label}</span>
+                {/* Pulse effect */}
+                <motion.div
+                  className="absolute inset-0 rounded-xl border-2 border-white/30"
+                  animate={{ scale: [1, 1.3], opacity: [0.5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                />
+              </motion.div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="mt-4 flex items-center justify-center gap-6 text-xs text-white/50">
+          <div className="flex items-center gap-2">
+            <motion.div
+              className="w-2 h-2 rounded-full bg-cyan-400"
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
+            <span>Data Flow</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-0.5 bg-white/20" />
+            <span>Connections</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className="h-3 w-3 text-emerald-400" />
+            <span>All Systems Healthy</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Glow effect */}
+      <div className="absolute -inset-4 bg-gradient-to-r from-slate-500/10 via-cyan-500/10 to-slate-500/10 rounded-3xl blur-3xl -z-10" />
+    </div>
+  );
+}
+
+// ============================================================================
 // TECHNICAL SECTION
 // ============================================================================
 function TechnicalSection() {
@@ -941,50 +1892,80 @@ function TechnicalSection() {
     {
       icon: Wifi,
       title: "WebSocket Real-Time",
-      description: "Sub-100ms latency for live metrics and controls via WebSocket connections",
+      description: "Sub-100ms latency for live metrics and controls",
+      stat: "<100ms",
+      gradient: "from-cyan-500 to-blue-500",
     },
     {
       icon: Cpu,
       title: "Scalable Architecture",
-      description: "Redis Pub/Sub and Kafka for handling millions of concurrent events",
+      description: "Redis Pub/Sub and Kafka for millions of events",
+      stat: "10M+",
+      gradient: "from-purple-500 to-pink-500",
     },
     {
       icon: Activity,
       title: "GraphQL Subscriptions",
-      description: "Live data streaming via GraphQL subscriptions for instant dashboard updates",
+      description: "Live data streaming for instant updates",
+      stat: "Real-time",
+      gradient: "from-emerald-500 to-green-500",
     },
     {
       icon: Shield,
       title: "Circuit Breakers",
-      description: "Automatic fallbacks prevent cascade failures across services",
+      description: "Automatic fallbacks prevent cascade failures",
+      stat: "99.99%",
+      gradient: "from-orange-500 to-amber-500",
     },
     {
       icon: RefreshCw,
       title: "Crash Recovery",
-      description: "Pending approvals persisted to Redis—no data lost on restarts",
+      description: "Pending approvals persisted to Redis",
+      stat: "0 Loss",
+      gradient: "from-blue-500 to-indigo-500",
     },
     {
       icon: Timer,
       title: "15s Polling Cycle",
-      description: "Dashboard refreshes every 15 seconds with optimistic UI updates",
+      description: "Dashboard refreshes with optimistic UI",
+      stat: "15sec",
+      gradient: "from-rose-500 to-red-500",
     },
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
+    <section className="py-24 bg-gradient-to-b from-background via-slate-950/50 to-background relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 -z-10">
+        <motion.div
+          className="absolute top-1/4 left-0 w-[600px] h-[600px] bg-slate-500/5 rounded-full blur-[180px]"
+          animate={{ x: [0, 30, 0], scale: [1, 1.1, 1] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[150px]"
+          animate={{ x: [0, -30, 0], scale: [1, 1.15, 1] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+
+      {/* Grid pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.02)_1px,transparent_1px)] bg-[size:40px_40px] -z-5" />
+
       <div className="container mx-auto px-4 md:px-6" ref={ref}>
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={fadeInUp}
-          className="text-center max-w-3xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-12"
         >
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 rounded-full border border-slate-500/20">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-sm font-medium bg-slate-500/10 text-slate-400 rounded-full border border-slate-500/20">
+            <Cpu className="h-4 w-4" />
             Enterprise-Grade
           </span>
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
             Built for{" "}
-            <span className="bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-300 dark:to-slate-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-slate-300 to-slate-500 bg-clip-text text-transparent">
               Production Scale
             </span>
           </h2>
@@ -994,26 +1975,47 @@ function TechnicalSection() {
           </p>
         </motion.div>
 
+        {/* Infrastructure Visualization */}
+        <motion.div
+          initial={{ opacity: 0, y: 60 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mb-16"
+        >
+          <InfrastructureVisualization />
+        </motion.div>
+
+        {/* Feature Grid */}
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={staggerContainer}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto"
         >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={fadeInUp}
-              className="p-6 rounded-2xl border bg-card hover:shadow-lg transition-all"
+              whileHover={{ scale: 1.02, y: -2 }}
+              className="group"
             >
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center shrink-0">
-                  <feature.icon className="h-6 w-6 text-slate-600 dark:text-slate-300" />
+              <div className="h-full p-5 rounded-xl border border-white/5 bg-white/[0.02] backdrop-blur-sm hover:border-white/10 hover:bg-white/[0.04] transition-all">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={cn(
+                    "h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center",
+                    feature.gradient
+                  )}>
+                    <feature.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <span className={cn(
+                    "text-sm font-bold bg-gradient-to-r bg-clip-text text-transparent",
+                    feature.gradient
+                  )}>
+                    {feature.stat}
+                  </span>
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-1">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </div>
+                <h3 className="font-semibold text-white/90 mb-1">{feature.title}</h3>
+                <p className="text-sm text-white/50">{feature.description}</p>
               </div>
             </motion.div>
           ))}
