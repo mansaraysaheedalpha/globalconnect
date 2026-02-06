@@ -1,8 +1,7 @@
 // src/app/(attendee)/attendee/events/[eventId]/networking/page.tsx
 "use client";
 
-import * as React from "react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,28 +10,23 @@ import { Badge } from "@/components/ui/badge";
 import {
   PageTransition,
   PremiumCard,
-  SectionHeader,
 } from "@/components/ui/premium-components";
 import { RecommendationsPanel } from "@/components/features/recommendations";
 import { ProximityContainer } from "@/components/features/proximity";
 import { SuggestionsBell } from "@/components/features/suggestions";
-import { useAuthStore } from "@/store/auth.store";
+import { ConnectionsList } from "@/components/features/networking/connections-list";
 import {
   ArrowLeft,
   Sparkles,
   Users,
   MapPin,
-  MessageSquare,
   Loader2,
-  UserPlus,
-  Search,
 } from "lucide-react";
 
 export default function NetworkingPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState("recommended");
 
   // Handler for ping action (via proximity service)
@@ -136,10 +130,11 @@ export default function NetworkingPage() {
 
         {/* My Connections Tab */}
         <TabsContent value="connections" className="mt-6">
-          <ConnectionsPlaceholder
+          <ConnectionsList
             eventId={eventId}
-            onStartChat={handleStartChat}
+            onMessage={handleStartChat}
             onViewProfile={handleViewProfile}
+            onSwitchToRecommended={() => setActiveTab("recommended")}
           />
         </TabsContent>
 
@@ -152,47 +147,6 @@ export default function NetworkingPage() {
         </TabsContent>
       </Tabs>
     </PageTransition>
-  );
-}
-
-/**
- * Placeholder for connections section.
- * Shows empty state with call-to-action to make connections.
- */
-function ConnectionsPlaceholder({
-  eventId,
-  onStartChat,
-  onViewProfile,
-}: {
-  eventId: string;
-  onStartChat: (userId: string, userName: string) => void;
-  onViewProfile: (userId: string) => void;
-}) {
-  // In a full implementation, this would use a hook to fetch connections
-  // For now, show a helpful empty state
-  return (
-    <PremiumCard variant="outline" padding="lg" className="text-center">
-      <div className="p-4 w-fit mx-auto rounded-full bg-primary/10 mb-4">
-        <UserPlus className="h-10 w-10 text-primary" />
-      </div>
-      <h3 className="text-lg font-semibold">Build Your Network</h3>
-      <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-        Connect with other attendees to build lasting professional relationships.
-        Check out the AI Recommended tab to find great matches!
-      </p>
-      <div className="flex items-center justify-center gap-3 mt-6">
-        <Button variant="outline" className="gap-2" asChild>
-          <Link href={`/attendee/events/${eventId}/attendees`}>
-            <Search className="h-4 w-4" />
-            Browse Attendees
-          </Link>
-        </Button>
-        <Button variant="premium" className="gap-2">
-          <Sparkles className="h-4 w-4" />
-          View AI Matches
-        </Button>
-      </div>
-    </PremiumCard>
   );
 }
 
