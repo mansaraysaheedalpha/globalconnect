@@ -110,6 +110,7 @@ export const useRecommendations = ({
   const lastRefreshRef = useRef<number>(0);
   const fetchedRef = useRef<boolean>(false);
   const lastFetchTimeRef = useRef<number>(0);
+  const autoRefreshAttemptedRef = useRef<boolean>(false);
 
   // Get the API base URL
   const getApiUrl = useCallback(() => {
@@ -328,6 +329,25 @@ export const useRecommendations = ({
       fetchRecommendations();
     }
   }, [token, fetchRecommendations]);
+
+  // Auto-recovery: if fetched recommendations are stale (e.g., from before
+  // an LLM fix), trigger a single background refresh to get fresh data.
+  // Uses refresh=true to bypass both frontend and backend caches.
+  useEffect(() => {
+    if (
+      !state.isLoading &&
+      !state.isRefreshing &&
+      state.recommendations.length > 0 &&
+      state.generatedAt &&
+      !autoRefreshAttemptedRef.current
+    ) {
+      const ageMs = Date.now() - state.generatedAt.getTime();
+      if (ageMs > STALE_TIME_MS) {
+        autoRefreshAttemptedRef.current = true;
+        fetchRecommendations({ refresh: true });
+      }
+    }
+  }, [state.isLoading, state.isRefreshing, state.recommendations.length, state.generatedAt, fetchRecommendations]);
 
   return {
     // State
