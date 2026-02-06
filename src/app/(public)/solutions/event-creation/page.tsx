@@ -1405,9 +1405,8 @@ function CTASection() {
             <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
               Ready to Create Your{" "}
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Next Event
+                Next Event?
               </span>
-              ?
             </h2>
 
             <p className="text-lg md:text-xl text-neutral-300 mb-10 max-w-2xl mx-auto">
@@ -1436,8 +1435,7 @@ function CTASection() {
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="border-white/30 text-white hover:bg-white/10 h-14 px-8 text-lg"
+              className="bg-white/10 border border-white/30 text-white hover:bg-white/20 hover:border-white/50 h-14 px-8 text-lg backdrop-blur-sm"
               asChild
             >
               <Link href="/events">
