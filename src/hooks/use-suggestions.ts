@@ -38,9 +38,7 @@ export interface CircleSuggestion {
 
 export type Suggestion = ConnectionSuggestion | CircleSuggestion;
 
-interface SuggestionWithReadState extends Suggestion {
-  read: boolean;
-}
+type SuggestionWithReadState = Suggestion & { read: boolean };
 
 interface UseSuggestionsOptions {
   eventId: string;
@@ -205,7 +203,7 @@ export const useSuggestions = ({
   }, []);
 
   // Strip read state from returned suggestions
-  const publicSuggestions = suggestions.map(({ read, ...s }) => s);
+  const publicSuggestions: Suggestion[] = suggestions.map(({ read, ...s }) => s as Suggestion);
 
   return {
     suggestions: publicSuggestions,

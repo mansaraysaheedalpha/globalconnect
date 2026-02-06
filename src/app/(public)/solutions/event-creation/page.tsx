@@ -42,6 +42,9 @@ import {
   Database,
   CircleDot,
   CheckCircle2,
+  Gift,
+  Lock,
+  PhoneCall,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

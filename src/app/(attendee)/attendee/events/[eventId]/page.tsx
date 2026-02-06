@@ -72,6 +72,14 @@ import { SessionSocketProvider } from "@/context/SessionSocketContext";
 import { ReactionBar } from "@/components/features/reaction-bar";
 import { FloatingReactions } from "@/components/features/floating-reactions";
 import { useSessionReactions } from "@/hooks/use-session-reactions";
+import { RecommendationsPanel } from "@/components/features/recommendations";
+import { SuggestionsBell } from "@/components/features/suggestions";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown, Sparkles } from "lucide-react";
 
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
@@ -1060,15 +1068,37 @@ export default function AttendeeEventPage() {
     }, 100);
   }, [targetSessionId, autoJoin, joinSource, sessions, hasProcessedAutoJoin, event.virtualSettings]);
 
+  // Handler for ping action
+  const handlePing = async (userId: string, message?: string) => {
+    console.log("[AttendeeEventPage] Ping user:", userId, message);
+  };
+
+  // Handler for starting a DM conversation
+  const handleStartChat = (userId: string, userName: string) => {
+    window.dispatchEvent(
+      new CustomEvent("start-dm-chat", { detail: { userId, userName } })
+    );
+  };
+
   return (
     <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
-      {/* Back Button */}
-      <Link href="/attendee">
-        <Button variant="ghost" className="mb-4 gap-2 hover:-translate-x-1 transition-transform">
-          <ArrowLeft className="h-4 w-4" />
-          Back to My Events
-        </Button>
-      </Link>
+      {/* Header with Back Button and Suggestions Bell */}
+      <div className="flex items-center justify-between mb-4">
+        <Link href="/attendee">
+          <Button variant="ghost" className="gap-2 hover:-translate-x-1 transition-transform">
+            <ArrowLeft className="h-4 w-4" />
+            Back to My Events
+          </Button>
+        </Link>
+        <SuggestionsBell
+          eventId={eventId}
+          onViewProfile={(userId) => {
+            // Navigate to user profile
+            window.location.href = `/attendee/events/${eventId}/attendees/${userId}`;
+          }}
+          onStartChat={handleStartChat}
+        />
+      </div>
 
       {/* Event Header */}
       <PremiumCard variant="elevated" padding="none" className="overflow-hidden mb-6">
@@ -1227,6 +1257,41 @@ export default function AttendeeEventPage() {
           variant="featured"
           limit={3}
         />
+      </section>
+
+      {/* People You Should Meet - AI Networking Recommendations */}
+      <section className="mb-8">
+        <Collapsible defaultOpen={false} className="border rounded-lg bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-pink-500/5">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/30 transition-colors group">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              <span className="font-semibold">People You Should Meet</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                AI Powered
+              </Badge>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-4 pt-0 space-y-4">
+              <RecommendationsPanel
+                eventId={eventId}
+                onPing={handlePing}
+                onStartChat={handleStartChat}
+              />
+              <div className="text-center pt-2">
+                <Link href={`/attendee/events/${eventId}/networking`}>
+                  <Button variant="link" className="gap-2 text-amber-600 hover:text-amber-700">
+                    View All Networking Options
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </section>
 
       {/* Sessions */}
