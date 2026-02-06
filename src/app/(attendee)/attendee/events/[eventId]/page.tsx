@@ -940,6 +940,46 @@ export default function AttendeeEventPage() {
       }));
   }, [attendeesData]);
 
+  // Auto-join effect for deep links - MUST be before early returns to maintain hook order
+  React.useEffect(() => {
+    // Guard against undefined data during loading
+    if (!data?.event || loading) return;
+
+    const sessions: Session[] = data.publicSessionsByEvent || [];
+    const event: Event = data.event;
+
+    if (!targetSessionId || hasProcessedAutoJoin || sessions.length === 0) return;
+
+    const session = sessions.find(s => s.id === targetSessionId);
+    if (!session) return;
+
+    // Mark as processed to avoid re-triggering
+    setHasProcessedAutoJoin(true);
+
+    // Track analytics
+    if (joinSource) {
+      console.log('[Analytics] session_join_attempt', { sessionId: targetSessionId, source: joinSource });
+    }
+
+    // Auto-join for virtual sessions
+    if (autoJoin) {
+      const effectiveStreamingUrl = session.streamingUrl || event.virtualSettings?.streamingUrl;
+      const hasRecording = session.status === 'ENDED' && !!session.recordingUrl;
+      const isLiveOrUpcoming = session.status === 'LIVE' || session.status === 'UPCOMING';
+
+      if ((isLiveOrUpcoming && effectiveStreamingUrl) || hasRecording) {
+        setAutoJoinSession(session);
+        setShowAutoJoinSession(true);
+      }
+    }
+
+    // Scroll to the target session card
+    setTimeout(() => {
+      const element = document.getElementById(`session-card-${targetSessionId}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [data, targetSessionId, autoJoin, joinSource, hasProcessedAutoJoin, loading]);
+
   if (loading) {
     return (
       <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto animate-fade-in">
@@ -1033,40 +1073,6 @@ export default function AttendeeEventPage() {
   const liveSessions = sortedSessions.filter((s) => s.status === "LIVE");
   const upcomingSessions = sortedSessions.filter((s) => s.status === "UPCOMING");
   const endedSessions = sortedSessions.filter((s) => s.status === "ENDED");
-
-  // Auto-join effect for deep links
-  React.useEffect(() => {
-    if (!targetSessionId || hasProcessedAutoJoin || sessions.length === 0) return;
-
-    const session = sessions.find(s => s.id === targetSessionId);
-    if (!session) return;
-
-    // Mark as processed to avoid re-triggering
-    setHasProcessedAutoJoin(true);
-
-    // Track analytics
-    if (joinSource) {
-      console.log('[Analytics] session_join_attempt', { sessionId: targetSessionId, source: joinSource });
-    }
-
-    // Auto-join for virtual sessions
-    if (autoJoin) {
-      const effectiveStreamingUrl = session.streamingUrl || event.virtualSettings?.streamingUrl;
-      const hasRecording = session.status === 'ENDED' && !!session.recordingUrl;
-      const isLiveOrUpcoming = session.status === 'LIVE' || session.status === 'UPCOMING';
-
-      if ((isLiveOrUpcoming && effectiveStreamingUrl) || hasRecording) {
-        setAutoJoinSession(session);
-        setShowAutoJoinSession(true);
-      }
-    }
-
-    // Scroll to the target session card
-    setTimeout(() => {
-      const element = document.getElementById(`session-card-${targetSessionId}`);
-      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-  }, [targetSessionId, autoJoin, joinSource, sessions, hasProcessedAutoJoin, event.virtualSettings]);
 
   // Handler for ping action
   const handlePing = async (userId: string, message?: string) => {
