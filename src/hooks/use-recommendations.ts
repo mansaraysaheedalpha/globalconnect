@@ -111,11 +111,11 @@ export const useRecommendations = ({
   const fetchedRef = useRef<boolean>(false);
   const lastFetchTimeRef = useRef<number>(0);
 
-  // Get the API base URL (includes /events path)
+  // Get the API base URL
   const getApiUrl = useCallback(() => {
-    return (
-      process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002/events"
-    );
+    const baseUrl = process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:3002";
+    // Ensure we have the /events path
+    return baseUrl.endsWith('/events') ? baseUrl : `${baseUrl}/events`;
   }, []);
 
   // Fetch with authentication
