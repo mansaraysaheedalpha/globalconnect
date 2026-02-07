@@ -61,7 +61,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
-import { FloatingDMButton } from "@/components/features/dm";
+import { FloatingDMButton, DMContainer } from "@/components/features/dm";
 import { OfferGrid } from "@/components/features/offers";
 import { AdContainer } from "@/components/features/ads/ad-container";
 import { ProximityContainer } from "@/components/features/proximity";
@@ -980,6 +980,21 @@ export default function AttendeeEventPage() {
     }, 100);
   }, [data, targetSessionId, autoJoin, joinSource, hasProcessedAutoJoin, loading]);
 
+  // Handle DM chat query parameters
+  React.useEffect(() => {
+    const chatUserId = searchParams.get('chat');
+    const chatUserName = searchParams.get('name');
+
+    if (chatUserId && chatUserName) {
+      // Dispatch custom event to open DM with this user
+      window.dispatchEvent(
+        new CustomEvent("start-dm-chat", {
+          detail: { userId: chatUserId, userName: chatUserName }
+        })
+      );
+    }
+  }, [searchParams]);
+
   if (loading) {
     return (
       <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto animate-fade-in">
@@ -1088,6 +1103,9 @@ export default function AttendeeEventPage() {
 
   return (
     <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
+      {/* DM Container - listens for start-dm-chat events */}
+      <DMContainer eventId={eventId} />
+
       {/* Header with Back Button and Suggestions Bell */}
       <div className="flex items-center justify-between mb-4">
         <Link href="/attendee">
