@@ -1284,7 +1284,6 @@ export default function AttendeeEventPage() {
             <div className="p-4 pt-0 space-y-4">
               <RecommendationsPanel
                 eventId={eventId}
-                onPing={handlePing}
                 onStartChat={handleStartChat}
               />
               <div className="text-center pt-2">

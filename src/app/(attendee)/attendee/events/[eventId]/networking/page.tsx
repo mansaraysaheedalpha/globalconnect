@@ -141,7 +141,6 @@ export default function NetworkingPage() {
           </div>
           <RecommendationsPanel
             eventId={eventId}
-            onPing={handlePing}
             onStartChat={handleStartChat}
           />
         </TabsContent>

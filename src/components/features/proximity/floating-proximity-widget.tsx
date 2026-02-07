@@ -414,7 +414,6 @@ export const FloatingProximityWidget = ({
               <TabsContent value="for-you" className="flex-1 overflow-auto mt-0 p-4">
                 <RecommendationsPanel
                   eventId={eventId}
-                  onPing={(userId, message) => onSendPing(userId, message)}
                   onStartChat={onStartChat || (() => {})}
                 />
               </TabsContent>
