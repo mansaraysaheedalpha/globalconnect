@@ -13,13 +13,11 @@ import {
   Linkedin,
   Github,
   Twitter,
-  Send,
 } from "lucide-react";
 import { Recommendation } from "@/hooks/use-recommendations";
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
-  onPing: (userId: string, message?: string) => void;
   onStartChat: (userId: string, userName: string) => void;
   onConnect?: (userId: string) => void;
   onViewed?: (recommendationId: string) => void;
@@ -29,8 +27,7 @@ interface RecommendationCardProps {
  * RecommendationCard displays an AI-recommended connection with:
  * - User info and match score
  * - Why they should connect (LLM-generated reasons)
- * - Conversation starters
- * - Actions: Ping, Chat
+ * - Actions: Connect, Chat
  *
  * Security:
  * - All text content is rendered safely (no dangerouslySetInnerHTML)
@@ -38,13 +35,12 @@ interface RecommendationCardProps {
  */
 export const RecommendationCard = ({
   recommendation,
-  onPing,
   onStartChat,
   onConnect,
   onViewed,
 }: RecommendationCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { user, matchScore, reasons, conversationStarters, viewed, pinged, connected } = recommendation;
+  const { user, matchScore, reasons, conversationStarters, viewed, connected } = recommendation;
 
   // Get initials for avatar fallback
   const getInitials = (name: string): string => {
@@ -63,19 +59,6 @@ export const RecommendationCard = ({
     }
     setIsExpanded(!isExpanded);
   }, [isExpanded, viewed, recommendation.id, onViewed]);
-
-  // Handle ping with conversation starter
-  const handlePingWithStarter = useCallback(
-    (starter: string) => {
-      onPing(user.id, starter);
-    },
-    [onPing, user.id]
-  );
-
-  // Handle plain ping
-  const handlePing = useCallback(() => {
-    onPing(user.id);
-  }, [onPing, user.id]);
 
   // Handle start chat
   const handleStartChat = useCallback(() => {
@@ -193,30 +176,6 @@ export const RecommendationCard = ({
                 {reason}
               </p>
             ))}
-
-            {/* Conversation Starters */}
-            {conversationStarters.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Conversation Starters
-                </p>
-                {conversationStarters.map((starter, i) => (
-                  <button
-                    key={i}
-                    className="w-full p-2.5 bg-background border rounded-md text-sm text-left
-                             hover:border-primary hover:bg-primary/5 transition-colors
-                             focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    onClick={() => handlePingWithStarter(starter)}
-                    aria-label={`Send ping with message: ${starter}`}
-                  >
-                    <span className="flex items-start gap-2">
-                      <Send className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                      <span>"{starter}"</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -255,15 +214,6 @@ export const RecommendationCard = ({
                 {connected ? "Connected ✓" : "Connect"}
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePing}
-              disabled={pinged}
-              aria-label={pinged ? "Already pinged" : "Send ping"}
-            >
-              {pinged ? "Pinged" : "Ping"}
-            </Button>
             <Button size="sm" onClick={handleStartChat}>
               <MessageCircle className="h-4 w-4 mr-1" />
               Chat

@@ -11,7 +11,6 @@ import { RecommendationCard } from "./recommendation-card";
 
 interface RecommendationsPanelProps {
   eventId: string;
-  onPing: (userId: string, message?: string) => void;
   onStartChat: (userId: string, userName: string) => void;
 }
 
@@ -32,7 +31,6 @@ interface RecommendationsPanelProps {
  */
 export const RecommendationsPanel = ({
   eventId,
-  onPing,
   onStartChat,
 }: RecommendationsPanelProps) => {
   const {
@@ -44,23 +42,9 @@ export const RecommendationsPanel = ({
     isStale,
     refresh,
     markViewed,
-    markPinged,
     markConnected,
     clearError,
   } = useRecommendations({ eventId });
-
-  // Handle ping with tracking
-  const handlePing = useCallback(
-    async (userId: string, message?: string) => {
-      // Find the recommendation for this user
-      const rec = recommendations.find((r) => r.user.id === userId);
-      if (rec) {
-        await markPinged(rec.id);
-      }
-      onPing(userId, message);
-    },
-    [recommendations, markPinged, onPing]
-  );
 
   // Handle viewed tracking
   const handleViewed = useCallback(
@@ -164,7 +148,6 @@ export const RecommendationsPanel = ({
           <div key={rec.id} role="listitem">
             <RecommendationCard
               recommendation={rec}
-              onPing={handlePing}
               onStartChat={onStartChat}
               onConnect={handleConnect}
               onViewed={handleViewed}
