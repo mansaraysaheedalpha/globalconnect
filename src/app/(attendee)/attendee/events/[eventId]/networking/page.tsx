@@ -16,6 +16,7 @@ import { ProximityContainer } from "@/components/features/proximity";
 import { PingNotificationsContainer } from "@/components/features/proximity/ping-notification";
 import { SuggestionsBell } from "@/components/features/suggestions";
 import { ConnectionsList } from "@/components/features/networking/connections-list";
+import { DMContainer } from "@/components/features/dm";
 import { useProximity } from "@/hooks/use-proximity";
 import {
   ArrowLeft,
@@ -61,6 +62,9 @@ export default function NetworkingPage() {
 
   return (
     <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
+      {/* DM Container - listens for start-dm-chat events */}
+      <DMContainer eventId={eventId} />
+
       {/* Incoming ping notifications - visible on all tabs */}
       <PingNotificationsContainer
         pings={receivedPings}
