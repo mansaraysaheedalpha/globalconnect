@@ -1,8 +1,10 @@
 // src/app/(attendee)/attendee/events/[eventId]/networking/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@apollo/client";
+import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/public.graphql";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +33,25 @@ export default function NetworkingPage() {
   const router = useRouter();
   const eventId = params.eventId as string;
   const [activeTab, setActiveTab] = useState("recommended");
+
+  // Fetch event attendees for DM functionality
+  const { data: attendeesData } = useQuery(GET_EVENT_ATTENDEES_QUERY, {
+    variables: { eventId },
+    skip: !eventId,
+  });
+
+  const availableUsers = useMemo(() => {
+    if (!attendeesData?.eventAttendees) return [];
+
+    return attendeesData.eventAttendees
+      .filter((reg: any) => reg.user) // Only users with accounts
+      .map((reg: any) => ({
+        id: reg.user.id,
+        firstName: reg.user.first_name,
+        lastName: reg.user.last_name,
+        avatar: reg.user.imageUrl
+      }));
+  }, [attendeesData]);
 
   // WebSocket connection for sending/receiving pings across all tabs
   const { sendPing, receivedPings, dismissPing } = useProximity({
@@ -63,7 +84,7 @@ export default function NetworkingPage() {
   return (
     <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
       {/* DM Container - listens for start-dm-chat events */}
-      <DMContainer eventId={eventId} />
+      <DMContainer eventId={eventId} availableUsers={availableUsers} />
 
       {/* Incoming ping notifications - visible on all tabs */}
       <PingNotificationsContainer
