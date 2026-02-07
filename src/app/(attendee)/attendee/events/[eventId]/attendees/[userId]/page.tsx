@@ -102,7 +102,17 @@ export default function UserProfilePage() {
 
   const handleStartChat = () => {
     if (profile) {
-      router.push(`/attendee/events/${eventId}?chat=${userId}&name=${encodeURIComponent(profile.name || "User")}`);
+      // Dispatch custom event to open DM with this user
+      window.dispatchEvent(
+        new CustomEvent("start-dm-chat", {
+          detail: {
+            userId: userId,
+            userName: profile.name || "User",
+          },
+        })
+      );
+      // Navigate back to event page where DM container is available
+      router.push(`/attendee/events/${eventId}`);
     }
   };
 
