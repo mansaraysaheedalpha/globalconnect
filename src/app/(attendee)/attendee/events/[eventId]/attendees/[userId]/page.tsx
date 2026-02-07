@@ -90,7 +90,8 @@ export default function UserProfilePage() {
     fetchProfile();
   }, [userId, token]);
 
-  const getInitials = (name: string): string => {
+  const getInitials = (name?: string): string => {
+    if (!name) return "??";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -101,7 +102,7 @@ export default function UserProfilePage() {
 
   const handleStartChat = () => {
     if (profile) {
-      router.push(`/attendee/events/${eventId}?chat=${userId}&name=${encodeURIComponent(profile.name)}`);
+      router.push(`/attendee/events/${eventId}?chat=${userId}&name=${encodeURIComponent(profile.name || "User")}`);
     }
   };
 
@@ -142,14 +143,14 @@ export default function UserProfilePage() {
         <CardContent className="pt-6">
           <div className="flex items-start gap-6">
             <Avatar className="h-24 w-24 shrink-0">
-              <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+              <AvatarImage src={profile.avatarUrl} alt={profile.name || "User"} />
               <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                 {getInitials(profile.name)}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold mb-1">{profile.name}</h1>
+              <h1 className="text-2xl font-bold mb-1">{profile.name || "Anonymous User"}</h1>
               {profile.headline && (
                 <p className="text-lg text-muted-foreground mb-2">{profile.headline}</p>
               )}
