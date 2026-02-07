@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/premium-components";
 import { RecommendationsPanel } from "@/components/features/recommendations";
 import { ProximityContainer } from "@/components/features/proximity";
+import { PingNotificationsContainer } from "@/components/features/proximity/ping-notification";
 import { SuggestionsBell } from "@/components/features/suggestions";
 import { ConnectionsList } from "@/components/features/networking/connections-list";
+import { useProximity } from "@/hooks/use-proximity";
 import {
   ArrowLeft,
   Sparkles,
@@ -29,10 +31,18 @@ export default function NetworkingPage() {
   const eventId = params.eventId as string;
   const [activeTab, setActiveTab] = useState("recommended");
 
-  // Handler for ping action (via proximity service)
+  // WebSocket connection for sending/receiving pings across all tabs
+  const { sendPing, receivedPings, dismissPing } = useProximity({
+    eventId,
+    autoStart: false,
+  });
+
+  // Handler for ping action - sends via WebSocket to the target user
   const handlePing = async (userId: string, message?: string) => {
-    // This would integrate with the proximity ping API
-    console.log("[Networking] Ping user:", userId, message);
+    const success = await sendPing(userId, message);
+    if (!success) {
+      console.warn("[Networking] Ping failed to send - WebSocket may not be connected");
+    }
   };
 
   // Handler for starting a DM conversation
@@ -51,6 +61,14 @@ export default function NetworkingPage() {
 
   return (
     <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
+      {/* Incoming ping notifications - visible on all tabs */}
+      <PingNotificationsContainer
+        pings={receivedPings}
+        onDismiss={dismissPing}
+        onStartChat={handleStartChat}
+        position="top-right"
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
