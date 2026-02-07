@@ -34,6 +34,7 @@ export const GET_EVENT_ATTENDEES_QUERY = gql`
         first_name
         last_name
         email
+        imageUrl
       }
     }
   }

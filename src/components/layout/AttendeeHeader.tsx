@@ -31,6 +31,10 @@ export function AttendeeHeader({ onOpenSidebar }: AttendeeHeaderProps) {
     router.push("/auth/login");
   };
 
+  // Extract eventId from pathname if on an event page
+  const eventIdMatch = pathname.match(/\/attendee\/events\/([^/]+)/);
+  const eventId = eventIdMatch ? eventIdMatch[1] : undefined;
+
   // Get page title based on pathname
   const getPageTitle = () => {
     if (pathname === "/attendee") return "My Events";

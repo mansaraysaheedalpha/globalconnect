@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client";
 import { usePathname } from "next/navigation";
-import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/public.graphql";
+import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/registrations.graphql";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AttendeeSidebar } from "@/components/layout/AttendeeSidebar";
 import { AttendeeHeader } from "@/components/layout/AttendeeHeader";
