@@ -16,7 +16,6 @@ import { UserAvatar } from "../ui/user-avatar";
 import Link from "next/link";
 import { ExternalLink, Settings, LogOut, Menu } from "lucide-react";
 import { NotificationBellOnly } from "@/components/features/notifications/notifications-container";
-import { HeaderDMButton } from "@/components/features/dm";
 
 type AttendeeHeaderProps = {
   onOpenSidebar?: () => void;
@@ -26,10 +25,6 @@ export function AttendeeHeader({ onOpenSidebar }: AttendeeHeaderProps) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
-
-  // Extract eventId from pathname if on an event page
-  const eventIdMatch = pathname.match(/\/attendee\/events\/([^/]+)/);
-  const eventId = eventIdMatch ? eventIdMatch[1] : undefined;
 
   const handleLogout = () => {
     logout();
@@ -73,9 +68,6 @@ export function AttendeeHeader({ onOpenSidebar }: AttendeeHeaderProps) {
           role="navigation"
           aria-label="User actions"
         >
-          {/* Direct Messages - with eventId if on event page */}
-          <HeaderDMButton eventId={eventId} />
-
           {/* Notifications Bell - with eventId if on event page */}
           <NotificationBellOnly eventId={eventId} />
 

@@ -61,7 +61,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
-import { FloatingDMButton, DMContainer } from "@/components/features/dm";
+import { FloatingDMButton } from "@/components/features/dm";
 import { OfferGrid } from "@/components/features/offers";
 import { AdContainer } from "@/components/features/ads/ad-container";
 import { ProximityContainer } from "@/components/features/proximity";
@@ -1103,9 +1103,6 @@ export default function AttendeeEventPage() {
 
   return (
     <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
-      {/* DM Container - listens for start-dm-chat events */}
-      <DMContainer eventId={eventId} availableUsers={availableUsers} />
-
       {/* Header with Back Button and Suggestions Bell */}
       <div className="flex items-center justify-between mb-4">
         <Link href="/attendee">
