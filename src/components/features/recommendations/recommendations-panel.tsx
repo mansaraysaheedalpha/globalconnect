@@ -45,6 +45,7 @@ export const RecommendationsPanel = ({
     refresh,
     markViewed,
     markPinged,
+    markConnected,
     clearError,
   } = useRecommendations({ eventId });
 
@@ -67,6 +68,18 @@ export const RecommendationsPanel = ({
       await markViewed(recommendationId);
     },
     [markViewed]
+  );
+
+  // Handle connect with tracking (triggers AI suggestions)
+  const handleConnect = useCallback(
+    async (userId: string) => {
+      // Find the recommendation for this user
+      const rec = recommendations.find((r) => r.user.id === userId);
+      if (rec) {
+        await markConnected(rec.id);
+      }
+    },
+    [recommendations, markConnected]
   );
 
   // Loading state
@@ -153,6 +166,7 @@ export const RecommendationsPanel = ({
               recommendation={rec}
               onPing={handlePing}
               onStartChat={onStartChat}
+              onConnect={handleConnect}
               onViewed={handleViewed}
             />
           </div>

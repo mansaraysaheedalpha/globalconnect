@@ -21,6 +21,7 @@ interface RecommendationCardProps {
   recommendation: Recommendation;
   onPing: (userId: string, message?: string) => void;
   onStartChat: (userId: string, userName: string) => void;
+  onConnect?: (userId: string) => void;
   onViewed?: (recommendationId: string) => void;
 }
 
@@ -39,10 +40,11 @@ export const RecommendationCard = ({
   recommendation,
   onPing,
   onStartChat,
+  onConnect,
   onViewed,
 }: RecommendationCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { user, matchScore, reasons, conversationStarters, viewed, pinged } = recommendation;
+  const { user, matchScore, reasons, conversationStarters, viewed, pinged, connected } = recommendation;
 
   // Get initials for avatar fallback
   const getInitials = (name: string): string => {
@@ -79,6 +81,13 @@ export const RecommendationCard = ({
   const handleStartChat = useCallback(() => {
     onStartChat(user.id, user.name);
   }, [onStartChat, user.id, user.name]);
+
+  // Handle connect
+  const handleConnect = useCallback(() => {
+    if (onConnect) {
+      onConnect(user.id);
+    }
+  }, [onConnect, user.id]);
 
   // Get match score color
   const getMatchScoreColor = (score: number): string => {
@@ -234,6 +243,18 @@ export const RecommendationCard = ({
           </Button>
 
           <div className="flex items-center gap-2">
+            {onConnect && (
+              <Button
+                variant={connected ? "secondary" : "default"}
+                size="sm"
+                onClick={handleConnect}
+                disabled={connected}
+                aria-label={connected ? "Already connected" : "Mark as connected"}
+                className={connected ? "" : "bg-green-600 hover:bg-green-700 text-white"}
+              >
+                {connected ? "Connected ✓" : "Connect"}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
