@@ -348,7 +348,8 @@ export const SessionItem = ({
     title: session.title,
     startTime: session.startTime,
     endTime: session.endTime,
-    status: showLive ? "LIVE" : showEnded ? "ENDED" : "UPCOMING",
+    // For organizers: if time arrived, treat as LIVE (even without room) so DailySessionView can create it
+    status: (timeArrived && !timePassed) ? "LIVE" : timePassed ? "ENDED" : "UPCOMING",
     sessionType: session.sessionType ?? undefined,
     streamingUrl: session.streamingUrl,
     recordingUrl: session.recordingUrl,
