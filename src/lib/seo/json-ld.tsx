@@ -48,7 +48,7 @@ export function generateOrganizationSchema() {
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'Customer Support',
-      email: 'support@eventdynamics.com',
+      email: 'support@eventdynamics.io',
     },
   };
 }

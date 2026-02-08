@@ -73,7 +73,7 @@ export function VideoControls({
   return (
     <TooltipProvider>
       <div className={cn(
-        "flex items-center justify-center gap-2 p-4 bg-gray-900/95 backdrop-blur-sm rounded-xl",
+        "flex flex-wrap items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-900/95 backdrop-blur-sm rounded-xl",
         className
       )}>
         {/* CPU Load Warning */}
@@ -107,13 +107,13 @@ export function VideoControls({
               size="lg"
               onClick={onToggleMic}
               className={cn(
-                "rounded-full w-12 h-12",
+                "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                 isMicOn
                   ? "bg-gray-700 hover:bg-gray-600 text-white"
                   : "bg-red-600 hover:bg-red-700 text-white"
               )}
             >
-              {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              {isMicOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -129,13 +129,13 @@ export function VideoControls({
               size="lg"
               onClick={onToggleCamera}
               className={cn(
-                "rounded-full w-12 h-12",
+                "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                 isCameraOn
                   ? "bg-gray-700 hover:bg-gray-600 text-white"
                   : "bg-red-600 hover:bg-red-700 text-white"
               )}
             >
-              {isCameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              {isCameraOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -151,13 +151,13 @@ export function VideoControls({
               size="lg"
               onClick={onToggleScreenShare}
               className={cn(
-                "rounded-full w-12 h-12",
+                "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                 isScreenSharing
                   ? "bg-green-600 hover:bg-green-700 text-white"
                   : "bg-gray-700 hover:bg-gray-600 text-white"
               )}
             >
-              {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+              {isScreenSharing ? <MonitorOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -174,7 +174,7 @@ export function VideoControls({
                 size="lg"
                 onClick={onToggleRecording}
                 className={cn(
-                  "rounded-full w-12 h-12",
+                  "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                   isRecording
                     ? "bg-red-600 hover:bg-red-700 text-white animate-pulse"
                     : "bg-gray-700 hover:bg-gray-600 text-white"
@@ -201,13 +201,13 @@ export function VideoControls({
                 size="lg"
                 onClick={onToggleChat}
                 className={cn(
-                  "rounded-full w-12 h-12",
+                  "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                   isChatOpen
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "bg-gray-700 hover:bg-gray-600 text-white"
                 )}
               >
-                <MessageSquare className="w-5 h-5" />
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -225,13 +225,13 @@ export function VideoControls({
                 size="lg"
                 onClick={onToggleCaptions}
                 className={cn(
-                  "rounded-full w-12 h-12",
+                  "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                   isCaptionsOn
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "bg-gray-700 hover:bg-gray-600 text-white"
                 )}
               >
-                <Subtitles className="w-5 h-5" />
+                <Subtitles className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -251,7 +251,7 @@ export function VideoControls({
                     size="lg"
                     className="rounded-full w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white"
                   >
-                    <Gauge className="w-5 h-5" />
+                    <Gauge className="w-4 h-4 sm:w-5 sm:h-5" />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
@@ -293,7 +293,7 @@ export function VideoControls({
               onClick={onLeave}
               className="rounded-full w-12 h-12 bg-red-600 hover:bg-red-700 text-white"
             >
-              <PhoneOff className="w-5 h-5" />
+              <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>

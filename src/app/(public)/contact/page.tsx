@@ -465,33 +465,33 @@ function BookDemoForm() {
               </CardContent>
             </Card>
 
-            {/* Quick Stats */}
+            {/* Platform Highlights */}
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
               <CardContent className="pt-6 space-y-4">
                 <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-semibold">AI-Powered Engagement</p>
+                    <p className="text-sm text-muted-foreground">
+                      Real-time insights and automated interventions
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
                   <Users className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-2xl font-bold">10,000+</p>
+                    <p className="font-semibold">All Event Types</p>
                     <p className="text-sm text-muted-foreground">
-                      Events powered
+                      Virtual, hybrid, and in-person events
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Building2 className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-2xl font-bold">500+</p>
+                    <p className="font-semibold">Enterprise Ready</p>
                     <p className="text-sm text-muted-foreground">
-                      Organizations trust us
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-2xl font-bold">98%</p>
-                    <p className="text-sm text-muted-foreground">
-                      Customer satisfaction
+                      Built for scale with robust security
                     </p>
                   </div>
                 </div>
@@ -504,10 +504,10 @@ function BookDemoForm() {
                 <p className="text-sm text-muted-foreground">
                   Prefer to reach out directly? Email us at{" "}
                   <a
-                    href="mailto:demos@eventdynamics.com"
+                    href="mailto:demos@eventdynamics.io"
                     className="text-primary hover:underline font-medium"
                   >
-                    demos@eventdynamics.com
+                    demos@eventdynamics.io
                   </a>
                 </p>
               </CardContent>
