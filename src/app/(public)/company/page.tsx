@@ -273,7 +273,7 @@ function ChapterBlock({ chapter, index }: { chapter: any; index: number }) {
 
       <div className="container mx-auto px-4 md:px-6 py-24">
         <div className={cn(
-          "grid lg:grid-cols-2 gap-16 items-center",
+          "grid lg:grid-cols-2 gap-8 lg:gap-16 items-center",
           index % 2 === 1 && "lg:grid-flow-col-dense"
         )}>
           {/* Number & Icon */}
@@ -286,7 +286,7 @@ function ChapterBlock({ chapter, index }: { chapter: any; index: number }) {
               index % 2 === 1 && "lg:col-start-2"
             )}
           >
-            <span className="text-[12rem] md:text-[16rem] font-bold text-muted-foreground/10 leading-none select-none">
+            <span className="text-[5rem] sm:text-[8rem] md:text-[12rem] lg:text-[16rem] font-bold text-muted-foreground/10 leading-none select-none">
               {chapter.number}
             </span>
             <motion.div
@@ -373,7 +373,7 @@ function WhatWeBuildSection() {
         </motion.div>
 
         {/* Orbital Visualization Container */}
-        <div className="relative w-full max-w-[500px] md:max-w-[600px] lg:max-w-[700px] mx-auto aspect-square">
+        <div className="relative w-full max-w-[85vw] sm:max-w-[500px] md:max-w-[600px] lg:max-w-[700px] mx-auto aspect-square">
 
           {/* Static orbital track ring - at 42% radius means inset of 8% */}
           <motion.div
@@ -612,7 +612,7 @@ function DifferentiatorBlock({ item, index }: { item: any; index: number }) {
       />
 
       <div className="container mx-auto px-4 md:px-6 py-20">
-        <div className="grid lg:grid-cols-3 gap-12 items-center">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-12 items-center">
           {/* Stat */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -620,7 +620,7 @@ function DifferentiatorBlock({ item, index }: { item: any; index: number }) {
             transition={{ duration: 0.6 }}
             className="text-center lg:text-left"
           >
-            <span className={cn("text-[8rem] md:text-[12rem] font-bold leading-none", item.color)}>
+            <span className={cn("text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[12rem] font-bold leading-none", item.color)}>
               {item.stat}
             </span>
           </motion.div>
@@ -679,7 +679,7 @@ function CoreValuesSection() {
       {/* Horizontal flowing values */}
       <div className="relative">
         <motion.div
-          className="flex gap-8 px-4 md:px-6"
+          className="flex gap-4 sm:gap-6 md:gap-8 px-4 md:px-6"
           initial={{ x: 0 }}
           animate={{ x: [0, -50, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
@@ -690,7 +690,7 @@ function CoreValuesSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: (index % 5) * 0.1 }}
-              className="flex-shrink-0 w-72 md:w-80"
+              className="flex-shrink-0 w-64 sm:w-72 md:w-80"
             >
               <div className="flex items-start gap-4">
                 <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0", value.color)}>
@@ -763,7 +763,7 @@ function CTASection() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              className="group bg-white text-slate-900 hover:bg-white/90 h-14 px-10 text-lg font-semibold shadow-2xl shadow-white/10"
+              className="group bg-white text-slate-900 hover:bg-white/90 h-12 sm:h-14 px-6 sm:px-10 text-base sm:text-lg font-semibold shadow-2xl shadow-white/10"
               asChild
             >
               <Link href="/auth/register">
@@ -773,7 +773,7 @@ function CTASection() {
             </Button>
             <Button
               size="lg"
-              className="bg-white/5 border border-white/20 text-white hover:bg-white/10 h-14 px-10 text-lg"
+              className="bg-white/5 border border-white/20 text-white hover:bg-white/10 h-12 sm:h-14 px-6 sm:px-10 text-base sm:text-lg"
               asChild
             >
               <Link href="/contact">

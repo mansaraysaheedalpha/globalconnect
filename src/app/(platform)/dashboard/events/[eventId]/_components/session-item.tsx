@@ -30,9 +30,9 @@ import { SessionChat } from "./session-chat";
 import { SessionQA } from "./session-qa";
 import { SessionPolls } from "./session-polls";
 import { BackchannelPanel } from "./backchannel-panel";
-import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, X, Radio } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, Smile, X, Radio, Play, Square } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
-import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION } from "@/graphql/events.graphql";
+import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION, TOGGLE_SESSION_REACTIONS_MUTATION, GO_LIVE_SESSION_MUTATION, END_SESSION_MUTATION } from "@/graphql/events.graphql";
 import { cn } from "@/lib/utils";
 
 type Speaker = { id: string; name: string };
@@ -42,12 +42,15 @@ type Session = {
   title: string;
   startTime: string;
   endTime: string;
+  status?: string;
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  reactionsEnabled?: boolean;
   chatOpen?: boolean;
   qaOpen?: boolean;
   pollsOpen?: boolean;
+  reactionsOpen?: boolean;
   sessionType?: SessionType | null;
   streamingUrl?: string | null;
   speakers: Speaker[];
@@ -106,6 +109,7 @@ export const SessionItem = ({
   const [isChatOpen, setIsChatOpen] = useState(session.chatOpen ?? false);
   const [isQaOpen, setIsQaOpen] = useState(session.qaOpen ?? false);
   const [isPollsOpen, setIsPollsOpen] = useState(session.pollsOpen ?? false);
+  const [isReactionsOpen, setIsReactionsOpen] = useState(session.reactionsOpen ?? false);
 
   // Dialog open states
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
@@ -126,11 +130,14 @@ export const SessionItem = ({
     setIsPollsOpen(session.pollsOpen ?? false);
   }, [session.pollsOpen]);
 
+  useEffect(() => {
+    setIsReactionsOpen(session.reactionsOpen ?? false);
+  }, [session.reactionsOpen]);
+
   // Toggle mutations
   const [toggleChat, { loading: togglingChat }] = useMutation(TOGGLE_SESSION_CHAT_MUTATION, {
     onError: (error) => {
       console.error("[SessionItem] Failed to toggle chat:", error);
-      // Rollback optimistic update
       setIsChatOpen(session.chatOpen ?? false);
     },
   });
@@ -138,7 +145,6 @@ export const SessionItem = ({
   const [toggleQa, { loading: togglingQa }] = useMutation(TOGGLE_SESSION_QA_MUTATION, {
     onError: (error) => {
       console.error("[SessionItem] Failed to toggle Q&A:", error);
-      // Rollback optimistic update
       setIsQaOpen(session.qaOpen ?? false);
     },
   });
@@ -146,14 +152,30 @@ export const SessionItem = ({
   const [togglePolls, { loading: togglingPolls }] = useMutation(TOGGLE_SESSION_POLLS_MUTATION, {
     onError: (error) => {
       console.error("[SessionItem] Failed to toggle Polls:", error);
-      // Rollback optimistic update
       setIsPollsOpen(session.pollsOpen ?? false);
     },
   });
 
+  const [toggleReactions, { loading: togglingReactions }] = useMutation(TOGGLE_SESSION_REACTIONS_MUTATION, {
+    onError: (error) => {
+      console.error("[SessionItem] Failed to toggle Reactions:", error);
+      setIsReactionsOpen(session.reactionsOpen ?? false);
+    },
+  });
+
+  // Go Live / End Session mutations
+  const [goLive, { loading: goingLive }] = useMutation(GO_LIVE_SESSION_MUTATION, {
+    refetchQueries: ["GetSessionsByEvent"],
+    onError: (error) => console.error("[SessionItem] Failed to go live:", error),
+  });
+
+  const [endSessionMutation, { loading: endingSession }] = useMutation(END_SESSION_MUTATION, {
+    refetchQueries: ["GetSessionsByEvent"],
+    onError: (error) => console.error("[SessionItem] Failed to end session:", error),
+  });
+
   const handleToggleChat = async () => {
     const newState = !isChatOpen;
-    // Optimistic update
     setIsChatOpen(newState);
     try {
       await toggleChat({
@@ -167,7 +189,6 @@ export const SessionItem = ({
 
   const handleToggleQa = async () => {
     const newState = !isQaOpen;
-    // Optimistic update
     setIsQaOpen(newState);
     try {
       await toggleQa({
@@ -181,13 +202,25 @@ export const SessionItem = ({
 
   const handleTogglePolls = async () => {
     const newState = !isPollsOpen;
-    // Optimistic update
     setIsPollsOpen(newState);
     try {
       await togglePolls({
         variables: { id: session.id, open: newState },
       });
       console.log(`[SessionItem] Polls ${newState ? "opened" : "closed"} for session:`, session.id);
+    } catch {
+      // Error handled by onError callback
+    }
+  };
+
+  const handleToggleReactions = async () => {
+    const newState = !isReactionsOpen;
+    setIsReactionsOpen(newState);
+    try {
+      await toggleReactions({
+        variables: { id: session.id, open: newState },
+      });
+      console.log(`[SessionItem] Reactions ${newState ? "opened" : "closed"} for session:`, session.id);
     } catch {
       // Error handled by onError callback
     }
@@ -232,22 +265,20 @@ export const SessionItem = ({
             if (intervalId) clearInterval(intervalId);
             if (timeoutId) clearTimeout(timeoutId);
           }
-          // If 404, we're still processing, so we do nothing and wait for the next interval.
         } catch (error) {
           console.error("Polling for presentation status failed:", error);
           setPresentationState("failed");
           if (intervalId) clearInterval(intervalId);
           if (timeoutId) clearTimeout(timeoutId);
         }
-      }, 5000); // Poll every 5 seconds
+      }, 5000);
 
       timeoutId = setTimeout(() => {
         if (intervalId) clearInterval(intervalId);
-        // If we're still processing after the timeout, mark as failed.
         setPresentationState((current) =>
           current === "processing" ? "failed" : current
         );
-      }, 120000); // 2-minute timeout
+      }, 120000);
     };
 
     if (presentationState === "loading") {
@@ -271,7 +302,6 @@ export const SessionItem = ({
 
   const handleUpload = () => {
     onUpload(session);
-    // Optimistically update the UI to show processing
     setPresentationState("processing");
   };
 
@@ -279,6 +309,13 @@ export const SessionItem = ({
   const chatEnabled = session.chatEnabled !== false;
   const qaEnabled = session.qaEnabled !== false;
   const pollsEnabled = session.pollsEnabled !== false;
+  const reactionsEnabled = session.reactionsEnabled !== false;
+
+  // Session status
+  const sessionStatus = session.status ?? "UPCOMING";
+  const isLive = sessionStatus === "LIVE";
+  const isUpcoming = sessionStatus === "UPCOMING";
+  const isEnded = sessionStatus === "ENDED";
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-md">
@@ -348,8 +385,44 @@ export const SessionItem = ({
               onView={() => onView(session)}
             />
 
+            {/* Session Status Controls */}
+            {isUpcoming && (
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+                onClick={() => goLive({ variables: { id: session.id } })}
+                disabled={goingLive}
+              >
+                <Play className="h-3.5 w-3.5" />
+                {goingLive ? "Starting..." : "Go Live"}
+              </Button>
+            )}
+            {isLive && (
+              <>
+                <Badge className="bg-red-500 text-white animate-pulse gap-1">
+                  <span className="h-2 w-2 rounded-full bg-white inline-block" />
+                  LIVE
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="gap-1.5"
+                  onClick={() => endSessionMutation({ variables: { id: session.id } })}
+                  disabled={endingSession}
+                >
+                  <Square className="h-3.5 w-3.5" />
+                  {endingSession ? "Ending..." : "End Session"}
+                </Button>
+              </>
+            )}
+            {isEnded && (
+              <Badge variant="secondary" className="text-muted-foreground">
+                Ended
+              </Badge>
+            )}
+
             {/* Interactive Features Toolbar */}
-            {(chatEnabled || qaEnabled || pollsEnabled) && (
+            {(chatEnabled || qaEnabled || pollsEnabled || reactionsEnabled) && (
               <TooltipProvider delayDuration={0}>
                 <div className="flex items-center rounded-lg border bg-muted/30 p-1 gap-1">
                   {/* Chat Button */}

@@ -601,7 +601,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mt-12 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0"
+              className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0"
             >
               {[
                 { value: 12, suffix: "+", label: "Tab Features" },
@@ -982,7 +982,7 @@ function SolutionShowcaseSection() {
                   </div>
 
                   {/* Main Content Grid */}
-                  <div className="flex-1 grid grid-cols-3 gap-4">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {/* Left: Sessions List */}
                     <div className="col-span-2 space-y-3">
                       <div className="text-xs text-slate-400 mb-2">Sessions</div>

@@ -632,7 +632,7 @@ function ProblemSection() {
 
               {/* SVG Visualization of Disengaged Attendees */}
               <div className="relative rounded-2xl overflow-hidden border-2 border-red-500/20 shadow-2xl shadow-red-500/10 bg-slate-900/80 p-8">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[...Array(6)].map((_, i) => (
                     <motion.div
                       key={i}
@@ -1151,7 +1151,7 @@ function PointsSystemSection() {
                 </div>
 
                 {/* Results */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="p-2 rounded-lg border bg-card/50 text-center">
                     <TrendingUp className="h-6 w-6 text-cyan-500 mx-auto mb-1" />
                     <div className="text-xs font-medium">Leaderboard</div>

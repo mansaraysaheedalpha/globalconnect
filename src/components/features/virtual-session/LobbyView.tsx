@@ -147,7 +147,7 @@ export function LobbyView({ session, lobbyVideoUrl, onDismiss }: LobbyViewProps)
         {/* Skip lobby button */}
         <Button
           variant="outline"
-          className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+          className="bg-transparent border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
           onClick={onDismiss}
         >
           Dismiss Lobby

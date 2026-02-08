@@ -377,7 +377,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mt-10 grid grid-cols-3 gap-6"
+              className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6"
             >
               {[
                 { value: "<100ms", label: "Latency" },
@@ -431,7 +431,7 @@ function HeroSection() {
               {/* Dashboard Content */}
               <div className="p-4 space-y-4">
                 {/* Top Metrics Row */}
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { label: "Viewers", value: "4,521", icon: Eye, color: "text-blue-400" },
                     { label: "Messages", value: "1,234", icon: MessageSquare, color: "text-emerald-400" },
@@ -1011,7 +1011,7 @@ function CommandCenterDashboard() {
             </div>
 
             {/* Quick Controls */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { icon: MessageSquare, label: "Chat", active: true },
                 { icon: HelpCircle, label: "Q&A", active: true },

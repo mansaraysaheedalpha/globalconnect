@@ -303,6 +303,30 @@ export const TOGGLE_SESSION_REACTIONS_MUTATION = gql`
   }
 `;
 
+// Go Live - set session start_time to now (makes it LIVE)
+export const GO_LIVE_SESSION_MUTATION = gql`
+  mutation GoLiveSession($id: String!) {
+    goLiveSession(id: $id) {
+      id
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
+// End Session - set session end_time to now (makes it ENDED)
+export const END_SESSION_MUTATION = gql`
+  mutation EndSession($id: String!) {
+    endSession(id: $id) {
+      id
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
 // Get a single session by ID (for green room, etc.)
 export const GET_SESSION_BY_ID_QUERY = gql`
   query GetSessionById($id: ID!) {

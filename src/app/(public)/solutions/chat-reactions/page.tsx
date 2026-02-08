@@ -1004,7 +1004,7 @@ function SpeakerAttendeeView() {
             </div>
             <div className="p-4 space-y-4">
               {/* Live Stats */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { label: "Live Viewers", value: "1,247", icon: Users, trend: "+12" },
                   { label: "Engagement", value: "87%", icon: Activity, trend: "+5%" },

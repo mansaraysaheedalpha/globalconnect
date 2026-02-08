@@ -199,7 +199,7 @@ function LiveAIMonitoringDemo() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-neutral-800/50 rounded-xl p-4">
           <div className="flex items-center gap-2 text-neutral-400 text-sm mb-1">
             <Activity className="w-4 h-4" />
@@ -511,7 +511,7 @@ function ThompsonSamplingDemo() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <div className="text-neutral-500 text-xs mb-1">Success Rate</div>
                   <div className="text-green-400 font-medium">{(successRate * 100).toFixed(1)}%</div>

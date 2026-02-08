@@ -205,7 +205,7 @@ function AnalyticsDashboardPreview() {
         </div>
 
         {/* Quick Stats Row */}
-        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+        <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
           {[
             { label: "Sessions Viewed", value: "12.4k", icon: Eye },
             { label: "Messages Sent", value: "3.2k", icon: MessageSquare },
@@ -329,7 +329,7 @@ function UnifiedDashboardMockup() {
         </div>
 
         {/* Content Grid */}
-        <div className="p-6 grid grid-cols-3 gap-4">
+        <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Large Chart */}
           <div className="col-span-2 h-40 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-4">
             <div className="text-sm font-medium text-gray-700 mb-2">Attendance Trend</div>
@@ -896,7 +896,7 @@ function ReportsSection() {
               {/* Report Content */}
               <div className="p-6 space-y-6">
                 {/* Summary Stats */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
                     { label: "Total Attendees", value: "2,847" },
                     { label: "Avg. Engagement", value: "78%" },

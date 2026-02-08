@@ -493,7 +493,7 @@ function UnifiedControlCenterMockup() {
         {/* Dashboard Content */}
         <div className="p-6">
           {/* Stats Row */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             {[
               { label: "In-Person", value: viewerCount.inPerson, icon: MapPin, color: "amber", badge: "Venue" },
               { label: "Virtual", value: viewerCount.virtual, icon: Monitor, color: "blue", badge: "Stream" },
@@ -587,7 +587,7 @@ function UnifiedControlCenterMockup() {
                   <h4 className="font-medium text-white text-sm">Unified Engagement</h4>
                   <span className="text-xs text-white/40">Both audiences</span>
                 </div>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { label: "Chat", value: "1,247", icon: MessageSquare, color: "blue" },
                     { label: "Q&A", value: "89", icon: Hand, color: "purple" },

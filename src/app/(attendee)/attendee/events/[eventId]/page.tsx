@@ -48,6 +48,7 @@ import {
   DoorOpen,
   Store,
   ArrowRight,
+  Smile,
 } from "lucide-react";
 import { format, isWithinInterval, isFuture } from "date-fns";
 import Link from "next/link";
@@ -911,25 +912,38 @@ const SessionCard = ({
                     />
                   )}
 
-                  {/* Live Reactions - available for live sessions when enabled and open */}
-                  {isLive && reactionsEnabled && liveReactionsOpen && (
-                    <div className="relative w-full">
-                      <div className="flex items-center gap-2 p-2 sm:p-3 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm font-medium text-purple-900 dark:text-purple-100 mb-1.5 sm:mb-2">
-                            React with emojis
-                          </p>
-                          <ReactionBar
-                            onReaction={sendReaction}
-                            popularEmojis={getPopularEmojis()}
-                            disabled={!reactionsConnected}
-                            variant="horizontal"
-                          />
+                  {/* Live Reactions - visible when enabled, interactive when open */}
+                  {isLive && reactionsEnabled && (
+                    liveReactionsOpen ? (
+                      <div className="relative w-full">
+                        <div className="flex items-center gap-2 p-2 sm:p-3 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium text-purple-900 dark:text-purple-100 mb-1.5 sm:mb-2">
+                              React with emojis
+                            </p>
+                            <ReactionBar
+                              onReaction={sendReaction}
+                              popularEmojis={getPopularEmojis()}
+                              disabled={!reactionsConnected}
+                              variant="horizontal"
+                            />
+                          </div>
                         </div>
+                        {/* Floating reactions overlay */}
+                        <FloatingReactions emojis={floatingEmojis} />
                       </div>
-                      {/* Floating reactions overlay */}
-                      <FloatingReactions emojis={floatingEmojis} />
-                    </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 opacity-60"
+                        disabled
+                      >
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <Smile className="h-4 w-4" />
+                        Reactions
+                      </Button>
+                    )
                   )}
 
                   {/* Report Issue Button - Always available for live/upcoming sessions */}

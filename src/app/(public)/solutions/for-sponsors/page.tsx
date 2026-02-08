@@ -150,7 +150,7 @@ function SponsorDashboardPreview() {
         </div>
 
         {/* Stats Grid - matches real dashboard 4-column layout */}
-        <div className="p-4 grid grid-cols-4 gap-2">
+        <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
             { label: "Total Leads", value: stats.totalLeads, icon: Users, color: "blue", change: "+18%" },
             { label: "Hot Leads", value: stats.hotLeads, icon: Flame, color: "red", change: "+24%" },
@@ -188,7 +188,7 @@ function SponsorDashboardPreview() {
         </div>
 
         {/* Two column layout like real dashboard */}
-        <div className="px-4 pb-4 grid grid-cols-5 gap-3">
+        <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Recent Leads - matches real component */}
           <div className="col-span-3 rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden">
             <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between">
@@ -533,7 +533,7 @@ function UnifiedDashboardMockup() {
         {/* Dashboard Content */}
         <div className="p-6">
           {/* Stats Row - matches real dashboard */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             {[
               { label: "Total Leads", value: leads.total, change: "+18%", icon: Users, color: "blue" },
               { label: "Hot Leads", value: leads.hot, change: "+24%", icon: Flame, color: "red" },

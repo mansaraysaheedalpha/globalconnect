@@ -794,7 +794,7 @@ function EnterprisePricingComparison() {
 
   return (
     <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
-      <div className="grid grid-cols-3 border-b border-slate-700/50">
+      <div className="grid grid-cols-1 sm:grid-cols-3 border-b border-slate-700/50">
         <div className="p-4 text-slate-400 font-medium">Feature</div>
         <div className="p-4 text-center text-slate-400 font-medium border-x border-slate-700/50">
           Standard
@@ -806,7 +806,7 @@ function EnterprisePricingComparison() {
       {features.map((feature, idx) => (
         <div
           key={feature.name}
-          className={`grid grid-cols-3 ${idx < features.length - 1 ? "border-b border-slate-700/50" : ""}`}
+          className={`grid grid-cols-1 sm:grid-cols-3 ${idx < features.length - 1 ? "border-b border-slate-700/50" : ""}`}
         >
           <div className="p-4 text-slate-300">{feature.name}</div>
           <div className="p-4 text-center text-slate-400 border-x border-slate-700/50">
@@ -921,7 +921,7 @@ export default function EnterprisePage() {
             initial={{ opacity: 0, y: 50 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="mt-20 grid grid-cols-3 gap-8 max-w-3xl mx-auto"
+            className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto"
           >
             {[
               { value: "99.99%", label: "Uptime SLA" },
