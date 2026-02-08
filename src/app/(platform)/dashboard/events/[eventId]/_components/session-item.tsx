@@ -30,7 +30,7 @@ import { SessionChat } from "./session-chat";
 import { SessionQA } from "./session-qa";
 import { SessionPolls } from "./session-polls";
 import { BackchannelPanel } from "./backchannel-panel";
-import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, Smile, X, Radio, Play, Square } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, Smile, X, Radio, Play, Square, ExternalLink } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION, TOGGLE_SESSION_REACTIONS_MUTATION, GO_LIVE_SESSION_MUTATION, END_SESSION_MUTATION } from "@/graphql/events.graphql";
 import { cn } from "@/lib/utils";
@@ -403,6 +403,14 @@ export const SessionItem = ({
                   <span className="h-2 w-2 rounded-full bg-white inline-block" />
                   LIVE
                 </Badge>
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                  onClick={() => window.open(`/attendee/events/${event.id}`, "_blank")}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Join Session
+                </Button>
                 <Button
                   size="sm"
                   variant="destructive"
