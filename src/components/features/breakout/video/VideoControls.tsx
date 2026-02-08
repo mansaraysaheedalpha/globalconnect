@@ -109,7 +109,7 @@ export function VideoControls({
               className={cn(
                 "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                 isMicOn
-                  ? "bg-gray-700 hover:bg-gray-600 text-white"
+                  ? "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
                   : "bg-red-600 hover:bg-red-700 text-white"
               )}
             >
@@ -131,7 +131,7 @@ export function VideoControls({
               className={cn(
                 "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                 isCameraOn
-                  ? "bg-gray-700 hover:bg-gray-600 text-white"
+                  ? "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
                   : "bg-red-600 hover:bg-red-700 text-white"
               )}
             >
@@ -154,7 +154,7 @@ export function VideoControls({
                 "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                 isScreenSharing
                   ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-gray-700 hover:bg-gray-600 text-white"
+                  : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
               )}
             >
               {isScreenSharing ? <MonitorOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />}

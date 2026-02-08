@@ -123,19 +123,19 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
               "fixed left-0 right-0 z-[110]",
               "origin-top animate-mega-menu-enter"
             )}
-            style={{ top: isScrolled ? "80px" : "80px" }}
+            style={{ top: isScrolled ? "72px" : "88px" }}
             onMouseEnter={handleMenuMouseEnter}
             onMouseLeave={handleMenuMouseLeave}
           >
-            <div className="container mx-auto px-4 md:px-6">
+            <div className="container mx-auto px-3 sm:px-4 md:px-6">
               <div
                 className={cn(
-                  "bg-background border border-border/50 rounded-xl shadow-2xl",
-                  "max-h-[calc(100vh-140px)] flex flex-col"
+                  "bg-background border border-border/50 rounded-lg sm:rounded-xl shadow-2xl",
+                  "max-h-[calc(100vh-100px)] sm:max-h-[calc(100vh-120px)] flex flex-col"
                 )}
               >
                 {/* Columns Grid - scrollable */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 overflow-y-auto flex-1 max-h-[calc(100vh-220px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px md:gap-0 md:divide-x divide-border/50 overflow-y-auto flex-1 max-h-[calc(100vh-180px)] sm:max-h-[calc(100vh-200px)]">
                   {solutionsMenuData.map((column, index) => (
                     <MegaMenuColumnComponent
                       key={column.title}
@@ -147,17 +147,17 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
                 </div>
 
                 {/* Bottom Banner */}
-                <div className="border-t border-border/50 bg-gradient-to-r from-primary/10 to-background">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 lg:p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/20 text-xl">
+                <div className="border-t border-border/50 bg-gradient-to-r from-primary/10 to-background shrink-0">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 lg:p-6">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/20 text-lg sm:text-xl shrink-0">
                         {megaMenuBanner.icon}
                       </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-foreground">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground leading-tight">
                           {megaMenuBanner.title}
                         </h4>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-2">
                           {megaMenuBanner.description}
                         </p>
                       </div>
@@ -165,7 +165,7 @@ export function SolutionsMegaMenu({ isScrolled, currentPath }: SolutionsMegaMenu
                     <Button
                       asChild
                       size="sm"
-                      className="shrink-0"
+                      className="shrink-0 w-full sm:w-auto text-xs sm:text-sm"
                       onClick={handleClose}
                     >
                       <a href={megaMenuBanner.buttonHref}>
