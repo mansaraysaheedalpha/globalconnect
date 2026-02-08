@@ -188,9 +188,10 @@ const CompactReactionBar = ({
           variant="outline"
           size="sm"
           disabled={disabled}
-          className={cn("gap-1", className)}
+          className={cn("gap-1.5 bg-transparent border-white/20 text-white hover:bg-white/10", className)}
         >
           <span className="text-lg">👍</span>
+          <span className="hidden sm:inline text-xs">React</span>
           <ChevronUp
             className={cn(
               "h-3 w-3 transition-transform",
@@ -199,25 +200,29 @@ const CompactReactionBar = ({
           />
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="top" className="w-auto p-2">
-        <div className="flex gap-1">
-          {quickEmojis.map((emoji) => (
-            <motion.button
-              key={emoji}
-              whileTap={{ scale: 1.3 }}
-              onClick={() => {
-                onReaction(emoji);
-                setIsExpanded(false);
-              }}
-              className={cn(
-                "text-2xl p-1.5 rounded-md transition-colors",
-                "hover:bg-primary/10 active:bg-primary/20"
-              )}
-              aria-label={`React with ${emoji}`}
-            >
-              {emoji}
-            </motion.button>
-          ))}
+      <PopoverContent side="top" align="center" className="w-72 p-3 bg-background/95 backdrop-blur-sm border-white/20">
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground text-center mb-2">Choose your reaction</p>
+          <div className="grid grid-cols-6 gap-2">
+            {ALLOWED_EMOJIS.map((emoji) => (
+              <motion.button
+                key={emoji}
+                whileTap={{ scale: 1.3 }}
+                onClick={() => {
+                  onReaction(emoji);
+                  setIsExpanded(false);
+                }}
+                className={cn(
+                  "text-2xl p-2 rounded-lg transition-colors",
+                  "hover:bg-primary/20 active:bg-primary/30",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/50"
+                )}
+                aria-label={`React with ${emoji}`}
+              >
+                {emoji}
+              </motion.button>
+            ))}
+          </div>
         </div>
       </PopoverContent>
     </Popover>

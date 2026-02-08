@@ -625,37 +625,26 @@ export function VirtualSessionView({
             </Button>
           )}
 
-          {/* Reactions Button + Bar */}
+          {/* Reactions */}
           {reactionsEnabled && (
-            <>
+            isLive && liveReactionsOpen ? (
+              <ReactionBar
+                onReaction={sendReaction}
+                popularEmojis={getPopularEmojis()}
+                disabled={!reactionsConnected}
+                variant="compact"
+              />
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
-                className={cn(
-                  "gap-1.5 bg-transparent border-white/20 text-white hover:bg-white/10",
-                  liveReactionsOpen && "border-green-500/50",
-                  !liveReactionsOpen && "opacity-60"
-                )}
-                disabled={!liveReactionsOpen}
-                onClick={() => {/* Reactions are inline, button is indicator only */}}
+                className="gap-1.5 bg-transparent border-white/20 text-white hover:bg-white/10 opacity-60"
+                disabled
               >
                 <Smile className="h-4 w-4" />
                 <span className="hidden sm:inline">Reactions</span>
-                {liveReactionsOpen && (
-                  <Badge className="hidden sm:inline-flex ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
-                    Open
-                  </Badge>
-                )}
               </Button>
-              {isLive && liveReactionsOpen && (
-                <ReactionBar
-                  onReaction={sendReaction}
-                  popularEmojis={getPopularEmojis()}
-                  disabled={!reactionsConnected}
-                  variant="compact"
-                />
-              )}
-            </>
+            )
           )}
 
           {/* Report Issue */}

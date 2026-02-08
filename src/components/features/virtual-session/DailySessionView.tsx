@@ -57,6 +57,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
   const { createRoom, getToken, isLoading: stageLoading, error: stageError } = useVirtualStage();
   const [status, setStatus] = useState<"idle" | "provisioning" | "joining" | "joined" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const hasInitiatedRef = useRef(false);
 
   const [updateSession] = useMutation(UPDATE_SESSION_MUTATION);
@@ -140,6 +141,27 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     initJoin();
   }, [initJoin]);
 
+  // Auto-retry for attendees waiting for speaker to create room (max 20 retries = ~1 minute)
+  useEffect(() => {
+    if (
+      status === "error" &&
+      !isSpeaker &&
+      errorMessage?.includes("room hasn't been created yet") &&
+      retryCount < 20
+    ) {
+      const retryTimer = setTimeout(() => {
+        console.log(`[DailySessionView] Auto-retrying join (attempt ${retryCount + 1}/20)...`);
+        hasInitiatedRef.current = false;
+        setStatus("idle");
+        setErrorMessage(null);
+        setRetryCount((prev) => prev + 1);
+        initJoin();
+      }, 3000); // Retry every 3 seconds
+
+      return () => clearTimeout(retryTimer);
+    }
+  }, [status, isSpeaker, errorMessage, retryCount, initJoin]);
+
   // Handle leaving the call
   const handleLeave = useCallback(async () => {
     await leaveCall();
@@ -154,10 +176,17 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     }
   }, [isSpeaker, session.autoCaptions, isTranscribing, startTranscription]);
 
-  // Toggle captions visibility (local only)
-  const handleToggleCaptions = useCallback(() => {
-    setShowCaptions((prev) => !prev);
-  }, []);
+  // Toggle captions: start transcription if not running, or toggle visibility if running
+  const handleToggleCaptions = useCallback(async () => {
+    if (!isTranscribing) {
+      // Start transcription if not already running
+      await startTranscription();
+      setShowCaptions(true);
+    } else {
+      // Just toggle visibility if transcription is already running
+      setShowCaptions((prev) => !prev);
+    }
+  }, [isTranscribing, startTranscription]);
 
   // Toggle recording handler (only for speakers with recordable sessions)
   const canRecord = isSpeaker && session.isRecordable !== false;
@@ -199,9 +228,15 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
             <AlertTriangle className="h-12 w-12 text-red-400" />
           </div>
           <h2 className="text-xl font-bold mb-2">Unable to Join</h2>
-          <p className="text-gray-400 mb-6">
+          <p className="text-gray-400 mb-4">
             {errorMessage || callError || stageError || "An error occurred while joining the session."}
           </p>
+          {!isSpeaker && errorMessage?.includes("room hasn't been created yet") && retryCount < 20 && (
+            <p className="text-sm text-blue-400 mb-6 flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Retrying automatically... ({retryCount}/20)
+            </p>
+          )}
           <div className="flex items-center justify-center gap-3">
             <Button
               variant="outline"
@@ -265,13 +300,13 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
           isCameraOn={isCameraOn}
           isScreenSharing={isScreenSharing}
           isRecording={isRecording}
-          isCaptionsOn={showCaptions}
+          isCaptionsOn={isTranscribing && showCaptions}
           cpuLoadState={cpuLoadState}
           onToggleMic={toggleMic}
           onToggleCamera={toggleCamera}
           onToggleScreenShare={toggleScreenShare}
           onToggleRecording={canRecord ? handleToggleRecording : undefined}
-          onToggleCaptions={isTranscribing || session.autoCaptions ? handleToggleCaptions : undefined}
+          onToggleCaptions={handleToggleCaptions}
           onLeave={handleLeave}
           onSetVideoQuality={setReceiveVideoQuality}
         />
