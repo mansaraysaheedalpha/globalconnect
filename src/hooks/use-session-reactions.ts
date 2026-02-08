@@ -61,6 +61,7 @@ interface SessionReactionsState {
   lastBurst: ReactionBurst | null;
   moodAnalytics: MoodAnalytics | null;
   totalReactionsSent: number;
+  reactionsOpen: boolean | null;
 }
 
 // Rate limiting config
@@ -80,6 +81,7 @@ export const useSessionReactions = (sessionId: string, eventId: string) => {
     lastBurst: null,
     moodAnalytics: null,
     totalReactionsSent: 0,
+    reactionsOpen: null,
   });
   const { token } = useAuthStore();
 
@@ -231,6 +233,13 @@ export const useSessionReactions = (sessionId: string, eventId: string) => {
       setState((prev) => ({ ...prev, moodAnalytics: analytics }));
     });
 
+    // Receive reactions status changes (organizer open/close)
+    newSocket.on("reactions.status.changed", (data: { sessionId: string; isOpen: boolean }) => {
+      if (data.sessionId === sessionId) {
+        setState((prev) => ({ ...prev, reactionsOpen: data.isOpen }));
+      }
+    });
+
     // Error handling
     newSocket.on("systemError", (error: { message: string }) => {
       console.error("[Reactions] System error:", error.message);
@@ -250,6 +259,7 @@ export const useSessionReactions = (sessionId: string, eventId: string) => {
       newSocket.off("disconnect");
       newSocket.off("reaction.burst");
       newSocket.off("mood.analytics.updated");
+      newSocket.off("reactions.status.changed");
       newSocket.off("systemError");
       newSocket.off("connect_error");
       newSocket.disconnect();
@@ -354,6 +364,7 @@ export const useSessionReactions = (sessionId: string, eventId: string) => {
     lastBurst: state.lastBurst,
     moodAnalytics: state.moodAnalytics,
     totalReactionsSent: state.totalReactionsSent,
+    reactionsOpen: state.reactionsOpen,
 
     // Actions
     sendReaction,

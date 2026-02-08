@@ -36,6 +36,7 @@ export const Leaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {})
   }
 
   return (
+    <div className="overflow-x-auto -mx-4 sm:mx-0">
     <Table>
       <TableHeader>
         <TableRow>
@@ -74,6 +75,7 @@ export const Leaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {})
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 };
 
@@ -94,6 +96,7 @@ export const TeamLeaderboard = ({ sessionId: propSessionId }: LeaderboardProps =
     }
 
     return (
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
         <Table>
         <TableHeader>
             <TableRow>
@@ -119,5 +122,6 @@ export const TeamLeaderboard = ({ sessionId: propSessionId }: LeaderboardProps =
             ))}
         </TableBody>
         </Table>
+        </div>
     );
 }

@@ -33,7 +33,11 @@ import { SessionChat } from "@/app/(platform)/dashboard/events/[eventId]/_compon
 import { SessionQA } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-qa";
 import { SessionPolls } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-polls";
 import { IncidentReportForm } from "@/components/features/incidents";
+import { ReactionBar } from "@/components/features/reaction-bar";
+import { FloatingReactions } from "@/components/features/floating-reactions";
+import { useSessionReactions } from "@/hooks/use-session-reactions";
 import { DailySessionView } from "./DailySessionView";
+import { LobbyView } from "./LobbyView";
 import {
   JOIN_VIRTUAL_SESSION_MUTATION,
   LEAVE_VIRTUAL_SESSION_MUTATION,
@@ -53,12 +57,17 @@ export interface VirtualSession {
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  reactionsEnabled?: boolean;
   chatOpen?: boolean;
   qaOpen?: boolean;
   pollsOpen?: boolean;
+  reactionsOpen?: boolean;
   speakers: { id: string; name: string; userId?: string | null }[];
   streamingProvider?: string | null;
   virtualRoomId?: string | null;
+  autoCaptions?: boolean;
+  lobbyEnabled?: boolean;
+  isRecordable?: boolean;
 }
 
 interface VirtualSessionViewProps {
@@ -67,6 +76,7 @@ interface VirtualSessionViewProps {
   isOpen: boolean;
   onClose: () => void;
   currentUserId?: string | null;
+  lobbyVideoUrl?: string | null;
 }
 
 type ActivePanel = "chat" | "qa" | "polls" | null;
@@ -299,11 +309,22 @@ export function VirtualSessionView({
   isOpen,
   onClose,
   currentUserId,
+  lobbyVideoUrl,
 }: VirtualSessionViewProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const [lobbyDismissed, setLobbyDismissed] = useState(false);
   const [liveChatOpen, setLiveChatOpen] = useState(session.chatOpen ?? false);
   const [liveQaOpen, setLiveQaOpen] = useState(session.qaOpen ?? false);
   const [livePollsOpen, setLivePollsOpen] = useState(session.pollsOpen ?? false);
+  const [liveReactionsOpen, setLiveReactionsOpen] = useState(session.reactionsOpen ?? false);
+
+  // Live emoji reactions
+  const {
+    sendReaction,
+    getPopularEmojis,
+    floatingEmojis,
+    isConnected: reactionsConnected,
+  } = useSessionReactions(session.id, eventId);
 
   // Track if we've already recorded joining this session
   const hasJoinedRef = useRef(false);
@@ -409,11 +430,13 @@ export function VirtualSessionView({
     setLiveChatOpen(session.chatOpen ?? false);
     setLiveQaOpen(session.qaOpen ?? false);
     setLivePollsOpen(session.pollsOpen ?? false);
-  }, [session.chatOpen, session.qaOpen, session.pollsOpen]);
+    setLiveReactionsOpen(session.reactionsOpen ?? false);
+  }, [session.chatOpen, session.qaOpen, session.pollsOpen, session.reactionsOpen]);
 
   const chatEnabled = session.chatEnabled !== false;
   const qaEnabled = session.qaEnabled !== false;
   const pollsEnabled = session.pollsEnabled !== false;
+  const reactionsEnabled = session.reactionsEnabled !== false;
 
   // Determine what to show based on session status
   const isLive = session.status === "LIVE";
@@ -426,22 +449,23 @@ export function VirtualSessionView({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="!max-w-[100vw] !w-[100vw] !h-[100vh] !max-h-[100vh] p-0 gap-0 flex flex-col rounded-none border-0 bg-black">
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-black/90 border-b border-white/10 z-10">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-black/90 border-b border-white/10 z-10">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Video className="h-5 w-5 text-white/70 flex-shrink-0" />
-            <h2 className="font-semibold text-white truncate">{session.title}</h2>
+            <h2 className="font-semibold text-white text-sm sm:text-base truncate">{session.title}</h2>
             <div className="flex items-center gap-2 flex-shrink-0">
               {getStatusBadge(session.status)}
-              {getSessionTypeBadge(session.sessionType)}
+              <span className="hidden sm:inline-flex">{getSessionTypeBadge(session.sessionType)}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {/* Live Viewer Count */}
             {currentViewers > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-sm mr-2">
-                <Eye className="h-3.5 w-3.5" />
-                <span>{currentViewers} watching</span>
+              <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-xs sm:text-sm">
+                <Eye className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
+                <span className="hidden sm:inline">{currentViewers} watching</span>
+                <span className="sm:hidden">{currentViewers}</span>
               </div>
             )}
 
@@ -467,10 +491,10 @@ export function VirtualSessionView({
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 text-white/70 hover:text-white hover:bg-white/10"
+              className="h-8 w-8 sm:h-10 sm:w-10 text-white/70 hover:text-white hover:bg-white/10"
               onClick={onClose}
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 sm:h-5 w-4 sm:w-5" />
             </Button>
           </div>
         </div>
@@ -478,7 +502,16 @@ export function VirtualSessionView({
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-h-0 relative">
           {/* Video Area */}
-          {isUpcoming && <SessionNotStarted session={session} />}
+          {isUpcoming && session.lobbyEnabled && !lobbyDismissed && (
+            <LobbyView
+              session={session}
+              lobbyVideoUrl={lobbyVideoUrl}
+              onDismiss={() => setLobbyDismissed(true)}
+            />
+          )}
+          {isUpcoming && (!session.lobbyEnabled || lobbyDismissed) && (
+            <SessionNotStarted session={session} />
+          )}
 
           {isLive && isDailySession && (
             <DailySessionView
@@ -518,10 +551,13 @@ export function VirtualSessionView({
           )}
 
           {isEnded && <SessionEnded session={session} />}
+
+          {/* Floating emoji reactions overlay */}
+          {isLive && reactionsEnabled && liveReactionsOpen && <FloatingReactions emojis={floatingEmojis} />}
         </div>
 
         {/* Interactive Features Bar */}
-        <div className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-3 bg-black/90 border-t border-white/10">
+        <div className="flex-shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-black/90 border-t border-white/10">
           {/* Chat Button */}
           {chatEnabled && (
             <Button
@@ -529,19 +565,15 @@ export function VirtualSessionView({
               size="sm"
               className={cn(
                 "gap-1.5 bg-transparent border-white/20 text-white hover:bg-white/10",
+                liveChatOpen && "border-green-500/50",
                 !liveChatOpen && "opacity-60"
               )}
               onClick={() => setActivePanel("chat")}
             >
-              {liveChatOpen ? (
-                <Unlock className="h-4 w-4 text-green-400" />
-              ) : (
-                <Lock className="h-4 w-4 text-white/50" />
-              )}
               <MessageSquare className="h-4 w-4" />
-              Chat
+              <span className="hidden sm:inline">Chat</span>
               {liveChatOpen && (
-                <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+                <Badge className="hidden sm:inline-flex ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
                   Open
                 </Badge>
               )}
@@ -555,19 +587,15 @@ export function VirtualSessionView({
               size="sm"
               className={cn(
                 "gap-1.5 bg-transparent border-white/20 text-white hover:bg-white/10",
+                liveQaOpen && "border-green-500/50",
                 !liveQaOpen && "opacity-60"
               )}
               onClick={() => setActivePanel("qa")}
             >
-              {liveQaOpen ? (
-                <Unlock className="h-4 w-4 text-green-400" />
-              ) : (
-                <Lock className="h-4 w-4 text-white/50" />
-              )}
               <HelpCircle className="h-4 w-4" />
-              Q&A
+              <span className="hidden sm:inline">Q&A</span>
               {liveQaOpen && (
-                <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+                <Badge className="hidden sm:inline-flex ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
                   Open
                 </Badge>
               )}
@@ -581,23 +609,29 @@ export function VirtualSessionView({
               size="sm"
               className={cn(
                 "gap-1.5 bg-transparent border-white/20 text-white hover:bg-white/10",
+                livePollsOpen && "border-green-500/50",
                 !livePollsOpen && "opacity-60"
               )}
               onClick={() => setActivePanel("polls")}
             >
-              {livePollsOpen ? (
-                <Unlock className="h-4 w-4 text-green-400" />
-              ) : (
-                <Lock className="h-4 w-4 text-white/50" />
-              )}
               <BarChart3 className="h-4 w-4" />
-              Polls
+              <span className="hidden sm:inline">Polls</span>
               {livePollsOpen && (
-                <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+                <Badge className="hidden sm:inline-flex ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
                   Open
                 </Badge>
               )}
             </Button>
+          )}
+
+          {/* Live Reactions */}
+          {isLive && reactionsEnabled && liveReactionsOpen && (
+            <ReactionBar
+              onReaction={sendReaction}
+              popularEmojis={getPopularEmojis()}
+              disabled={!reactionsConnected}
+              variant="compact"
+            />
           )}
 
           {/* Report Issue */}
@@ -611,7 +645,7 @@ export function VirtualSessionView({
                 className="gap-1.5 bg-transparent border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
               >
                 <AlertTriangle className="h-4 w-4" />
-                Report Issue
+                <span className="hidden sm:inline">Report Issue</span>
               </Button>
             }
           />

@@ -13,7 +13,9 @@ import {
   PhoneOff,
   MessageSquare,
   Cpu,
-  Gauge
+  Gauge,
+  Circle,
+  Subtitles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -36,11 +38,15 @@ interface VideoControlsProps {
   isCameraOn: boolean;
   isScreenSharing: boolean;
   isChatOpen?: boolean;
+  isRecording?: boolean;
+  isCaptionsOn?: boolean;
   cpuLoadState?: "normal" | "high" | "critical";
   onToggleMic: () => void;
   onToggleCamera: () => void;
   onToggleScreenShare: () => void;
   onToggleChat?: () => void;
+  onToggleRecording?: () => void;
+  onToggleCaptions?: () => void;
   onLeave: () => void;
   onSetVideoQuality?: (quality: "low" | "medium" | "high") => void;
   className?: string;
@@ -51,11 +57,15 @@ export function VideoControls({
   isCameraOn,
   isScreenSharing,
   isChatOpen,
+  isRecording,
+  isCaptionsOn,
   cpuLoadState = "normal",
   onToggleMic,
   onToggleCamera,
   onToggleScreenShare,
   onToggleChat,
+  onToggleRecording,
+  onToggleCaptions,
   onLeave,
   onSetVideoQuality,
   className,
@@ -155,6 +165,30 @@ export function VideoControls({
           </TooltipContent>
         </Tooltip>
 
+        {/* Recording Toggle */}
+        {onToggleRecording && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={onToggleRecording}
+                className={cn(
+                  "rounded-full w-12 h-12",
+                  isRecording
+                    ? "bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                )}
+              >
+                <Circle className={cn("w-5 h-5", isRecording && "fill-current")} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isRecording ? "Stop recording" : "Start recording"}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
         {/* Divider */}
         <div className="w-px h-8 bg-gray-600 mx-2" />
 
@@ -178,6 +212,30 @@ export function VideoControls({
             </TooltipTrigger>
             <TooltipContent>
               <p>{isChatOpen ? "Close chat" : "Open chat"}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Captions Toggle */}
+        {onToggleCaptions && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={onToggleCaptions}
+                className={cn(
+                  "rounded-full w-12 h-12",
+                  isCaptionsOn
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                )}
+              >
+                <Subtitles className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isCaptionsOn ? "Hide captions" : "Show captions"}</p>
             </TooltipContent>
           </Tooltip>
         )}

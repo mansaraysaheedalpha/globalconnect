@@ -275,8 +275,8 @@ export function YourNetwork({
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle>Your Connections</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 md:w-64">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[180px] md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search connections..."
@@ -289,7 +289,7 @@ export function YourNetwork({
                 value={filterStrength}
                 onValueChange={(v) => setFilterStrength(v as FilterStrength)}
               >
-                <SelectTrigger className="w-[130px]">
+                <SelectTrigger className="w-[120px] sm:w-[130px]">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter" />
                 </SelectTrigger>
@@ -304,7 +304,7 @@ export function YourNetwork({
                 value={sortBy}
                 onValueChange={(v) => setSortBy(v as SortOption)}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[120px] sm:w-[140px]">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>

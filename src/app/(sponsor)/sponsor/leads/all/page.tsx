@@ -373,7 +373,7 @@ export default function AllLeadsPage() {
 
   if (isLoading && leads.length === 0) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <Skeleton className="h-8 w-32 mb-2" />
@@ -402,7 +402,7 @@ export default function AllLeadsPage() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Card className="border-red-200 bg-red-50">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
@@ -421,7 +421,7 @@ export default function AllLeadsPage() {
   // Show empty state if no active sponsor
   if (!activeSponsorId && !isLoading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -436,7 +436,7 @@ export default function AllLeadsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -516,6 +516,7 @@ export default function AllLeadsPage() {
             </p>
           </CardContent>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -685,6 +686,7 @@ export default function AllLeadsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </Card>
 
@@ -700,7 +702,7 @@ export default function AllLeadsPage() {
           {selectedLead && (
             <div className="space-y-6">
               {/* Contact Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Name</p>
                   <p className="font-medium">{selectedLead.user_name || "Unknown"}</p>
@@ -726,7 +728,7 @@ export default function AllLeadsPage() {
               </div>
 
               {/* Intent & Status */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Intent Level</p>
                   <Badge variant="outline" className={getIntentBadgeClass(selectedLead.intent_level)}>
@@ -760,7 +762,7 @@ export default function AllLeadsPage() {
               </div>
 
               {/* Timestamps */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
@@ -786,7 +788,7 @@ export default function AllLeadsPage() {
               </div>
 
               {/* Interaction Count & Tags */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Total Interactions</p>
                   <p className="font-medium">{selectedLead.interaction_count}</p>

@@ -12,7 +12,9 @@ import {
   Sparkles,
   RefreshCw,
   AlertTriangle,
+  Search,
 } from "lucide-react";
+import Link from "next/link";
 import { useEventConnections, EventConnection } from "@/hooks/use-event-connections";
 import { ConnectionCard } from "./connection-card";
 
@@ -90,7 +92,7 @@ export const ConnectionsList = ({
   // Connections list
   return (
     <div className="space-y-4">
-      {/* Header with count and refresh */}
+      {/* Header with count and actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
@@ -98,16 +100,24 @@ export const ConnectionsList = ({
             {total} {total === 1 ? "connection" : "connections"} at this event
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={refresh}
-          disabled={isLoading}
-          aria-label="Refresh connections"
-        >
-          <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-2" asChild>
+            <Link href={`/attendee/events/${eventId}/attendees`}>
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">Browse Attendees</span>
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refresh}
+            disabled={isLoading}
+            aria-label="Refresh connections"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Connections grid */}
@@ -151,6 +161,12 @@ function ConnectionsEmptyState({
         recommendations to find great matches!
       </p>
       <div className="flex items-center justify-center gap-3 mt-6">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href={`/attendee/events/${eventId}/attendees`}>
+            <Search className="h-4 w-4" />
+            Browse Attendees
+          </Link>
+        </Button>
         {onSwitchToRecommended && (
           <Button variant="premium" className="gap-2" onClick={onSwitchToRecommended}>
             <Sparkles className="h-4 w-4" />

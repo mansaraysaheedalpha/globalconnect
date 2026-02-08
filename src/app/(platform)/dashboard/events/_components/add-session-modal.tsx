@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store, DoorOpen, PhoneCall } from "lucide-react";
+import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store, DoorOpen, PhoneCall, Smile } from "lucide-react";
 import { SpeakerMultiSelect } from "@/components/ui/speaker-multi-select";
 
 // Streaming provider options for sessions
@@ -104,6 +104,7 @@ const formSchema = z
     chatEnabled: z.boolean(),
     qaEnabled: z.boolean(),
     pollsEnabled: z.boolean(),
+    reactionsEnabled: z.boolean(),
     breakoutEnabled: z.boolean(),
     // Virtual Session Support (required fields - defaults provided in useForm)
     sessionType: z.enum(["MAINSTAGE", "BREAKOUT", "WORKSHOP", "NETWORKING", "EXPO"]),
@@ -120,6 +121,9 @@ const formSchema = z
     greenRoomEnabled: z.boolean(),
     greenRoomOpensMinutesBefore: z.number().min(5).max(60),
     greenRoomNotes: z.string().max(1000).optional().or(z.literal("")),
+    // Auto Captions & Lobby (session-level controls)
+    autoCaptions: z.boolean(),
+    lobbyEnabled: z.boolean(),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: "End time must be after the start time.",
@@ -147,6 +151,7 @@ export const AddSessionModal = ({
       chatEnabled: true,
       qaEnabled: true,
       pollsEnabled: true,
+      reactionsEnabled: true,
       breakoutEnabled: false,
       sessionType: "MAINSTAGE",
       streamingProvider: "",
@@ -157,6 +162,8 @@ export const AddSessionModal = ({
       greenRoomEnabled: true,
       greenRoomOpensMinutesBefore: 15,
       greenRoomNotes: "",
+      autoCaptions: false,
+      lobbyEnabled: false,
     },
   });
 
@@ -200,6 +207,7 @@ export const AddSessionModal = ({
           chatEnabled: values.chatEnabled,
           qaEnabled: values.qaEnabled,
           pollsEnabled: values.pollsEnabled,
+          reactionsEnabled: values.reactionsEnabled,
           breakoutEnabled: values.breakoutEnabled,
           // Virtual Session fields
           sessionType: values.sessionType,
@@ -212,6 +220,9 @@ export const AddSessionModal = ({
           greenRoomEnabled: values.greenRoomEnabled,
           greenRoomOpensMinutesBefore: values.greenRoomOpensMinutesBefore,
           greenRoomNotes: values.greenRoomNotes || null,
+          // Auto Captions & Lobby
+          autoCaptions: values.autoCaptions,
+          lobbyEnabled: values.lobbyEnabled,
         },
       },
     });
@@ -450,6 +461,45 @@ export const AddSessionModal = ({
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="autoCaptions"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <FormLabel className="font-normal cursor-pointer">Auto Captions</FormLabel>
+                        <p className="text-xs text-muted-foreground">AI-generated live captions</p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={loading}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lobbyEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <FormLabel className="font-normal cursor-pointer">Lobby</FormLabel>
+                        <p className="text-xs text-muted-foreground">Waiting room before session starts</p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={loading}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
@@ -587,6 +637,24 @@ export const AddSessionModal = ({
                     <div className="flex items-center gap-2">
                       <BarChart3 className="h-4 w-4 text-muted-foreground" />
                       <FormLabel className="font-normal cursor-pointer">Enable Polls</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="reactionsEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Smile className="h-4 w-4 text-muted-foreground" />
+                      <FormLabel className="font-normal cursor-pointer">Enable Reactions</FormLabel>
                     </div>
                     <FormControl>
                       <Switch

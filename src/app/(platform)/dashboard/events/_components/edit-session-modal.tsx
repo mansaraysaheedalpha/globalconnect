@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SpeakerMultiSelect } from "@/components/ui/speaker-multi-select";
-import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store, DoorOpen } from "lucide-react";
+import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store, DoorOpen, Smile } from "lucide-react";
 
 // Session type options for virtual session support
 const SESSION_TYPES = [
@@ -62,6 +62,7 @@ type SessionData = {
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  reactionsEnabled?: boolean;
   breakoutEnabled?: boolean;
   speakers: { id: string }[];
   // Virtual Session fields
@@ -99,6 +100,7 @@ const formSchema = z
     chatEnabled: z.boolean(),
     qaEnabled: z.boolean(),
     pollsEnabled: z.boolean(),
+    reactionsEnabled: z.boolean(),
     breakoutEnabled: z.boolean(),
     // Virtual Session Support (required fields - defaults provided in useForm)
     sessionType: z.enum(["MAINSTAGE", "BREAKOUT", "WORKSHOP", "NETWORKING", "EXPO"]),
@@ -145,6 +147,7 @@ export const EditSessionModal = ({
         chatEnabled: session.chatEnabled !== false,
         qaEnabled: session.qaEnabled !== false,
         pollsEnabled: session.pollsEnabled !== false,
+        reactionsEnabled: session.reactionsEnabled !== false,
         breakoutEnabled: session.breakoutEnabled === true,
         // Virtual Session fields
         sessionType: session.sessionType || "MAINSTAGE",
@@ -195,6 +198,7 @@ export const EditSessionModal = ({
           chatEnabled: values.chatEnabled,
           qaEnabled: values.qaEnabled,
           pollsEnabled: values.pollsEnabled,
+          reactionsEnabled: values.reactionsEnabled,
           breakoutEnabled: values.breakoutEnabled,
           // Virtual Session fields
           sessionType: values.sessionType,
@@ -532,6 +536,24 @@ export const EditSessionModal = ({
                     <div className="flex items-center gap-2">
                       <BarChart3 className="h-4 w-4 text-muted-foreground" />
                       <FormLabel className="font-normal cursor-pointer">Enable Polls</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="reactionsEnabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Smile className="h-4 w-4 text-muted-foreground" />
+                      <FormLabel className="font-normal cursor-pointer">Enable Reactions</FormLabel>
                     </div>
                     <FormControl>
                       <Switch

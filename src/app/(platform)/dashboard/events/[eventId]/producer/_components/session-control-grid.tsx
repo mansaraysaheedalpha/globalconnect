@@ -19,6 +19,7 @@ import {
   TOGGLE_SESSION_CHAT_MUTATION,
   TOGGLE_SESSION_QA_MUTATION,
   TOGGLE_SESSION_POLLS_MUTATION,
+  TOGGLE_SESSION_REACTIONS_MUTATION,
 } from "@/graphql/events.graphql";
 import { GET_VIRTUAL_ATTENDANCE_STATS_QUERY } from "@/graphql/attendee.graphql";
 import {
@@ -28,6 +29,7 @@ import {
   MessageSquare,
   HelpCircle,
   BarChart3,
+  Smile,
   Users,
   Eye,
   Video,
@@ -47,9 +49,11 @@ type Session = {
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  reactionsEnabled?: boolean;
   chatOpen?: boolean;
   qaOpen?: boolean;
   pollsOpen?: boolean;
+  reactionsOpen?: boolean;
   sessionType?: string;
   streamingUrl?: string;
   greenRoomEnabled?: boolean;
@@ -79,11 +83,13 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   const [chatOpen, setChatOpen] = React.useState(session.chatOpen ?? false);
   const [qaOpen, setQaOpen] = React.useState(session.qaOpen ?? false);
   const [pollsOpen, setPollsOpen] = React.useState(session.pollsOpen ?? false);
+  const [reactionsOpen, setReactionsOpen] = React.useState(session.reactionsOpen ?? false);
 
   // Sync with props
   React.useEffect(() => setChatOpen(session.chatOpen ?? false), [session.chatOpen]);
   React.useEffect(() => setQaOpen(session.qaOpen ?? false), [session.qaOpen]);
   React.useEffect(() => setPollsOpen(session.pollsOpen ?? false), [session.pollsOpen]);
+  React.useEffect(() => setReactionsOpen(session.reactionsOpen ?? false), [session.reactionsOpen]);
 
   // Fetch virtual attendance stats
   const { data: statsData } = useQuery(GET_VIRTUAL_ATTENDANCE_STATS_QUERY, {
@@ -97,6 +103,7 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
   const [toggleChat, { loading: togglingChat }] = useMutation(TOGGLE_SESSION_CHAT_MUTATION);
   const [toggleQA, { loading: togglingQA }] = useMutation(TOGGLE_SESSION_QA_MUTATION);
   const [togglePolls, { loading: togglingPolls }] = useMutation(TOGGLE_SESSION_POLLS_MUTATION);
+  const [toggleReactions, { loading: togglingReactions }] = useMutation(TOGGLE_SESSION_REACTIONS_MUTATION);
 
   const handleToggleChat = async (open: boolean) => {
     setChatOpen(open);
@@ -122,6 +129,15 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
       await togglePolls({ variables: { id: session.id, open } });
     } catch (e) {
       setPollsOpen(!open);
+    }
+  };
+
+  const handleToggleReactions = async (open: boolean) => {
+    setReactionsOpen(open);
+    try {
+      await toggleReactions({ variables: { id: session.id, open } });
+    } catch (e) {
+      setReactionsOpen(!open);
     }
   };
 
@@ -324,6 +340,33 @@ const SessionCard = ({ session, eventId }: { session: Session; eventId: string }
                   </TooltipTrigger>
                   <TooltipContent>
                     {pollsOpen ? "Close polls" : "Open polls"}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+
+            {/* Reactions Toggle */}
+            {session.reactionsEnabled !== false && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Smile className={cn("h-4 w-4", reactionsOpen ? "text-pink-500" : "text-muted-foreground")} />
+                  <Label htmlFor={`reactions-${session.id}`} className="text-sm cursor-pointer">
+                    Reactions
+                  </Label>
+                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Switch
+                        id={`reactions-${session.id}`}
+                        checked={reactionsOpen}
+                        onCheckedChange={handleToggleReactions}
+                        disabled={togglingReactions}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {reactionsOpen ? "Close reactions" : "Open reactions"}
                   </TooltipContent>
                 </Tooltip>
               </div>

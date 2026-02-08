@@ -13,9 +13,6 @@ export const CREATE_EVENT_MUTATION = gql`
       virtualSettings {
         streamingProvider
         streamingUrl
-        recordingEnabled
-        autoCaptions
-        lobbyEnabled
       }
     }
   }
@@ -39,10 +36,7 @@ export const GET_EVENT_BY_ID_QUERY = gql`
       virtualSettings {
         streamingProvider
         streamingUrl
-        recordingEnabled
-        autoCaptions
         timezoneDisplay
-        lobbyEnabled
         lobbyVideoUrl
         maxConcurrentViewers
         geoRestrictions
@@ -79,9 +73,6 @@ export const UPDATE_EVENT_MUTATION = gql`
       virtualSettings {
         streamingProvider
         streamingUrl
-        recordingEnabled
-        autoCaptions
-        lobbyEnabled
       }
     }
   }
@@ -128,10 +119,12 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      reactionsEnabled
       breakoutEnabled
       chatOpen
       qaOpen
       pollsOpen
+      reactionsOpen
       sessionType
       streamingUrl
       recordingUrl
@@ -142,6 +135,9 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       greenRoomOpensMinutesBefore
       greenRoomNotes
       greenRoomOpen
+      isRecordable
+      autoCaptions
+      lobbyEnabled
       speakers {
         id
         name
@@ -161,6 +157,7 @@ export const CREATE_SESSION_MUTATION = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      reactionsEnabled
       breakoutEnabled
       sessionType
       streamingUrl
@@ -171,6 +168,9 @@ export const CREATE_SESSION_MUTATION = gql`
       greenRoomOpensMinutesBefore
       greenRoomNotes
       greenRoomOpen
+      isRecordable
+      autoCaptions
+      lobbyEnabled
       speakers {
         id
         name
@@ -189,6 +189,7 @@ export const UPDATE_SESSION_MUTATION = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      reactionsEnabled
       breakoutEnabled
       sessionType
       streamingUrl
@@ -200,6 +201,9 @@ export const UPDATE_SESSION_MUTATION = gql`
       greenRoomOpensMinutesBefore
       greenRoomNotes
       greenRoomOpen
+      isRecordable
+      autoCaptions
+      lobbyEnabled
       speakers {
         id
         name
@@ -288,6 +292,17 @@ export const TOGGLE_SESSION_POLLS_MUTATION = gql`
   }
 `;
 
+// Toggle session Reactions open/close (runtime control)
+export const TOGGLE_SESSION_REACTIONS_MUTATION = gql`
+  mutation ToggleSessionReactions($id: String!, $open: Boolean!) {
+    toggleSessionReactions(id: $id, open: $open) {
+      id
+      reactionsOpen
+      reactionsEnabled
+    }
+  }
+`;
+
 // Get a single session by ID (for green room, etc.)
 export const GET_SESSION_BY_ID_QUERY = gql`
   query GetSessionById($id: ID!) {
@@ -299,10 +314,12 @@ export const GET_SESSION_BY_ID_QUERY = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      reactionsEnabled
       breakoutEnabled
       chatOpen
       qaOpen
       pollsOpen
+      reactionsOpen
       sessionType
       streamingUrl
       recordingUrl
@@ -314,6 +331,10 @@ export const GET_SESSION_BY_ID_QUERY = gql`
       greenRoomOpensMinutesBefore
       greenRoomNotes
       greenRoomOpen
+      isRecordable
+      autoCaptions
+      lobbyEnabled
+      streamingProvider
       speakers {
         id
         name

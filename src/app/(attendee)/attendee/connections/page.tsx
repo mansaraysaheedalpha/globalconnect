@@ -89,7 +89,7 @@ export default function ConnectionsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <div className="mb-6">
           <Skeleton className="h-8 w-48 mb-2" />
           <Skeleton className="h-4 w-64" />
@@ -105,7 +105,7 @@ export default function ConnectionsPage() {
 
   if (error) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <Card className="border-destructive">
           <CardContent className="py-6 text-center">
             <p className="text-destructive">{error}</p>
@@ -116,7 +116,7 @@ export default function ConnectionsPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Your Connections</h1>
         <p className="text-muted-foreground">

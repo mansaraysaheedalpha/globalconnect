@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const { user } = useAuthStore();
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your account preferences</p>

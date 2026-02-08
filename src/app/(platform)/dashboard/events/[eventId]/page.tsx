@@ -144,7 +144,7 @@ export default function EventDetailPage() {
       <div className="mt-6 lg:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         <div className="lg:col-span-2 min-w-0">
           <Tabs defaultValue="live" className="w-full">
-            <TabsList className="mb-4 flex-wrap h-auto gap-1">
+            <TabsList className="mb-4 w-full overflow-x-auto scrollbar-hide">
               <TabsTrigger value="live">Live</TabsTrigger>
               <TabsTrigger value="engagement">AI Conductor</TabsTrigger>
               <TabsTrigger value="agenda">Agenda</TabsTrigger>

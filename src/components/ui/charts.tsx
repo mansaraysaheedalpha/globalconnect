@@ -233,7 +233,7 @@ export function DonutChart({
   let accumulatedOffset = 0;
 
   return (
-    <div className={cn("flex items-center gap-6", className)}>
+    <div className={cn("flex flex-col sm:flex-row items-center gap-4 sm:gap-6", className)}>
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
           {/* Background circle */}

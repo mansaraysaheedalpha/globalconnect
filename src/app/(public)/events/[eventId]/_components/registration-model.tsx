@@ -53,9 +53,11 @@ import {
   Globe,
   ChevronRight,
   ChevronLeft,
+  Calendar,
   Info,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { generateEventIcsDownloadUrl } from "@/lib/calendar-links";
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -755,6 +757,16 @@ export const RegistrationModal = ({
           {ticketCode}
         </p>
         <p className="mt-4 text-sm">A confirmation has been sent to your email.</p>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4 gap-2"
+          onClick={() => window.open(generateEventIcsDownloadUrl(eventId, user?.id), "_blank", "noopener,noreferrer")}
+        >
+          <Calendar className="h-4 w-4" />
+          Add to Calendar
+        </Button>
 
         <DialogFooter className="mt-6 flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleClose}>Close</Button>

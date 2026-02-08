@@ -40,7 +40,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader, Video, Users, Globe } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { GET_EVENTS_BY_ORGANIZATION_QUERY } from "@/graphql/queries";
 
 // Event type options for virtual event support
@@ -65,9 +64,6 @@ type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
 interface VirtualSettings {
   streamingProvider?: string | null;
   streamingUrl?: string | null;
-  recordingEnabled?: boolean;
-  autoCaptions?: boolean;
-  lobbyEnabled?: boolean;
   maxConcurrentViewers?: number | null;
 }
 
@@ -109,9 +105,6 @@ const formSchema = z
       .url("Please enter a valid streaming URL.")
       .optional()
       .or(z.literal("")),
-    recordingEnabled: z.boolean(),
-    autoCaptions: z.boolean(),
-    lobbyEnabled: z.boolean(),
     maxConcurrentViewers: z.number().min(1).max(1000000).optional(),
   })
   .refine((data) => data.endDate >= data.startDate, {
@@ -164,9 +157,6 @@ export const EditEventModal = ({
         eventType: event.eventType || "IN_PERSON",
         streamingProvider: vs?.streamingProvider || "",
         streamingUrl: vs?.streamingUrl || "",
-        recordingEnabled: vs?.recordingEnabled ?? true,
-        autoCaptions: vs?.autoCaptions ?? false,
-        lobbyEnabled: vs?.lobbyEnabled ?? false,
         maxConcurrentViewers: vs?.maxConcurrentViewers || undefined,
       });
     }
@@ -192,9 +182,6 @@ export const EditEventModal = ({
         ? {
             streamingProvider: values.streamingProvider || null,
             streamingUrl: values.streamingUrl || null,
-            recordingEnabled: values.recordingEnabled,
-            autoCaptions: values.autoCaptions,
-            lobbyEnabled: values.lobbyEnabled,
             maxConcurrentViewers: values.maxConcurrentViewers || null,
           }
         : null;
@@ -363,68 +350,6 @@ export const EditEventModal = ({
                         The embed URL for your live stream
                       </p>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="recordingEnabled"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-sm">Recording</FormLabel>
-                          <p className="text-xs text-muted-foreground">Enable session recording</p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={loading}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="autoCaptions"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-sm">Auto Captions</FormLabel>
-                          <p className="text-xs text-muted-foreground">AI-generated captions</p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={loading}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="lobbyEnabled"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-sm">Lobby</FormLabel>
-                        <p className="text-xs text-muted-foreground">Show waiting room before event starts</p>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={loading}
-                        />
-                      </FormControl>
                     </FormItem>
                   )}
                 />

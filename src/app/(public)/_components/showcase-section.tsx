@@ -83,7 +83,7 @@ function ShowcaseItem({
         className="relative w-full lg:w-1/2"
       >
         <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} rounded-2xl blur-3xl opacity-50`} />
-        <div className="relative min-h-[300px] h-96 lg:h-[450px] overflow-hidden rounded-2xl shadow-2xl group">
+        <div className="relative min-h-[250px] h-72 sm:h-80 md:h-96 lg:h-[450px] overflow-hidden rounded-2xl shadow-2xl group">
           <Image
             src={item.image}
             alt={item.alt}
@@ -206,7 +206,7 @@ export function VisualShowcaseSection() {
         </motion.div>
 
         {/* Showcase Items */}
-        <div className="space-y-16 sm:space-y-24 lg:space-y-32">
+        <div className="space-y-12 sm:space-y-16 md:space-y-24 lg:space-y-32">
           {showcaseItems.map((item, index) => (
             <ShowcaseItem key={index} item={item} index={index} />
           ))}

@@ -18,6 +18,7 @@ interface SessionSocketContextValue {
   chatOpen: boolean;
   qaOpen: boolean;
   pollsOpen: boolean;
+  reactionsOpen: boolean;
 }
 
 const SessionSocketContext = createContext<SessionSocketContextValue | null>(null);
@@ -29,6 +30,7 @@ interface SessionSocketProviderProps {
   initialChatOpen?: boolean;
   initialQaOpen?: boolean;
   initialPollsOpen?: boolean;
+  initialReactionsOpen?: boolean;
 }
 
 /**
@@ -47,6 +49,7 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
   initialChatOpen = false,
   initialQaOpen = false,
   initialPollsOpen = false,
+  initialReactionsOpen = false,
 }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -56,6 +59,7 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
   const [chatOpen, setChatOpen] = useState(initialChatOpen);
   const [qaOpen, setQaOpen] = useState(initialQaOpen);
   const [pollsOpen, setPollsOpen] = useState(initialPollsOpen);
+  const [reactionsOpen, setReactionsOpen] = useState(initialReactionsOpen);
 
   // Track if we've already created a socket to prevent double-creation in StrictMode
   const socketCreatedRef = useRef(false);
@@ -179,6 +183,12 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
       }
     });
 
+    newSocket.on('reactions.status.changed', (data: { sessionId: string; isOpen: boolean }) => {
+      if (data.sessionId === sessionId) {
+        setReactionsOpen(data.isOpen);
+      }
+    });
+
     setSocket(newSocket);
 
     // Cleanup on unmount
@@ -196,6 +206,7 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
       newSocket.off('chat.status.changed');
       newSocket.off('qa.status.changed');
       newSocket.off('polls.status.changed');
+      newSocket.off('reactions.status.changed');
       newSocket.disconnect();
     };
   }, [sessionId, eventId, token]);
@@ -211,6 +222,7 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
     chatOpen,
     qaOpen,
     pollsOpen,
+    reactionsOpen,
   };
 
   return (

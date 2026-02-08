@@ -326,7 +326,7 @@ function BreakoutRoomContent({
 
         {/* Sidebar */}
         {(showParticipants || showChat) && (
-          <div className="w-80 flex flex-col gap-4 p-4 border-l border-gray-800 overflow-hidden">
+          <div className="w-full sm:w-80 flex flex-col gap-4 p-4 border-l border-gray-800 overflow-hidden absolute sm:relative inset-0 sm:inset-auto z-10 bg-gray-900/95 sm:bg-transparent">
             {showParticipants && (
               <ParticipantList
                 participants={participants}

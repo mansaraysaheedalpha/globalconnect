@@ -258,7 +258,7 @@ export default function LeadCapturePage() {
   // Show empty state if no active sponsor (layout handles initialization)
   if (!activeSponsorId) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -273,7 +273,7 @@ export default function LeadCapturePage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>

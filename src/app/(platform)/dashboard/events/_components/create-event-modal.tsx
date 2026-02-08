@@ -94,9 +94,6 @@ const formSchema = z
       .url("Please enter a valid streaming URL.")
       .optional()
       .or(z.literal("")),
-    recordingEnabled: z.boolean(),
-    autoCaptions: z.boolean(),
-    lobbyEnabled: z.boolean(),
     maxConcurrentViewers: z.number().min(1).max(1000000).optional(),
   })
   .refine((data) => data.endDate >= data.startDate, {
@@ -142,9 +139,6 @@ export const CreateEventModal = ({
       eventType: "IN_PERSON",
       streamingProvider: "",
       streamingUrl: "",
-      recordingEnabled: true,
-      autoCaptions: false,
-      lobbyEnabled: false,
     },
   });
   const { reset, setValue, watch } = form;
@@ -256,9 +250,6 @@ export const CreateEventModal = ({
         eventType: "IN_PERSON",
         streamingProvider: "",
         streamingUrl: "",
-        recordingEnabled: true,
-        autoCaptions: false,
-        lobbyEnabled: false,
       });
       setSelectedBlueprintId(null);
       setImageInputMode("upload");
@@ -280,9 +271,6 @@ export const CreateEventModal = ({
         ? {
             streamingProvider: values.streamingProvider || null,
             streamingUrl: values.streamingUrl || null,
-            recordingEnabled: values.recordingEnabled,
-            autoCaptions: values.autoCaptions,
-            lobbyEnabled: values.lobbyEnabled,
             maxConcurrentViewers: values.maxConcurrentViewers || null,
           }
         : null;
@@ -542,67 +530,6 @@ export const CreateEventModal = ({
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="recordingEnabled"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-sm">Recording</FormLabel>
-                          <p className="text-xs text-muted-foreground">Enable session recording</p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={loading}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="autoCaptions"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-sm">Auto Captions</FormLabel>
-                          <p className="text-xs text-muted-foreground">AI-generated captions</p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={loading}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="lobbyEnabled"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-sm">Lobby</FormLabel>
-                        <p className="text-xs text-muted-foreground">Show waiting room before event starts</p>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
               </div>
             )}
 

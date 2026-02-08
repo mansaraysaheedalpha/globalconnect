@@ -8,6 +8,13 @@ import DailyIframe, { DailyCall, DailyParticipant } from "@daily-co/daily-js";
 const CPU_LOAD_HIGH = 0.8;
 const CPU_LOAD_CRITICAL = 0.95;
 
+export interface CaptionEntry {
+  timestamp: number;
+  speakerName: string;
+  text: string;
+  isFinal: boolean;
+}
+
 interface DailyContextValue {
   callObject: DailyCall | null;
   participants: DailyParticipant[];
@@ -18,6 +25,9 @@ interface DailyContextValue {
   isCameraOn: boolean;
   isMicOn: boolean;
   isScreenSharing: boolean;
+  isRecording: boolean;
+  isTranscribing: boolean;
+  captions: CaptionEntry[];
   cpuLoadState: "normal" | "high" | "critical";
   error: string | null;
   joinCall: (url: string, token: string, userName: string) => Promise<void>;
@@ -25,6 +35,10 @@ interface DailyContextValue {
   toggleCamera: () => void;
   toggleMic: () => void;
   toggleScreenShare: () => Promise<void>;
+  startRecording: () => Promise<void>;
+  stopRecording: () => Promise<void>;
+  startTranscription: () => Promise<void>;
+  stopTranscription: () => Promise<void>;
   setReceiveVideoQuality: (quality: "low" | "medium" | "high") => void;
 }
 
@@ -52,6 +66,9 @@ export function DailyProvider({ children }: DailyProviderProps) {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [captions, setCaptions] = useState<CaptionEntry[]>([]);
   const [cpuLoadState, setCpuLoadState] = useState<"normal" | "high" | "critical">("normal");
   const [error, setError] = useState<string | null>(null);
 
@@ -205,6 +222,51 @@ export function DailyProvider({ children }: DailyProviderProps) {
         console.error("Camera error:", event);
       });
 
+      // Recording event listeners
+      call.on("recording-started", () => {
+        setIsRecording(true);
+      });
+
+      call.on("recording-stopped", () => {
+        setIsRecording(false);
+      });
+
+      call.on("recording-error", (event) => {
+        console.error("Recording error:", event);
+        setIsRecording(false);
+      });
+
+      // Transcription event listeners
+      call.on("transcription-started", () => {
+        setIsTranscribing(true);
+      });
+
+      call.on("transcription-stopped", () => {
+        setIsTranscribing(false);
+      });
+
+      call.on("transcription-error", (event: any) => {
+        console.error("Transcription error:", event);
+        setIsTranscribing(false);
+      });
+
+      call.on("transcription-message", (event: any) => {
+        if (!event?.text) return;
+        const entry: CaptionEntry = {
+          timestamp: Date.now(),
+          speakerName: event.participantId
+            ? (call.participants()?.[event.participantId]?.user_name || "Unknown")
+            : "Unknown",
+          text: event.text,
+          isFinal: event.is_final ?? true,
+        };
+        setCaptions((prev) => {
+          // Keep last 3 final entries + current interim
+          const finals = [...prev.filter((c) => c.isFinal), ...(entry.isFinal ? [entry] : [])].slice(-3);
+          return entry.isFinal ? finals : [...finals, entry];
+        });
+      });
+
       setCallObject(call);
       callObjectRef.current = call;
 
@@ -275,6 +337,50 @@ export function DailyProvider({ children }: DailyProviderProps) {
     }
   }, [callObject, isScreenSharing]);
 
+  // Start cloud recording
+  const startRecording = useCallback(async () => {
+    if (callObject) {
+      try {
+        await callObject.startRecording({ type: "cloud" });
+      } catch (err) {
+        console.error("Failed to start recording:", err);
+      }
+    }
+  }, [callObject]);
+
+  // Stop recording
+  const stopRecording = useCallback(async () => {
+    if (callObject) {
+      try {
+        await callObject.stopRecording();
+      } catch (err) {
+        console.error("Failed to stop recording:", err);
+      }
+    }
+  }, [callObject]);
+
+  // Start transcription (Deepgram via Daily)
+  const startTranscription = useCallback(async () => {
+    if (callObject) {
+      try {
+        await (callObject as any).startTranscription({ language: "en", model: "nova-2" });
+      } catch (err) {
+        console.error("Failed to start transcription:", err);
+      }
+    }
+  }, [callObject]);
+
+  // Stop transcription
+  const stopTranscription = useCallback(async () => {
+    if (callObject) {
+      try {
+        await (callObject as any).stopTranscription();
+      } catch (err) {
+        console.error("Failed to stop transcription:", err);
+      }
+    }
+  }, [callObject]);
+
   // Cleanup on unmount - use ref to avoid stale closure
   useEffect(() => {
     return () => {
@@ -300,6 +406,9 @@ export function DailyProvider({ children }: DailyProviderProps) {
     isCameraOn,
     isMicOn,
     isScreenSharing,
+    isRecording,
+    isTranscribing,
+    captions,
     cpuLoadState,
     error,
     joinCall,
@@ -307,6 +416,10 @@ export function DailyProvider({ children }: DailyProviderProps) {
     toggleCamera,
     toggleMic,
     toggleScreenShare,
+    startRecording,
+    stopRecording,
+    startTranscription,
+    stopTranscription,
     setReceiveVideoQuality,
   };
 

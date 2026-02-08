@@ -29,7 +29,7 @@ export default function TicketsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <Skeleton className="h-10 w-48 mb-6" />
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
@@ -42,7 +42,7 @@ export default function TicketsPage() {
 
   if (error) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <Card className="border-destructive">
           <CardContent className="pt-6 text-center">
             <p className="text-destructive">Failed to load tickets</p>
@@ -55,7 +55,7 @@ export default function TicketsPage() {
   const registrations: Registration[] = data?.myRegistrations || [];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">My Tickets</h1>
         <p className="text-muted-foreground">Your event tickets and QR codes</p>

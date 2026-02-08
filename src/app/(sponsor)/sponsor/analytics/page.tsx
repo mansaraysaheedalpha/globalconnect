@@ -701,7 +701,7 @@ export default function SponsorAnalyticsPage() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Card className="border-red-200 bg-red-50">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
@@ -720,7 +720,7 @@ export default function SponsorAnalyticsPage() {
   // Show empty state if no active sponsor
   if (!activeSponsorId && !isLoading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -735,7 +735,7 @@ export default function SponsorAnalyticsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -746,7 +746,7 @@ export default function SponsorAnalyticsPage() {
               : "Track your booth performance and lead quality"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-[180px]">
               <Calendar className="mr-2 h-4 w-4" />

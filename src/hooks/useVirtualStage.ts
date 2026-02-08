@@ -13,6 +13,7 @@ interface CreateRoomOptions {
   eventId: string;
   maxParticipants?: number;
   expiryMinutes?: number;
+  enableRecording?: boolean;
 }
 
 interface CreateRoomResult {

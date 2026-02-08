@@ -9,9 +9,10 @@ import { useVirtualStage } from "@/hooks/useVirtualStage";
 import { useAuthStore } from "@/store/auth.store";
 import { useMutation } from "@apollo/client";
 import { UPDATE_SESSION_MUTATION } from "@/graphql/events.graphql";
-import { Loader2, AlertTriangle, Video } from "lucide-react";
+import { Loader2, AlertTriangle, Video, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VirtualSession } from "./VirtualSessionView";
+import { CaptionOverlay } from "./CaptionOverlay";
 
 interface DailySessionViewProps {
   session: VirtualSession;
@@ -32,6 +33,9 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     isCameraOn,
     isMicOn,
     isScreenSharing,
+    isRecording,
+    isTranscribing,
+    captions,
     cpuLoadState,
     error: callError,
     joinCall,
@@ -39,8 +43,16 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     toggleCamera,
     toggleMic,
     toggleScreenShare,
+    startRecording,
+    stopRecording,
+    startTranscription,
+    stopTranscription,
     setReceiveVideoQuality,
   } = useDailyCall();
+
+  // Local state for captions visibility (default to session.autoCaptions)
+  const [showCaptions, setShowCaptions] = useState(session.autoCaptions ?? false);
+  const hasAutoStartedCaptionsRef = useRef(false);
 
   const { createRoom, getToken, isLoading: stageLoading, error: stageError } = useVirtualStage();
   const [status, setStatus] = useState<"idle" | "provisioning" | "joining" | "joined" | "error">("idle");
@@ -76,6 +88,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
           sessionId: session.id,
           sessionTitle: session.title,
           eventId,
+          enableRecording: session.isRecordable !== false,
         });
 
         if (!roomResult) {
@@ -132,6 +145,29 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     await leaveCall();
     onLeave();
   }, [leaveCall, onLeave]);
+
+  // Auto-start transcription if session has autoCaptions enabled (speaker initiates)
+  useEffect(() => {
+    if (isSpeaker && session.autoCaptions && !isTranscribing && !hasAutoStartedCaptionsRef.current) {
+      hasAutoStartedCaptionsRef.current = true;
+      startTranscription();
+    }
+  }, [isSpeaker, session.autoCaptions, isTranscribing, startTranscription]);
+
+  // Toggle captions visibility (local only)
+  const handleToggleCaptions = useCallback(() => {
+    setShowCaptions((prev) => !prev);
+  }, []);
+
+  // Toggle recording handler (only for speakers with recordable sessions)
+  const canRecord = isSpeaker && session.isRecordable !== false;
+  const handleToggleRecording = useCallback(async () => {
+    if (isRecording) {
+      await stopRecording();
+    } else {
+      await startRecording();
+    }
+  }, [isRecording, startRecording, stopRecording]);
 
   // Loading / provisioning state
   if (status === "idle" || status === "provisioning" || status === "joining" || isJoining) {
@@ -195,8 +231,16 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
   // Joined - show video grid + controls
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-slate-900">
+      {/* Recording indicator */}
+      {isRecording && (
+        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1.5 bg-red-600 text-white text-sm font-medium">
+          <Circle className="w-3 h-3 fill-current animate-pulse" />
+          Recording in progress
+        </div>
+      )}
+
       {/* Video Grid */}
-      <div className="flex-1 min-h-0 p-4">
+      <div className="flex-1 min-h-0 p-4 relative">
         {participants.length > 0 ? (
           <VideoGrid participants={participants} className="h-full" />
         ) : (
@@ -207,6 +251,11 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
             </div>
           </div>
         )}
+
+        {/* Caption Overlay */}
+        {showCaptions && isTranscribing && (
+          <CaptionOverlay captions={captions} />
+        )}
       </div>
 
       {/* Call Controls */}
@@ -215,10 +264,14 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
           isMicOn={isMicOn}
           isCameraOn={isCameraOn}
           isScreenSharing={isScreenSharing}
+          isRecording={isRecording}
+          isCaptionsOn={showCaptions}
           cpuLoadState={cpuLoadState}
           onToggleMic={toggleMic}
           onToggleCamera={toggleCamera}
           onToggleScreenShare={toggleScreenShare}
+          onToggleRecording={canRecord ? handleToggleRecording : undefined}
+          onToggleCaptions={isTranscribing || session.autoCaptions ? handleToggleCaptions : undefined}
           onLeave={handleLeave}
           onSetVideoQuality={setReceiveVideoQuality}
         />

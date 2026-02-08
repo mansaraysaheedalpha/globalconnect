@@ -68,6 +68,7 @@ import { ProximityContainer } from "@/components/features/proximity";
 import { IncidentReportForm } from "@/components/features/incidents";
 import { VirtualSessionView, VirtualSession } from "@/components/features/virtual-session";
 import { BreakoutRoomList, RoomAssignmentNotice } from "@/components/features/breakout";
+import { AddToCalendarButton } from "@/components/features/calendar";
 import { SessionSocketProvider } from "@/context/SessionSocketContext";
 import { ReactionBar } from "@/components/features/reaction-bar";
 import { FloatingReactions } from "@/components/features/floating-reactions";
@@ -93,11 +94,13 @@ type Session = {
   chatEnabled?: boolean;
   qaEnabled?: boolean;
   pollsEnabled?: boolean;
+  reactionsEnabled?: boolean;
   breakoutEnabled?: boolean;
   presentationEnabled?: boolean;
   chatOpen?: boolean;  // Runtime state: organizer controls when chat is open
   qaOpen?: boolean;    // Runtime state: organizer controls when Q&A is open
   pollsOpen?: boolean; // Runtime state: organizer controls when polls are open
+  reactionsOpen?: boolean; // Runtime state: organizer controls when reactions are open
   presentationActive?: boolean; // Runtime state: presentation is currently being shown
   // Virtual session fields
   sessionType?: SessionType;
@@ -106,6 +109,9 @@ type Session = {
   broadcastOnly?: boolean;
   virtualRoomId?: string | null;
   streamingProvider?: string | null;
+  isRecordable?: boolean;
+  autoCaptions?: boolean;
+  lobbyEnabled?: boolean;
   speakers: { id: string; name: string; userId?: string | null }[];
 };
 
@@ -119,9 +125,6 @@ type Registration = {
 type VirtualSettings = {
   streamingProvider?: string;
   streamingUrl?: string;
-  recordingEnabled?: boolean;
-  autoCaptions?: boolean;
-  lobbyEnabled?: boolean;
   lobbyVideoUrl?: string;
   maxConcurrentViewers?: number;
 };
@@ -628,12 +631,14 @@ const AttendeeBreakoutRoomsDialog = ({
 const SessionCard = ({
   session,
   eventId,
+  eventName,
   organizationId,
   eventVirtualSettings,
   userId,
 }: {
   session: Session;
   eventId: string;
+  eventName: string;
   organizationId?: string;
   eventVirtualSettings?: VirtualSettings | null;
   userId?: string;
@@ -654,6 +659,7 @@ const SessionCard = ({
   const chatEnabled = session.chatEnabled !== false;
   const qaEnabled = session.qaEnabled !== false;
   const pollsEnabled = session.pollsEnabled !== false;
+  const reactionsEnabled = session.reactionsEnabled !== false;
   const presentationEnabled = session.presentationEnabled !== false;
   const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled || presentationEnabled;
 
@@ -670,6 +676,7 @@ const SessionCard = ({
   const [liveChatOpen, setLiveChatOpen] = React.useState(session.chatOpen ?? false);
   const [liveQaOpen, setLiveQaOpen] = React.useState(session.qaOpen ?? false);
   const [livePollsOpen, setLivePollsOpen] = React.useState(session.pollsOpen ?? false);
+  const [liveReactionsOpen, setLiveReactionsOpen] = React.useState(session.reactionsOpen ?? false);
 
   // Track presentation status via WebSocket (always connected for live sessions)
   const { slideState } = usePresentationControl(session.id, eventId, false);
@@ -688,6 +695,10 @@ const SessionCard = ({
     setLivePollsOpen(session.pollsOpen ?? false);
   }, [session.pollsOpen]);
 
+  React.useEffect(() => {
+    setLiveReactionsOpen(session.reactionsOpen ?? false);
+  }, [session.reactionsOpen]);
+
   // Convert Session to VirtualSession for the viewer (using effective streaming URL)
   const virtualSession: VirtualSession = {
     id: session.id,
@@ -702,12 +713,17 @@ const SessionCard = ({
     chatEnabled: session.chatEnabled,
     qaEnabled: session.qaEnabled,
     pollsEnabled: session.pollsEnabled,
+    reactionsEnabled: session.reactionsEnabled,
     chatOpen: liveChatOpen,
     qaOpen: liveQaOpen,
     pollsOpen: livePollsOpen,
+    reactionsOpen: liveReactionsOpen,
     speakers: session.speakers,
     streamingProvider: session.streamingProvider,
     virtualRoomId: session.virtualRoomId,
+    isRecordable: session.isRecordable,
+    autoCaptions: session.autoCaptions,
+    lobbyEnabled: session.lobbyEnabled,
   };
 
   // Get session type badge
@@ -804,6 +820,34 @@ const SessionCard = ({
                   )}
                 </div>
               )}
+
+              {/* View Lobby / Add to Calendar - for upcoming sessions */}
+              {isUpcoming && (
+                <div className="mt-3 flex items-center gap-2">
+                  {isVirtualSession && session.lobbyEnabled && (
+                    <Button
+                      variant="premium"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setShowVirtualSession(true)}
+                    >
+                      <Video className="h-4 w-4" />
+                      View Lobby
+                    </Button>
+                  )}
+                  <AddToCalendarButton
+                    session={{
+                      id: session.id,
+                      title: session.title,
+                      startTime: session.startTime,
+                      endTime: session.endTime,
+                      eventName,
+                    }}
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Interactive Features - only for in-person sessions (virtual sessions have these inside the viewer) */}
@@ -815,6 +859,7 @@ const SessionCard = ({
                 initialChatOpen={liveChatOpen}
                 initialQaOpen={liveQaOpen}
                 initialPollsOpen={livePollsOpen}
+                initialReactionsOpen={liveReactionsOpen}
               >
                 <div className="flex flex-wrap gap-2 sm:flex-col">
                   {/* Session Chat */}
@@ -866,8 +911,8 @@ const SessionCard = ({
                     />
                   )}
 
-                  {/* Live Reactions - available for live sessions */}
-                  {isLive && (
+                  {/* Live Reactions - available for live sessions when enabled and open */}
+                  {isLive && reactionsEnabled && liveReactionsOpen && (
                     <div className="relative w-full">
                       <div className="flex items-center gap-2 p-2 sm:p-3 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
                         <div className="flex-1 min-w-0">
@@ -912,6 +957,7 @@ const SessionCard = ({
         isOpen={showVirtualSession}
         onClose={() => setShowVirtualSession(false)}
         currentUserId={userId}
+        lobbyVideoUrl={eventVirtualSettings?.lobbyVideoUrl}
       />
     </>
   );
@@ -1343,7 +1389,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {liveSessions.map((session, index) => (
                 <StaggerItem key={session.id} id={`session-card-${session.id}`}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
+                  <SessionCard session={session} eventId={eventId} eventName={event.name} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -1361,7 +1407,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {upcomingSessions.map((session, index) => (
                 <StaggerItem key={session.id} id={`session-card-${session.id}`}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
+                  <SessionCard session={session} eventId={eventId} eventName={event.name} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -1391,7 +1437,7 @@ export default function AttendeeEventPage() {
             <StaggerContainer className="space-y-3">
               {endedSessions.map((session, index) => (
                 <StaggerItem key={session.id} id={`session-card-${session.id}`}>
-                  <SessionCard session={session} eventId={eventId} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
+                  <SessionCard session={session} eventId={eventId} eventName={event.name} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -1468,17 +1514,23 @@ export default function AttendeeEventPage() {
             chatEnabled: autoJoinSession.chatEnabled,
             qaEnabled: autoJoinSession.qaEnabled,
             pollsEnabled: autoJoinSession.pollsEnabled,
+            reactionsEnabled: autoJoinSession.reactionsEnabled,
             chatOpen: autoJoinSession.chatOpen,
             qaOpen: autoJoinSession.qaOpen,
             pollsOpen: autoJoinSession.pollsOpen,
+            reactionsOpen: autoJoinSession.reactionsOpen,
             speakers: autoJoinSession.speakers,
             streamingProvider: autoJoinSession.streamingProvider,
             virtualRoomId: autoJoinSession.virtualRoomId,
+            isRecordable: autoJoinSession.isRecordable,
+            autoCaptions: autoJoinSession.autoCaptions,
+            lobbyEnabled: autoJoinSession.lobbyEnabled,
           }}
           eventId={eventId}
           isOpen={showAutoJoinSession}
           onClose={() => setShowAutoJoinSession(false)}
           currentUserId={user?.id}
+          lobbyVideoUrl={event.virtualSettings?.lobbyVideoUrl}
         />
       )}
     </PageTransition>

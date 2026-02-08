@@ -66,9 +66,6 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       virtualSettings {
         streamingProvider
         streamingUrl
-        recordingEnabled
-        autoCaptions
-        lobbyEnabled
         lobbyVideoUrl
         maxConcurrentViewers
       }
@@ -87,16 +84,21 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       chatEnabled
       qaEnabled
       pollsEnabled
+      reactionsEnabled
       breakoutEnabled
       chatOpen
       qaOpen
       pollsOpen
+      reactionsOpen
       sessionType
       streamingUrl
       recordingUrl
       broadcastOnly
       virtualRoomId
       streamingProvider
+      isRecordable
+      autoCaptions
+      lobbyEnabled
       speakers {
         id
         name
