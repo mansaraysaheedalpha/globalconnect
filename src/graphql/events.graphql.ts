@@ -128,6 +128,7 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       sessionType
       streamingUrl
       recordingUrl
+      virtualRoomId
       broadcastOnly
       streamingProvider
       maxParticipants

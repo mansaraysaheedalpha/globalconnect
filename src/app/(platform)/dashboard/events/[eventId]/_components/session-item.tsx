@@ -30,12 +30,14 @@ import { SessionChat } from "./session-chat";
 import { SessionQA } from "./session-qa";
 import { SessionPolls } from "./session-polls";
 import { BackchannelPanel } from "./backchannel-panel";
-import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, Smile, X, Radio, Play, Square, ExternalLink } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, Smile, X, Radio, Play, Square, Video } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
-import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION, TOGGLE_SESSION_REACTIONS_MUTATION, GO_LIVE_SESSION_MUTATION, END_SESSION_MUTATION } from "@/graphql/events.graphql";
+import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION, TOGGLE_SESSION_REACTIONS_MUTATION, END_SESSION_MUTATION } from "@/graphql/events.graphql";
 import { cn } from "@/lib/utils";
+import { VirtualSessionView } from "@/components/features/virtual-session";
+import type { VirtualSession } from "@/components/features/virtual-session";
 
-type Speaker = { id: string; name: string };
+type Speaker = { id: string; name: string; userId?: string | null };
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type Session = {
   id: string;
@@ -53,6 +55,13 @@ type Session = {
   reactionsOpen?: boolean;
   sessionType?: SessionType | null;
   streamingUrl?: string | null;
+  recordingUrl?: string | null;
+  virtualRoomId?: string | null;
+  broadcastOnly?: boolean;
+  streamingProvider?: string | null;
+  isRecordable?: boolean;
+  autoCaptions?: boolean;
+  lobbyEnabled?: boolean;
   speakers: Speaker[];
 };
 
@@ -103,7 +112,7 @@ export const SessionItem = ({
 }: SessionItemProps) => {
   const [presentationState, setPresentationState] =
     useState<PresentationState>("loading");
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
 
   // Local state for chat/QA/polls open status (tracks server state with optimistic updates)
   const [isChatOpen, setIsChatOpen] = useState(session.chatOpen ?? false);
@@ -116,6 +125,14 @@ export const SessionItem = ({
   const [qaDialogOpen, setQaDialogOpen] = useState(false);
   const [pollsDialogOpen, setPollsDialogOpen] = useState(false);
   const [backchannelDialogOpen, setBackchannelDialogOpen] = useState(false);
+  const [showVirtualSession, setShowVirtualSession] = useState(false);
+
+  // Live clock for time-based session status (updates every 15s)
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Sync local state with props when they change (e.g., from refetch)
   useEffect(() => {
@@ -163,12 +180,7 @@ export const SessionItem = ({
     },
   });
 
-  // Go Live / End Session mutations
-  const [goLive, { loading: goingLive }] = useMutation(GO_LIVE_SESSION_MUTATION, {
-    refetchQueries: ["GetSessionsByEvent"],
-    onError: (error) => console.error("[SessionItem] Failed to go live:", error),
-  });
-
+  // End Session mutation
   const [endSessionMutation, { loading: endingSession }] = useMutation(END_SESSION_MUTATION, {
     refetchQueries: ["GetSessionsByEvent"],
     onError: (error) => console.error("[SessionItem] Failed to end session:", error),
@@ -311,11 +323,54 @@ export const SessionItem = ({
   const pollsEnabled = session.pollsEnabled !== false;
   const reactionsEnabled = session.reactionsEnabled !== false;
 
-  // Session status
-  const sessionStatus = session.status ?? "UPCOMING";
-  const isLive = sessionStatus === "LIVE";
-  const isUpcoming = sessionStatus === "UPCOMING";
-  const isEnded = sessionStatus === "ENDED";
+  // Time-based session status for Daily sessions
+  // "Go Live" only shows when the scheduled start time has arrived and no room exists yet
+  const isDailySession = session.streamingProvider === "daily";
+  const startTime = new Date(session.startTime);
+  const endTime = new Date(session.endTime);
+  const timeArrived = currentTime >= startTime;
+  const timePassed = currentTime > endTime;
+  const hasRoom = !!session.virtualRoomId;
+
+  // For Daily sessions: use room existence to determine if organizer has "gone live"
+  // For non-Daily sessions: fall back to time-based status
+  const showGoLive = isDailySession && timeArrived && !timePassed && !hasRoom;
+  const showLive = isDailySession
+    ? (hasRoom && timeArrived && !timePassed)
+    : (timeArrived && !timePassed);
+  const showEnded = timePassed;
+  const showScheduled = !timeArrived;
+
+  // Build VirtualSession object for the dialog (organizer treated as speaker)
+  const currentUserId = user?.id || null;
+  const virtualSessionData: VirtualSession = {
+    id: session.id,
+    title: session.title,
+    startTime: session.startTime,
+    endTime: session.endTime,
+    status: showLive ? "LIVE" : showEnded ? "ENDED" : "UPCOMING",
+    sessionType: session.sessionType ?? undefined,
+    streamingUrl: session.streamingUrl,
+    recordingUrl: session.recordingUrl,
+    broadcastOnly: session.broadcastOnly,
+    chatEnabled: session.chatEnabled,
+    qaEnabled: session.qaEnabled,
+    pollsEnabled: session.pollsEnabled,
+    reactionsEnabled: session.reactionsEnabled,
+    chatOpen: session.chatOpen,
+    qaOpen: session.qaOpen,
+    pollsOpen: session.pollsOpen,
+    reactionsOpen: session.reactionsOpen,
+    streamingProvider: session.streamingProvider,
+    virtualRoomId: session.virtualRoomId,
+    autoCaptions: session.autoCaptions,
+    lobbyEnabled: session.lobbyEnabled,
+    isRecordable: session.isRecordable,
+    // Ensure the organizer is included as a speaker so they can create the room
+    speakers: currentUserId && !session.speakers.some(s => s.userId === currentUserId)
+      ? [...session.speakers, { id: "organizer", name: user?.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : "Organizer", userId: currentUserId }]
+      : session.speakers,
+  };
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-md">
@@ -329,7 +384,7 @@ export const SessionItem = ({
                   {session.title}
                 </h3>
                 {getSessionTypeBadge(session.sessionType)}
-                {session.streamingUrl && (
+                {(session.streamingUrl || isDailySession) && (
                   <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
                     Virtual
                   </Badge>
@@ -386,18 +441,23 @@ export const SessionItem = ({
             />
 
             {/* Session Status Controls */}
-            {isUpcoming && (
+            {showScheduled && isDailySession && (
+              <Badge variant="secondary" className="text-muted-foreground gap-1">
+                <ClockIcon className="h-3 w-3" />
+                Scheduled
+              </Badge>
+            )}
+            {showGoLive && (
               <Button
                 size="sm"
                 className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
-                onClick={() => goLive({ variables: { id: session.id } })}
-                disabled={goingLive}
+                onClick={() => setShowVirtualSession(true)}
               >
                 <Play className="h-3.5 w-3.5" />
-                {goingLive ? "Starting..." : "Go Live"}
+                Go Live
               </Button>
             )}
-            {isLive && (
+            {showLive && (
               <>
                 <Badge className="bg-red-500 text-white animate-pulse gap-1">
                   <span className="h-2 w-2 rounded-full bg-white inline-block" />
@@ -406,9 +466,9 @@ export const SessionItem = ({
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
-                  onClick={() => window.open(`/attendee/events/${event.id}`, "_blank")}
+                  onClick={() => setShowVirtualSession(true)}
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <Video className="h-3.5 w-3.5" />
                   Join Session
                 </Button>
                 <Button
@@ -423,7 +483,7 @@ export const SessionItem = ({
                 </Button>
               </>
             )}
-            {isEnded && (
+            {showEnded && (
               <Badge variant="secondary" className="text-muted-foreground">
                 Ended
               </Badge>
@@ -650,6 +710,33 @@ export const SessionItem = ({
                     </>
                   )}
 
+                  {/* Reactions Toggle Button */}
+                  {reactionsEnabled && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={isReactionsOpen ? "default" : "ghost"}
+                          size="sm"
+                          className={cn(
+                            "h-8 px-2 sm:px-3 gap-1.5 transition-colors",
+                            isReactionsOpen && "bg-green-600 hover:bg-green-700 text-white"
+                          )}
+                          onClick={handleToggleReactions}
+                          disabled={togglingReactions}
+                        >
+                          <Smile className="h-4 w-4" />
+                          <span className="hidden sm:inline text-xs">Reactions</span>
+                          {isReactionsOpen && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-white/90 animate-pulse" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{isReactionsOpen ? "Close Reactions" : "Open Reactions"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
                   {/* Backchannel Button - Staff Communication */}
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -703,6 +790,17 @@ export const SessionItem = ({
           </div>
         </div>
       </CardContent>
+
+      {/* Virtual Session Dialog - opens inline for organizers (no registration needed) */}
+      {isDailySession && (
+        <VirtualSessionView
+          session={virtualSessionData}
+          eventId={event.id}
+          isOpen={showVirtualSession}
+          onClose={() => setShowVirtualSession(false)}
+          currentUserId={currentUserId}
+        />
+      )}
     </Card>
   );
 };

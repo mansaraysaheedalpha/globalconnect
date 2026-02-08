@@ -180,13 +180,14 @@ export const RecommendationCard = ({
         )}
 
         {/* Actions Row */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+        <div className="flex items-center justify-between mt-3 pt-3 border-t gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleToggleExpand}
             aria-expanded={isExpanded}
             aria-controls={`recommendation-details-${recommendation.id}`}
+            className="shrink-0 text-xs sm:text-sm px-2 sm:px-3"
           >
             {isExpanded ? (
               <>
@@ -201,7 +202,7 @@ export const RecommendationCard = ({
             )}
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {onConnect && (
               <Button
                 variant={connected ? "secondary" : "default"}
@@ -209,14 +210,19 @@ export const RecommendationCard = ({
                 onClick={handleConnect}
                 disabled={connected}
                 aria-label={connected ? "Already connected" : "Mark as connected"}
-                className={connected ? "" : "bg-green-600 hover:bg-green-700 text-white"}
+                className={`text-xs sm:text-sm px-2 sm:px-3 ${connected ? "" : "bg-green-600 hover:bg-green-700 text-white"}`}
               >
                 {connected ? "Connected ✓" : "Connect"}
               </Button>
             )}
-            <Button size="sm" onClick={handleStartChat}>
-              <MessageCircle className="h-4 w-4 mr-1" />
-              Chat
+            <Button
+              size="sm"
+              onClick={handleStartChat}
+              aria-label="Start chat"
+              className="px-2 sm:px-3"
+            >
+              <MessageCircle className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Chat</span>
             </Button>
           </div>
         </div>
