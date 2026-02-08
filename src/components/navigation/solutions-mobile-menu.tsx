@@ -50,21 +50,21 @@ export function SolutionsMobileMenu({ onNavigate, currentPath }: SolutionsMobile
 
       {/* Expandable Columns */}
       {expandedColumn === "main" && (
-        <div className="pl-4 space-y-1 animate-slide-down">
+        <div className="pl-2 space-y-1.5 animate-in slide-in-from-top-2 duration-200">
           {solutionsMenuData.map((column) => (
             <div key={column.title} className="space-y-1">
               {/* Column Header */}
               <button
                 onClick={() => toggleColumn(column.title)}
                 className={cn(
-                  "flex items-center justify-between w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  "text-foreground hover:bg-muted/50",
-                  expandedColumn === column.title && "bg-muted/50"
+                  "flex items-center justify-between w-full px-3 py-3 rounded-lg text-sm font-medium transition-colors",
+                  "text-foreground hover:bg-muted/70",
+                  expandedColumn === column.title && "bg-muted/70"
                 )}
               >
-                <div className="text-left">
-                  <div className="font-semibold">{column.title}</div>
-                  <div className="text-xs text-muted-foreground">{column.subtitle}</div>
+                <div className="text-left flex-1 mr-2">
+                  <div className="font-semibold text-sm leading-tight">{column.title}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{column.subtitle}</div>
                 </div>
                 <ChevronRight
                   className={cn(
@@ -76,22 +76,22 @@ export function SolutionsMobileMenu({ onNavigate, currentPath }: SolutionsMobile
 
               {/* Groups */}
               {expandedColumn === column.title && (
-                <div className="pl-4 space-y-2 py-2 animate-slide-down">
+                <div className="pl-2 space-y-1.5 py-1 animate-in slide-in-from-top-2 duration-200">
                   {column.groups.map((group) => (
                     <div key={group.title} className="space-y-1">
                       {/* Group Header */}
                       <button
                         onClick={() => toggleGroup(group.title)}
                         className={cn(
-                          "flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
-                          "text-muted-foreground hover:text-foreground uppercase tracking-wider",
-                          expandedGroup === group.title && "text-foreground"
+                          "flex items-center justify-between w-full px-2.5 py-2 rounded-md text-[11px] font-semibold transition-colors",
+                          "text-muted-foreground hover:text-foreground hover:bg-muted/50 uppercase tracking-wide",
+                          expandedGroup === group.title && "text-foreground bg-muted/50"
                         )}
                       >
-                        <div className="flex items-center gap-2">
-                          <span>{group.title}</span>
+                        <div className="flex items-center gap-1.5 flex-1 mr-2">
+                          <span className="truncate">{group.title}</span>
                           {group.badge && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-primary/20 text-primary normal-case">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-primary/20 text-primary normal-case shrink-0">
                               {group.badge}
                             </span>
                           )}
@@ -106,7 +106,7 @@ export function SolutionsMobileMenu({ onNavigate, currentPath }: SolutionsMobile
 
                       {/* Items */}
                       {expandedGroup === group.title && (
-                        <div className="space-y-1 animate-slide-down">
+                        <div className="space-y-0.5 pl-1 animate-in slide-in-from-top-2 duration-200">
                           {group.items.map((item) => (
                             <MegaMenuItemComponent
                               key={item.href}
@@ -120,14 +120,14 @@ export function SolutionsMobileMenu({ onNavigate, currentPath }: SolutionsMobile
                   ))}
 
                   {/* Column CTA */}
-                  <div className="pt-2 mt-2 border-t border-border/50">
+                  <div className="pt-2 mt-1.5 border-t border-border/50">
                     <Link
                       href={column.cta.href}
                       onClick={onNavigate}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+                      className="flex items-center justify-between px-2.5 py-2.5 rounded-md text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
                     >
-                      {column.cta.text}
-                      <ChevronRight className="h-4 w-4" />
+                      <span className="truncate">{column.cta.text}</span>
+                      <ChevronRight className="h-4 w-4 shrink-0 ml-2" />
                     </Link>
                   </div>
                 </div>

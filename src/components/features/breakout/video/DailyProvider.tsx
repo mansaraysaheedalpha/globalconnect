@@ -141,6 +141,16 @@ export function DailyProvider({ children }: DailyProviderProps) {
     setError(null);
 
     try {
+      // Request camera and microphone permissions explicitly
+      console.log("[DailyProvider] Requesting camera and microphone permissions...");
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log("[DailyProvider] Permissions granted");
+      } catch (permErr) {
+        console.error("[DailyProvider] Permission denied:", permErr);
+        throw new Error("Camera or microphone permission denied. Please allow access and try again.");
+      }
+
       // Create a new call object with optimized settings
       const call = DailyIframe.createCallObject({
         subscribeToTracksAutomatically: true,
@@ -278,6 +288,16 @@ export function DailyProvider({ children }: DailyProviderProps) {
         startVideoOff: false,
         startAudioOff: false,
       });
+
+      // Explicitly enable local audio and video after join (fixes audio not working issue)
+      console.log("[DailyProvider] Enabling local audio and video...");
+      await call.setLocalAudio(true);
+      await call.setLocalVideo(true);
+
+      // Verify audio is enabled
+      const localParticipant = call.participants().local;
+      console.log("[DailyProvider] Local audio enabled:", localParticipant?.audio);
+      console.log("[DailyProvider] Local video enabled:", localParticipant?.video);
 
       // Set initial receive settings for optimal performance
       // Start with medium quality to balance performance and quality
