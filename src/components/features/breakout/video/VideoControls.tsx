@@ -177,7 +177,7 @@ export function VideoControls({
                   "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                   isRecording
                     ? "bg-red-600 hover:bg-red-700 text-white animate-pulse"
-                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                    : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
                 )}
               >
                 <Circle className={cn("w-5 h-5", isRecording && "fill-current")} />
@@ -228,7 +228,7 @@ export function VideoControls({
                   "rounded-full w-10 h-10 sm:w-12 sm:h-12",
                   isCaptionsOn
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                    : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
                 )}
               >
                 <Subtitles className="w-4 h-4 sm:w-5 sm:h-5" />
