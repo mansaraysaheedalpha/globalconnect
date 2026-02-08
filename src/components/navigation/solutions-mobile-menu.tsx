@@ -14,10 +14,19 @@ interface SolutionsMobileMenuProps {
 }
 
 export function SolutionsMobileMenu({ onNavigate, currentPath }: SolutionsMobileMenuProps) {
+  const [isSolutionsOpen, setIsSolutionsOpen] = useState(false);
   const [expandedColumn, setExpandedColumn] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   const isActive = currentPath.startsWith("/solutions");
+
+  const toggleSolutions = () => {
+    setIsSolutionsOpen(!isSolutionsOpen);
+    if (isSolutionsOpen) {
+      setExpandedColumn(null);
+      setExpandedGroup(null);
+    }
+  };
 
   const toggleColumn = (columnTitle: string) => {
     setExpandedColumn(expandedColumn === columnTitle ? null : columnTitle);
@@ -32,7 +41,7 @@ export function SolutionsMobileMenu({ onNavigate, currentPath }: SolutionsMobile
     <div className="space-y-1">
       {/* Main Solutions Link */}
       <button
-        onClick={() => toggleColumn("main")}
+        onClick={toggleSolutions}
         className={cn(
           "flex items-center justify-between w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors",
           "text-muted-foreground hover:text-foreground hover:bg-muted",
@@ -43,13 +52,13 @@ export function SolutionsMobileMenu({ onNavigate, currentPath }: SolutionsMobile
         <ChevronDown
           className={cn(
             "h-4 w-4 transition-transform",
-            expandedColumn === "main" && "rotate-180"
+            isSolutionsOpen && "rotate-180"
           )}
         />
       </button>
 
       {/* Expandable Columns */}
-      {expandedColumn === "main" && (
+      {isSolutionsOpen && (
         <div className="pl-2 space-y-1.5 animate-in slide-in-from-top-2 duration-200">
           {solutionsMenuData.map((column) => (
             <div key={column.title} className="space-y-1">
