@@ -177,7 +177,7 @@ function CheckInVisualization() {
         </div>
 
         {/* Stats Row */}
-        <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+        <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
           {[
             { label: "Checked In", value: checkedIn, icon: UserCheck, color: "emerald" },
             { label: "Remaining", value: 847 - checkedIn + 35, icon: Clock, color: "amber" },

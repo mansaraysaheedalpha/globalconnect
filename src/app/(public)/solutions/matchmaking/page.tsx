@@ -1333,7 +1333,7 @@ function ProfileEnrichmentSection() {
               {/* Background glow for sources */}
               <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent rounded-3xl blur-xl" />
 
-              <div className="relative grid grid-cols-3 gap-2 p-4 rounded-2xl bg-slate-800/30 border border-slate-700/30 backdrop-blur-sm">
+              <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-2 p-4 rounded-2xl bg-slate-800/30 border border-slate-700/30 backdrop-blur-sm">
                 {sources.map((source, index) => (
                   <motion.div
                     key={source.name}

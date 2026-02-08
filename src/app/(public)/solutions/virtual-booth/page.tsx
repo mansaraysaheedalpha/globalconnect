@@ -130,7 +130,7 @@ function AnimatedBoothPreview() {
         {/* Booth Content */}
         <div className="p-4 space-y-4">
           {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { icon: Users, label: "Visitors", value: activeVisitors, color: "text-violet-400" },
               { icon: MessageSquare, label: "Chats", value: chatMessages, color: "text-fuchsia-400" },
@@ -1363,7 +1363,7 @@ function AnalyticsDashboardMockup() {
           {/* Main Stats */}
           <div className="col-span-12 lg:col-span-8 space-y-4">
             {/* Top Stats Row */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { label: "Total Visitors", value: visitors, icon: Users, color: "violet", change: "+18%" },
                 { label: "Downloads", value: downloads, icon: Download, color: "fuchsia", change: "+42%" },
