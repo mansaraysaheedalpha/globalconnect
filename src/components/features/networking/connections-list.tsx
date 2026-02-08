@@ -12,9 +12,7 @@ import {
   Sparkles,
   RefreshCw,
   AlertTriangle,
-  Search,
 } from "lucide-react";
-import Link from "next/link";
 import { useEventConnections, EventConnection } from "@/hooks/use-event-connections";
 import { ConnectionCard } from "./connection-card";
 
@@ -153,12 +151,6 @@ function ConnectionsEmptyState({
         recommendations to find great matches!
       </p>
       <div className="flex items-center justify-center gap-3 mt-6">
-        <Button variant="outline" className="gap-2" asChild>
-          <Link href={`/attendee/events/${eventId}/attendees`}>
-            <Search className="h-4 w-4" />
-            Browse Attendees
-          </Link>
-        </Button>
         {onSwitchToRecommended && (
           <Button variant="premium" className="gap-2" onClick={onSwitchToRecommended}>
             <Sparkles className="h-4 w-4" />

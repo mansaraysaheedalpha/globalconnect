@@ -136,6 +136,7 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       streamingUrl
       recordingUrl
       broadcastOnly
+      streamingProvider
       maxParticipants
       greenRoomEnabled
       greenRoomOpensMinutesBefore
@@ -164,6 +165,7 @@ export const CREATE_SESSION_MUTATION = gql`
       sessionType
       streamingUrl
       broadcastOnly
+      streamingProvider
       maxParticipants
       greenRoomEnabled
       greenRoomOpensMinutesBefore
@@ -192,6 +194,7 @@ export const UPDATE_SESSION_MUTATION = gql`
       streamingUrl
       recordingUrl
       broadcastOnly
+      streamingProvider
       maxParticipants
       greenRoomEnabled
       greenRoomOpensMinutesBefore

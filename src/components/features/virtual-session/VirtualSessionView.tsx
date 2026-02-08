@@ -33,6 +33,7 @@ import { SessionChat } from "@/app/(platform)/dashboard/events/[eventId]/_compon
 import { SessionQA } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-qa";
 import { SessionPolls } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-polls";
 import { IncidentReportForm } from "@/components/features/incidents";
+import { DailySessionView } from "./DailySessionView";
 import {
   JOIN_VIRTUAL_SESSION_MUTATION,
   LEAVE_VIRTUAL_SESSION_MUTATION,
@@ -55,7 +56,9 @@ export interface VirtualSession {
   chatOpen?: boolean;
   qaOpen?: boolean;
   pollsOpen?: boolean;
-  speakers: { id: string; name: string }[];
+  speakers: { id: string; name: string; userId?: string | null }[];
+  streamingProvider?: string | null;
+  virtualRoomId?: string | null;
 }
 
 interface VirtualSessionViewProps {
@@ -63,6 +66,7 @@ interface VirtualSessionViewProps {
   eventId: string;
   isOpen: boolean;
   onClose: () => void;
+  currentUserId?: string | null;
 }
 
 type ActivePanel = "chat" | "qa" | "polls" | null;
@@ -294,6 +298,7 @@ export function VirtualSessionView({
   eventId,
   isOpen,
   onClose,
+  currentUserId,
 }: VirtualSessionViewProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [liveChatOpen, setLiveChatOpen] = useState(session.chatOpen ?? false);
@@ -331,9 +336,14 @@ export function VirtualSessionView({
     return "desktop";
   }, []);
 
-  // Record joining when dialog opens with a stream/recording available
+  const isDailySession = session.streamingProvider === "daily";
+  const isSpeaker = isDailySession && currentUserId
+    ? session.speakers.some((s) => s.userId === currentUserId)
+    : false;
+
+  // Record joining when dialog opens with a stream/recording available (or Daily session)
   useEffect(() => {
-    const shouldTrack = isOpen && (session.streamingUrl || session.recordingUrl);
+    const shouldTrack = isOpen && (session.streamingUrl || session.recordingUrl || isDailySession);
 
     if (shouldTrack && !hasJoinedRef.current) {
       hasJoinedRef.current = true;
@@ -355,7 +365,7 @@ export function VirtualSessionView({
       });
       hasJoinedRef.current = false;
     }
-  }, [isOpen, session.id, session.streamingUrl, session.recordingUrl, joinSession, leaveSession, getDeviceType]);
+  }, [isOpen, session.id, session.streamingUrl, session.recordingUrl, isDailySession, joinSession, leaveSession, getDeviceType]);
 
   // Cleanup on unmount - record leaving
   useEffect(() => {
@@ -375,7 +385,7 @@ export function VirtualSessionView({
         // User switched away - record temporary leave
         leaveSession({ variables: { sessionId: sessionIdRef.current } });
         hasJoinedRef.current = false;
-      } else if (!document.hidden && isOpen && (session.streamingUrl || session.recordingUrl)) {
+      } else if (!document.hidden && isOpen && (session.streamingUrl || session.recordingUrl || isDailySession)) {
         // User came back - record re-join
         if (!hasJoinedRef.current) {
           hasJoinedRef.current = true;
@@ -392,7 +402,7 @@ export function VirtualSessionView({
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isOpen, session.id, session.streamingUrl, session.recordingUrl, joinSession, leaveSession, getDeviceType]);
+  }, [isOpen, session.id, session.streamingUrl, session.recordingUrl, isDailySession, joinSession, leaveSession, getDeviceType]);
 
   // Sync with session props
   useEffect(() => {
@@ -470,7 +480,16 @@ export function VirtualSessionView({
           {/* Video Area */}
           {isUpcoming && <SessionNotStarted session={session} />}
 
-          {isLive && hasStream && (
+          {isLive && isDailySession && (
+            <DailySessionView
+              session={session}
+              eventId={eventId}
+              isSpeaker={isSpeaker}
+              onLeave={onClose}
+            />
+          )}
+
+          {isLive && !isDailySession && hasStream && (
             <div className="flex-1 flex flex-col min-h-0">
               <StreamPlayer
                 url={session.streamingUrl!}
@@ -483,7 +502,7 @@ export function VirtualSessionView({
             </div>
           )}
 
-          {isLive && !hasStream && (
+          {isLive && !isDailySession && !hasStream && (
             <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
               <div className="text-center text-white p-8 max-w-md">
                 <div className="w-24 h-24 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto mb-6">

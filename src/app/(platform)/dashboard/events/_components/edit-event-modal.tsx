@@ -51,6 +51,7 @@ const EVENT_TYPES = [
 ] as const;
 
 const STREAMING_PROVIDERS = [
+  { value: "daily", label: "Daily.co (Interactive Video)" },
   { value: "youtube", label: "YouTube Live" },
   { value: "vimeo", label: "Vimeo" },
   { value: "mux", label: "Mux" },

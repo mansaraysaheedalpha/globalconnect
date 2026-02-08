@@ -89,11 +89,19 @@ const SUGGESTED_INTERESTS = [
   "Cybersecurity", "Marketing", "Sales", "Finance", "Leadership",
 ];
 
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters.")
+  .regex(/[A-Z]/, "Must contain at least one uppercase letter.")
+  .regex(/[a-z]/, "Must contain at least one lowercase letter.")
+  .regex(/[0-9]/, "Must contain at least one number.")
+  .regex(/[^A-Za-z0-9]/, "Must contain at least one special character.");
+
 const guestFormSchema = z.object({
   first_name: z.string().min(1, "First name is required."),
   last_name: z.string().min(1, "Last name is required."),
   email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: passwordSchema,
 });
 
 const loginFormSchema = z.object({
@@ -551,7 +559,7 @@ export const RegistrationModal = ({
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl><PasswordInput {...field} /></FormControl>
-                <FormDescription>Must be at least 8 characters.</FormDescription>
+                <FormDescription>Min 8 characters with uppercase, lowercase, number, and special character.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

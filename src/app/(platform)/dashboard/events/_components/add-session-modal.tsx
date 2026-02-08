@@ -40,8 +40,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store, DoorOpen } from "lucide-react";
+import { Loader, MessageSquare, HelpCircle, BarChart3, Video, Users, Presentation, Coffee, Store, DoorOpen, PhoneCall } from "lucide-react";
 import { SpeakerMultiSelect } from "@/components/ui/speaker-multi-select";
+
+// Streaming provider options for sessions
+const SESSION_STREAMING_PROVIDERS = [
+  { value: "daily", label: "Daily.co (Interactive Video Call)", description: "Zoom-like experience — no streaming software needed" },
+  { value: "youtube", label: "YouTube Live" },
+  { value: "vimeo", label: "Vimeo" },
+  { value: "rtmp", label: "Custom RTMP" },
+] as const;
 
 // Session type options for virtual session support
 const SESSION_TYPES = [
@@ -99,6 +107,7 @@ const formSchema = z
     breakoutEnabled: z.boolean(),
     // Virtual Session Support (required fields - defaults provided in useForm)
     sessionType: z.enum(["MAINSTAGE", "BREAKOUT", "WORKSHOP", "NETWORKING", "EXPO"]),
+    streamingProvider: z.string().optional().or(z.literal("")),
     streamingUrl: z
       .string()
       .url("Please enter a valid streaming URL.")
@@ -140,6 +149,7 @@ export const AddSessionModal = ({
       pollsEnabled: true,
       breakoutEnabled: false,
       sessionType: "MAINSTAGE",
+      streamingProvider: "",
       streamingUrl: "",
       isRecordable: true,
       broadcastOnly: true,
@@ -193,7 +203,8 @@ export const AddSessionModal = ({
           breakoutEnabled: values.breakoutEnabled,
           // Virtual Session fields
           sessionType: values.sessionType,
-          streamingUrl: values.streamingUrl || null,
+          streamingProvider: values.streamingProvider || null,
+          streamingUrl: values.streamingProvider === "daily" ? null : (values.streamingUrl || null),
           isRecordable: values.isRecordable,
           broadcastOnly: values.broadcastOnly,
           maxParticipants: values.maxParticipants || null,
@@ -344,21 +355,66 @@ export const AddSessionModal = ({
 
               <FormField
                 control={form.control}
-                name="streamingUrl"
+                name="streamingProvider"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Streaming URL (Optional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="https://stream.example.com/..."
-                        {...field}
-                        disabled={loading}
-                      />
-                    </FormControl>
+                    <FormLabel>Streaming Provider</FormLabel>
+                    <Select
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        // When Daily is selected, default broadcastOnly to false (interactive)
+                        if (val === "daily") {
+                          form.setValue("broadcastOnly", false);
+                        }
+                      }}
+                      value={field.value}
+                      disabled={loading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a provider (optional)..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SESSION_STREAMING_PROVIDERS.map((provider) => (
+                          <SelectItem key={provider.value} value={provider.value}>
+                            <div className="flex items-center gap-2">
+                              {provider.value === "daily" && <PhoneCall className="h-4 w-4" />}
+                              <span>{provider.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.value === "daily" && (
+                      <p className="text-xs text-blue-600">
+                        A video room will be created automatically when the session starts. No streaming URL needed.
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {form.watch("streamingProvider") !== "daily" && (
+                <FormField
+                  control={form.control}
+                  name="streamingUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Streaming URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://stream.example.com/..."
+                          {...field}
+                          disabled={loading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <FormField

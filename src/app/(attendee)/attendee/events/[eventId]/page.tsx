@@ -105,7 +105,8 @@ type Session = {
   recordingUrl?: string | null;
   broadcastOnly?: boolean;
   virtualRoomId?: string | null;
-  speakers: { id: string; name: string }[];
+  streamingProvider?: string | null;
+  speakers: { id: string; name: string; userId?: string | null }[];
 };
 
 type Registration = {
@@ -656,9 +657,10 @@ const SessionCard = ({
   const presentationEnabled = session.presentationEnabled !== false;
   const hasInteractiveFeatures = chatEnabled || qaEnabled || pollsEnabled || presentationEnabled;
 
-  // Virtual session detection - only if there's a streaming URL (session-level or event-level)
+  // Virtual session detection - streaming URL, recording, or Daily.co session
+  const isDailySession = session.streamingProvider === "daily";
   const effectiveStreamingUrl = session.streamingUrl || eventVirtualSettings?.streamingUrl;
-  const isVirtualSession = !!effectiveStreamingUrl || !!session.recordingUrl;
+  const isVirtualSession = !!effectiveStreamingUrl || !!session.recordingUrl || isDailySession;
   const hasRecording = isEnded && !!session.recordingUrl;
 
   // State for virtual session viewer
@@ -704,6 +706,8 @@ const SessionCard = ({
     qaOpen: liveQaOpen,
     pollsOpen: livePollsOpen,
     speakers: session.speakers,
+    streamingProvider: session.streamingProvider,
+    virtualRoomId: session.virtualRoomId,
   };
 
   // Get session type badge
@@ -730,7 +734,7 @@ const SessionCard = ({
         className={`overflow-hidden ${isLive ? "ring-2 ring-green-500/20 border-green-500/30" : ""}`}
       >
         <div className="p-4">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 {getSessionStatusBadge(session.status)}
@@ -762,10 +766,21 @@ const SessionCard = ({
                 )}
               </div>
 
-              {/* Watch Live / Watch Recording buttons for virtual sessions */}
+              {/* Watch Live / Watch Recording / Join Session buttons for virtual sessions */}
               {isVirtualSession && (isLive || hasRecording) && (
                 <div className="mt-3">
-                  {isLive && effectiveStreamingUrl && (
+                  {isLive && isDailySession && (
+                    <Button
+                      variant="premium"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setShowVirtualSession(true)}
+                    >
+                      <Video className="h-4 w-4" />
+                      Join Session
+                    </Button>
+                  )}
+                  {isLive && !isDailySession && effectiveStreamingUrl && (
                     <Button
                       variant="premium"
                       size="sm"
@@ -791,9 +806,9 @@ const SessionCard = ({
               )}
             </div>
 
-            {/* Interactive Features - show if features are enabled (not ended sessions) */}
+            {/* Interactive Features - only for in-person sessions (virtual sessions have these inside the viewer) */}
             {/* Wrapped in SessionSocketProvider to share a single socket across Chat/Q&A/Polls */}
-            {!isEnded && hasInteractiveFeatures && (
+            {!isEnded && !isVirtualSession && hasInteractiveFeatures && (
               <SessionSocketProvider
                 sessionId={session.id}
                 eventId={eventId}
@@ -801,7 +816,7 @@ const SessionCard = ({
                 initialQaOpen={liveQaOpen}
                 initialPollsOpen={livePollsOpen}
               >
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2 sm:flex-col">
                   {/* Session Chat */}
                   {chatEnabled && (
                     <AttendeeChatDialog
@@ -853,10 +868,10 @@ const SessionCard = ({
 
                   {/* Live Reactions - available for live sessions */}
                   {isLive && (
-                    <div className="relative">
-                      <div className="flex items-center gap-2 p-3 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-purple-900 dark:text-purple-100 mb-2">
+                    <div className="relative w-full">
+                      <div className="flex items-center gap-2 p-2 sm:p-3 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-purple-900 dark:text-purple-100 mb-1.5 sm:mb-2">
                             React with emojis
                           </p>
                           <ReactionBar
@@ -877,7 +892,7 @@ const SessionCard = ({
                     sessionId={session.id}
                     eventId={eventId}
                     trigger={
-                      <Button variant="outline" size="sm" className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
                         <AlertTriangle className="h-4 w-4" />
                         Report Issue
                       </Button>
@@ -896,6 +911,7 @@ const SessionCard = ({
         eventId={eventId}
         isOpen={showVirtualSession}
         onClose={() => setShowVirtualSession(false)}
+        currentUserId={userId}
       />
     </>
   );
@@ -1456,10 +1472,13 @@ export default function AttendeeEventPage() {
             qaOpen: autoJoinSession.qaOpen,
             pollsOpen: autoJoinSession.pollsOpen,
             speakers: autoJoinSession.speakers,
+            streamingProvider: autoJoinSession.streamingProvider,
+            virtualRoomId: autoJoinSession.virtualRoomId,
           }}
           eventId={eventId}
           isOpen={showAutoJoinSession}
           onClose={() => setShowAutoJoinSession(false)}
+          currentUserId={user?.id}
         />
       )}
     </PageTransition>

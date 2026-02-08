@@ -96,9 +96,11 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       recordingUrl
       broadcastOnly
       virtualRoomId
+      streamingProvider
       speakers {
         id
         name
+        userId
       }
     }
   }
