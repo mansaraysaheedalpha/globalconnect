@@ -205,7 +205,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
           <div className="flex items-center justify-center gap-3">
             <Button
               variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
+              className="bg-transparent border-white/20 text-white hover:bg-white/10"
               onClick={() => {
                 hasInitiatedRef.current = false;
                 setStatus("idle");
@@ -217,7 +217,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
             </Button>
             <Button
               variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
+              className="bg-transparent border-white/20 text-white hover:bg-white/10"
               onClick={onLeave}
             >
               Go Back
