@@ -11,7 +11,12 @@ import {
   CREATE_REGISTRATION_MUTATION,
   CHECK_EXISTING_REGISTRATION_QUERY,
 } from "@/graphql/public.graphql";
+import {
+  REGISTER_ATTENDEE_MUTATION,
+  LOGIN_USER_MUTATION,
+} from "@/components/features/Auth/auth.graphql";
 import { useAuthStore } from "@/store/auth.store";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,7 +43,6 @@ import {
   Loader2 as Loader,
   PartyPopper,
   ExternalLink,
-  UserPlus,
   CheckCircle2,
   AlertCircle,
   Sparkles,
@@ -52,7 +56,6 @@ import {
   Info,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -90,6 +93,12 @@ const guestFormSchema = z.object({
   first_name: z.string().min(1, "First name is required."),
   last_name: z.string().min(1, "Last name is required."),
   email: z.string().email("Please enter a valid email address."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+const loginFormSchema = z.object({
+  email: z.string().email("Please enter a valid email address."),
+  password: z.string().min(1, "Password is required."),
 });
 
 const profileFormSchema = z.object({
@@ -104,6 +113,7 @@ const profileFormSchema = z.object({
 });
 
 type GuestFormValues = z.infer<typeof guestFormSchema>;
+type LoginFormValues = z.infer<typeof loginFormSchema>;
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 // Helper to detect duplicate registration errors
@@ -123,7 +133,7 @@ export const RegistrationModal = ({
   eventId,
 }: RegistrationModalProps) => {
   const router = useRouter();
-  const { user, token } = useAuthStore();
+  const { user, token, setAuth } = useAuthStore();
 
   // Registration state
   const [isSuccess, setIsSuccess] = useState(false);
@@ -133,11 +143,17 @@ export const RegistrationModal = ({
 
   // Multi-step state
   const [step, setStep] = useState<"register" | "profile" | "complete">("register");
+  const [formMode, setFormMode] = useState<"signup" | "login">("signup");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const guestForm = useForm<GuestFormValues>({
     resolver: zodResolver(guestFormSchema),
-    defaultValues: { first_name: "", last_name: "", email: "" },
+    defaultValues: { first_name: "", last_name: "", email: "", password: "" },
+  });
+
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: { email: "", password: "" },
   });
 
   const profileForm = useForm<ProfileFormValues>({
@@ -179,54 +195,121 @@ export const RegistrationModal = ({
     }
   }, [isOpen, token, user, eventId, checkExistingRegistration]);
 
-  const [createRegistration, { loading }] = useMutation(
-    CREATE_REGISTRATION_MUTATION,
-    {
-      onCompleted: (data) => {
-        setTicketCode(data.createRegistration.ticketCode);
-        setIsSuccess(true);
-        // Move to profile step for authenticated users
-        if (token && user) {
-          setStep("profile");
-        }
-      },
-      onError: (error) => {
-        if (isDuplicateRegistrationError(error)) {
-          toast.error("Already Registered", {
-            description: "You or this email is already registered for this event.",
-            icon: <AlertCircle className="h-4 w-4" />,
-          });
-          if (token && user) {
-            checkExistingRegistration({
-              variables: { eventId },
-              context: { headers: { authorization: `Bearer ${token}` } },
-            });
-          }
-        } else {
-          toast.error("Registration Failed", { description: error.message });
-        }
-      },
-    }
-  );
+  const [createRegistration, { loading: registrationLoading }] = useMutation(CREATE_REGISTRATION_MUTATION);
+  const [registerAttendee, { loading: accountLoading }] = useMutation(REGISTER_ATTENDEE_MUTATION);
+  const [loginUser, { loading: loginLoading }] = useMutation(LOGIN_USER_MUTATION);
 
-  const handleGuestSubmit = (values: GuestFormValues) => {
-    createRegistration({
-      variables: {
-        eventId,
-        registrationIn: {
-          firstName: values.first_name,
-          lastName: values.last_name,
-          email: values.email,
-        },
-      },
+  const loading = registrationLoading || accountLoading || loginLoading;
+
+  const registerForEvent = async (authToken: string) => {
+    const { data } = await createRegistration({
+      variables: { eventId, registrationIn: {} },
+      context: { headers: { authorization: `Bearer ${authToken}` } },
     });
+    setTicketCode(data.createRegistration.ticketCode);
+    setIsSuccess(true);
+    setStep("profile");
   };
 
-  const handleAuthenticatedSubmit = () => {
-    createRegistration({
-      variables: { eventId, registrationIn: {} },
-      context: { headers: { authorization: token ? `Bearer ${token}` : "" } },
-    });
+  const handleGuestSubmit = async (values: GuestFormValues) => {
+    try {
+      // Step 1: Create account
+      const { data } = await registerAttendee({
+        variables: {
+          input: {
+            first_name: values.first_name,
+            last_name: values.last_name,
+            email: values.email,
+            password: values.password,
+          },
+        },
+      });
+
+      const { token: newToken, user: newUser } = data.registerAttendee;
+      setAuth(newToken, newUser);
+
+      // Step 2: Register for the event with the new account
+      try {
+        await registerForEvent(newToken);
+      } catch (regError: any) {
+        if (isDuplicateRegistrationError(regError)) {
+          toast.error("Already Registered", {
+            description: "You are already registered for this event.",
+          });
+        } else {
+          toast.error("Event registration failed", { description: regError.message });
+        }
+      }
+    } catch (error: any) {
+      const msg = error.message?.toLowerCase() || "";
+      if (msg.includes("already") || msg.includes("duplicate") || msg.includes("exists")) {
+        toast.error("An account with this email already exists.", {
+          description: "Please log in instead.",
+        });
+        loginForm.setValue("email", values.email);
+        setFormMode("login");
+      } else {
+        toast.error("Account creation failed", { description: error.message });
+      }
+    }
+  };
+
+  const handleLoginSubmit = async (values: LoginFormValues) => {
+    try {
+      const { data } = await loginUser({
+        variables: {
+          input: {
+            email: values.email,
+            password: values.password,
+          },
+        },
+      });
+
+      const loginResult = data.login;
+
+      if (loginResult.requires2FA) {
+        toast.info("Two-factor authentication required.", {
+          description: "Please log in through the login page first, then come back to register.",
+        });
+        return;
+      }
+
+      const { token: newToken, user: newUser } = loginResult;
+      setAuth(newToken, newUser);
+
+      try {
+        await registerForEvent(newToken);
+      } catch (regError: any) {
+        if (isDuplicateRegistrationError(regError)) {
+          toast.error("Already Registered", {
+            description: "You are already registered for this event.",
+          });
+        } else {
+          toast.error("Event registration failed", { description: regError.message });
+        }
+      }
+    } catch (error: any) {
+      toast.error("Login Failed", { description: error.message });
+    }
+  };
+
+  const handleAuthenticatedSubmit = async () => {
+    try {
+      await registerForEvent(token!);
+    } catch (error: any) {
+      if (isDuplicateRegistrationError(error)) {
+        toast.error("Already Registered", {
+          description: "You are already registered for this event.",
+          icon: <AlertCircle className="h-4 w-4" />,
+        });
+        checkExistingRegistration({
+          variables: { eventId },
+          context: { headers: { authorization: `Bearer ${token}` } },
+        });
+      } else {
+        toast.error("Registration Failed", { description: error.message });
+      }
+    }
   };
 
   const handleProfileSubmit = async (values: ProfileFormValues) => {
@@ -315,7 +398,9 @@ export const RegistrationModal = ({
       setExistingRegistration(null);
       setIsAlreadyRegistered(false);
       setStep("register");
+      setFormMode("signup");
       guestForm.reset();
+      loginForm.reset();
       profileForm.reset();
     }, 300);
   };
@@ -373,6 +458,54 @@ export const RegistrationModal = ({
       );
     }
 
+    if (formMode === "login") {
+      return (
+        <Form {...loginForm}>
+          <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4 py-4">
+            <FormField
+              control={loginForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl><Input type="email" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={loginForm.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl><PasswordInput {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <button
+                type="button"
+                className="text-primary hover:underline font-medium"
+                onClick={() => setFormMode("signup")}
+              >
+                Sign up
+              </button>
+            </p>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>Cancel</Button>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                Log In & Register
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      );
+    }
+
     return (
       <Form {...guestForm}>
         <form onSubmit={guestForm.handleSubmit(handleGuestSubmit)} className="space-y-4 py-4">
@@ -411,6 +544,28 @@ export const RegistrationModal = ({
               </FormItem>
             )}
           />
+          <FormField
+            control={guestForm.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl><PasswordInput {...field} /></FormControl>
+                <FormDescription>Must be at least 8 characters.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <button
+              type="button"
+              className="text-primary hover:underline font-medium"
+              onClick={() => setFormMode("login")}
+            >
+              Log in
+            </button>
+          </p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>Cancel</Button>
             <Button type="submit" disabled={loading}>
@@ -583,8 +738,6 @@ export const RegistrationModal = ({
 
   // Render complete step
   const renderCompleteStep = () => {
-    const isGuestRegistration = !token && !user;
-
     return (
       <div className="text-center py-8">
         <PartyPopper className="h-16 w-16 mx-auto text-green-500" />
@@ -595,29 +748,12 @@ export const RegistrationModal = ({
         </p>
         <p className="mt-4 text-sm">A confirmation has been sent to your email.</p>
 
-        {isGuestRegistration && (
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-medium">Want to manage all your events in one place?</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Create a free account to track your registrations, get reminders, and more.
-            </p>
-            <Link href="/auth/register">
-              <Button variant="secondary" className="mt-3 gap-2">
-                <UserPlus className="h-4 w-4" />
-                Create Free Account
-              </Button>
-            </Link>
-          </div>
-        )}
-
         <DialogFooter className="mt-6 flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleClose}>Close</Button>
-          {token && user && (
-            <Button onClick={handleGoToEvent} className="gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Go to My Event
-            </Button>
-          )}
+          <Button onClick={handleGoToEvent} className="gap-2">
+            <ExternalLink className="h-4 w-4" />
+            Go to My Event
+          </Button>
         </DialogFooter>
       </div>
     );
@@ -625,7 +761,7 @@ export const RegistrationModal = ({
 
   const renderContent = () => {
     if (step === "profile") return renderProfileStep();
-    if (step === "complete" || (isSuccess && !token)) return renderCompleteStep();
+    if (step === "complete") return renderCompleteStep();
     return renderRegistrationStep();
   };
 
