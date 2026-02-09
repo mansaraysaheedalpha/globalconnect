@@ -76,6 +76,8 @@ export function useVirtualStage() {
       setIsLoading(true);
       setError(null);
       try {
+        console.log("[useVirtualStage] Requesting token with options:", opts);
+
         const authToken = useAuthStore.getState().token;
         const res = await fetch(`${REALTIME_BASE_URL}/virtual-stage/token`, {
           method: "POST",
