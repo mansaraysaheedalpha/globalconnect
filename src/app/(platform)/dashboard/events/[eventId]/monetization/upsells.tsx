@@ -80,10 +80,12 @@ export const Upsells = () => {
   const params = useParams();
   const eventId = params.eventId as string;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<Offer | null>(null);
 
-  // Form state
+  // Form state (shared for create)
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -91,6 +93,15 @@ export const Upsells = () => {
   const [offerType, setOfferType] = useState("TICKET_UPGRADE");
   const [imageUrl, setImageUrl] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+
+  // Edit form state
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editOriginalPrice, setEditOriginalPrice] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editExpiresAt, setEditExpiresAt] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
 
   const { data, loading, error, refetch } = useQuery(GET_EVENT_MONETIZATION_QUERY, {
     variables: { eventId },
@@ -120,6 +131,54 @@ export const Upsells = () => {
       toast.error(err.message || "Failed to delete offer");
     },
   });
+
+  const [updateOffer, { loading: updating }] = useMutation(UPDATE_OFFER_MUTATION, {
+    onCompleted: () => {
+      toast.success("Offer updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingOffer(null);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update offer");
+    },
+  });
+
+  const handleEditClick = (offer: Offer) => {
+    setEditingOffer(offer);
+    setEditTitle(offer.title);
+    setEditDescription(offer.description || "");
+    setEditPrice(offer.price.toString());
+    setEditOriginalPrice(offer.originalPrice?.toString() || "");
+    setEditImageUrl(offer.imageUrl || "");
+    setEditExpiresAt(
+      offer.expiresAt
+        ? new Date(offer.expiresAt).toISOString().slice(0, 16)
+        : ""
+    );
+    setEditIsActive(offer.isActive);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOffer) return;
+
+    updateOffer({
+      variables: {
+        id: editingOffer.id,
+        offerIn: {
+          title: editTitle,
+          description: editDescription || null,
+          price: parseFloat(editPrice),
+          originalPrice: editOriginalPrice ? parseFloat(editOriginalPrice) : null,
+          imageUrl: editImageUrl || null,
+          expiresAt: editExpiresAt || null,
+          isActive: editIsActive,
+        },
+      },
+    });
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -374,7 +433,8 @@ export const Upsells = () => {
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => handleEditClick(offer)}>
+                  <Edit className="h-4 w-4 mr-2" />
                   Edit Offer
                 </Button>
               </CardFooter>
@@ -382,6 +442,97 @@ export const Upsells = () => {
           ))}
         </div>
       )}
+      {/* Edit Offer Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) setEditingOffer(null);
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <form onSubmit={handleEditSubmit}>
+            <DialogHeader>
+              <DialogTitle>Edit Offer</DialogTitle>
+              <DialogDescription>
+                Update the details of this offer.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="editTitle">Offer Title</Label>
+                <Input
+                  id="editTitle"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="e.g. VIP Backstage Pass"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editDescription">Description</Label>
+                <Textarea
+                  id="editDescription"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="What does the attendee get?"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editPrice">Offer Price</Label>
+                  <Input
+                    id="editPrice"
+                    type="number"
+                    step="0.01"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    placeholder="19.99"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="editOriginalPrice">Original Price (Optional)</Label>
+                  <Input
+                    id="editOriginalPrice"
+                    type="number"
+                    step="0.01"
+                    value={editOriginalPrice}
+                    onChange={(e) => setEditOriginalPrice(e.target.value)}
+                    placeholder="39.99"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editExpiresAt">Expires At (Optional)</Label>
+                <Input
+                  id="editExpiresAt"
+                  type="datetime-local"
+                  value={editExpiresAt}
+                  onChange={(e) => setEditExpiresAt(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="editIsActive"
+                  type="checkbox"
+                  checked={editIsActive}
+                  onChange={(e) => setEditIsActive(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="editIsActive">Active</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updating}>
+                {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}

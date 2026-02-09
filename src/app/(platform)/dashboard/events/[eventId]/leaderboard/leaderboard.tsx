@@ -10,20 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useGamification } from "@/hooks/use-gamification";
-import { useParams, useSearchParams } from "next/navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Crown, AlertCircle } from "lucide-react";
 
 interface LeaderboardProps {
-  sessionId?: string;
+  sessionId: string;
 }
 
-export const Leaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {}) => {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  // Use prop sessionId, or query param, or fallback to eventId
-  const sessionId = propSessionId || searchParams.get("sessionId") || (params.eventId as string);
-
+export const Leaderboard = ({ sessionId }: LeaderboardProps) => {
   const { leaderboard, isConnected, error } = useGamification({ sessionId });
 
   if (error) {
@@ -32,6 +26,14 @@ export const Leaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {})
         <AlertCircle className="h-5 w-5" />
         <span>Failed to load leaderboard: {error}</span>
       </div>
+    );
+  }
+
+  if (leaderboard.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-4 text-center">
+        No activity yet. Points will appear here as attendees interact during the session.
+      </p>
     );
   }
 
@@ -59,7 +61,6 @@ export const Leaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {})
             <TableCell>
               <div className="flex items-center gap-2">
                 <Avatar>
-                  <AvatarImage src={`https://github.com/shadcn.png`} />
                   <AvatarFallback>
                     {entry.user.firstName.charAt(0)}
                     {entry.user.lastName.charAt(0)}
@@ -79,11 +80,7 @@ export const Leaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {})
   );
 };
 
-export const TeamLeaderboard = ({ sessionId: propSessionId }: LeaderboardProps = {}) => {
-    const params = useParams();
-    const searchParams = useSearchParams();
-    const sessionId = propSessionId || searchParams.get("sessionId") || (params.eventId as string);
-
+export const TeamLeaderboard = ({ sessionId }: LeaderboardProps) => {
     const { teamLeaderboard, error } = useGamification({ sessionId });
 
     if (error) {
@@ -92,6 +89,14 @@ export const TeamLeaderboard = ({ sessionId: propSessionId }: LeaderboardProps =
           <AlertCircle className="h-5 w-5" />
           <span>Failed to load team leaderboard: {error}</span>
         </div>
+      );
+    }
+
+    if (teamLeaderboard.length === 0) {
+      return (
+        <p className="text-sm text-muted-foreground py-4 text-center">
+          No teams yet.
+        </p>
       );
     }
 
