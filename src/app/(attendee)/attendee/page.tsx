@@ -190,7 +190,8 @@ const EventCard = ({ registration }: { registration: Registration }) => {
 
 export default function AttendeeDashboard() {
   const { data, loading, error } = useQuery(GET_MY_REGISTRATIONS_QUERY, {
-    fetchPolicy: "cache-and-network", // Always fetch fresh data while showing cached
+    fetchPolicy: "network-only", // Always fetch fresh data to prevent stale event dates
+    nextFetchPolicy: "cache-first", // Use cache for subsequent fetches in same session
   });
 
   // Only show loading skeleton if we have no data at all (first load)

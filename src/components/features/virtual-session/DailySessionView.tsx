@@ -60,7 +60,9 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
   const [retryCount, setRetryCount] = useState(0);
   const hasInitiatedRef = useRef(false);
 
-  const [updateSession] = useMutation(UPDATE_SESSION_MUTATION);
+  const [updateSession] = useMutation(UPDATE_SESSION_MUTATION, {
+    refetchQueries: ["GetSessionsByEvent"],
+  });
 
   const user = useAuthStore((s) => s.user);
   const userName = user
@@ -123,8 +125,43 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
       });
 
       if (!token) {
+        const tokenError = stageError || "Failed to get a meeting token.";
+
+        // Check if token error is due to expired room
+        const isExpiredRoom = tokenError.toLowerCase().includes("room is no longer available") ||
+                             tokenError.toLowerCase().includes("room has ended") ||
+                             tokenError.toLowerCase().includes("meeting ended");
+
+        // If speaker encounters expired room, clear it and retry
+        if (isSpeaker && isExpiredRoom && session.virtualRoomId) {
+          console.log("[DailySessionView] Token failed due to expired room, clearing and creating new room...");
+
+          try {
+            await updateSession({
+              variables: {
+                id: session.id,
+                sessionIn: {
+                  streamingUrl: null,
+                  virtualRoomId: null,
+                },
+              },
+            });
+
+            setErrorMessage("Previous room expired. Creating new room...");
+            setTimeout(() => {
+              hasInitiatedRef.current = false;
+              setStatus("idle");
+              setErrorMessage(null);
+              initJoin();
+            }, 1000);
+            return;
+          } catch (resetErr) {
+            console.error("[DailySessionView] Failed to reset expired room:", resetErr);
+          }
+        }
+
         setStatus("error");
-        setErrorMessage("Failed to get a meeting token. Please try again.");
+        setErrorMessage(tokenError);
         return;
       }
 
@@ -132,8 +169,45 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
       await joinCall(roomUrl!, token, userName);
       setStatus("joined");
     } catch (err: any) {
+      const errorMsg = err.message || "An unexpected error occurred.";
+
+      // Check if this is an expired room error
+      const isExpiredRoom = errorMsg.toLowerCase().includes("room is no longer available") ||
+                           errorMsg.toLowerCase().includes("room has ended") ||
+                           errorMsg.toLowerCase().includes("meeting ended");
+
+      // If speaker encounters expired room, clear it and allow creating a new one
+      if (isSpeaker && isExpiredRoom && session.virtualRoomId) {
+        console.log("[DailySessionView] Detected expired room, clearing and creating new room...");
+
+        try {
+          // Clear the expired room info
+          await updateSession({
+            variables: {
+              id: session.id,
+              sessionIn: {
+                streamingUrl: null,
+                virtualRoomId: null,
+              },
+            },
+          });
+
+          // Reset state and retry (this will trigger lazy provisioning)
+          setErrorMessage("Previous room expired. Creating new room...");
+          setTimeout(() => {
+            hasInitiatedRef.current = false;
+            setStatus("idle");
+            setErrorMessage(null);
+            initJoin();
+          }, 1000);
+          return;
+        } catch (resetErr) {
+          console.error("[DailySessionView] Failed to reset expired room:", resetErr);
+        }
+      }
+
       setStatus("error");
-      setErrorMessage(err.message || "An unexpected error occurred.");
+      setErrorMessage(errorMsg);
     }
   }, [session, eventId, isSpeaker, userName, createRoom, getToken, joinCall, updateSession]);
 

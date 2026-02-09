@@ -193,6 +193,7 @@ export const UPDATE_SESSION_MUTATION = gql`
       reactionsEnabled
       breakoutEnabled
       sessionType
+      virtualRoomId
       streamingUrl
       recordingUrl
       broadcastOnly

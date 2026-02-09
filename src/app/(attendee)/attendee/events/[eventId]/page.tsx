@@ -59,6 +59,7 @@ import { SessionPolls } from "@/app/(platform)/dashboard/events/[eventId]/_compo
 import { SlideViewer, DroppedContentNotification } from "@/components/features/presentation/slide-viewer";
 import { usePresentationControl, DroppedContent } from "@/hooks/use-presentation-control";
 import { useAuthStore } from "@/store/auth.store";
+import { useEventUpdates } from "@/hooks/use-event-updates";
 import { toast } from "sonner";
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
@@ -996,6 +997,8 @@ export default function AttendeeEventPage() {
   const { data, loading, error } = useQuery(GET_ATTENDEE_EVENT_DETAILS_QUERY, {
     variables: { eventId },
     skip: !eventId,
+    fetchPolicy: "network-only", // Always fetch fresh data to prevent stale event/session times
+    nextFetchPolicy: "cache-first", // Use cache for subsequent fetches in same session
   });
 
   const { data: attendeesData } = useQuery(GET_EVENT_ATTENDEES_QUERY, {
