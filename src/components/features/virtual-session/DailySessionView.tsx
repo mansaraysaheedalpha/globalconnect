@@ -59,6 +59,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const hasInitiatedRef = useRef(false);
+  const hasHandledExpiredRoomRef = useRef(false);
 
   const [updateSession] = useMutation(UPDATE_SESSION_MUTATION, {
     refetchQueries: ["GetSessionsByEvent"],
@@ -235,6 +236,55 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
       return () => clearTimeout(retryTimer);
     }
   }, [status, isSpeaker, errorMessage, retryCount, initJoin]);
+
+  // Monitor DailyProvider errors and handle expired room errors
+  useEffect(() => {
+    if (callError && isSpeaker && session.virtualRoomId && !hasHandledExpiredRoomRef.current) {
+      const errorLower = callError.toLowerCase();
+      const isExpiredRoom = errorLower.includes("room is no longer available") ||
+                           errorLower.includes("room has ended") ||
+                           errorLower.includes("meeting ended");
+
+      if (isExpiredRoom) {
+        console.log("[DailySessionView] Detected expired room from DailyProvider error, clearing and creating new room...");
+        hasHandledExpiredRoomRef.current = true; // Mark as handled to prevent multiple attempts
+
+        // Clear the expired room and create a new one
+        (async () => {
+          try {
+            console.log("[DailySessionView] Clearing expired room:", session.virtualRoomId);
+            await updateSession({
+              variables: {
+                id: session.id,
+                sessionIn: {
+                  streamingUrl: null,
+                  virtualRoomId: null,
+                },
+              },
+            });
+
+            console.log("[DailySessionView] Room cleared, preparing to create new room...");
+            setStatus("provisioning");
+            setErrorMessage("Previous room expired. Creating new room...");
+
+            // Wait for mutation to complete and UI to update, then retry
+            setTimeout(() => {
+              hasInitiatedRef.current = false;
+              hasHandledExpiredRoomRef.current = false; // Reset for future errors
+              setErrorMessage(null);
+              setStatus("idle");
+              initJoin();
+            }, 2000);
+          } catch (resetErr) {
+            console.error("[DailySessionView] Failed to reset expired room:", resetErr);
+            hasHandledExpiredRoomRef.current = false; // Allow retry
+            setStatus("error");
+            setErrorMessage("Failed to reset expired room. Please try again.");
+          }
+        })();
+      }
+    }
+  }, [callError, isSpeaker, session.virtualRoomId, session.id, updateSession, initJoin]);
 
   // Handle leaving the call
   const handleLeave = useCallback(async () => {
