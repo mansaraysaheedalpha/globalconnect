@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Microphone Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #0052a3;
+    }
+    #status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 6px;
+      background: #f0f0f0;
+    }
+    .success {
+      background: #d4edda !important;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da !important;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 Microphone Test</h1>
+    <p>This simple test checks if your browser can access your microphone.</p>
+
+    <button onclick="testMicrophone()">Test Microphone</button>
+    <button onclick="stopTest()">Stop Test</button>
+
+    <div id="status">Click "Test Microphone" to start</div>
+
+    <h2>Instructions:</h2>
+    <ol>
+      <li>Click "Test Microphone"</li>
+      <li>Allow microphone access when browser prompts</li>
+      <li>If successful, you should see "✅ SUCCESS" message</li>
+      <li>Open Console (F12) to see detailed logs</li>
+    </ol>
+  </div>
+
+  <script>
+    let stream = null;
+
+    async function testMicrophone() {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = '';
+      statusDiv.textContent = '🔄 Requesting microphone access...';
+
+      console.log('[MicTest] Starting microphone test...');
+
+      try {
+        // Request microphone access
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+        console.log('[MicTest] ✅ Microphone access granted!');
+        console.log('[MicTest] Stream:', stream);
+        console.log('[MicTest] Audio tracks:', stream.getAudioTracks());
+
+        const audioTrack = stream.getAudioTracks()[0];
+        if (audioTrack) {
+          console.log('[MicTest] Audio track details:', {
+            enabled: audioTrack.enabled,
+            muted: audioTrack.muted,
+            readyState: audioTrack.readyState,
+            label: audioTrack.label,
+            settings: audioTrack.getSettings(),
+          });
+
+          statusDiv.className = 'success';
+          statusDiv.innerHTML = `
+            ✅ SUCCESS! Microphone is working<br>
+            <strong>Device:</strong> ${audioTrack.label}<br>
+            <strong>State:</strong> ${audioTrack.readyState}<br>
+            <strong>Enabled:</strong> ${audioTrack.enabled}<br>
+            <strong>Muted:</strong> ${audioTrack.muted}
+          `;
+        }
+
+        // List all devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+        console.log('[MicTest] Available audio inputs:', audioInputs);
+
+      } catch (error) {
+        console.error('[MicTest] ❌ Error:', error);
+        statusDiv.className = 'error';
+        statusDiv.innerHTML = `
+          ❌ ERROR: ${error.name}<br>
+          <strong>Message:</strong> ${error.message}<br><br>
+          <strong>What this means:</strong><br>
+          ${getErrorExplanation(error.name)}
+        `;
+      }
+    }
+
+    function stopTest() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        console.log('[MicTest] Stopped microphone');
+        document.getElementById('status').textContent = 'Microphone test stopped';
+        stream = null;
+      }
+    }
+
+    function getErrorExplanation(errorName) {
+      const explanations = {
+        'NotAllowedError': 'You denied microphone permission. Click the 🔒 lock icon in the address bar and change microphone to "Allow".',
+        'NotFoundError': 'No microphone detected. Check if your mic is plugged in and enabled in Windows Sound settings.',
+        'NotReadableError': 'Microphone is already in use by another application. Close other apps using your mic.',
+        'OverconstrainedError': 'No microphone matches the requirements.',
+        'SecurityError': 'Microphone access blocked by browser security settings.',
+      };
+      return explanations[errorName] || 'Unknown error. Check browser console for details.';
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', stopTest);
+  </script>
+</body>
+</html>
