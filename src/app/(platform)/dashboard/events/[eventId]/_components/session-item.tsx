@@ -332,6 +332,17 @@ export const SessionItem = ({
   const timePassed = currentTime > endTime;
   const hasRoom = !!session.virtualRoomId;
 
+  console.log("[SessionItem] Session status check:", {
+    id: session.id,
+    title: session.title,
+    streamingProvider: session.streamingProvider,
+    isDailySession,
+    timeArrived,
+    timePassed,
+    hasRoom,
+    showGoLive: isDailySession && timeArrived && !timePassed && !hasRoom,
+  });
+
   // For Daily sessions: use room existence to determine if organizer has "gone live"
   // For non-Daily sessions: fall back to time-based status
   const showGoLive = isDailySession && timeArrived && !timePassed && !hasRoom;
@@ -467,7 +478,15 @@ export const SessionItem = ({
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
-                  onClick={() => setShowVirtualSession(true)}
+                  onClick={() => {
+                    console.log("[SessionItem] Join Session clicked", {
+                      isDailySession,
+                      virtualRoomId: session.virtualRoomId,
+                      streamingProvider: session.streamingProvider,
+                      showVirtualSession,
+                    });
+                    setShowVirtualSession(true);
+                  }}
                 >
                   <Video className="h-3.5 w-3.5" />
                   Join Session

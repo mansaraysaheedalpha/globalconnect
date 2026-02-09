@@ -312,6 +312,14 @@ export function VirtualSessionView({
   currentUserId,
   lobbyVideoUrl,
 }: VirtualSessionViewProps) {
+  console.log("[VirtualSessionView] Rendered with:", {
+    isOpen,
+    sessionId: session.id,
+    status: session.status,
+    streamingProvider: session.streamingProvider,
+    virtualRoomId: session.virtualRoomId,
+  });
+
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
   const [lobbyDismissed, setLobbyDismissed] = useState(false);
   const [liveChatOpen, setLiveChatOpen] = useState(session.chatOpen ?? false);
