@@ -1006,6 +1006,12 @@ export default function AttendeeEventPage() {
     skip: !eventId,
   });
 
+  // Listen for real-time event/session update notifications
+  useEventUpdates({
+    eventId,
+    autoRefetch: true,
+  });
+
   const availableUsers = React.useMemo(() => {
     if (!attendeesData?.eventAttendees) return [];
 
