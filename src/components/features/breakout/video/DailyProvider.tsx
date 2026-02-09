@@ -296,8 +296,54 @@ export function DailyProvider({ children }: DailyProviderProps) {
 
       // Verify audio is enabled
       const localParticipant = call.participants().local;
-      console.log("[DailyProvider] Local audio enabled:", localParticipant?.audio);
-      console.log("[DailyProvider] Local video enabled:", localParticipant?.video);
+      console.log("[DailyProvider] ========== AUDIO DEBUG ==========");
+      console.log("[DailyProvider] Local participant:", {
+        audio: localParticipant?.audio,
+        video: localParticipant?.video,
+        tracks: localParticipant?.tracks,
+      });
+
+      // Check if audio track exists and is enabled
+      const audioTrack = localParticipant?.tracks?.audio;
+      if (audioTrack) {
+        console.log("[DailyProvider] Audio track details:", {
+          state: audioTrack.state,
+          blocked: audioTrack.blocked,
+          off: audioTrack.off,
+          track: audioTrack.track,
+          persistentTrack: audioTrack.persistentTrack,
+        });
+
+        // Check the actual MediaStreamTrack
+        if (audioTrack.persistentTrack) {
+          const mediaTrack = audioTrack.persistentTrack;
+          console.log("[DailyProvider] MediaStreamTrack:", {
+            enabled: mediaTrack.enabled,
+            muted: mediaTrack.muted,
+            readyState: mediaTrack.readyState,
+            label: mediaTrack.label,
+          });
+        }
+      } else {
+        console.error("[DailyProvider] ❌ No audio track found!");
+      }
+
+      // Check audio input devices
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+        console.log("[DailyProvider] Available audio input devices:", audioInputs.map(d => ({
+          deviceId: d.deviceId,
+          label: d.label,
+        })));
+      } catch (devErr) {
+        console.error("[DailyProvider] Failed to enumerate devices:", devErr);
+      }
+
+      console.log("[DailyProvider] ================================");
+
+      // Force sync participant state to ensure UI reflects actual Daily.co state
+      updateParticipants(call);
 
       // Set initial receive settings for optimal performance
       // Start with medium quality to balance performance and quality
@@ -340,8 +386,20 @@ export function DailyProvider({ children }: DailyProviderProps) {
   // Toggle microphone
   const toggleMic = useCallback(() => {
     if (callObject) {
-      callObject.setLocalAudio(!isMicOn);
-      setIsMicOn(!isMicOn);
+      const newState = !isMicOn;
+      console.log("[DailyProvider] Toggling mic:", { from: isMicOn, to: newState });
+      callObject.setLocalAudio(newState);
+      setIsMicOn(newState);
+
+      // Verify the change
+      setTimeout(() => {
+        const local = callObject.participants().local;
+        console.log("[DailyProvider] Mic state after toggle:", {
+          stateVar: newState,
+          dailyState: local?.audio,
+          tracks: local?.tracks?.audio,
+        });
+      }, 500);
     }
   }, [callObject, isMicOn]);
 
