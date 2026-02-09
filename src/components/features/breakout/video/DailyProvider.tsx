@@ -75,6 +75,8 @@ export function DailyProvider({ children }: DailyProviderProps) {
   // Use ref to track call object for cleanup to avoid stale closure issues
   const callObjectRef = useRef<DailyCall | null>(null);
   const cpuMonitorRef = useRef<NodeJS.Timeout | null>(null);
+  // Track audio elements for remote participants (keyed by track id)
+  const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   // Update participants list
   const updateParticipants = useCallback((call: DailyCall) => {
@@ -142,10 +144,14 @@ export function DailyProvider({ children }: DailyProviderProps) {
 
     try {
       // Request camera and microphone permissions explicitly
+      // IMPORTANT: We must stop the tracks immediately after the permission check
+      // to avoid holding the microphone/camera and conflicting with Daily's own streams
       console.log("[DailyProvider] Requesting camera and microphone permissions...");
       try {
-        await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        console.log("[DailyProvider] Permissions granted");
+        const permissionStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // Release the tracks so Daily.co can acquire the devices cleanly
+        permissionStream.getTracks().forEach((track) => track.stop());
+        console.log("[DailyProvider] Permissions granted, tracks released");
       } catch (permErr) {
         console.error("[DailyProvider] Permission denied:", permErr);
         throw new Error("Camera or microphone permission denied. Please allow access and try again.");
@@ -230,6 +236,50 @@ export function DailyProvider({ children }: DailyProviderProps) {
 
       call.on("camera-error", (event) => {
         console.error("Camera error:", event);
+      });
+
+      // Handle remote participant audio playback
+      // createCallObject() does NOT auto-play remote audio — we must do it ourselves
+      call.on("track-started", (event) => {
+        if (!event?.track || event.track.kind !== "audio" || event.participant?.local) {
+          return;
+        }
+        const trackId = event.track.id;
+        console.log("[DailyProvider] Remote audio track started:", trackId);
+
+        // Clean up any existing element for this track
+        const existing = audioElementsRef.current.get(trackId);
+        if (existing) {
+          existing.srcObject = null;
+          existing.remove();
+        }
+
+        const audioEl = document.createElement("audio");
+        audioEl.autoplay = true;
+        audioEl.setAttribute("playsinline", "true");
+        audioEl.srcObject = new MediaStream([event.track]);
+        // Hidden, appended to body so it persists regardless of component lifecycle
+        document.body.appendChild(audioEl);
+        audioElementsRef.current.set(trackId, audioEl);
+
+        // Explicitly call play() to handle browsers that ignore autoplay
+        audioEl.play().catch((err) => {
+          console.warn("[DailyProvider] Audio play() failed (autoplay policy):", err);
+        });
+      });
+
+      call.on("track-stopped", (event) => {
+        if (!event?.track || event.track.kind !== "audio") {
+          return;
+        }
+        const trackId = event.track.id;
+        const audioEl = audioElementsRef.current.get(trackId);
+        if (audioEl) {
+          console.log("[DailyProvider] Remote audio track stopped:", trackId);
+          audioEl.srcObject = null;
+          audioEl.remove();
+          audioElementsRef.current.delete(trackId);
+        }
       });
 
       // Recording event listeners
@@ -358,6 +408,15 @@ export function DailyProvider({ children }: DailyProviderProps) {
     }
   }, [updateParticipants, startCpuMonitoring]);
 
+  // Clean up all remote audio elements
+  const cleanupAudioElements = useCallback(() => {
+    audioElementsRef.current.forEach((el) => {
+      el.srcObject = null;
+      el.remove();
+    });
+    audioElementsRef.current.clear();
+  }, []);
+
   // Leave the call
   const leaveCall = useCallback(async () => {
     if (callObject) {
@@ -367,13 +426,14 @@ export function DailyProvider({ children }: DailyProviderProps) {
       } catch (err) {
         console.error("Error leaving call:", err);
       }
+      cleanupAudioElements();
       setCallObject(null);
       callObjectRef.current = null;
       setIsJoined(false);
       setParticipants([]);
       setLocalParticipant(null);
     }
-  }, [callObject]);
+  }, [callObject, cleanupAudioElements]);
 
   // Toggle camera
   const toggleCamera = useCallback(() => {
@@ -471,6 +531,12 @@ export function DailyProvider({ children }: DailyProviderProps) {
       if (cpuMonitorRef.current) {
         clearInterval(cpuMonitorRef.current);
       }
+      // Clean up any lingering audio elements
+      audioElementsRef.current.forEach((el) => {
+        el.srcObject = null;
+        el.remove();
+      });
+      audioElementsRef.current.clear();
     };
   }, []);
 

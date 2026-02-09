@@ -34,13 +34,13 @@ export enum PointReason {
 }
 
 export const POINT_VALUES: Record<PointReason, number> = {
-  [PointReason.MESSAGE_SENT]: 10,
-  [PointReason.MESSAGE_REACTED]: 5,
-  [PointReason.QUESTION_ASKED]: 20,
-  [PointReason.QUESTION_UPVOTED]: 5,
-  [PointReason.POLL_CREATED]: 15,
-  [PointReason.POLL_VOTED]: 10,
-  [PointReason.WAITLIST_JOINED]: 5,
+  [PointReason.MESSAGE_SENT]: 1,
+  [PointReason.MESSAGE_REACTED]: 2,
+  [PointReason.QUESTION_ASKED]: 5,
+  [PointReason.QUESTION_UPVOTED]: 2,
+  [PointReason.POLL_CREATED]: 10,
+  [PointReason.POLL_VOTED]: 1,
+  [PointReason.WAITLIST_JOINED]: 3,
 };
 
 export interface RecentPointEvent {

@@ -18,6 +18,7 @@ export function VideoTile({ participant, isLocal = false, isLarge = false, class
   const screenRef = useRef<HTMLVideoElement>(null);
 
   // Attach video track with proper cleanup
+  // Note: Audio is handled globally by DailyProvider via track-started/track-stopped events
   useEffect(() => {
     const videoElement = videoRef.current;
     const videoTrack = participant.tracks?.video;
