@@ -154,10 +154,10 @@ export const AddSessionModal = ({
       reactionsEnabled: true,
       breakoutEnabled: false,
       sessionType: "MAINSTAGE",
-      streamingProvider: "",
+      streamingProvider: "daily", // Default to Daily.co for virtual sessions
       streamingUrl: "",
       isRecordable: true,
-      broadcastOnly: true,
+      broadcastOnly: false, // Default to interactive (not broadcast-only)
       // Green Room defaults
       greenRoomEnabled: true,
       greenRoomOpensMinutesBefore: 15,
@@ -383,7 +383,7 @@ export const AddSessionModal = ({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a provider (optional)..." />
+                          <SelectValue placeholder="Daily.co (default)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
