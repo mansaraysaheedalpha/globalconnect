@@ -281,8 +281,10 @@ export const EngagementDashboard: React.FC<EngagementDashboardProps> = ({
               {latestAnomaly.severity} - {latestAnomaly.type.replace(/_/g, ' ')}
             </h4>
             <p>
-              Engagement dropped to {(latestAnomaly.currentEngagement * 100).toFixed(1)}%
-              (expected: {(latestAnomaly.expectedEngagement * 100).toFixed(1)}%)
+              {latestAnomaly.type === 'MASS_EXIT'
+                ? `High user exit rate detected. Current engagement: ${(latestAnomaly.currentEngagement * 100).toFixed(1)}%`
+                : `Engagement dropped to ${(latestAnomaly.currentEngagement * 100).toFixed(1)}% (expected: ${(latestAnomaly.expectedEngagement * 100).toFixed(1)}%)`
+              }
             </p>
           </div>
         </div>

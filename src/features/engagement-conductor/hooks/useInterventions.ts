@@ -71,16 +71,25 @@ export const useInterventions = ({
     try {
       setIsLoading(true);
       const token = useAuthStore.getState().token;
+
+      // Abort fetch after 10 seconds to prevent permanent loading state
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch(`${effectiveApiBaseUrl}/api/v1/interventions/history/${sessionId}?limit=20`, {
         headers: {
           ...(token && { Authorization: `Bearer ${token}` }),
         },
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!response.ok) {
-        // Don't throw on rate limit - just log and continue
+        // Don't throw on rate limit - just log and retry on next cycle
         if (response.status === 429) {
           console.warn('[useInterventions] Rate limited - will retry later');
+          // Reset last fetch time to allow retry sooner (after half the debounce)
+          lastFetchTimeRef.current = now - (MIN_FETCH_INTERVAL_MS / 2);
           return;
         }
         throw new Error(`Failed to fetch intervention history: ${response.statusText}`);
@@ -89,7 +98,7 @@ export const useInterventions = ({
       const data = await response.json();
 
       // Transform API response to match our Intervention type
-      const interventions: Intervention[] = data.interventions.map((item: any) => ({
+      const interventions: Intervention[] = (data.interventions || []).map((item: any) => ({
         id: item.id,
         sessionId: item.session_id,
         type: item.type,
