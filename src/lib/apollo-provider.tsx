@@ -247,23 +247,23 @@ const client = new ApolloClient({
  * Restores the cache from IndexedDB on mount and sets up auto-persistence.
  */
 function CachePersistenceInitializer() {
-  const initialized = useRef(false);
-  const cleanupPersistRef = useRef<(() => void) | null>(null);
-
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
+    let cancelled = false;
+    let cleanupPersist: (() => void) | null = null;
 
     // Restore cache from IndexedDB, then set up auto-persistence
     restoreCache(cache).then(() => {
-      cleanupPersistRef.current = setupCachePersistence(cache);
+      if (!cancelled) {
+        cleanupPersist = setupCachePersistence(cache);
+      }
     });
 
     // Initialize the sync manager to replay mutations when online
     const cleanupSync = initSyncManager(client as ApolloClient<NormalizedCacheObject>);
 
     return () => {
-      cleanupPersistRef.current?.();
+      cancelled = true;
+      cleanupPersist?.();
       cleanupSync();
     };
   }, []);

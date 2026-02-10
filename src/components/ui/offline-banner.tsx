@@ -2,6 +2,7 @@
 "use client";
 
 import { useNetworkStatus, ConnectionQuality } from "@/hooks/use-network-status";
+import { getPendingMutationCount } from "@/lib/offline-storage";
 import { WifiOff, Wifi, Signal, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -16,10 +17,10 @@ export function OfflineBanner() {
   const [visible, setVisible] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Check for pending mutations in IndexedDB
+  // Check for pending mutations using shared offline-storage utility
   useEffect(() => {
     if (!isOnline) {
-      checkPendingMutations().then(setPendingCount);
+      getPendingMutationCount().then(setPendingCount).catch(() => setPendingCount(0));
     }
     if (justReconnected) {
       setPendingCount(0);
@@ -105,33 +106,3 @@ function getBannerMessage(
   return "";
 }
 
-async function checkPendingMutations(): Promise<number> {
-  try {
-    if (typeof indexedDB === "undefined") return 0;
-    return new Promise((resolve) => {
-      const request = indexedDB.open("event_dynamics_offline", 2);
-      request.onsuccess = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains("mutationQueue")) {
-          db.close();
-          resolve(0);
-          return;
-        }
-        const tx = db.transaction("mutationQueue", "readonly");
-        const store = tx.objectStore("mutationQueue");
-        const countReq = store.count();
-        countReq.onsuccess = () => {
-          db.close();
-          resolve(countReq.result);
-        };
-        countReq.onerror = () => {
-          db.close();
-          resolve(0);
-        };
-      };
-      request.onerror = () => resolve(0);
-    });
-  } catch {
-    return 0;
-  }
-}

@@ -1,7 +1,7 @@
 // src/components/providers/offline-provider.tsx
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { OfflineBanner } from "@/components/ui/offline-banner";
 import { onSyncEvent } from "@/lib/sync-manager";
@@ -16,12 +16,7 @@ import { onSyncEvent } from "@/lib/sync-manager";
  * Place inside the ApolloProvider (needs Apollo context for sync manager).
  */
 export function OfflineProvider({ children }: { children: React.ReactNode }) {
-  const initialized = useRef(false);
-
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
     // Subscribe to sync events for user-facing notifications
     const unsubscribe = onSyncEvent((event) => {
       switch (event.type) {

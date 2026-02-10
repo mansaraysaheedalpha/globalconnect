@@ -22,14 +22,14 @@ import { queueMutation } from "./offline-storage";
 
 // Mutations that are safe to queue offline (non-destructive, idempotent-friendly)
 const QUEUEABLE_MUTATIONS = new Set([
-  // Attendee actions
+  // Session participation
   "JoinVirtualSession",
   "LeaveVirtualSession",
-  // Potentially add more as needed:
-  // "SendChatMessage",
-  // "SubmitQuestion",
-  // "VoteOnPoll",
-  // "SendReaction",
+  // Attendee interactions
+  "SendChatMessage",
+  "SubmitQuestion",
+  "VoteOnPoll",
+  "SendReaction",
 ]);
 
 export class OfflineLink extends ApolloLink {

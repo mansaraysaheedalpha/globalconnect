@@ -67,52 +67,54 @@ export async function processMutationQueue(
   let completed = 0;
   let failed = 0;
 
-  emit({ type: "sync_start", pendingCount: pending.length });
+  try {
+    emit({ type: "sync_start", pendingCount: pending.length });
 
-  for (const mutation of pending) {
-    try {
-      // Mark as in-flight
-      await updateMutationStatus(mutation.id, "in_flight");
+    for (const mutation of pending) {
+      try {
+        // Mark as in-flight
+        await updateMutationStatus(mutation.id, "in_flight");
 
-      // Parse the stored GraphQL document and variables
-      const document = gql(mutation.query);
-      const variables = JSON.parse(mutation.variables);
+        // Parse the stored GraphQL document and variables
+        const document = gql(mutation.query);
+        const variables = JSON.parse(mutation.variables);
 
-      // Execute the mutation
-      await client.mutate({
-        mutation: document,
-        variables,
-        context: {
-          headers: {
-            "X-Idempotency-Key": mutation.idempotencyKey,
+        // Execute the mutation
+        await client.mutate({
+          mutation: document,
+          variables,
+          context: {
+            headers: {
+              "X-Idempotency-Key": mutation.idempotencyKey,
+            },
           },
-        },
-      });
+        });
 
-      // Mark as completed
-      await updateMutationStatus(mutation.id, "completed");
-      completed++;
-      emit({ type: "mutation_replayed", mutation });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        // Mark as completed
+        await updateMutationStatus(mutation.id, "completed");
+        completed++;
+        emit({ type: "mutation_replayed", mutation });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-      // Check if we've exceeded max retries
-      if (mutation.retryCount + 1 >= mutation.maxRetries) {
-        await updateMutationStatus(mutation.id, "failed", errorMessage);
-        failed++;
-        emit({ type: "mutation_failed", mutation, error: errorMessage });
-      } else {
-        // Reset to pending for next sync cycle
-        await updateMutationStatus(mutation.id, "pending", errorMessage);
+        // Check if we've exceeded max retries
+        if (mutation.retryCount + 1 >= mutation.maxRetries) {
+          await updateMutationStatus(mutation.id, "failed", errorMessage);
+          failed++;
+          emit({ type: "mutation_failed", mutation, error: errorMessage });
+        } else {
+          // Reset to pending for next sync cycle
+          await updateMutationStatus(mutation.id, "pending", errorMessage);
+        }
       }
     }
+
+    // Clean up completed mutations
+    await clearCompletedMutations();
+    emit({ type: "sync_complete", completedCount: completed, failedCount: failed });
+  } finally {
+    isSyncing = false;
   }
-
-  // Clean up completed mutations
-  await clearCompletedMutations();
-
-  isSyncing = false;
-  emit({ type: "sync_complete", completedCount: completed, failedCount: failed });
 
   return { completed, failed };
 }
