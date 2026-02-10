@@ -41,8 +41,6 @@ import {
   Mic2,
   CheckCircle,
   AlertTriangle,
-  Lock,
-  Unlock,
   Presentation,
   X,
   Video,
@@ -162,20 +160,23 @@ const getSessionStatusBadge = (status: string) => {
   switch (status) {
     case "LIVE":
       return (
-        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-          <span className="mr-1.5 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+        <Badge className="bg-green-500/10 text-green-600 border-green-500/20 font-medium">
+          <span className="relative mr-1.5 flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          </span>
           Live
         </Badge>
       );
     case "UPCOMING":
       return (
-        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20 font-medium">
           Upcoming
         </Badge>
       );
     case "ENDED":
       return (
-        <Badge variant="outline" className="text-muted-foreground">
+        <Badge variant="outline" className="text-muted-foreground font-medium">
           Ended
         </Badge>
       );
@@ -203,43 +204,35 @@ const AttendeeChatDialog = ({
       <Button
         variant="outline"
         size="sm"
-        className={`gap-1.5 ${!liveChatOpen ? "opacity-60" : ""}`}
+        className={`gap-1.5 rounded-lg ${liveChatOpen ? "border-green-500/30 bg-green-500/5 hover:bg-green-500/10" : "opacity-50"}`}
         onClick={() => setIsOpen(true)}
       >
-        {liveChatOpen ? (
-          <Unlock className="h-4 w-4 text-green-600" />
-        ) : (
-          <Lock className="h-4 w-4 text-muted-foreground" />
-        )}
-        <MessageSquare className="h-4 w-4" />
+        <MessageSquare className={`h-3.5 w-3.5 ${liveChatOpen ? "text-green-600" : ""}`} />
         Chat
         {liveChatOpen && (
-          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
-            Open
-          </Badge>
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          </span>
         )}
       </Button>
       <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] h-[92vh] sm:h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 border-b bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            <span className="font-medium">{session.title} - Chat</span>
-            <Badge variant={liveChatOpen ? "default" : "secondary"} className={liveChatOpen ? "bg-green-500/10 text-green-600" : ""}>
-              {liveChatOpen ? "Open" : "Closed"}
-            </Badge>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <MessageSquare className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <span className="font-medium text-sm sm:text-base">{session.title} - Chat</span>
+              <Badge variant={liveChatOpen ? "default" : "secondary"} className={`ml-2 text-[10px] ${liveChatOpen ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}`}>
+                {liveChatOpen ? "Open" : "Closed"}
+              </Badge>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10"
-            onClick={() => setIsOpen(false)}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Chat Content - Scrollable */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <SessionChat
             sessionId={session.id}
@@ -274,43 +267,35 @@ const AttendeeQADialog = ({
       <Button
         variant="outline"
         size="sm"
-        className={`gap-1.5 ${!liveQaOpen ? "opacity-60" : ""}`}
+        className={`gap-1.5 rounded-lg ${liveQaOpen ? "border-green-500/30 bg-green-500/5 hover:bg-green-500/10" : "opacity-50"}`}
         onClick={() => setIsOpen(true)}
       >
-        {liveQaOpen ? (
-          <Unlock className="h-4 w-4 text-green-600" />
-        ) : (
-          <Lock className="h-4 w-4 text-muted-foreground" />
-        )}
-        <HelpCircle className="h-4 w-4" />
+        <HelpCircle className={`h-3.5 w-3.5 ${liveQaOpen ? "text-green-600" : ""}`} />
         Q&A
         {liveQaOpen && (
-          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
-            Open
-          </Badge>
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          </span>
         )}
       </Button>
       <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] h-[92vh] sm:h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 border-b bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <HelpCircle className="h-5 w-5 text-primary" />
-            <span className="font-medium">{session.title} - Q&A</span>
-            <Badge variant={liveQaOpen ? "default" : "secondary"} className={liveQaOpen ? "bg-green-500/10 text-green-600" : ""}>
-              {liveQaOpen ? "Open" : "Closed"}
-            </Badge>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <HelpCircle className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <span className="font-medium text-sm sm:text-base">{session.title} - Q&A</span>
+              <Badge variant={liveQaOpen ? "default" : "secondary"} className={`ml-2 text-[10px] ${liveQaOpen ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}`}>
+                {liveQaOpen ? "Open" : "Closed"}
+              </Badge>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setIsOpen(false)}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Q&A Content - Scrollable */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <SessionQA
             sessionId={session.id}
@@ -347,43 +332,35 @@ const AttendeePollsDialog = ({
       <Button
         variant="outline"
         size="sm"
-        className={`gap-1.5 ${!livePollsOpen ? "opacity-60" : ""}`}
+        className={`gap-1.5 rounded-lg ${livePollsOpen ? "border-green-500/30 bg-green-500/5 hover:bg-green-500/10" : "opacity-50"}`}
         onClick={() => setIsOpen(true)}
       >
-        {livePollsOpen ? (
-          <Unlock className="h-4 w-4 text-green-600" />
-        ) : (
-          <Lock className="h-4 w-4 text-muted-foreground" />
-        )}
-        <BarChart3 className="h-4 w-4" />
+        <BarChart3 className={`h-3.5 w-3.5 ${livePollsOpen ? "text-green-600" : ""}`} />
         Polls
         {livePollsOpen && (
-          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
-            Open
-          </Badge>
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          </span>
         )}
       </Button>
       <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[75vw] lg:!w-[75vw] h-[92vh] sm:h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 border-b bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <span className="font-medium">{session.title} - Polls</span>
-            <Badge variant={livePollsOpen ? "default" : "secondary"} className={livePollsOpen ? "bg-green-500/10 text-green-600" : ""}>
-              {livePollsOpen ? "Open" : "Closed"}
-            </Badge>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <BarChart3 className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <span className="font-medium text-sm sm:text-base">{session.title} - Polls</span>
+              <Badge variant={livePollsOpen ? "default" : "secondary"} className={`ml-2 text-[10px] ${livePollsOpen ? "bg-green-500/10 text-green-600 border-green-500/20" : ""}`}>
+                {livePollsOpen ? "Open" : "Closed"}
+              </Badge>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setIsOpen(false)}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Polls Content - Scrollable */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <SessionPolls
             sessionId={session.id}
@@ -419,43 +396,36 @@ const AttendeePresentationDialog = ({
       <Button
         variant="outline"
         size="sm"
-        className={`gap-1.5 ${!livePresentationActive ? "opacity-60" : ""}`}
+        className={`gap-1.5 rounded-lg ${livePresentationActive ? "border-green-500/30 bg-green-500/5 hover:bg-green-500/10" : "opacity-50"}`}
         onClick={() => setIsOpen(true)}
       >
-        {livePresentationActive ? (
-          <Unlock className="h-4 w-4 text-green-600" />
-        ) : (
-          <Lock className="h-4 w-4 text-muted-foreground" />
-        )}
-        <Presentation className="h-4 w-4" />
+        <Presentation className={`h-3.5 w-3.5 ${livePresentationActive ? "text-green-600" : ""}`} />
         Slides
         {livePresentationActive && (
-          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
-            Open
-          </Badge>
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          </span>
         )}
       </Button>
       <DialogContent className="!max-w-[98vw] !w-[98vw] max-h-[92vh] sm:max-h-[90vh] p-0 gap-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl overflow-hidden pt-safe pb-safe">
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/60">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-black/60 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <Presentation className="h-5 w-5 text-white/70" />
-            <span className="font-medium text-white">{session.title} - Presentation</span>
+            <div className="p-1.5 rounded-lg bg-white/10">
+              <Presentation className="h-4 w-4 text-white/80" />
+            </div>
+            <span className="font-medium text-white text-sm sm:text-base">{session.title} - Presentation</span>
             {livePresentationActive && (
-              <Badge className="bg-red-600 text-white animate-pulse">LIVE</Badge>
+              <Badge className="bg-red-600/90 text-white text-[10px]">
+                <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-white animate-pulse inline-block" />
+                LIVE
+              </Badge>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-white/70 hover:text-white hover:bg-white/10"
-            onClick={() => setIsOpen(false)}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-white/70 hover:text-white hover:bg-white/10" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Presentation Content - Scrollable */}
         <div className="flex-1 min-h-0 overflow-auto">
           <AttendeePresentation
             sessionId={session.id}
@@ -580,37 +550,31 @@ const AttendeeBreakoutRoomsDialog = ({
       <Button
         variant="outline"
         size="sm"
-        className="gap-1.5"
+        className="gap-1.5 rounded-lg"
         onClick={() => setIsOpen(true)}
       >
-        <DoorOpen className="h-4 w-4" />
+        <DoorOpen className="h-3.5 w-3.5" />
         Breakout
         {activeRoomCount > 0 && (
-          <Badge className="ml-1 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
+          <Badge className="ml-0.5 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">
             {activeRoomCount}
           </Badge>
         )}
       </Button>
       <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[90vw] sm:!w-[90vw] lg:!max-w-[85vw] lg:!w-[85vw] h-[92vh] sm:h-[88vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden pt-safe pb-safe">
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 border-b bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <DoorOpen className="h-5 w-5 text-primary" />
-            <span className="font-medium">{session.title} - Breakout Rooms</span>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <DoorOpen className="h-4 w-4 text-primary" />
+            </div>
+            <span className="font-medium text-sm sm:text-base">{session.title} - Breakout Rooms</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10"
-            onClick={() => setIsOpen(false)}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Breakout Rooms Content - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-auto p-4">
-          <div className="mb-4 p-4 bg-muted/30 rounded-lg">
+        <div className="flex-1 min-h-0 overflow-auto p-4 sm:p-5">
+          <div className="mb-4 p-3.5 bg-muted/20 rounded-xl border border-border/50">
             <p className="text-sm text-muted-foreground">
               Join a breakout room to participate in smaller group discussions.
               You can leave and rejoin rooms at any time.
@@ -652,31 +616,25 @@ const AttendeeTeamsDialog = ({
       <Button
         variant="outline"
         size="sm"
-        className="gap-1.5"
+        className="gap-1.5 rounded-lg"
         onClick={() => setIsOpen(true)}
       >
-        <Users className="h-4 w-4" />
+        <Users className="h-3.5 w-3.5" />
         Teams
       </Button>
       <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-lg sm:!w-full max-h-[85vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden">
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 border-b bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <Users className="h-5 w-5 text-primary" />
-            <span className="font-medium">{session.title} - Teams</span>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+            <span className="font-medium text-sm sm:text-base">{session.title} - Teams</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setIsOpen(false)}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Teams Content - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-auto p-4">
+        <div className="flex-1 min-h-0 overflow-auto p-4 sm:p-5">
           <TeamPanel sessionId={session.id} />
         </div>
       </DialogContent>
@@ -805,120 +763,119 @@ const SessionCard = ({
         hover={!isEnded ? "lift" : "none"}
         className={`overflow-hidden ${isLive ? "ring-2 ring-green-500/20 border-green-500/30" : ""}`}
       >
-        <div className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                {getSessionStatusBadge(session.status)}
-                {getSessionTypeBadge()}
-                {isVirtualSession && (
-                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                    <Video className="h-3 w-3 mr-1" />
-                    Virtual
-                  </Badge>
-                )}
-              </div>
+        {/* Live indicator bar */}
+        {isLive && (
+          <div className="h-1 bg-gradient-to-r from-green-500 via-emerald-400 to-green-500" />
+        )}
 
-              <h3 className="font-semibold text-foreground">{session.title}</h3>
+        <div className="p-4 sm:p-5">
+          {/* Top row: badges */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {getSessionStatusBadge(session.status)}
+            {getSessionTypeBadge()}
+            {isVirtualSession && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                <Video className="h-3 w-3 mr-1" />
+                Virtual
+              </Badge>
+            )}
+          </div>
 
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {format(new Date(session.startTime), "h:mm a")} -{" "}
-                    {format(new Date(session.endTime), "h:mm a")}
-                  </span>
-                </div>
+          {/* Session title */}
+          <h3 className="text-lg font-semibold text-foreground leading-snug">{session.title}</h3>
 
-                {session.speakers.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mic2 className="h-4 w-4" />
-                    <span>{session.speakers.map((s) => s.name).join(", ")}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Watch Live / Watch Recording / Join Session buttons for virtual sessions */}
-              {isVirtualSession && (isLive || hasRecording) && (
-                <div className="mt-3">
-                  {isLive && isDailySession && (
-                    <Button
-                      variant="premium"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => setShowVirtualSession(true)}
-                    >
-                      <Video className="h-4 w-4" />
-                      Join Session
-                    </Button>
-                  )}
-                  {isLive && !isDailySession && effectiveStreamingUrl && (
-                    <Button
-                      variant="premium"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => setShowVirtualSession(true)}
-                    >
-                      <Video className="h-4 w-4" />
-                      Watch Live
-                    </Button>
-                  )}
-                  {hasRecording && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => setShowVirtualSession(true)}
-                    >
-                      <PlayCircle className="h-4 w-4" />
-                      Watch Recording
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {/* View Lobby / Add to Calendar - for upcoming sessions */}
-              {isUpcoming && (
-                <div className="mt-3 flex items-center gap-2">
-                  {isVirtualSession && session.lobbyEnabled && (
-                    <Button
-                      variant="premium"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => setShowVirtualSession(true)}
-                    >
-                      <Video className="h-4 w-4" />
-                      View Lobby
-                    </Button>
-                  )}
-                  <AddToCalendarButton
-                    session={{
-                      id: session.id,
-                      title: session.title,
-                      startTime: session.startTime,
-                      endTime: session.endTime,
-                      eventName,
-                    }}
-                    variant="outline"
-                    size="sm"
-                  />
-                </div>
-              )}
+          {/* Meta row */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              <span>
+                {format(new Date(session.startTime), "h:mm a")} – {format(new Date(session.endTime), "h:mm a")}
+              </span>
             </div>
+            {session.speakers.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Mic2 className="h-3.5 w-3.5" />
+                <span className="truncate max-w-[200px] sm:max-w-none">{session.speakers.map((s) => s.name).join(", ")}</span>
+              </div>
+            )}
+          </div>
 
-            {/* Interactive Features - only for in-person sessions (virtual sessions have these inside the viewer) */}
-            {/* Wrapped in SessionSocketProvider to share a single socket across Chat/Q&A/Polls */}
-            {!isEnded && !isVirtualSession && hasInteractiveFeatures && (
-              <SessionSocketProvider
-                sessionId={session.id}
-                eventId={eventId}
-                initialChatOpen={liveChatOpen}
-                initialQaOpen={liveQaOpen}
-                initialPollsOpen={livePollsOpen}
-                initialReactionsOpen={liveReactionsOpen}
+          {/* Action buttons row */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {/* Watch Live / Watch Recording / Join Session buttons for virtual sessions */}
+            {isVirtualSession && isLive && isDailySession && (
+              <Button
+                variant="premium"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowVirtualSession(true)}
               >
-                <div className="flex flex-wrap gap-2 sm:flex-col">
-                  {/* Session Chat */}
+                <Video className="h-4 w-4" />
+                Join Session
+              </Button>
+            )}
+            {isVirtualSession && isLive && !isDailySession && effectiveStreamingUrl && (
+              <Button
+                variant="premium"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowVirtualSession(true)}
+              >
+                <Video className="h-4 w-4" />
+                Watch Live
+              </Button>
+            )}
+            {isVirtualSession && hasRecording && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowVirtualSession(true)}
+              >
+                <PlayCircle className="h-4 w-4" />
+                Watch Recording
+              </Button>
+            )}
+
+            {/* View Lobby / Add to Calendar - for upcoming sessions */}
+            {isUpcoming && isVirtualSession && session.lobbyEnabled && (
+              <Button
+                variant="premium"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowVirtualSession(true)}
+              >
+                <Video className="h-4 w-4" />
+                View Lobby
+              </Button>
+            )}
+            {isUpcoming && (
+              <AddToCalendarButton
+                session={{
+                  id: session.id,
+                  title: session.title,
+                  startTime: session.startTime,
+                  endTime: session.endTime,
+                  eventName,
+                }}
+                variant="outline"
+                size="sm"
+              />
+            )}
+          </div>
+
+          {/* Interactive Features - only for in-person sessions */}
+          {!isEnded && !isVirtualSession && hasInteractiveFeatures && (
+            <SessionSocketProvider
+              sessionId={session.id}
+              eventId={eventId}
+              initialChatOpen={liveChatOpen}
+              initialQaOpen={liveQaOpen}
+              initialPollsOpen={livePollsOpen}
+              initialReactionsOpen={liveReactionsOpen}
+            >
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="flex flex-wrap items-center gap-2">
                   {chatEnabled && (
                     <AttendeeChatDialog
                       session={session}
@@ -927,8 +884,6 @@ const SessionCard = ({
                       setLiveChatOpen={setLiveChatOpen}
                     />
                   )}
-
-                  {/* Session Q&A */}
                   {qaEnabled && (
                     <AttendeeQADialog
                       session={session}
@@ -937,8 +892,6 @@ const SessionCard = ({
                       setLiveQaOpen={setLiveQaOpen}
                     />
                   )}
-
-                  {/* Session Polls */}
                   {pollsEnabled && (
                     <AttendeePollsDialog
                       session={session}
@@ -947,8 +900,6 @@ const SessionCard = ({
                       setLivePollsOpen={setLivePollsOpen}
                     />
                   )}
-
-                  {/* Session Presentation */}
                   {presentationEnabled && (
                     <AttendeePresentationDialog
                       session={session}
@@ -957,8 +908,6 @@ const SessionCard = ({
                       livePresentationActive={livePresentationActive}
                     />
                   )}
-
-                  {/* Breakout Rooms - available for live sessions when enabled */}
                   {isLive && session.breakoutEnabled && (
                     <AttendeeBreakoutRoomsDialog
                       session={session}
@@ -966,61 +915,52 @@ const SessionCard = ({
                       userId={userId}
                     />
                   )}
-
-                  {/* Teams - available for live sessions */}
                   {isLive && (
                     <AttendeeTeamsDialog session={session} />
                   )}
 
-                  {/* Live Reactions - visible when enabled, interactive when open */}
-                  {isLive && reactionsEnabled && (
-                    liveReactionsOpen ? (
-                      <div className="relative w-full">
-                        <div className="flex items-center gap-2 p-2 sm:p-3 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-medium text-purple-900 dark:text-purple-100 mb-1.5 sm:mb-2">
-                              React with emojis
-                            </p>
-                            <ReactionBar
-                              onReaction={sendReaction}
-                              popularEmojis={getPopularEmojis()}
-                              disabled={!reactionsConnected}
-                              variant="horizontal"
-                            />
-                          </div>
-                        </div>
-                        {/* Floating reactions overlay */}
-                        <FloatingReactions emojis={floatingEmojis} />
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 opacity-60"
-                        disabled
-                      >
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                        <Smile className="h-4 w-4" />
-                        Reactions
-                      </Button>
-                    )
-                  )}
-
-                  {/* Report Issue Button - Always available for live/upcoming sessions */}
-                  <IncidentReportForm
-                    sessionId={session.id}
-                    eventId={eventId}
-                    trigger={
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
-                        <AlertTriangle className="h-4 w-4" />
-                        Report Issue
-                      </Button>
-                    }
-                  />
+                  {/* Report Issue - pushed to the right */}
+                  <div className="ml-auto">
+                    <IncidentReportForm
+                      sessionId={session.id}
+                      eventId={eventId}
+                      trigger={
+                        <Button variant="ghost" size="sm" className="gap-1.5 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/50">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Report</span>
+                        </Button>
+                      }
+                    />
+                  </div>
                 </div>
-              </SessionSocketProvider>
-            )}
-          </div>
+
+                {/* Live Reactions - full width below buttons when open */}
+                {isLive && reactionsEnabled && liveReactionsOpen && (
+                  <div className="relative mt-3">
+                    <div className="flex items-center gap-2 p-3 border rounded-xl bg-gradient-to-r from-purple-50/80 to-pink-50/80 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200/50 dark:border-purple-800/50">
+                      <div className="flex-1 min-w-0">
+                        <ReactionBar
+                          onReaction={sendReaction}
+                          popularEmojis={getPopularEmojis()}
+                          disabled={!reactionsConnected}
+                          variant="horizontal"
+                        />
+                      </div>
+                    </div>
+                    <FloatingReactions emojis={floatingEmojis} />
+                  </div>
+                )}
+                {isLive && reactionsEnabled && !liveReactionsOpen && (
+                  <div className="mt-2">
+                    <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                      <Smile className="h-3 w-3" />
+                      Reactions will appear when the host enables them
+                    </p>
+                  </div>
+                )}
+              </div>
+            </SessionSocketProvider>
+          )}
         </div>
       </PremiumCard>
 
@@ -1191,15 +1131,27 @@ export default function AttendeeEventPage() {
     return (
       <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto animate-fade-in">
         {/* Back button skeleton */}
-        <ShimmerSkeleton className="h-9 w-36 mb-6 rounded-md" />
+        <ShimmerSkeleton className="h-9 w-36 mb-6 rounded-lg" />
 
-        {/* Event header skeleton */}
-        <EventHeaderSkeleton className="mb-8" />
+        {/* Hero banner skeleton */}
+        <div className="rounded-2xl overflow-hidden mb-6">
+          <ShimmerSkeleton className="h-56 sm:h-64 md:h-72 w-full" />
+          <div className="p-4 sm:p-5 md:p-6 bg-background border border-t-0 rounded-b-2xl">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <ShimmerSkeleton key={i} className="h-16 sm:h-[72px] rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Expo card skeleton */}
+        <ShimmerSkeleton className="h-20 rounded-2xl mb-6" />
 
         {/* Sessions header */}
         <div className="flex items-center justify-between mb-4">
-          <ShimmerSkeleton className="h-7 w-32" />
-          <ShimmerSkeleton className="h-5 w-24" />
+          <ShimmerSkeleton className="h-7 w-32 rounded-lg" />
+          <ShimmerSkeleton className="h-5 w-24 rounded-lg" />
         </div>
 
         {/* Session cards skeleton */}
@@ -1245,26 +1197,28 @@ export default function AttendeeEventPage() {
   // Check if user is registered
   if (!registration) {
     return (
-      <PageTransition className="p-6 max-w-5xl mx-auto">
+      <PageTransition className="px-4 sm:px-6 py-6 max-w-5xl mx-auto">
         <Link href="/attendee">
-          <Button variant="ghost" className="mb-4 gap-2 hover:-translate-x-1 transition-transform">
+          <Button variant="ghost" className="mb-6 gap-2 hover:-translate-x-1 transition-transform">
             <ArrowLeft className="h-4 w-4" />
             Back to My Events
           </Button>
         </Link>
-        <PremiumCard variant="elevated" padding="lg" className="border-yellow-500/30 text-center">
-          <div className="p-3 w-fit mx-auto rounded-full bg-yellow-500/10 mb-4">
-            <AlertTriangle className="h-12 w-12 text-yellow-500" />
+        <PremiumCard variant="elevated" padding="lg" className="border-yellow-500/20 text-center rounded-2xl">
+          <div className="py-8">
+            <div className="p-4 w-fit mx-auto rounded-2xl bg-yellow-500/10 mb-5">
+              <AlertTriangle className="h-10 w-10 text-yellow-500" />
+            </div>
+            <h3 className="text-xl font-semibold">Not Registered</h3>
+            <p className="text-muted-foreground mt-2 max-w-sm mx-auto text-sm">
+              You need to register for this event to access its features.
+            </p>
+            <Link href={`/events/${eventId}`}>
+              <Button variant="premium" size="lg" className="mt-6">
+                View Event & Register
+              </Button>
+            </Link>
           </div>
-          <h3 className="text-xl font-semibold">Not Registered</h3>
-          <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
-            You need to register for this event to access its features.
-          </p>
-          <Link href={`/events/${eventId}`}>
-            <Button variant="premium" size="lg" className="mt-6">
-              View Event & Register
-            </Button>
-          </Link>
         </PremiumCard>
       </PageTransition>
     );
@@ -1312,138 +1266,149 @@ export default function AttendeeEventPage() {
         className="mb-4"
       />
 
-      {/* Event Header */}
-      <PremiumCard variant="elevated" padding="none" className="overflow-hidden mb-6">
-        <div className="relative h-48 md:h-64">
+      {/* Event Hero Banner */}
+      <div className="overflow-hidden rounded-2xl mb-6 shadow-lg ring-1 ring-black/5 dark:ring-white/5">
+        <div className="relative h-56 sm:h-64 md:h-72 lg:h-80">
           {event.imageUrl ? (
             <Image
               src={event.imageUrl}
               alt={event.name}
               fill
+              priority
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <CalendarDays className="h-16 w-16 text-primary/40" />
+            <div className="w-full h-full bg-gradient-to-br from-primary/30 via-primary/10 to-primary/5 flex items-center justify-center">
+              <CalendarDays className="h-20 w-20 text-primary/30" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
+          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 md:p-8">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
               {event.eventType === "VIRTUAL" && (
-                <Badge className="bg-blue-500 text-white">
-                  <Video className="h-3 w-3 mr-1" />
+                <Badge className="bg-blue-500/90 text-white backdrop-blur-sm border-0 shadow-lg">
+                  <Video className="h-3 w-3 mr-1.5" />
                   Virtual Event
                 </Badge>
               )}
               {event.eventType === "HYBRID" && (
-                <Badge className="bg-purple-500 text-white">
-                  <Video className="h-3 w-3 mr-1" />
+                <Badge className="bg-purple-500/90 text-white backdrop-blur-sm border-0 shadow-lg">
+                  <Video className="h-3 w-3 mr-1.5" />
                   Hybrid Event
                 </Badge>
               )}
+              {registration.checkedInAt && (
+                <Badge className="bg-emerald-500/90 text-white backdrop-blur-sm border-0 shadow-lg">
+                  <CheckCircle className="h-3 w-3 mr-1.5" />
+                  Checked In
+                </Badge>
+              )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">{event.name}</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
+              {event.name}
+            </h1>
+            {event.description && (
+              <p className="text-white/60 text-sm sm:text-base mt-2 line-clamp-2 max-w-2xl">
+                {event.description}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="p-4 md:p-6">
-          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <CalendarDays className="h-5 w-5 text-primary" />
+        {/* Info Cards */}
+        <div className="p-4 sm:p-5 md:p-6 bg-background">
+          <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StaggerItem className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/25 transition-colors">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/10 shrink-0">
+                <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Date</p>
-                <p className="font-semibold">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">Date</p>
+                <p className="font-semibold text-sm sm:text-base truncate">
                   {format(new Date(event.startDate), "MMM d, yyyy")}
                 </p>
               </div>
             </StaggerItem>
 
-            <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Clock className="h-5 w-5 text-primary" />
+            <StaggerItem className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-rose-500/5 border border-rose-500/10 hover:border-rose-500/25 transition-colors">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-rose-500/10 shrink-0">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 dark:text-rose-400" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Time</p>
-                <p className="font-semibold">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">Time</p>
+                <p className="font-semibold text-sm sm:text-base truncate">
                   {format(new Date(event.startDate), "h:mm a")}
                 </p>
               </div>
             </StaggerItem>
 
             {event.venue ? (
-              <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <MapPin className="h-5 w-5 text-primary" />
+              <StaggerItem className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 hover:border-emerald-500/25 transition-colors">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-500/10 shrink-0">
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Venue</p>
-                  <p className="font-semibold">{event.venue.name}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">Venue</p>
+                  <p className="font-semibold text-sm sm:text-base truncate">{event.venue.name}</p>
                 </div>
               </StaggerItem>
             ) : event.eventType === "VIRTUAL" ? (
-              <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="p-2 rounded-lg bg-blue-500/10">
-                  <Video className="h-5 w-5 text-blue-500" />
+              <StaggerItem className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 hover:border-blue-500/25 transition-colors">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-blue-500/10 shrink-0">
+                  <Video className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Location</p>
-                  <p className="font-semibold">Online Event</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">Location</p>
+                  <p className="font-semibold text-sm sm:text-base truncate">Online Event</p>
                 </div>
               </StaggerItem>
             ) : null}
 
-            <StaggerItem className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Ticket className="h-5 w-5 text-primary" />
+            <StaggerItem className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-violet-500/5 border border-violet-500/10 hover:border-violet-500/25 transition-colors">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-violet-500/10 shrink-0">
+                <Ticket className="h-4 w-4 sm:h-5 sm:w-5 text-violet-600 dark:text-violet-400" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Ticket</p>
-                <p className="font-mono font-semibold">{registration.ticketCode}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">Ticket</p>
+                <p className="font-mono font-semibold text-sm sm:text-base truncate">{registration.ticketCode}</p>
               </div>
             </StaggerItem>
           </StaggerContainer>
 
           {registration.checkedInAt && (
-            <div className="mt-4 flex items-center gap-2 text-green-600 bg-green-500/10 px-4 py-2 rounded-lg w-fit">
-              <CheckCircle className="h-5 w-5" />
+            <div className="mt-4 flex items-center gap-2.5 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-4 py-2.5 rounded-xl w-fit">
+              <CheckCircle className="h-4 w-4" />
               <span className="text-sm font-medium">
                 Checked in at {format(new Date(registration.checkedInAt), "h:mm a")}
               </span>
             </div>
           )}
         </div>
-      </PremiumCard>
+      </div>
 
       {/* Expo Hall Quick Access */}
       <Link href={`/attendee/events/${eventId}/expo`}>
-        <PremiumCard
-          variant="elevated"
-          hover="lift"
-          className="mb-6 group cursor-pointer bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-orange-500/5 border-purple-500/20 hover:border-purple-500/40 transition-all"
-        >
-          <div className="p-4 sm:p-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
-                <Store className="h-6 w-6 text-white" />
+        <div className="mb-6 group cursor-pointer rounded-2xl overflow-hidden border border-purple-500/15 hover:border-purple-500/30 bg-gradient-to-r from-purple-500/[0.04] via-pink-500/[0.04] to-orange-500/[0.04] hover:from-purple-500/[0.08] hover:via-pink-500/[0.08] hover:to-orange-500/[0.08] transition-all duration-300 shadow-sm hover:shadow-md">
+          <div className="p-4 sm:p-5 flex items-center justify-between">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/20 shrink-0">
+                <Store className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                   Expo Hall
-                  <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+                  <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-[10px] sm:text-xs">
                     Open
                   </Badge>
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  Explore sponsor booths, download resources, and connect with exhibitors
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Explore sponsor booths and connect with exhibitors
                 </p>
               </div>
             </div>
-            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-purple-500 group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-purple-500 group-hover:translate-x-1 transition-all shrink-0" />
           </div>
-        </PremiumCard>
+        </div>
       </Link>
 
       {/* Sponsored Content - Hero Banner Ad */}
@@ -1473,28 +1438,28 @@ export default function AttendeeEventPage() {
 
       {/* People You Should Meet - AI Networking Recommendations */}
       <section className="mb-8">
-        <Collapsible defaultOpen={false} className="border rounded-lg bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-pink-500/5">
-          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/30 transition-colors group">
-            <div className="flex items-center gap-2">
+        <Collapsible defaultOpen={false} className="border border-amber-500/15 rounded-2xl bg-gradient-to-r from-amber-500/[0.03] via-orange-500/[0.03] to-pink-500/[0.03] overflow-hidden">
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-4 sm:p-5 hover:bg-muted/20 transition-colors group">
+            <div className="flex items-center gap-2.5">
               <Sparkles className="h-5 w-5 text-amber-500" />
-              <span className="font-semibold">People You Should Meet</span>
+              <span className="font-semibold text-sm sm:text-base">People You Should Meet</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+              <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] sm:text-xs">
                 AI Powered
               </Badge>
               <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="p-4 pt-0 space-y-4">
+            <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4">
               <RecommendationsPanel
                 eventId={eventId}
                 onStartChat={handleStartChat}
               />
               <div className="text-center pt-2">
                 <Link href={`/attendee/events/${eventId}/networking`}>
-                  <Button variant="link" className="gap-2 text-amber-600 hover:text-amber-700">
+                  <Button variant="link" className="gap-2 text-amber-600 hover:text-amber-700 text-sm">
                     View All Networking Options
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -1526,8 +1491,8 @@ export default function AttendeeEventPage() {
               subtitle="Currently happening sessions"
               className="mb-4"
             />
-            <StaggerContainer className="space-y-3">
-              {liveSessions.map((session, index) => (
+            <StaggerContainer className="space-y-4">
+              {liveSessions.map((session) => (
                 <StaggerItem key={session.id} id={`session-card-${session.id}`}>
                   <SessionCard session={session} eventId={eventId} eventName={event.name} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
@@ -1544,8 +1509,8 @@ export default function AttendeeEventPage() {
               subtitle={`${upcomingSessions.length} session${upcomingSessions.length > 1 ? 's' : ''} scheduled`}
               className="mb-4"
             />
-            <StaggerContainer className="space-y-3">
-              {upcomingSessions.map((session, index) => (
+            <StaggerContainer className="space-y-4">
+              {upcomingSessions.map((session) => (
                 <StaggerItem key={session.id} id={`session-card-${session.id}`}>
                   <SessionCard session={session} eventId={eventId} eventName={event.name} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
@@ -1561,22 +1526,22 @@ export default function AttendeeEventPage() {
             placement="SESSION_BREAK"
             limit={1}
             rotationInterval={30000}
-            className="rounded-lg overflow-hidden"
+            className="rounded-xl overflow-hidden"
             showSponsorLabel={true}
           />
         )}
 
         {/* Ended Sessions */}
         {endedSessions.length > 0 && (
-          <section className="opacity-70">
+          <section>
             <SectionHeader
               title="Past Sessions"
               subtitle="Completed sessions"
               className="mb-4"
             />
-            <StaggerContainer className="space-y-3">
-              {endedSessions.map((session, index) => (
-                <StaggerItem key={session.id} id={`session-card-${session.id}`}>
+            <StaggerContainer className="space-y-4">
+              {endedSessions.map((session) => (
+                <StaggerItem key={session.id} id={`session-card-${session.id}`} className="opacity-60 hover:opacity-90 transition-opacity">
                   <SessionCard session={session} eventId={eventId} eventName={event.name} organizationId={event.organizationId} eventVirtualSettings={event.virtualSettings} userId={user?.id} />
                 </StaggerItem>
               ))}
@@ -1585,12 +1550,16 @@ export default function AttendeeEventPage() {
         )}
 
         {sessions.length === 0 && (
-          <PremiumCard variant="outline" padding="lg" className="border-dashed text-center">
-            <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold">No Sessions Yet</h3>
-            <p className="text-muted-foreground mt-2">
-              The event schedule hasn't been published yet.
-            </p>
+          <PremiumCard variant="outline" padding="lg" className="border-dashed text-center rounded-2xl">
+            <div className="py-8">
+              <div className="p-4 w-fit mx-auto rounded-2xl bg-muted/30 mb-5">
+                <CalendarDays className="h-10 w-10 text-muted-foreground/40" />
+              </div>
+              <h3 className="text-lg font-semibold">No Sessions Yet</h3>
+              <p className="text-muted-foreground mt-2 text-sm max-w-sm mx-auto">
+                The event schedule hasn't been published yet. Check back later.
+              </p>
+            </div>
           </PremiumCard>
         )}
       </div>
