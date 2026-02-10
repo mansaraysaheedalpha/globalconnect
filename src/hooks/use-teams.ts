@@ -70,7 +70,7 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
     [user?.id]
   );
 
-  // Create a new team
+  // Create a new team (event-based response pattern)
   const createTeam = useCallback(
     async (name: string): Promise<CreateTeamResponse> => {
       if (!socketRef.current?.connected) {
@@ -90,30 +90,31 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
 
       return new Promise((resolve) => {
         const timeoutId = setTimeout(() => {
+          socketRef.current?.off("team.create.response", handler);
           setIsLoading(false);
           resolve({ success: false, error: "Request timed out" });
         }, SOCKET_TIMEOUT);
 
-        socketRef.current!.emit(
-          "team.create",
-          { name: name.trim(), idempotencyKey: uuidv4() },
-          (response: CreateTeamResponse) => {
-            clearTimeout(timeoutId);
-            setIsLoading(false);
+        const handler = (response: CreateTeamResponse) => {
+          clearTimeout(timeoutId);
+          socketRef.current?.off("team.create.response", handler);
+          setIsLoading(false);
 
-            if (!response.success && response.error) {
-              setError(response.error);
-            }
-
-            resolve(response);
+          if (!response.success && response.error) {
+            setError(response.error);
           }
-        );
+
+          resolve(response);
+        };
+
+        socketRef.current!.on("team.create.response", handler);
+        socketRef.current!.emit("team.create", { name: name.trim(), idempotencyKey: uuidv4() });
       });
     },
     []
   );
 
-  // Join an existing team
+  // Join an existing team (event-based response pattern)
   const joinTeam = useCallback(
     async (teamId: string): Promise<JoinLeaveResponse> => {
       if (!socketRef.current?.connected) {
@@ -134,30 +135,31 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
 
       return new Promise((resolve) => {
         const timeoutId = setTimeout(() => {
+          socketRef.current?.off("team.join.response", handler);
           setIsLoading(false);
           resolve({ success: false, error: "Request timed out" });
         }, SOCKET_TIMEOUT);
 
-        socketRef.current!.emit(
-          "team.join",
-          { teamId, idempotencyKey: uuidv4() },
-          (response: JoinLeaveResponse) => {
-            clearTimeout(timeoutId);
-            setIsLoading(false);
+        const handler = (response: JoinLeaveResponse) => {
+          clearTimeout(timeoutId);
+          socketRef.current?.off("team.join.response", handler);
+          setIsLoading(false);
 
-            if (!response.success && response.error) {
-              setError(response.error);
-            }
-
-            resolve(response);
+          if (!response.success && response.error) {
+            setError(response.error);
           }
-        );
+
+          resolve(response);
+        };
+
+        socketRef.current!.on("team.join.response", handler);
+        socketRef.current!.emit("team.join", { teamId, idempotencyKey: uuidv4() });
       });
     },
     [currentTeam]
   );
 
-  // Leave current team
+  // Leave current team (event-based response pattern)
   const leaveTeam = useCallback(async (): Promise<JoinLeaveResponse> => {
     if (!socketRef.current?.connected) {
       return { success: false, error: "Not connected to server" };
@@ -172,24 +174,25 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
 
     return new Promise((resolve) => {
       const timeoutId = setTimeout(() => {
+        socketRef.current?.off("team.leave.response", handler);
         setIsLoading(false);
         resolve({ success: false, error: "Request timed out" });
       }, SOCKET_TIMEOUT);
 
-      socketRef.current!.emit(
-        "team.leave",
-        { teamId: currentTeam.id, idempotencyKey: uuidv4() },
-        (response: JoinLeaveResponse) => {
-          clearTimeout(timeoutId);
-          setIsLoading(false);
+      const handler = (response: JoinLeaveResponse) => {
+        clearTimeout(timeoutId);
+        socketRef.current?.off("team.leave.response", handler);
+        setIsLoading(false);
 
-          if (!response.success && response.error) {
-            setError(response.error);
-          }
-
-          resolve(response);
+        if (!response.success && response.error) {
+          setError(response.error);
         }
-      );
+
+        resolve(response);
+      };
+
+      socketRef.current!.on("team.leave.response", handler);
+      socketRef.current!.emit("team.leave", { teamId: currentTeam.id, idempotencyKey: uuidv4() });
     });
   }, [currentTeam]);
 
@@ -266,6 +269,9 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
       newSocket.off("connect_error");
       newSocket.off("team.created");
       newSocket.off("team.roster.updated");
+      newSocket.off("team.create.response");
+      newSocket.off("team.join.response");
+      newSocket.off("team.leave.response");
       newSocket.disconnect();
       socketRef.current = null;
     };

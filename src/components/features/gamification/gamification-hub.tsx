@@ -23,6 +23,12 @@ import {
   Users,
   Zap,
   Lock,
+  Info,
+  MessageSquare,
+  HelpCircle,
+  BarChart3,
+  UserPlus,
+  Compass,
 } from "lucide-react";
 import {
   type LeaderboardEntry,
@@ -32,6 +38,8 @@ import {
   type StreakInfo,
   type RecentPointEvent,
   type PointReason,
+  POINT_VALUES,
+  PointReason as PointReasonEnum,
 } from "@/hooks/use-gamification";
 import { AnimatedScoreCounter } from "./points-animation";
 
@@ -161,14 +169,18 @@ export const GamificationHub = ({
               </div>
             </div>
 
-            {/* Streak explanation */}
-            {streak.active && (
-              <div className="flex items-center gap-2 p-2 rounded bg-orange-50 dark:bg-orange-950/20 text-xs text-orange-700 dark:text-orange-300">
-                <Zap className="h-3 w-3 flex-shrink-0" />
-                Keep engaging! Your streak gives {streak.multiplier}x points.
-                Inactivity for 5 min resets it.
-              </div>
-            )}
+            {/* Streak explanation — always visible so attendees learn about it */}
+            <div className={cn(
+              "flex items-center gap-2 p-2 rounded text-xs",
+              streak.active
+                ? "bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-300"
+                : "bg-muted/50 text-muted-foreground"
+            )}>
+              <Zap className="h-3 w-3 flex-shrink-0" />
+              {streak.active
+                ? `Keep engaging! Your streak gives ${streak.multiplier}x points. Inactivity for 5 min resets it.`
+                : "Stay active to build a streak! After 3 consecutive actions you'll earn 1.5x points, and 2x after 6."}
+            </div>
 
             {/* Achievement Overview */}
             <div>
@@ -238,10 +250,37 @@ export const GamificationHub = ({
                 </div>
               </div>
             )}
+
+            {/* How to Earn Points Guide */}
+            <div>
+              <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5 text-blue-500" />
+                How to Earn Points
+              </p>
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1.5">
+                {EARN_POINTS_GUIDE.map((item) => (
+                  <div key={item.reason} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <span>{getReasonEmoji(item.reason as PointReason)}</span>
+                      <span className="text-muted-foreground">{item.label}</span>
+                    </span>
+                    <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                      +{item.points} pt{item.points !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                ))}
+                <div className="pt-1.5 mt-1.5 border-t text-[11px] text-muted-foreground">
+                  Streaks multiply your points: 1.5x after 3 actions, 2x after 6!
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           {/* Tab 2: Achievements */}
-          <TabsContent value="achievements" className="mt-4">
+          <TabsContent value="achievements" className="mt-4 space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Unlock badges by participating in the event. Each badge tracks a specific activity — check the description to see how to earn it!
+            </p>
             {categories.size === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Achievements loading...
@@ -250,9 +289,12 @@ export const GamificationHub = ({
               <div className="space-y-6">
                 {Array.from(categories.entries()).map(([category, items]) => (
                   <div key={category}>
-                    <p className="text-sm font-semibold text-muted-foreground mb-2">
-                      {category}
-                    </p>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <CategoryIcon category={category} />
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        {category}
+                      </p>
+                    </div>
                     <div className="grid grid-cols-3 gap-3">
                       {items.map((achievement) => (
                         <AchievementBadgeCard
@@ -269,6 +311,9 @@ export const GamificationHub = ({
 
           {/* Tab 3: Leaderboard */}
           <TabsContent value="leaderboard" className="mt-4 space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Rankings update in real time. Earn points by chatting, asking questions, voting in polls, and more to climb the leaderboard!
+            </p>
             {/* Individual Leaderboard */}
             <div>
               <p className="text-sm font-semibold mb-2 flex items-center gap-2">
@@ -344,6 +389,9 @@ const AchievementProgressCard = ({
     </div>
     <div className="flex-1 min-w-0">
       <p className="text-sm font-medium truncate">{achievement.badgeName}</p>
+      <p className="text-[11px] text-muted-foreground truncate">
+        {achievement.description}
+      </p>
       <div className="flex items-center gap-2 mt-1">
         <Progress value={achievement.percentage} className="h-1.5 flex-1" />
         <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -386,6 +434,9 @@ const AchievementBadgeCard = ({
     </div>
     <p className="text-[11px] font-medium leading-tight mt-1">
       {achievement.badgeName}
+    </p>
+    <p className="text-[10px] text-muted-foreground leading-tight">
+      {achievement.description}
     </p>
     {!achievement.isUnlocked && achievement.percentage > 0 && (
       <Progress value={achievement.percentage} className="h-1 w-full mt-1" />
@@ -446,3 +497,35 @@ const RankIcon = ({ index }: { index: number }) => {
     </span>
   );
 };
+
+const CategoryIcon = ({ category }: { category: string }) => {
+  const iconClass = "h-3.5 w-3.5 text-muted-foreground";
+  switch (category) {
+    case "Social Butterfly":
+      return <MessageSquare className={iconClass} />;
+    case "Curious Mind":
+      return <HelpCircle className={iconClass} />;
+    case "Voice of the People":
+      return <BarChart3 className={iconClass} />;
+    case "Team Player":
+      return <UserPlus className={iconClass} />;
+    case "Event Explorer":
+      return <Compass className={iconClass} />;
+    case "Milestones":
+      return <Star className={iconClass} />;
+    default:
+      return <Trophy className={iconClass} />;
+  }
+};
+
+const EARN_POINTS_GUIDE = [
+  { reason: "MESSAGE_SENT", label: "Send a chat message", points: POINT_VALUES[PointReasonEnum.MESSAGE_SENT] },
+  { reason: "MESSAGE_REACTED", label: "React to a message", points: POINT_VALUES[PointReasonEnum.MESSAGE_REACTED] },
+  { reason: "QUESTION_ASKED", label: "Ask a question", points: POINT_VALUES[PointReasonEnum.QUESTION_ASKED] },
+  { reason: "QUESTION_UPVOTED", label: "Upvote a question", points: POINT_VALUES[PointReasonEnum.QUESTION_UPVOTED] },
+  { reason: "POLL_VOTED", label: "Vote in a poll", points: POINT_VALUES[PointReasonEnum.POLL_VOTED] },
+  { reason: "POLL_CREATED", label: "Create a poll", points: POINT_VALUES[PointReasonEnum.POLL_CREATED] },
+  { reason: "TEAM_CREATED", label: "Create a team", points: POINT_VALUES[PointReasonEnum.TEAM_CREATED] },
+  { reason: "TEAM_JOINED", label: "Join a team", points: POINT_VALUES[PointReasonEnum.TEAM_JOINED] },
+  { reason: "SESSION_JOINED", label: "Join a session", points: POINT_VALUES[PointReasonEnum.SESSION_JOINED] },
+];
