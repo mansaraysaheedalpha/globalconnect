@@ -41,7 +41,7 @@ interface PointsPopupProps {
 
 const PointsPopup = ({ event }: PointsPopupProps) => {
   const getReasonEmoji = (reason: PointReason): string => {
-    const emojis: Record<PointReason, string> = {
+    const emojis: Record<string, string> = {
       MESSAGE_SENT: "💬",
       MESSAGE_REACTED: "👍",
       QUESTION_ASKED: "❓",
@@ -49,6 +49,9 @@ const PointsPopup = ({ event }: PointsPopupProps) => {
       POLL_CREATED: "📊",
       POLL_VOTED: "✅",
       WAITLIST_JOINED: "⏳",
+      TEAM_CREATED: "🚀",
+      TEAM_JOINED: "🤜",
+      SESSION_JOINED: "🧭",
     };
     return emojis[reason] || "⭐";
   };

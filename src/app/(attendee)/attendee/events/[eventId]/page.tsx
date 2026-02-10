@@ -78,6 +78,12 @@ import { useSessionReactions } from "@/hooks/use-session-reactions";
 import { RecommendationsPanel } from "@/components/features/recommendations";
 import { SuggestionsBell } from "@/components/features/suggestions";
 import { TeamPanel } from "@/components/features/gamification/team-panel";
+import { FloatingScoreWidget } from "@/components/features/gamification/gamification-container";
+import { GamificationHub } from "@/components/features/gamification/gamification-hub";
+import { AchievementToast } from "@/components/features/gamification/achievement-toast";
+import { SmartNudge } from "@/components/features/gamification/smart-nudge";
+import { SessionSummary } from "@/components/features/gamification/session-summary";
+import { useGamification } from "@/hooks/use-gamification";
 import {
   Collapsible,
   CollapsibleContent,
@@ -1044,6 +1050,7 @@ export default function AttendeeEventPage() {
   const [autoJoinSession, setAutoJoinSession] = React.useState<Session | null>(null);
   const [showAutoJoinSession, setShowAutoJoinSession] = React.useState(false);
   const [hasProcessedAutoJoin, setHasProcessedAutoJoin] = React.useState(false);
+  const [gamificationHubOpen, setGamificationHubOpen] = React.useState(false);
 
   const { data, loading, error } = useQuery(GET_ATTENDEE_EVENT_DETAILS_QUERY, {
     variables: { eventId },
@@ -1224,6 +1231,48 @@ export default function AttendeeEventPage() {
   const liveSessions = sortedSessions.filter((s) => s.status === "LIVE");
   const upcomingSessions = sortedSessions.filter((s) => s.status === "UPCOMING");
   const endedSessions = sortedSessions.filter((s) => s.status === "ENDED");
+
+  // Gamification - connect to first live session for points/achievements
+  const activeGamificationSessionId = liveSessions[0]?.id || "";
+  const gamification = useGamification({ sessionId: activeGamificationSessionId });
+
+  // Track the first newly unlocked achievement for the celebration toast
+  const [celebratingAchievement, setCelebratingAchievement] = React.useState<typeof gamification.achievements[number] | null>(null);
+  const lastAchievementCountRef = React.useRef(0);
+
+  React.useEffect(() => {
+    if (gamification.achievements.length > lastAchievementCountRef.current && lastAchievementCountRef.current > 0) {
+      // New achievement unlocked - show the latest one
+      const newest = gamification.achievements[gamification.achievements.length - 1];
+      setCelebratingAchievement(newest);
+    }
+    lastAchievementCountRef.current = gamification.achievements.length;
+  }, [gamification.achievements]);
+
+  // Session end summary - detect when a live session transitions to ENDED
+  const [summarySession, setSummarySession] = React.useState<{ title: string } | null>(null);
+  const previousLiveSessionIdsRef = React.useRef<Set<string>>(new Set());
+
+  React.useEffect(() => {
+    const currentLiveIds = new Set(liveSessions.map((s) => s.id));
+    const prevLiveIds = previousLiveSessionIdsRef.current;
+
+    // Find sessions that were live but are no longer
+    if (prevLiveIds.size > 0) {
+      for (const prevId of prevLiveIds) {
+        if (!currentLiveIds.has(prevId)) {
+          // This session just ended — find it in ended sessions
+          const ended = endedSessions.find((s) => s.id === prevId);
+          if (ended && gamification.currentScore > 0) {
+            setSummarySession({ title: ended.title });
+            break; // Show one at a time
+          }
+        }
+      }
+    }
+
+    previousLiveSessionIdsRef.current = currentLiveIds;
+  }, [liveSessions, endedSessions, gamification.currentScore]);
 
   // Handler for ping action
   const handlePing = async (userId: string, message?: string) => {
@@ -1450,6 +1499,17 @@ export default function AttendeeEventPage() {
         </Collapsible>
       </section>
 
+      {/* Smart Gamification Nudge - contextual prompts above sessions */}
+      {activeGamificationSessionId && gamification.isConnected && (
+        <SmartNudge
+          pollsOpen={liveSessions[0]?.pollsOpen === true}
+          qaOpen={liveSessions[0]?.qaOpen === true}
+          chatOpen={liveSessions[0]?.chatOpen === true}
+          streakExpiring={gamification.streak.active && gamification.streak.count >= 2}
+          className="mb-4"
+        />
+      )}
+
       {/* Sessions */}
       <div className="space-y-8">
         {/* Live Sessions */}
@@ -1529,7 +1589,51 @@ export default function AttendeeEventPage() {
         )}
       </div>
 
-      {/* Note: LiveReactionsFull and FloatingScoreWidget removed for cleaner virtual event experience */}
+      {/* Gamification: Floating Score Widget + Hub + Achievement Celebration */}
+      {activeGamificationSessionId && gamification.isConnected && (
+        <>
+          <FloatingScoreWidget
+            currentScore={gamification.currentScore}
+            currentRank={gamification.currentRank}
+            streak={gamification.streak}
+            recentPointEvents={gamification.recentPointEvents}
+            onOpenHub={() => setGamificationHubOpen(true)}
+          />
+          <GamificationHub
+            open={gamificationHubOpen}
+            onOpenChange={setGamificationHubOpen}
+            currentScore={gamification.currentScore}
+            currentRank={gamification.currentRank}
+            streak={gamification.streak}
+            achievementProgress={gamification.achievementProgress}
+            allAchievements={gamification.allAchievements}
+            recentPointEvents={gamification.recentPointEvents}
+            leaderboard={gamification.leaderboard}
+            teamLeaderboard={gamification.teamLeaderboard}
+            currentUserId={gamification.currentUserId}
+            getReasonText={gamification.getReasonText}
+            getReasonEmoji={gamification.getReasonEmoji}
+          />
+          <AchievementToast
+            achievement={celebratingAchievement}
+            onDismiss={() => setCelebratingAchievement(null)}
+          />
+          <SessionSummary
+            open={!!summarySession}
+            onClose={() => setSummarySession(null)}
+            sessionTitle={summarySession?.title || ""}
+            totalPoints={gamification.currentScore}
+            rank={gamification.currentRank}
+            achievements={gamification.achievements}
+            streak={gamification.streak}
+            stats={{
+              messagesSent: gamification.activityCounts["MESSAGE_SENT"] || 0,
+              questionsAsked: gamification.activityCounts["QUESTION_ASKED"] || 0,
+              pollsVoted: gamification.activityCounts["POLL_VOTED"] || 0,
+            }}
+          />
+        </>
+      )}
 
       {/* Floating Schedule Indicator - Real-time agenda updates */}
       {sessions.length > 0 && (

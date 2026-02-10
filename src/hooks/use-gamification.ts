@@ -31,6 +31,9 @@ export enum PointReason {
   POLL_CREATED = "POLL_CREATED",
   POLL_VOTED = "POLL_VOTED",
   WAITLIST_JOINED = "WAITLIST_JOINED",
+  TEAM_CREATED = "TEAM_CREATED",
+  TEAM_JOINED = "TEAM_JOINED",
+  SESSION_JOINED = "SESSION_JOINED",
 }
 
 export const POINT_VALUES: Record<PointReason, number> = {
@@ -41,21 +44,56 @@ export const POINT_VALUES: Record<PointReason, number> = {
   [PointReason.POLL_CREATED]: 10,
   [PointReason.POLL_VOTED]: 1,
   [PointReason.WAITLIST_JOINED]: 3,
+  [PointReason.TEAM_CREATED]: 5,
+  [PointReason.TEAM_JOINED]: 3,
+  [PointReason.SESSION_JOINED]: 2,
 };
 
 export interface RecentPointEvent {
   id: string;
   reason: PointReason;
   points: number;
+  basePoints?: number;
+  streakMultiplier?: number;
+  streakCount?: number;
   timestamp: number;
 }
 
 export interface Achievement {
-    id: string;
-    badgeName: string;
-    description: string;
-    icon?: string;
-    unlockedAt: string;
+  id: string;
+  badgeName: string;
+  description: string;
+  icon?: string;
+  category?: string;
+  unlockedAt?: string;
+  createdAt?: string;
+}
+
+export interface AchievementProgress {
+  key: string;
+  badgeName: string;
+  description: string;
+  icon: string;
+  category: string;
+  isUnlocked: boolean;
+  unlockedAt: string | null;
+  current: number;
+  target: number;
+  percentage: number;
+}
+
+export interface StreakInfo {
+  count: number;
+  multiplier: number;
+  active: boolean;
+}
+
+export interface UserStats {
+  totalPoints: number;
+  rank: number | null;
+  achievementCount: number;
+  totalAchievements: number;
+  streak: StreakInfo;
 }
 
 interface UseGamificationOptions {
@@ -76,9 +114,15 @@ export const useGamification = ({
   const [currentScore, setCurrentScore] = useState(0);
   const [currentRank, setCurrentRank] = useState<number | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
+  const [achievementProgress, setAchievementProgress] = useState<AchievementProgress[]>([]);
   const [recentPointEvents, setRecentPointEvents] = useState<RecentPointEvent[]>([]);
+  const [streak, setStreak] = useState<StreakInfo>({ count: 0, multiplier: 1.0, active: false });
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Persistent cumulative counts per reason (not auto-cleared like recentPointEvents)
+  const activityCountsRef = useRef<Record<string, number>>({});
 
   const requestLeaderboard = useCallback(() => {
     if (!socketRef.current?.connected) return;
@@ -86,19 +130,57 @@ export const useGamification = ({
     socketRef.current.emit("leaderboard.request");
   }, []);
 
+  const requestAchievements = useCallback(() => {
+    if (!socketRef.current?.connected) return;
+    socketRef.current.emit("achievements.request");
+  }, []);
+
+  const requestUserStats = useCallback(() => {
+    if (!socketRef.current?.connected) return;
+    socketRef.current.emit("user.stats.request");
+  }, []);
+
   const clearRecentAchievements = useCallback((achievementIds: string[]) => {
     setAchievements((prev) => prev.filter((ach) => !achievementIds.includes(ach.id)));
   }, []);
 
   const getReasonText = useCallback((reason: PointReason): string => {
-    return reason.replace(/_/g, " ").toLowerCase();
+    const labels: Record<string, string> = {
+      MESSAGE_SENT: "Chat message",
+      MESSAGE_REACTED: "Reaction",
+      QUESTION_ASKED: "Question asked",
+      QUESTION_UPVOTED: "Question upvoted",
+      POLL_CREATED: "Poll created",
+      POLL_VOTED: "Poll vote",
+      WAITLIST_JOINED: "Joined waitlist",
+      TEAM_CREATED: "Team created",
+      TEAM_JOINED: "Joined team",
+      SESSION_JOINED: "Joined session",
+    };
+    return labels[reason] || reason.replace(/_/g, " ").toLowerCase();
+  }, []);
+
+  const getReasonEmoji = useCallback((reason: PointReason): string => {
+    const emojis: Record<string, string> = {
+      MESSAGE_SENT: "💬",
+      MESSAGE_REACTED: "👍",
+      QUESTION_ASKED: "❓",
+      QUESTION_UPVOTED: "⬆️",
+      POLL_CREATED: "📊",
+      POLL_VOTED: "✅",
+      WAITLIST_JOINED: "⏳",
+      TEAM_CREATED: "🚀",
+      TEAM_JOINED: "🤜",
+      SESSION_JOINED: "🧭",
+    };
+    return emojis[reason] || "⭐";
   }, []);
 
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Initialize socket connection with proper authentication
+  // Initialize socket connection
   useEffect(() => {
     if (!sessionId || !token || !autoConnect) {
       return;
@@ -121,14 +203,15 @@ export const useGamification = ({
     newSocket.on("connect", () => {
       setIsConnected(true);
       setError(null);
-      // Join the session room for receiving broadcasts
       newSocket.emit("session.join", { sessionId });
     });
 
     newSocket.on("connectionAcknowledged", () => {
       setIsJoined(true);
-      // Request initial leaderboard data
+      // Request initial data
       newSocket.emit("leaderboard.request");
+      newSocket.emit("achievements.request");
+      newSocket.emit("user.stats.request");
     });
 
     newSocket.on("disconnect", () => {
@@ -162,13 +245,36 @@ export const useGamification = ({
     });
 
     // Points awarded event (private to user)
-    newSocket.on("gamification.points.awarded", (data: RecentPointEvent) => {
+    newSocket.on("gamification.points.awarded", (data: any) => {
       if (!data) return;
-      setRecentPointEvents((prev) => [...prev, data]);
-      setCurrentScore((prev) => prev + (data.points || 0));
-      // Auto-clear after 5 seconds
+      const event: RecentPointEvent = {
+        id: `${Date.now()}-${Math.random()}`,
+        reason: data.reason,
+        points: data.points,
+        basePoints: data.basePoints,
+        streakMultiplier: data.streakMultiplier,
+        streakCount: data.streakCount,
+        timestamp: Date.now(),
+      };
+      setRecentPointEvents((prev) => [...prev, event]);
+      setCurrentScore(data.newTotalScore || 0);
+
+      // Track cumulative activity count per reason (persists across auto-clears)
+      activityCountsRef.current[data.reason] =
+        (activityCountsRef.current[data.reason] || 0) + 1;
+
+      // Update streak from points event
+      if (data.streakCount !== undefined) {
+        setStreak({
+          count: data.streakCount,
+          multiplier: data.streakMultiplier || 1.0,
+          active: data.streakCount > 0,
+        });
+      }
+
+      // Auto-clear point animation after 5 seconds
       setTimeout(() => {
-        setRecentPointEvents((prev) => prev.filter((event) => event.id !== data.id));
+        setRecentPointEvents((prev) => prev.filter((e) => e.id !== event.id));
       }, 5000);
     });
 
@@ -176,6 +282,36 @@ export const useGamification = ({
     newSocket.on("achievement.unlocked", (data: Achievement) => {
       if (!data) return;
       setAchievements((prev) => [...prev, data]);
+      // Refresh achievement progress
+      newSocket.emit("achievements.request");
+    });
+
+    // Achievements data response
+    // NestJS emits the gateway return's `data` field directly as the event payload
+    newSocket.on("achievements.data", (data: any) => {
+      if (data?.achievements) {
+        setAllAchievements(data.achievements);
+      }
+      if (data?.progress) {
+        setAchievementProgress(data.progress);
+      }
+    });
+
+    // User stats response
+    newSocket.on("user.stats.data", (data: any) => {
+      if (data) {
+        setUserStats(data);
+        if (data.streak) {
+          setStreak(data.streak);
+        }
+      }
+    });
+
+    // Streak update event
+    newSocket.on("gamification.streak.updated", (data: StreakInfo) => {
+      if (data) {
+        setStreak(data);
+      }
     });
 
     // Cleanup
@@ -189,6 +325,9 @@ export const useGamification = ({
       newSocket.off("team.leaderboard.updated");
       newSocket.off("gamification.points.awarded");
       newSocket.off("achievement.unlocked");
+      newSocket.off("achievements.data");
+      newSocket.off("user.stats.data");
+      newSocket.off("gamification.streak.updated");
       newSocket.disconnect();
       socketRef.current = null;
     };
@@ -213,17 +352,27 @@ export const useGamification = ({
     currentScore,
     currentRank,
     achievements,
+    allAchievements,
+    achievementProgress,
     recentPointEvents,
+    streak,
+    userStats,
     isLoadingLeaderboard,
     error,
     currentUserId: user?.id,
 
     // Actions
     requestLeaderboard,
+    requestAchievements,
+    requestUserStats,
     clearRecentAchievements,
     clearError,
 
     // Helpers
     getReasonText,
+    getReasonEmoji,
+
+    // Cumulative activity counts per reason (persists for session summary)
+    activityCounts: activityCountsRef.current,
   };
 };

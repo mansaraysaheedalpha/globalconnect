@@ -348,38 +348,45 @@ const CompactGamification = ({
 };
 
 /**
- * Floating score widget for overlay display
+ * Enhanced floating score widget with streak indicator.
+ * Accepts gamification data via props to avoid duplicate socket connections.
+ * Clicking opens the Gamification Hub slide-over panel.
  */
 interface FloatingScoreWidgetProps {
-  sessionId: string;
-  eventId?: string;
+  currentScore: number;
+  currentRank: number | null;
+  streak: { active: boolean; count: number; multiplier: number };
+  recentPointEvents: Array<{ id: string; points: number; reason: PointReason; timestamp: number }>;
   className?: string;
+  onOpenHub?: () => void;
 }
 
 export const FloatingScoreWidget = ({
-  sessionId,
-  eventId: _eventId,
+  currentScore,
+  currentRank,
+  streak,
+  recentPointEvents,
   className = "",
+  onOpenHub,
 }: FloatingScoreWidgetProps) => {
-  const {
-    isConnected,
-    currentScore,
-    currentRank,
-    recentPointEvents,
-  } = useGamification({ sessionId });
-
-  if (!isConnected) return null;
-
-  // Positioned above the DM button (which is at bottom-4)
   return (
     <div className={cn("fixed bottom-24 left-4 z-40 safe-bottom", className)}>
-      <Card className="shadow-lg">
+      <Card
+        className="shadow-lg cursor-pointer hover:shadow-xl transition-shadow active:scale-95"
+        onClick={onOpenHub}
+      >
         <CardContent className="p-3">
           <div className="flex items-center gap-2">
             <Trophy className="h-4 w-4 text-yellow-500" />
             <span className="font-bold">{currentScore.toLocaleString()}</span>
             {currentRank && (
               <span className="text-xs text-muted-foreground">#{currentRank}</span>
+            )}
+            {streak.active && (
+              <span className="flex items-center gap-0.5 text-xs font-bold text-orange-500">
+                <span className="animate-pulse">🔥</span>
+                {streak.multiplier}x
+              </span>
             )}
           </div>
         </CardContent>
