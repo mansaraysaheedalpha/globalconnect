@@ -2,7 +2,6 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import {
   Mic,
   MicOff,
@@ -11,7 +10,6 @@ import {
   Monitor,
   MonitorOff,
   PhoneOff,
-  MessageSquare,
   Cpu,
   Gauge,
   Circle,
@@ -52,18 +50,74 @@ interface VideoControlsProps {
   className?: string;
 }
 
+function ControlButton({
+  icon: Icon,
+  label,
+  isActive,
+  isDanger,
+  isWarning,
+  onClick,
+  tooltipText,
+  className,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label?: string;
+  isActive?: boolean;
+  isDanger?: boolean;
+  isWarning?: boolean;
+  onClick: () => void;
+  tooltipText: string;
+  className?: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          className={cn(
+            "group/btn relative flex flex-col items-center gap-1 outline-none",
+            className
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-full transition-all duration-200",
+              "w-11 h-11 sm:w-12 sm:h-12",
+              isDanger
+                ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25"
+                : isWarning
+                ? "bg-red-500/90 hover:bg-red-600 text-white"
+                : isActive
+                ? "bg-white/20 hover:bg-white/30 text-white ring-1 ring-white/20"
+                : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
+            )}
+          >
+            <Icon className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
+          </div>
+          {label && (
+            <span className="hidden sm:block text-[10px] text-white/50 group-hover/btn:text-white/70 transition-colors">
+              {label}
+            </span>
+          )}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="font-medium">
+        <p>{tooltipText}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function VideoControls({
   isMicOn,
   isCameraOn,
   isScreenSharing,
-  isChatOpen,
   isRecording,
   isCaptionsOn,
   cpuLoadState = "normal",
   onToggleMic,
   onToggleCamera,
   onToggleScreenShare,
-  onToggleChat,
   onToggleRecording,
   onToggleCaptions,
   onLeave,
@@ -71,235 +125,170 @@ export function VideoControls({
   className,
 }: VideoControlsProps) {
   return (
-    <TooltipProvider>
-      <div className={cn(
-        "flex flex-wrap items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-900/95 backdrop-blur-sm rounded-xl",
-        className
-      )}>
+    <TooltipProvider delayDuration={200}>
+      <div
+        className={cn(
+          "inline-flex items-end gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3",
+          "bg-gray-900/80 backdrop-blur-xl rounded-2xl",
+          "border border-white/[0.08] shadow-2xl shadow-black/40",
+          className
+        )}
+      >
         {/* CPU Load Warning */}
         {cpuLoadState !== "normal" && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium mr-2",
-                cpuLoadState === "critical"
-                  ? "bg-red-500/20 text-red-400 animate-pulse"
-                  : "bg-yellow-500/20 text-yellow-400"
-              )}>
-                <Cpu className="w-3.5 h-3.5" />
-                {cpuLoadState === "critical" ? "CPU Critical" : "High CPU"}
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium mr-1 self-center",
+                  cpuLoadState === "critical"
+                    ? "bg-red-500/20 text-red-400 animate-pulse"
+                    : "bg-yellow-500/20 text-yellow-400"
+                )}
+              >
+                <Cpu className="w-3 h-3" />
+                <span className="hidden sm:inline">
+                  {cpuLoadState === "critical" ? "CPU Critical" : "High CPU"}
+                </span>
               </div>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p>
                 {cpuLoadState === "critical"
-                  ? "CPU is overloaded. Your camera was turned off automatically. Consider closing other applications."
+                  ? "CPU is overloaded. Your camera was turned off automatically. Consider closing other apps."
                   : "High CPU usage detected. Consider turning off your camera to improve performance."}
               </p>
             </TooltipContent>
           </Tooltip>
         )}
-        {/* Microphone Toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={onToggleMic}
-              className={cn(
-                "rounded-full w-10 h-10 sm:w-12 sm:h-12",
-                isMicOn
-                  ? "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
-                  : "bg-red-600 hover:bg-red-700 text-white"
-              )}
-            >
-              {isMicOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{isMicOn ? "Mute microphone" : "Unmute microphone"}</p>
-          </TooltipContent>
-        </Tooltip>
 
-        {/* Camera Toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={onToggleCamera}
-              className={cn(
-                "rounded-full w-10 h-10 sm:w-12 sm:h-12",
-                isCameraOn
-                  ? "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
-                  : "bg-red-600 hover:bg-red-700 text-white"
-              )}
-            >
-              {isCameraOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{isCameraOn ? "Turn off camera" : "Turn on camera"}</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Mic */}
+        <ControlButton
+          icon={isMicOn ? Mic : MicOff}
+          label={isMicOn ? "Mic" : "Muted"}
+          isActive={isMicOn}
+          isWarning={!isMicOn}
+          onClick={onToggleMic}
+          tooltipText={isMicOn ? "Mute microphone" : "Unmute microphone"}
+        />
 
-        {/* Screen Share Toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={onToggleScreenShare}
-              className={cn(
-                "rounded-full w-10 h-10 sm:w-12 sm:h-12",
-                isScreenSharing
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
-              )}
-            >
-              {isScreenSharing ? <MonitorOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{isScreenSharing ? "Stop sharing" : "Share screen"}</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Camera */}
+        <ControlButton
+          icon={isCameraOn ? Video : VideoOff}
+          label={isCameraOn ? "Camera" : "No Cam"}
+          isActive={isCameraOn}
+          isWarning={!isCameraOn}
+          onClick={onToggleCamera}
+          tooltipText={isCameraOn ? "Turn off camera" : "Turn on camera"}
+        />
 
-        {/* Recording Toggle */}
+        {/* Screen Share */}
+        <ControlButton
+          icon={isScreenSharing ? MonitorOff : Monitor}
+          label={isScreenSharing ? "Sharing" : "Share"}
+          isActive={isScreenSharing}
+          onClick={onToggleScreenShare}
+          tooltipText={isScreenSharing ? "Stop sharing" : "Share screen"}
+        />
+
+        {/* Recording */}
         {onToggleRecording && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={onToggleRecording}
-                className={cn(
-                  "rounded-full w-10 h-10 sm:w-12 sm:h-12",
-                  isRecording
-                    ? "bg-red-600 hover:bg-red-700 text-white animate-pulse"
-                    : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
-                )}
-              >
-                <Circle className={cn("w-5 h-5", isRecording && "fill-current")} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isRecording ? "Stop recording" : "Start recording"}</p>
-            </TooltipContent>
-          </Tooltip>
+          <ControlButton
+            icon={Circle}
+            label={isRecording ? "Stop Rec" : "Record"}
+            isActive={isRecording}
+            isWarning={isRecording}
+            onClick={onToggleRecording}
+            tooltipText={isRecording ? "Stop recording" : "Start recording"}
+          />
         )}
 
         {/* Divider */}
-        <div className="w-px h-8 bg-gray-600 mx-2" />
+        <div className="w-px h-8 bg-white/10 mx-1 sm:mx-1.5 self-center" />
 
-        {/* Chat Toggle */}
-        {onToggleChat && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={onToggleChat}
-                className={cn(
-                  "rounded-full w-10 h-10 sm:w-12 sm:h-12",
-                  isChatOpen
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-white"
-                )}
-              >
-                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isChatOpen ? "Close chat" : "Open chat"}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-
-        {/* Captions Toggle */}
+        {/* Captions */}
         {onToggleCaptions && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={onToggleCaptions}
-                className={cn(
-                  "rounded-full w-10 h-10 sm:w-12 sm:h-12",
-                  isCaptionsOn
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-white/20 hover:bg-white/30 text-white border-2 border-white/40"
-                )}
-              >
-                <Subtitles className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isCaptionsOn ? "Hide captions" : "Show captions"}</p>
-            </TooltipContent>
-          </Tooltip>
+          <ControlButton
+            icon={Subtitles}
+            label="Captions"
+            isActive={isCaptionsOn}
+            onClick={onToggleCaptions}
+            tooltipText={isCaptionsOn ? "Hide captions" : "Show captions"}
+          />
         )}
 
-        {/* Video Quality Settings */}
+        {/* Video Quality */}
         {onSetVideoQuality && (
           <DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    className="rounded-full w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white"
-                  >
-                    <Gauge className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </Button>
+                  <button className="group/btn flex flex-col items-center gap-1 outline-none">
+                    <div className="flex items-center justify-center rounded-full w-11 h-11 sm:w-12 sm:h-12 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-200">
+                      <Gauge className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
+                    </div>
+                    <span className="hidden sm:block text-[10px] text-white/50 group-hover/btn:text-white/70 transition-colors">
+                      Quality
+                    </span>
+                  </button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent side="top">
                 <p>Video quality</p>
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="center" className="bg-gray-800 border-gray-700">
-              <DropdownMenuLabel className="text-gray-300">Video Quality</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-700" />
+            <DropdownMenuContent
+              align="center"
+              side="top"
+              sideOffset={12}
+              className="bg-gray-900/95 backdrop-blur-xl border-white/10 shadow-2xl min-w-[180px]"
+            >
+              <DropdownMenuLabel className="text-gray-400 text-xs">
+                Video Quality
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem
                 onClick={() => onSetVideoQuality("high")}
-                className="text-gray-200 focus:bg-gray-700"
+                className="text-gray-200 focus:bg-white/10 focus:text-white cursor-pointer"
               >
-                High (Best quality)
+                <div className="flex items-center justify-between w-full">
+                  <span>High</span>
+                  <span className="text-xs text-gray-500">Best quality</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onSetVideoQuality("medium")}
-                className="text-gray-200 focus:bg-gray-700"
+                className="text-gray-200 focus:bg-white/10 focus:text-white cursor-pointer"
               >
-                Medium (Balanced)
+                <div className="flex items-center justify-between w-full">
+                  <span>Medium</span>
+                  <span className="text-xs text-gray-500">Balanced</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onSetVideoQuality("low")}
-                className="text-gray-200 focus:bg-gray-700"
+                className="text-gray-200 focus:bg-white/10 focus:text-white cursor-pointer"
               >
-                Low (Save bandwidth)
+                <div className="flex items-center justify-between w-full">
+                  <span>Low</span>
+                  <span className="text-xs text-gray-500">Save bandwidth</span>
+                </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
 
+        {/* Divider before leave */}
+        <div className="w-px h-8 bg-white/10 mx-1 sm:mx-1.5 self-center" />
+
         {/* Leave Call */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={onLeave}
-              className="rounded-full w-12 h-12 bg-red-600 hover:bg-red-700 text-white"
-            >
-              <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Leave room</p>
-          </TooltipContent>
-        </Tooltip>
+        <ControlButton
+          icon={PhoneOff}
+          label="Leave"
+          isDanger
+          onClick={onLeave}
+          tooltipText="Leave session"
+        />
       </div>
     </TooltipProvider>
   );

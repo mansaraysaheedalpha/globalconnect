@@ -9,8 +9,7 @@ import { useVirtualStage } from "@/hooks/useVirtualStage";
 import { useAuthStore } from "@/store/auth.store";
 import { useMutation } from "@apollo/client";
 import { UPDATE_SESSION_MUTATION } from "@/graphql/events.graphql";
-import { Loader2, AlertTriangle, Video, Circle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2, AlertTriangle, Video, Circle, RefreshCw } from "lucide-react";
 import { VirtualSession } from "./VirtualSessionView";
 import { CaptionOverlay } from "./CaptionOverlay";
 
@@ -28,7 +27,6 @@ interface DailySessionViewProps {
 function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessionViewProps) {
   const {
     participants,
-    isJoined,
     isJoining,
     isCameraOn,
     isMicOn,
@@ -46,7 +44,6 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     startRecording,
     stopRecording,
     startTranscription,
-    stopTranscription,
     setReceiveVideoQuality,
   } = useDailyCall();
 
@@ -54,7 +51,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
   const [showCaptions, setShowCaptions] = useState(session.autoCaptions ?? false);
   const hasAutoStartedCaptionsRef = useRef(false);
 
-  const { createRoom, getToken, isLoading: stageLoading, error: stageError } = useVirtualStage();
+  const { createRoom, getToken, error: stageError } = useVirtualStage();
   const [status, setStatus] = useState<"idle" | "provisioning" | "joining" | "joined" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -135,8 +132,6 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
 
         // If speaker encounters expired room, clear it and retry
         if (isSpeaker && isExpiredRoom && session.virtualRoomId) {
-          console.log("[DailySessionView] Token failed due to expired room, clearing and creating new room...");
-
           try {
             await updateSession({
               variables: {
@@ -179,10 +174,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
 
       // If speaker encounters expired room, clear it and allow creating a new one
       if (isSpeaker && isExpiredRoom && session.virtualRoomId) {
-        console.log("[DailySessionView] Detected expired room, clearing and creating new room...");
-
         try {
-          // Clear the expired room info
           await updateSession({
             variables: {
               id: session.id,
@@ -193,7 +185,6 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
             },
           });
 
-          // Reset state and retry (this will trigger lazy provisioning)
           setErrorMessage("Previous room expired. Creating new room...");
           setTimeout(() => {
             hasInitiatedRef.current = false;
@@ -225,13 +216,12 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
       retryCount < 20
     ) {
       const retryTimer = setTimeout(() => {
-        console.log(`[DailySessionView] Auto-retrying join (attempt ${retryCount + 1}/20)...`);
         hasInitiatedRef.current = false;
         setStatus("idle");
         setErrorMessage(null);
         setRetryCount((prev) => prev + 1);
         initJoin();
-      }, 3000); // Retry every 3 seconds
+      }, 3000);
 
       return () => clearTimeout(retryTimer);
     }
@@ -246,13 +236,10 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
                            errorLower.includes("meeting ended");
 
       if (isExpiredRoom) {
-        console.log("[DailySessionView] Detected expired room from DailyProvider error, clearing and creating new room...");
-        hasHandledExpiredRoomRef.current = true; // Mark as handled to prevent multiple attempts
+        hasHandledExpiredRoomRef.current = true;
 
-        // Clear the expired room and create a new one
         (async () => {
           try {
-            console.log("[DailySessionView] Clearing expired room:", session.virtualRoomId);
             await updateSession({
               variables: {
                 id: session.id,
@@ -263,21 +250,19 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
               },
             });
 
-            console.log("[DailySessionView] Room cleared, preparing to create new room...");
             setStatus("provisioning");
             setErrorMessage("Previous room expired. Creating new room...");
 
-            // Wait for mutation to complete and UI to update, then retry
             setTimeout(() => {
               hasInitiatedRef.current = false;
-              hasHandledExpiredRoomRef.current = false; // Reset for future errors
+              hasHandledExpiredRoomRef.current = false;
               setErrorMessage(null);
               setStatus("idle");
               initJoin();
             }, 2000);
           } catch (resetErr) {
             console.error("[DailySessionView] Failed to reset expired room:", resetErr);
-            hasHandledExpiredRoomRef.current = false; // Allow retry
+            hasHandledExpiredRoomRef.current = false;
             setStatus("error");
             setErrorMessage("Failed to reset expired room. Please try again.");
           }
@@ -300,19 +285,17 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     }
   }, [isSpeaker, session.autoCaptions, isTranscribing, startTranscription]);
 
-  // Toggle captions: start transcription if not running, or toggle visibility if running
+  // Toggle captions
   const handleToggleCaptions = useCallback(async () => {
     if (!isTranscribing) {
-      // Start transcription if not already running
       await startTranscription();
       setShowCaptions(true);
     } else {
-      // Just toggle visibility if transcription is already running
       setShowCaptions((prev) => !prev);
     }
   }, [isTranscribing, startTranscription]);
 
-  // Toggle recording handler (only for speakers with recordable sessions)
+  // Toggle recording handler
   const canRecord = isSpeaker && session.isRecordable !== false;
   const handleToggleRecording = useCallback(async () => {
     if (isRecording) {
@@ -322,91 +305,141 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
     }
   }, [isRecording, startRecording, stopRecording]);
 
-  // Loading / provisioning state
+  // ─── Loading / Provisioning State ──────────────────────────────
   if (status === "idle" || status === "provisioning" || status === "joining" || isJoining) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="text-center text-white p-8 max-w-md">
-          <div className="w-24 h-24 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-6">
-            <Loader2 className="h-12 w-12 text-blue-400 animate-spin" />
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/[0.04] blur-[150px]" />
+        </div>
+
+        <div className="relative z-10 text-center text-white px-6 py-10 max-w-sm">
+          {/* Animated loader */}
+          <div className="relative w-20 h-20 mx-auto mb-8">
+            {/* Outer ring */}
+            <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
+            {/* Spinning ring */}
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-400 animate-spin" />
+            {/* Inner icon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Video className="h-7 w-7 text-blue-400/80" />
+            </div>
           </div>
-          <h2 className="text-xl font-bold mb-2">
-            {status === "provisioning" ? "Setting up the room..." : "Joining the session..."}
+
+          <h2 className="text-lg sm:text-xl font-semibold mb-2 tracking-tight">
+            {status === "provisioning" ? "Setting up the room" : "Joining session"}
           </h2>
-          <p className="text-gray-400">
+          <p className="text-white/40 text-sm leading-relaxed">
             {status === "provisioning"
-              ? "Creating a video room for this session"
-              : "Connecting you to the video call"}
+              ? "Creating a secure video room for this session..."
+              : "Connecting you to the video call..."}
           </p>
+
+          {/* Progress dots */}
+          <div className="flex items-center justify-center gap-1.5 mt-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 animate-pulse" style={{ animationDelay: "150ms" }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/30 animate-pulse" style={{ animationDelay: "300ms" }} />
+          </div>
         </div>
       </div>
     );
   }
 
-  // Error state
+  // ─── Error State ───────────────────────────────────────────────
   if (status === "error" || callError || stageError) {
+    const isWaitingForRoom = !isSpeaker && errorMessage?.includes("room hasn't been created yet") && retryCount < 20;
+
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="text-center text-white p-8 max-w-md">
-          <div className="w-24 h-24 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-6">
-            <AlertTriangle className="h-12 w-12 text-red-400" />
-          </div>
-          <h2 className="text-xl font-bold mb-2">Unable to Join</h2>
-          <p className="text-gray-400 mb-4">
-            {errorMessage || callError || stageError || "An error occurred while joining the session."}
-          </p>
-          {!isSpeaker && errorMessage?.includes("room hasn't been created yet") && retryCount < 20 && (
-            <p className="text-sm text-blue-400 mb-6 flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Retrying automatically... ({retryCount}/20)
-            </p>
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-red-500/[0.03] blur-[120px]" />
+        </div>
+
+        <div className="relative z-10 text-center text-white px-6 py-10 max-w-md">
+          {isWaitingForRoom ? (
+            /* Waiting for speaker - friendly state */
+            <>
+              <div className="relative w-20 h-20 mx-auto mb-8">
+                <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
+                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-400 animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Video className="h-7 w-7 text-blue-400/80" />
+                </div>
+              </div>
+              <h2 className="text-lg sm:text-xl font-semibold mb-2 tracking-tight">Waiting for the Host</h2>
+              <p className="text-white/40 text-sm mb-6 leading-relaxed">
+                The session will begin once the speaker starts the room. Hang tight!
+              </p>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Retrying... ({retryCount}/20)
+              </div>
+            </>
+          ) : (
+            /* Actual error */
+            <>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
+                <AlertTriangle className="h-8 w-8 sm:h-10 sm:w-10 text-red-400/80" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-semibold mb-2 tracking-tight">Unable to Join</h2>
+              <p className="text-white/40 text-sm mb-8 leading-relaxed max-w-xs mx-auto">
+                {errorMessage || callError || stageError || "An error occurred while joining the session."}
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => {
+                    hasInitiatedRef.current = false;
+                    setStatus("idle");
+                    setErrorMessage(null);
+                    initJoin();
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors ring-1 ring-white/10"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Try Again
+                </button>
+                <button
+                  onClick={onLeave}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white/60 hover:text-white/80 hover:bg-white/5 text-sm font-medium transition-colors"
+                >
+                  Go Back
+                </button>
+              </div>
+            </>
           )}
-          <div className="flex items-center justify-center gap-3">
-            <Button
-              variant="outline"
-              className="bg-transparent border-white/20 text-white hover:bg-white/10"
-              onClick={() => {
-                hasInitiatedRef.current = false;
-                setStatus("idle");
-                setErrorMessage(null);
-                initJoin();
-              }}
-            >
-              Try Again
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-transparent border-white/20 text-white hover:bg-white/10"
-              onClick={onLeave}
-            >
-              Go Back
-            </Button>
-          </div>
         </div>
       </div>
     );
   }
 
-  // Joined - show video grid + controls
+  // ─── Joined - Show Video Grid + Controls ───────────────────────
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-slate-900">
+    <div className="flex-1 flex flex-col min-h-0 bg-gray-950">
       {/* Recording indicator */}
       {isRecording && (
-        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1.5 bg-red-600 text-white text-sm font-medium">
-          <Circle className="w-3 h-3 fill-current animate-pulse" />
+        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1.5 bg-red-600/90 backdrop-blur-sm text-white text-xs sm:text-sm font-medium">
+          <Circle className="w-2.5 h-2.5 fill-current animate-pulse" />
           Recording in progress
         </div>
       )}
 
       {/* Video Grid */}
-      <div className="flex-1 min-h-0 p-4 relative">
+      <div className="flex-1 min-h-0 p-2 sm:p-3 md:p-4 relative">
         {participants.length > 0 ? (
           <VideoGrid participants={participants} className="h-full" />
         ) : (
-          <div className="flex items-center justify-center h-full text-white/60">
+          <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <Video className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              <p>Waiting for others to join...</p>
+              <div className="relative w-16 h-16 mx-auto mb-4">
+                <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white/30 animate-spin" style={{ animationDuration: "3s" }} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Video className="h-6 w-6 text-white/30" />
+                </div>
+              </div>
+              <p className="text-white/40 text-sm">Waiting for others to join...</p>
             </div>
           </div>
         )}
@@ -418,7 +451,7 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
       </div>
 
       {/* Call Controls */}
-      <div className="flex-shrink-0 flex justify-center pb-4">
+      <div className="flex-shrink-0 flex justify-center px-2 pb-3 sm:pb-4">
         <VideoControls
           isMicOn={isMicOn}
           isCameraOn={isCameraOn}
@@ -441,7 +474,6 @@ function DailySessionInner({ session, eventId, isSpeaker, onLeave }: DailySessio
 
 /**
  * DailySessionView - Wraps the video call inner component with DailyProvider context.
- * This is the component used by VirtualSessionView for Daily.co sessions.
  */
 export function DailySessionView(props: DailySessionViewProps) {
   return (
