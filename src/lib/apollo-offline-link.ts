@@ -20,6 +20,24 @@ import { v4 as uuidv4 } from "uuid";
 import { print } from "graphql";
 import { queueMutation } from "./offline-storage";
 
+/**
+ * Register a Background Sync tag so the service worker can replay
+ * queued mutations even if the user closes the tab while offline.
+ */
+function registerBackgroundSync(): void {
+  if (
+    typeof navigator !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "SyncManager" in window
+  ) {
+    navigator.serviceWorker.ready
+      .then((reg) => (reg as any).sync.register("mutation-sync"))
+      .catch(() => {
+        // Background Sync not supported or permission denied — graceful degradation
+      });
+  }
+}
+
 // Mutations that are safe to queue offline (non-destructive, idempotent-friendly)
 const QUEUEABLE_MUTATIONS = new Set([
   // Session participation
@@ -96,6 +114,9 @@ export class OfflineLink extends ApolloLink {
           idempotencyKey,
         })
           .then(() => {
+            // Register Background Sync so the SW can replay even if the tab is closed
+            registerBackgroundSync();
+
             // Return a synthetic success response so the UI can show optimistic feedback
             observer.next({
               data: {

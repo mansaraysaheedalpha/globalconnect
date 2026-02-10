@@ -412,6 +412,30 @@ export const usePresentationControl = (
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  // --- P1.3: Batch Slide Prefetch ---
+  // When presentation starts and slideUrls are available, prefetch all slides
+  // so the SW CacheFirst strategy stores them for offline viewing.
+  const hasPrefetchedSlidesRef = useRef(false);
+  useEffect(() => {
+    const urls = state.slideState?.slideUrls;
+    if (!urls || urls.length === 0 || hasPrefetchedSlidesRef.current) return;
+    if (!navigator.onLine) return;
+
+    hasPrefetchedSlidesRef.current = true;
+
+    for (const url of urls) {
+      if (url && url.startsWith("http") && typeof document !== "undefined") {
+        const link = document.createElement("link");
+        link.rel = "prefetch";
+        link.as = "image";
+        link.href = url;
+        link.onload = () => link.remove();
+        link.onerror = () => link.remove();
+        document.head.appendChild(link);
+      }
+    }
+  }, [state.slideState?.slideUrls]);
+
   return {
     // State
     isConnected: state.isConnected,

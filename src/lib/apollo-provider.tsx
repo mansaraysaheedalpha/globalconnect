@@ -23,6 +23,7 @@ import { getCsrfHeaders } from "./csrf";
 import { restoreCache, setupCachePersistence, clearPersistedCache } from "./apollo-cache-persist";
 import { OfflineLink } from "./apollo-offline-link";
 import { initSyncManager } from "./sync-manager";
+import { storeSyncMeta } from "./offline-storage";
 
 // --- 1. Type-Safe Environment Variable with validation ---
 const getApiUrl = () => {
@@ -285,10 +286,26 @@ function CachePersistenceInitializer() {
     // Initialize the sync manager to replay mutations when online
     const cleanupSync = initSyncManager(client as ApolloClient<NormalizedCacheObject>);
 
+    // Store API URL in IndexedDB for Background Sync (SW needs it)
+    storeSyncMeta("bg_sync_api_url", API_URL);
+
+    // Keep auth token in IndexedDB so the SW can replay mutations
+    const unsubAuth = useAuthStore.subscribe((state) => {
+      if (state.token) {
+        storeSyncMeta("bg_sync_auth_token", state.token);
+      }
+    });
+    // Store the current token immediately
+    const currentToken = useAuthStore.getState().token;
+    if (currentToken) {
+      storeSyncMeta("bg_sync_auth_token", currentToken);
+    }
+
     return () => {
       cancelled = true;
       cleanupPersist?.();
       cleanupSync();
+      unsubAuth();
     };
   }, []);
 

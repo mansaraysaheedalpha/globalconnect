@@ -18,6 +18,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Calendar } from "lucide-react";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 
 interface LiveAgendaContainerProps {
   eventId: string;
@@ -45,6 +46,10 @@ export const LiveAgendaContainer = ({
     recentUpdates,
     setInitialSessions,
     wasRecentlyUpdated,
+    isOnline,
+    cachedAt,
+    isStale,
+    isFromCache,
   } = useAgendaUpdates(eventId);
 
   // Set initial sessions when provided
@@ -88,6 +93,16 @@ export const LiveAgendaContainer = ({
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs text-muted-foreground">Live</span>
         </div>
+      )}
+
+      {/* Stale/offline data indicator */}
+      {(isFromCache || !isOnline) && displaySessions.length > 0 && (
+        <StaleDataIndicator
+          isStale={isStale}
+          isOffline={!isOnline}
+          lastFetched={cachedAt}
+          className="mb-3"
+        />
       )}
 
       <LiveAgenda
@@ -295,7 +310,7 @@ export const FloatingScheduleIndicator = ({
   initialSessions = [],
   className = "",
 }: FloatingScheduleIndicatorProps) => {
-  const { isConnected, recentUpdates, sessions, setInitialSessions } =
+  const { isConnected, recentUpdates, sessions, setInitialSessions, isFromCache } =
     useAgendaUpdates(eventId);
 
   useEffect(() => {
@@ -314,7 +329,8 @@ export const FloatingScheduleIndicator = ({
     return now >= start && now <= end && s.status !== "cancelled";
   });
 
-  if (!isConnected) return null;
+  // Show when connected OR when we have cached data to display
+  if (!isConnected && !isFromCache && displaySessions.length === 0) return null;
 
   return (
     <div className={cn("fixed bottom-20 right-4 z-40 safe-bottom", className)}>

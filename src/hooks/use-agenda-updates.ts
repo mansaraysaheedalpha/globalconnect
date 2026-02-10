@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
+import { useSocketCache } from "./use-socket-cache";
+import { useNetworkStatus } from "./use-network-status";
 
 // Agenda update types
 export type AgendaUpdateType = "CREATED" | "UPDATED" | "DELETED";
@@ -56,6 +58,19 @@ export const useAgendaUpdates = (eventId: string) => {
     error: null,
   });
   const { token } = useAuthStore();
+  const { isOnline } = useNetworkStatus();
+
+  // --- Agenda cache (P1.2): persist/restore sessions to IndexedDB ---
+  const {
+    cachedData: cachedSessions,
+    cacheLoaded,
+    cachedAt,
+    isStale,
+    persistToCache,
+  } = useSocketCache<AgendaSession[]>({
+    feature: "agenda",
+    sessionId: eventId, // event-scoped but uses sessionId param for cache key
+  });
 
   // Update ID counter
   const updateIdCounter = useRef(0);
@@ -212,6 +227,43 @@ export const useAgendaUpdates = (eventId: string) => {
     };
   }, [eventId, token, generateUpdateId]);
 
+  // Restore sessions from cache on mount (before socket connects)
+  useEffect(() => {
+    if (
+      cacheLoaded &&
+      cachedSessions &&
+      cachedSessions.length > 0 &&
+      state.sessions.length === 0 &&
+      !state.isJoined
+    ) {
+      setState((prev) => ({
+        ...prev,
+        sessions: [...cachedSessions].sort(
+          (a, b) =>
+            new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+        ),
+      }));
+    }
+  }, [cacheLoaded, cachedSessions, state.sessions.length, state.isJoined]);
+
+  // Persist sessions to cache when they change (debounced)
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (state.sessions.length === 0) return;
+
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(() => {
+      persistToCache(state.sessions);
+    }, 2000);
+
+    return () => {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    };
+  }, [state.sessions, persistToCache]);
+
+  // Track if data is from cache (not yet connected to live socket)
+  const isFromCache = cacheLoaded && !state.isJoined && state.sessions.length > 0;
+
   // Set initial sessions (from REST API)
   const setInitialSessions = useCallback((sessions: AgendaSession[]) => {
     setState((prev) => ({
@@ -299,6 +351,12 @@ export const useAgendaUpdates = (eventId: string) => {
     sessions: state.sessions,
     recentUpdates: state.recentUpdates,
     error: state.error,
+    isOnline,
+
+    // Cache state (P1.2)
+    cachedAt,
+    isStale,
+    isFromCache,
 
     // Actions
     setInitialSessions,
