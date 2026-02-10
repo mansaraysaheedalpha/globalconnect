@@ -276,7 +276,9 @@ export const AchievementsGrid = ({
           <div className="text-center">
             <p className="font-medium text-sm">{achievement.badgeName}</p>
             <p className="text-xs text-muted-foreground">
-              {new Date(achievement.unlockedAt).toLocaleDateString()}
+              {achievement.unlockedAt
+                ? new Date(achievement.unlockedAt).toLocaleDateString()
+                : "Recently"}
             </p>
           </div>
         </motion.div>
