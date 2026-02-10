@@ -151,7 +151,7 @@ export const UPDATE_OFFER_MUTATION = gql`
 `;
 
 export const PURCHASE_OFFER_MUTATION = gql`
-  mutation PurchaseOffer($offerId: ID!, $quantity: Int!) {
+  mutation PurchaseOffer($offerId: String!, $quantity: Int!) {
     purchaseOffer(offerId: $offerId, quantity: $quantity) {
       checkoutSessionId
       stripeCheckoutUrl
@@ -203,7 +203,7 @@ export const TRACK_AD_IMPRESSIONS_MUTATION = gql`
 `;
 
 export const TRACK_AD_CLICK_MUTATION = gql`
-  mutation TrackAdClick($adId: ID!, $sessionContext: String) {
+  mutation TrackAdClick($adId: String!, $sessionContext: String) {
     trackAdClick(adId: $adId, sessionContext: $sessionContext) {
       success
       redirectUrl
