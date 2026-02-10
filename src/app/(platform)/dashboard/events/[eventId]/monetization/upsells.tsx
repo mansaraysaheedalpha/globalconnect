@@ -93,6 +93,7 @@ export const Upsells = () => {
   const [offerType, setOfferType] = useState("TICKET_UPGRADE");
   const [imageUrl, setImageUrl] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [inventoryTotal, setInventoryTotal] = useState("");
 
   // Edit form state
   const [editTitle, setEditTitle] = useState("");
@@ -102,6 +103,7 @@ export const Upsells = () => {
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editExpiresAt, setEditExpiresAt] = useState("");
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editInventoryTotal, setEditInventoryTotal] = useState("");
 
   const { data, loading, error, refetch } = useQuery(GET_EVENT_MONETIZATION_QUERY, {
     variables: { eventId },
@@ -157,6 +159,7 @@ export const Upsells = () => {
         : ""
     );
     setEditIsActive(offer.isActive);
+    setEditInventoryTotal(offer.inventory?.total?.toString() || "");
     setIsEditDialogOpen(true);
   };
 
@@ -175,6 +178,7 @@ export const Upsells = () => {
           imageUrl: editImageUrl || null,
           expiresAt: editExpiresAt || null,
           isActive: editIsActive,
+          inventoryTotal: editInventoryTotal ? parseInt(editInventoryTotal) : null,
         },
       },
     });
@@ -188,6 +192,7 @@ export const Upsells = () => {
     setOfferType("TICKET_UPGRADE");
     setImageUrl("");
     setExpiresAt("");
+    setInventoryTotal("");
   };
 
   const handleCreate = (e: React.FormEvent) => {
@@ -203,6 +208,7 @@ export const Upsells = () => {
           offerType,
           imageUrl: imageUrl || null,
           expiresAt: expiresAt || null,
+          inventoryTotal: inventoryTotal ? parseInt(inventoryTotal) : null,
         },
       },
     });
@@ -326,14 +332,28 @@ export const Upsells = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="expiresAt">Expires At (Optional)</Label>
-                  <Input
-                    id="expiresAt"
-                    type="datetime-local"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="inventoryTotal">Stock Limit (Optional)</Label>
+                    <Input
+                      id="inventoryTotal"
+                      type="number"
+                      min="1"
+                      value={inventoryTotal}
+                      onChange={(e) => setInventoryTotal(e.target.value)}
+                      placeholder="Unlimited"
+                    />
+                    <p className="text-xs text-muted-foreground">Leave empty for unlimited</p>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="expiresAt">Expires At (Optional)</Label>
+                    <Input
+                      id="expiresAt"
+                      type="datetime-local"
+                      value={expiresAt}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -500,14 +520,28 @@ export const Upsells = () => {
                   />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="editExpiresAt">Expires At (Optional)</Label>
-                <Input
-                  id="editExpiresAt"
-                  type="datetime-local"
-                  value={editExpiresAt}
-                  onChange={(e) => setEditExpiresAt(e.target.value)}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editInventoryTotal">Stock Limit (Optional)</Label>
+                  <Input
+                    id="editInventoryTotal"
+                    type="number"
+                    min="1"
+                    value={editInventoryTotal}
+                    onChange={(e) => setEditInventoryTotal(e.target.value)}
+                    placeholder="Unlimited"
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty for unlimited</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="editExpiresAt">Expires At (Optional)</Label>
+                  <Input
+                    id="editExpiresAt"
+                    type="datetime-local"
+                    value={editExpiresAt}
+                    onChange={(e) => setEditExpiresAt(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <input
