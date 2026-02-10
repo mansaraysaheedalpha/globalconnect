@@ -88,6 +88,9 @@ export const useEngagementStream = ({
 
     // Listen for engagement updates (every 5 seconds)
     const handleEngagementUpdate = (data: EngagementData) => {
+      // Filter: only process events for THIS session (shared socket receives all sessions)
+      if (data.sessionId && data.sessionId !== sessionId) return;
+
       // Save to Zustand store for persistence
       // Data comes with signals as nested object
       const signals = data.signals || {};
@@ -102,11 +105,16 @@ export const useEngagementStream = ({
 
     // Listen for anomaly detections
     const handleAnomalyDetected = (anomaly: Anomaly) => {
+      // Filter: only process events for THIS session (shared socket receives all sessions)
+      if (anomaly.sessionId && anomaly.sessionId !== sessionId) return;
+
       setLatestAnomalyLocal(anomaly);
 
-      // Save to Zustand store
+      // Save to Zustand store with deterministic ID based on anomaly properties
+      // This prevents duplicate toasts when the same anomaly condition is re-detected
+      const anomalyId = `${sessionId}-${anomaly.type}-${anomaly.severity}`;
       setAnomaly(sessionId, {
-        id: `anomaly-${Date.now()}`,
+        id: anomalyId,
         type: anomaly.type as AnomalyEvent['type'],
         severity: anomaly.severity as AnomalyEvent['severity'],
         timestamp: new Date(anomaly.timestamp || Date.now()),

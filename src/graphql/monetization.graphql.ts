@@ -130,7 +130,7 @@ export const DELETE_OFFER_MUTATION = gql`
 `;
 
 export const UPDATE_OFFER_MUTATION = gql`
-  mutation UpdateOffer($id: ID!, $offerIn: OfferUpdateInput!) {
+  mutation UpdateOffer($id: String!, $offerIn: OfferUpdateInput!) {
     updateOffer(id: $id, offerIn: $offerIn) {
       id
       title

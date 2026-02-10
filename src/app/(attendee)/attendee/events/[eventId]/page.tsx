@@ -77,12 +77,13 @@ import { FloatingReactions } from "@/components/features/floating-reactions";
 import { useSessionReactions } from "@/hooks/use-session-reactions";
 import { RecommendationsPanel } from "@/components/features/recommendations";
 import { SuggestionsBell } from "@/components/features/suggestions";
+import { TeamPanel } from "@/components/features/gamification/team-panel";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown, Sparkles, Users } from "lucide-react";
 
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
@@ -630,6 +631,51 @@ const AttendeeBreakoutRoomsDialog = ({
   );
 };
 
+// Dialog wrapper for Teams (full-screen modal)
+const AttendeeTeamsDialog = ({
+  session,
+}: {
+  session: Session;
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+        onClick={() => setIsOpen(true)}
+      >
+        <Users className="h-4 w-4" />
+        Teams
+      </Button>
+      <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-lg sm:!w-full max-h-[85vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background/95">
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-primary" />
+            <span className="font-medium">{session.title} - Teams</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Teams Content - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-auto p-4">
+          <TeamPanel sessionId={session.id} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const SessionCard = ({
   session,
   eventId,
@@ -911,6 +957,11 @@ const SessionCard = ({
                       eventId={eventId}
                       userId={userId}
                     />
+                  )}
+
+                  {/* Teams - available for live sessions */}
+                  {isLive && (
+                    <AttendeeTeamsDialog session={session} />
                   )}
 
                   {/* Live Reactions - visible when enabled, interactive when open */}

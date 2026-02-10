@@ -81,9 +81,11 @@ export const BackgroundSessionMonitor: React.FC<BackgroundSessionMonitorProps> =
 
       console.log("[BackgroundMonitor] Anomaly detected:", anomaly.sessionId, anomaly.type);
 
-      // Update Zustand store
+      // Update Zustand store with deterministic ID based on anomaly properties
+      // This prevents duplicate toasts when the same anomaly condition is re-detected
+      const anomalyId = `${anomaly.sessionId}-${anomaly.type}-${anomaly.severity}`;
       setAnomaly(anomaly.sessionId, {
-        id: `anomaly-${Date.now()}`,
+        id: anomalyId,
         type: anomaly.type as AnomalyEvent["type"],
         severity: anomaly.severity as AnomalyEvent["severity"],
         timestamp: new Date(anomaly.timestamp || Date.now()),

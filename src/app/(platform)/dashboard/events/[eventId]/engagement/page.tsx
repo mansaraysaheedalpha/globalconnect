@@ -117,36 +117,55 @@ export default function EngagementConductorPage() {
     });
   }, []);
 
-  // Track notified anomalies to prevent duplicates
-  const notifiedAnomaliesRef = useRef<Set<string>>(new Set());
+  // Track notified anomalies with timestamps to enforce cooldown between toasts
+  // Key: "sessionId-anomalyType", Value: timestamp of last notification
+  const notifiedAnomaliesRef = useRef<Map<string, number>>(new Map());
 
-  // Get all session states from the Zustand store
-  const allSessionStates = useEngagementStore((state) => state.sessions);
+  // Cooldown: minimum 60 seconds between toasts for the same session+type combo
+  const ANOMALY_TOAST_COOLDOWN_MS = 60_000;
+
+  // Use a narrow selector: only extract anomaly data for live sessions
+  // This avoids re-triggering on every engagement score update
+  const liveSessionIds = liveSessions.map((s) => s.id);
+  const sessionAnomalies = useEngagementStore((state) => {
+    const result: Record<string, typeof state.sessions[string]["currentAnomaly"]> = {};
+    for (const sid of liveSessionIds) {
+      const session = state.sessions[sid];
+      if (session?.currentAnomaly) {
+        result[sid] = session.currentAnomaly;
+      }
+    }
+    return result;
+  });
 
   // Background anomaly monitoring - watch for anomalies in ALL live sessions
   useEffect(() => {
     if (!notificationsEnabled || liveSessions.length === 0) return;
 
-    liveSessions.forEach((session) => {
-      const sessionState = allSessionStates[session.id];
-      const anomaly = sessionState?.currentAnomaly;
+    const now = Date.now();
 
+    liveSessions.forEach((session) => {
+      const anomaly = sessionAnomalies[session.id];
       if (!anomaly) return;
 
-      // Create unique key for this anomaly
-      const anomalyKey = `${session.id}-${anomaly.id}-${anomaly.timestamp}`;
+      // Skip if this is the currently viewed session (shown inline in dashboard)
+      if (session.id === selectedSessionId) return;
 
-      // Skip if already notified or if this is the currently viewed session
-      if (notifiedAnomaliesRef.current.has(anomalyKey)) return;
-      if (session.id === selectedSessionId) return; // Don't notify for currently viewed session
+      // Create dedup key based on session + anomaly type (stable, not Date.now()-based)
+      const dedupeKey = `${session.id}-${anomaly.type}`;
 
-      // Mark as notified
-      notifiedAnomaliesRef.current.add(anomalyKey);
+      // Check cooldown: skip if we notified for this session+type recently
+      const lastNotified = notifiedAnomaliesRef.current.get(dedupeKey);
+      if (lastNotified && now - lastNotified < ANOMALY_TOAST_COOLDOWN_MS) return;
 
-      // Clean up old notification keys (keep last 100)
-      if (notifiedAnomaliesRef.current.size > 100) {
-        const keysArray = Array.from(notifiedAnomaliesRef.current);
-        notifiedAnomaliesRef.current = new Set(keysArray.slice(-100));
+      // Mark as notified with current timestamp
+      notifiedAnomaliesRef.current.set(dedupeKey, now);
+
+      // Clean up old entries (older than 5 minutes)
+      if (notifiedAnomaliesRef.current.size > 50) {
+        for (const [key, ts] of notifiedAnomaliesRef.current) {
+          if (now - ts > 300_000) notifiedAnomaliesRef.current.delete(key);
+        }
       }
 
       // Show toast notification based on severity
@@ -163,17 +182,17 @@ export default function EngagementConductorPage() {
         toast.error(`Critical Alert: ${session.title}`, toastOptions);
         // Also send browser notification if permitted
         if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(`🚨 Critical Alert: ${session.title}`, {
+          new Notification(`Critical Alert: ${session.title}`, {
             body: `${anomaly.type.replace(/_/g, " ")}: Engagement dropped to ${(anomaly.currentEngagement * 100).toFixed(0)}%`,
             icon: "/favicon.ico",
-            tag: anomalyKey, // Prevent duplicate browser notifications
+            tag: dedupeKey, // Prevent duplicate browser notifications
           });
         }
       } else {
         toast.warning(`Warning: ${session.title}`, toastOptions);
       }
     });
-  }, [allSessionStates, liveSessions, selectedSessionId, notificationsEnabled]);
+  }, [sessionAnomalies, liveSessions, selectedSessionId, notificationsEnabled]);
 
   // Get status badge
   const getStatusBadge = (status: string) => {
