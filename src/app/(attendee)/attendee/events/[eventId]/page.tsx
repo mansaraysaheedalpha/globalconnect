@@ -1138,6 +1138,54 @@ export default function AttendeeEventPage() {
     }
   }, [searchParams]);
 
+  // --- Gamification hooks (MUST be above early returns to maintain hook order) ---
+  const sessions: Session[] = data?.publicSessionsByEvent || [];
+  const liveSessions = React.useMemo(
+    () => sessions.filter((s) => s.status === "LIVE"),
+    [sessions],
+  );
+  const activeGamificationSessionId = liveSessions[0]?.id || "";
+  const gamification = useGamification({ sessionId: activeGamificationSessionId });
+
+  const [celebratingAchievement, setCelebratingAchievement] = React.useState<typeof gamification.achievements[number] | null>(null);
+  const lastAchievementCountRef = React.useRef(0);
+
+  React.useEffect(() => {
+    if (gamification.achievements.length > lastAchievementCountRef.current && lastAchievementCountRef.current > 0) {
+      const newest = gamification.achievements[gamification.achievements.length - 1];
+      setCelebratingAchievement(newest);
+    }
+    lastAchievementCountRef.current = gamification.achievements.length;
+  }, [gamification.achievements]);
+
+  const [summarySession, setSummarySession] = React.useState<{ title: string } | null>(null);
+  const previousLiveSessionIdsRef = React.useRef<Set<string>>(new Set());
+
+  const endedSessions = React.useMemo(
+    () => sessions.filter((s) => s.status === "ENDED"),
+    [sessions],
+  );
+
+  React.useEffect(() => {
+    const currentLiveIds = new Set(liveSessions.map((s) => s.id));
+    const prevLiveIds = previousLiveSessionIdsRef.current;
+
+    if (prevLiveIds.size > 0) {
+      for (const prevId of prevLiveIds) {
+        if (!currentLiveIds.has(prevId)) {
+          const ended = endedSessions.find((s) => s.id === prevId);
+          if (ended && gamification.currentScore > 0) {
+            setSummarySession({ title: ended.title });
+            break;
+          }
+        }
+      }
+    }
+
+    previousLiveSessionIdsRef.current = currentLiveIds;
+  }, [liveSessions, endedSessions, gamification.currentScore]);
+  // --- End gamification hooks ---
+
   if (loading) {
     return (
       <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto animate-fade-in">
@@ -1183,7 +1231,6 @@ export default function AttendeeEventPage() {
 
   const registration: Registration | null = data.myRegistrationForEvent;
   const event: Event = data.event;
-  const sessions: Session[] = data.publicSessionsByEvent || [];
 
   // Debug: Log IDs to help track registration issues
   console.log("[AttendeeEventPage] Debug info:", {
@@ -1222,57 +1269,7 @@ export default function AttendeeEventPage() {
     );
   }
 
-  // Sort sessions: live first, then upcoming, then ended
-  const sortedSessions = [...sessions].sort((a, b) => {
-    const order = { LIVE: 0, UPCOMING: 1, ENDED: 2 };
-    return order[a.status] - order[b.status];
-  });
-
-  const liveSessions = sortedSessions.filter((s) => s.status === "LIVE");
-  const upcomingSessions = sortedSessions.filter((s) => s.status === "UPCOMING");
-  const endedSessions = sortedSessions.filter((s) => s.status === "ENDED");
-
-  // Gamification - connect to first live session for points/achievements
-  const activeGamificationSessionId = liveSessions[0]?.id || "";
-  const gamification = useGamification({ sessionId: activeGamificationSessionId });
-
-  // Track the first newly unlocked achievement for the celebration toast
-  const [celebratingAchievement, setCelebratingAchievement] = React.useState<typeof gamification.achievements[number] | null>(null);
-  const lastAchievementCountRef = React.useRef(0);
-
-  React.useEffect(() => {
-    if (gamification.achievements.length > lastAchievementCountRef.current && lastAchievementCountRef.current > 0) {
-      // New achievement unlocked - show the latest one
-      const newest = gamification.achievements[gamification.achievements.length - 1];
-      setCelebratingAchievement(newest);
-    }
-    lastAchievementCountRef.current = gamification.achievements.length;
-  }, [gamification.achievements]);
-
-  // Session end summary - detect when a live session transitions to ENDED
-  const [summarySession, setSummarySession] = React.useState<{ title: string } | null>(null);
-  const previousLiveSessionIdsRef = React.useRef<Set<string>>(new Set());
-
-  React.useEffect(() => {
-    const currentLiveIds = new Set(liveSessions.map((s) => s.id));
-    const prevLiveIds = previousLiveSessionIdsRef.current;
-
-    // Find sessions that were live but are no longer
-    if (prevLiveIds.size > 0) {
-      for (const prevId of prevLiveIds) {
-        if (!currentLiveIds.has(prevId)) {
-          // This session just ended — find it in ended sessions
-          const ended = endedSessions.find((s) => s.id === prevId);
-          if (ended && gamification.currentScore > 0) {
-            setSummarySession({ title: ended.title });
-            break; // Show one at a time
-          }
-        }
-      }
-    }
-
-    previousLiveSessionIdsRef.current = currentLiveIds;
-  }, [liveSessions, endedSessions, gamification.currentScore]);
+  const upcomingSessions = sessions.filter((s) => s.status === "UPCOMING");
 
   // Handler for ping action
   const handlePing = async (userId: string, message?: string) => {
