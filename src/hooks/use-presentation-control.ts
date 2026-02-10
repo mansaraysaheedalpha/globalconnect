@@ -415,13 +415,16 @@ export const usePresentationControl = (
   // --- P1.3: Batch Slide Prefetch ---
   // When presentation starts and slideUrls are available, prefetch all slides
   // so the SW CacheFirst strategy stores them for offline viewing.
-  const hasPrefetchedSlidesRef = useRef(false);
+  // Uses a fingerprint to detect new slide sets (handles session changes without remount).
+  const prefetchedFingerprintRef = useRef<string | null>(null);
   useEffect(() => {
     const urls = state.slideState?.slideUrls;
-    if (!urls || urls.length === 0 || hasPrefetchedSlidesRef.current) return;
+    if (!urls || urls.length === 0) return;
     if (!navigator.onLine) return;
 
-    hasPrefetchedSlidesRef.current = true;
+    const fingerprint = urls[0] + ":" + urls.length;
+    if (prefetchedFingerprintRef.current === fingerprint) return;
+    prefetchedFingerprintRef.current = fingerprint;
 
     for (const url of urls) {
       if (url && url.startsWith("http") && typeof document !== "undefined") {
