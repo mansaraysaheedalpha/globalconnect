@@ -7,6 +7,7 @@ import {
   ApolloProvider as Provider,
   createHttpLink,
   from,
+  NormalizedCacheObject,
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 import { onError } from "@apollo/client/link/error";
@@ -15,11 +16,13 @@ import { Observable } from "@apollo/client/utilities";
 import {
   refreshToken,
   tokenNeedsRefresh,
-  isTokenExpired,
   initializeTokenRefresh,
   cancelScheduledRefresh,
 } from "./token-refresh";
 import { getCsrfHeaders } from "./csrf";
+import { restoreCache, setupCachePersistence, clearPersistedCache } from "./apollo-cache-persist";
+import { OfflineLink } from "./apollo-offline-link";
+import { initSyncManager } from "./sync-manager";
 
 // --- 1. Type-Safe Environment Variable with validation ---
 const getApiUrl = () => {
@@ -119,7 +122,10 @@ const errorLink = onError(
   ({ graphQLErrors, networkError, operation, forward }) => {
     // Handle network errors
     if (networkError) {
-      console.error("[Apollo] Network error:", networkError);
+      // Don't log network errors when offline — that's expected
+      if (navigator.onLine) {
+        console.error("[Apollo] Network error:", networkError);
+      }
 
       // Check if it's a network error with status 401
       if ("statusCode" in networkError && networkError.statusCode === 401) {
@@ -214,18 +220,56 @@ const errorLink = onError(
   }
 );
 
+// --- Cache with persistence support ---
+const cache = new InMemoryCache();
+
+// --- Offline link: intercepts when offline ---
+const offlineLink = new OfflineLink();
+
+// Build the link chain: error -> auth -> offline -> http
 const client = new ApolloClient({
-  link: from([errorLink, authLink, httpLink]), // Keep this order
-  cache: new InMemoryCache(),
+  link: from([errorLink, authLink, offlineLink, httpLink]),
+  cache,
   defaultOptions: {
     watchQuery: {
       errorPolicy: "all",
+      // Return cached data even when network request fails
+      returnPartialData: true,
     },
     query: {
       errorPolicy: "all",
     },
   },
 });
+
+/**
+ * Cache Persistence Initializer
+ * Restores the cache from IndexedDB on mount and sets up auto-persistence.
+ */
+function CachePersistenceInitializer() {
+  const initialized = useRef(false);
+  const cleanupPersistRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    // Restore cache from IndexedDB, then set up auto-persistence
+    restoreCache(cache).then(() => {
+      cleanupPersistRef.current = setupCachePersistence(cache);
+    });
+
+    // Initialize the sync manager to replay mutations when online
+    const cleanupSync = initSyncManager(client as ApolloClient<NormalizedCacheObject>);
+
+    return () => {
+      cleanupPersistRef.current?.();
+      cleanupSync();
+    };
+  }, []);
+
+  return null;
+}
 
 /**
  * Token Refresh Initializer Component
@@ -299,8 +343,12 @@ function TokenRefreshInitializer() {
 export function ApolloProvider({ children }: { children: React.ReactNode }) {
   return (
     <Provider client={client}>
+      <CachePersistenceInitializer />
       <TokenRefreshInitializer />
       {children}
     </Provider>
   );
 }
+
+// Export for use by sync manager and other utilities
+export { client as apolloClient, clearPersistedCache };

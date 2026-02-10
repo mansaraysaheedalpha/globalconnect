@@ -2,17 +2,21 @@
 /**
  * Offline Storage Utility
  *
- * Provides a simple abstraction over IndexedDB for storing event data
- * for offline-first functionality. Falls back to localStorage if IndexedDB
- * is not available.
+ * Provides an abstraction over IndexedDB for storing event data
+ * and queuing mutations for offline-first functionality.
+ * Falls back to localStorage if IndexedDB is not available.
+ *
+ * V2: Added mutationQueue and registrations stores for offline resilience.
  */
 
 const DB_NAME = "event_dynamics_offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface StorageConfig {
   storeName: string;
   keyPath?: string;
+  autoIncrement?: boolean;
+  indexes?: Array<{ name: string; keyPath: string; unique?: boolean }>;
 }
 
 const STORES: Record<string, StorageConfig> = {
@@ -20,7 +24,16 @@ const STORES: Record<string, StorageConfig> = {
   sessions: { storeName: "sessions", keyPath: "id" },
   speakers: { storeName: "speakers", keyPath: "id" },
   venues: { storeName: "venues", keyPath: "id" },
+  registrations: { storeName: "registrations", keyPath: "id" },
   syncMeta: { storeName: "syncMeta", keyPath: "id" },
+  mutationQueue: {
+    storeName: "mutationQueue",
+    keyPath: "id",
+    indexes: [
+      { name: "status", keyPath: "status" },
+      { name: "createdAt", keyPath: "createdAt" },
+    ],
+  },
 };
 
 let dbInstance: IDBDatabase | null = null;
@@ -46,6 +59,13 @@ async function initDB(): Promise<IDBDatabase> {
 
     request.onsuccess = () => {
       dbInstance = request.result;
+
+      // Handle connection closing (e.g., during version change from another tab)
+      dbInstance.onversionchange = () => {
+        dbInstance?.close();
+        dbInstance = null;
+      };
+
       resolve(dbInstance);
     };
 
@@ -53,9 +73,25 @@ async function initDB(): Promise<IDBDatabase> {
       const db = (event.target as IDBOpenDBRequest).result;
 
       // Create object stores
-      Object.values(STORES).forEach(({ storeName, keyPath }) => {
+      Object.values(STORES).forEach(({ storeName, keyPath, autoIncrement, indexes }) => {
+        let store: IDBObjectStore;
         if (!db.objectStoreNames.contains(storeName)) {
-          db.createObjectStore(storeName, { keyPath: keyPath || "id" });
+          store = db.createObjectStore(storeName, {
+            keyPath: keyPath || "id",
+            autoIncrement: autoIncrement || false,
+          });
+        } else {
+          // Access existing store during upgrade to add indexes
+          store = (event.target as IDBOpenDBRequest).transaction!.objectStore(storeName);
+        }
+
+        // Create indexes if defined
+        if (indexes) {
+          indexes.forEach(({ name, keyPath: idxKeyPath, unique }) => {
+            if (!store.indexNames.contains(name)) {
+              store.createIndex(name, idxKeyPath, { unique: unique || false });
+            }
+          });
         }
       });
     };
@@ -171,6 +207,30 @@ export async function getAllItems<T>(
 }
 
 /**
+ * Get all items from a store using an index
+ */
+export async function getItemsByIndex<T>(
+  storeName: keyof typeof STORES,
+  indexName: string,
+  value: IDBValidKey
+): Promise<T[]> {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, "readonly");
+      const store = transaction.objectStore(storeName);
+      const index = store.index(indexName);
+      const request = index.getAll(value);
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Delete an item from IndexedDB
  */
 export async function deleteItem(
@@ -216,6 +276,34 @@ export async function clearStore(
 }
 
 /**
+ * Count items in a store, optionally filtered by index
+ */
+export async function countItems(
+  storeName: keyof typeof STORES,
+  indexName?: string,
+  value?: IDBValidKey
+): Promise<number> {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, "readonly");
+      const store = transaction.objectStore(storeName);
+      const target = indexName ? store.index(indexName) : store;
+      const request = value !== undefined ? target.count(value) : target.count();
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
+    return 0;
+  }
+}
+
+// ============================================================
+// Sync Metadata Helpers
+// ============================================================
+
+/**
  * Store sync metadata (last sync time, version, etc.)
  */
 export async function storeSyncMeta(
@@ -255,4 +343,96 @@ export async function getLastSyncTime(eventId: string): Promise<number | null> {
  */
 export async function setLastSyncTime(eventId: string): Promise<void> {
   await storeSyncMeta(`lastSync_${eventId}`, Date.now());
+}
+
+// ============================================================
+// Mutation Queue (for offline mutation replay)
+// ============================================================
+
+export type MutationStatus = "pending" | "in_flight" | "failed" | "completed";
+
+export interface QueuedMutation {
+  id: string;
+  /** The GraphQL operation name */
+  operationName: string;
+  /** Serialized GraphQL DocumentNode */
+  query: string;
+  /** Serialized variables */
+  variables: string;
+  /** Current status */
+  status: MutationStatus;
+  /** Number of replay attempts */
+  retryCount: number;
+  /** Max retries before marking as failed */
+  maxRetries: number;
+  /** ISO timestamp when queued */
+  createdAt: string;
+  /** ISO timestamp of last attempt */
+  lastAttemptAt: string | null;
+  /** Error message if failed */
+  errorMessage: string | null;
+  /** Optional: optimistic response data for immediate UI feedback */
+  optimisticResponse: string | null;
+  /** Idempotency key to prevent duplicate submissions */
+  idempotencyKey: string;
+}
+
+/**
+ * Add a mutation to the offline queue
+ */
+export async function queueMutation(
+  mutation: Omit<QueuedMutation, "status" | "retryCount" | "lastAttemptAt" | "errorMessage">
+): Promise<void> {
+  await storeItem("mutationQueue", {
+    ...mutation,
+    status: "pending" as MutationStatus,
+    retryCount: 0,
+    lastAttemptAt: null,
+    errorMessage: null,
+  });
+}
+
+/**
+ * Get all pending mutations ordered by creation time
+ */
+export async function getPendingMutations(): Promise<QueuedMutation[]> {
+  const all = await getItemsByIndex<QueuedMutation>("mutationQueue", "status", "pending");
+  return all.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+}
+
+/**
+ * Update a queued mutation's status
+ */
+export async function updateMutationStatus(
+  id: string,
+  status: MutationStatus,
+  errorMessage?: string
+): Promise<void> {
+  const mutation = await getItem<QueuedMutation>("mutationQueue", id);
+  if (!mutation) return;
+
+  await storeItem("mutationQueue", {
+    ...mutation,
+    status,
+    lastAttemptAt: new Date().toISOString(),
+    retryCount: status === "in_flight" ? mutation.retryCount + 1 : mutation.retryCount,
+    errorMessage: errorMessage || mutation.errorMessage,
+  });
+}
+
+/**
+ * Remove completed mutations from the queue
+ */
+export async function clearCompletedMutations(): Promise<void> {
+  const completed = await getItemsByIndex<QueuedMutation>("mutationQueue", "status", "completed");
+  for (const mutation of completed) {
+    await deleteItem("mutationQueue", mutation.id);
+  }
+}
+
+/**
+ * Get count of pending mutations
+ */
+export async function getPendingMutationCount(): Promise<number> {
+  return countItems("mutationQueue", "status", "pending");
 }

@@ -9,6 +9,99 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
+    // Runtime caching strategies for offline resilience
+    runtimeCaching: [
+      // Images from S3/CDN: Cache-first with 30-day expiry (event banners, speaker photos)
+      {
+        urlPattern: /^https:\/\/(108782064634-globalconnect-uploads\.s3\.eu-north-1\.amazonaws\.com|s3\.eu-north-1\.amazonaws\.com|res\.cloudinary\.com|images\.unsplash\.com)\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "image-assets",
+          expiration: {
+            maxEntries: 200,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // Next.js optimized images: Cache-first
+      {
+        urlPattern: /\/_next\/image\?url=.+/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "next-images",
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // GraphQL API: Network-first with cache fallback
+      // (The Apollo cache persistence handles most of this, but this catches
+      //  the raw HTTP responses as a secondary safety net)
+      {
+        urlPattern: /\/graphql$/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "graphql-responses",
+          networkTimeoutSeconds: 10,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 24 * 60 * 60, // 1 day
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // Static assets (JS, CSS): Stale-while-revalidate
+      {
+        urlPattern: /\/_next\/static\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "next-static",
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year (hashed filenames)
+          },
+        },
+      },
+      // Google Fonts: Cache-first (rarely changes)
+      {
+        urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "google-fonts",
+          expiration: {
+            maxEntries: 20,
+            maxAgeSeconds: 365 * 24 * 60 * 60,
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // Presentation slides from S3: Cache-first (slide images don't change)
+      {
+        urlPattern: /\/presentations\/.*\/slide_\d+\.(jpg|png|webp)$/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "presentation-slides",
+          expiration: {
+            maxEntries: 500,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+    ],
   },
 });
 

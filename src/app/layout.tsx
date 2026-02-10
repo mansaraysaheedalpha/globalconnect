@@ -5,6 +5,7 @@ import './globals.css';
 import { ApolloProvider } from '@/lib/apollo-provider';
 import { Toaster } from "@/components/ui/sonner";
 import { LiveRegionProvider, SkipLink } from "@/components/ui/accessibility";
+import { OfflineProvider } from "@/components/providers/offline-provider";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -52,7 +53,9 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground no-text-adjust`}>
         <LiveRegionProvider>
           <SkipLink href="#main-content" />
-          <ApolloProvider>{children}</ApolloProvider>
+          <ApolloProvider>
+            <OfflineProvider>{children}</OfflineProvider>
+          </ApolloProvider>
           <Toaster
             position="top-right"
             richColors
