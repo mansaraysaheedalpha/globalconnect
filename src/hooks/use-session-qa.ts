@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
 import { useSessionSocketOptional } from "@/context/SessionSocketContext";
+import { useSocketCache } from "./use-socket-cache";
+import { useNetworkStatus } from "./use-network-status";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -93,6 +95,19 @@ export const useSessionQA = (
   // Try to get shared socket from SessionSocketProvider (if available)
   const sharedSocketContext = useSessionSocketOptional();
   const usingSharedSocket = sharedSocketContext !== null;
+  const { isOnline } = useNetworkStatus();
+
+  // IndexedDB cache for instant loading before socket connects
+  const {
+    cachedData: cachedQuestions,
+    cacheLoaded,
+    cachedAt,
+    isStale: isCacheStale,
+    persistToCache,
+  } = useSocketCache<Question[]>({
+    feature: "qa",
+    sessionId,
+  });
 
   const [ownSocket, setOwnSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionQAState>({
@@ -115,6 +130,28 @@ export const useSessionQA = (
   useEffect(() => {
     questionsRef.current = state.questions;
   }, [state.questions]);
+
+  // Restore cached questions on mount (before socket connects)
+  useEffect(() => {
+    if (cachedQuestions && cachedQuestions.length > 0 && state.questions.length === 0 && !state.isJoined) {
+      setState((prev) => ({ ...prev, questions: cachedQuestions }));
+    }
+  }, [cachedQuestions]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debounced persist to IndexedDB when questions change (live data)
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (state.questions.length > 0 && state.isJoined) {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = setTimeout(() => {
+        const confirmed = state.questions.filter((q) => !(q as OptimisticQuestion).isOptimistic);
+        persistToCache(confirmed);
+      }, 2000);
+    }
+    return () => {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    };
+  }, [state.questions, state.isJoined, persistToCache]);
 
   // Sync state with shared socket context if using it
   useEffect(() => {
@@ -213,6 +250,7 @@ export const useSessionQA = (
           ...prev,
           questions: data.questions,
         }));
+        persistToCache(data.questions);
       }
     });
 
@@ -316,6 +354,7 @@ export const useSessionQA = (
           ...prev,
           questions: data.questions,
         }));
+        persistToCache(data.questions);
       }
     };
 
@@ -741,6 +780,8 @@ export const useSessionQA = (
     (a, b) => (b._count?.upvotes || 0) - (a._count?.upvotes || 0)
   );
 
+  const isFromCache = !state.isJoined && cachedQuestions !== null && state.questions.length > 0;
+
   return {
     questions: state.questions,
     approvedQuestions,
@@ -760,5 +801,11 @@ export const useSessionQA = (
     answerQuestion,
     tagQuestion,
     clearError,
+    // Offline/cache state
+    isOnline,
+    cachedAt,
+    isStale: isFromCache && isCacheStale,
+    isFromCache,
+    cacheLoaded,
   };
 };

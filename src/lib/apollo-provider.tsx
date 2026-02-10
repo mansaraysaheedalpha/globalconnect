@@ -221,7 +221,31 @@ const errorLink = onError(
 );
 
 // --- Cache with persistence support ---
-const cache = new InMemoryCache();
+const cache = new InMemoryCache({
+  typePolicies: {
+    Event: { keyFields: ["id"] },
+    Registration: { keyFields: ["id"] },
+    Session: { keyFields: ["id"] },
+    Speaker: { keyFields: ["id"] },
+    Venue: { keyFields: ["id"] },
+    User: { keyFields: ["id"] },
+    PublicEvent: { keyFields: ["id"] },
+    Query: {
+      fields: {
+        events: {
+          merge(_existing, incoming) {
+            return incoming;
+          },
+        },
+        publicEvents: {
+          merge(_existing, incoming) {
+            return incoming;
+          },
+        },
+      },
+    },
+  },
+});
 
 // --- Offline link: intercepts when offline ---
 const offlineLink = new OfflineLink();

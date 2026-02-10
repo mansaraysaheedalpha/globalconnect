@@ -66,6 +66,7 @@ import {
   PartyPopper,
   Info,
 } from "lucide-react";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import {
   Collapsible,
   CollapsibleContent,
@@ -1128,6 +1129,7 @@ export function SessionPolls({
   const {
     activePolls,
     closedPolls,
+    polls,
     isConnected,
     isJoined,
     error,
@@ -1146,6 +1148,10 @@ export function SessionPolls({
     clearError,
     clearGiveaway,
     clearQuizGiveaway,
+    isOnline,
+    cachedAt,
+    isStale,
+    isFromCache,
   } = useSessionPolls(sessionId, eventId, initialPollsOpen);
 
   const [showClosedPolls, setShowClosedPolls] = useState(false);
@@ -1173,8 +1179,8 @@ export function SessionPolls({
     );
   }
 
-  // Connecting state
-  if (!isConnected || !isJoined) {
+  // Show spinner only when no cached data AND still connecting
+  if ((!isConnected || !isJoined) && polls.size === 0) {
     return (
       <div className={cn("flex flex-col items-center justify-center h-full p-6", className)}>
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
@@ -1205,6 +1211,17 @@ export function SessionPolls({
           <Button variant="ghost" size="sm" onClick={clearError}>
             <X className="h-4 w-4" />
           </Button>
+        </div>
+      )}
+
+      {/* Stale/offline indicator */}
+      {(isFromCache || !isOnline) && (
+        <div className="mx-4 mt-4">
+          <StaleDataIndicator
+            isStale={isStale}
+            isOffline={!isOnline}
+            lastFetched={cachedAt}
+          />
         </div>
       )}
 

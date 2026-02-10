@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
 import { useSessionSocketOptional } from "@/context/SessionSocketContext";
+import { useSocketCache } from "./use-socket-cache";
+import { useNetworkStatus } from "./use-network-status";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -78,6 +80,19 @@ export const useSessionChat = (
   // Try to get shared socket from SessionSocketProvider (if available)
   const sharedSocketContext = useSessionSocketOptional();
   const usingSharedSocket = sharedSocketContext !== null;
+  const { isOnline } = useNetworkStatus();
+
+  // IndexedDB cache for instant loading before socket connects
+  const {
+    cachedData: cachedMessages,
+    cacheLoaded,
+    cachedAt,
+    isStale: isCacheStale,
+    persistToCache,
+  } = useSocketCache<ChatMessage[]>({
+    feature: "chat",
+    sessionId,
+  });
 
   const [ownSocket, setOwnSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionChatState>({
@@ -100,6 +115,28 @@ export const useSessionChat = (
   useEffect(() => {
     messagesRef.current = state.messages;
   }, [state.messages]);
+
+  // Restore cached messages on mount (before socket connects)
+  useEffect(() => {
+    if (cachedMessages && cachedMessages.length > 0 && state.messages.length === 0 && !state.isJoined) {
+      setState((prev) => ({ ...prev, messages: cachedMessages }));
+    }
+  }, [cachedMessages]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debounced persist to IndexedDB when messages change (live data)
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (state.messages.length > 0 && state.isJoined) {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = setTimeout(() => {
+        const confirmed = state.messages.filter((m) => !(m as OptimisticMessage).isOptimistic);
+        persistToCache(confirmed);
+      }, 2000);
+    }
+    return () => {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    };
+  }, [state.messages, state.isJoined, persistToCache]);
 
   // Sync state with shared socket context if using it
   useEffect(() => {
@@ -195,6 +232,7 @@ export const useSessionChat = (
           ...prev,
           messages: data.messages,
         }));
+        persistToCache(data.messages);
       }
     });
 
@@ -326,6 +364,7 @@ export const useSessionChat = (
           ...prev,
           messages: data.messages,
         }));
+        persistToCache(data.messages);
       }
     };
 
@@ -715,6 +754,8 @@ export const useSessionChat = (
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  const isFromCache = !state.isJoined && cachedMessages !== null && state.messages.length > 0;
+
   return {
     messages: state.messages,
     isConnected: state.isConnected,
@@ -729,5 +770,11 @@ export const useSessionChat = (
     deleteMessage,
     reactToMessage,
     clearError,
+    // Offline/cache state
+    isOnline,
+    cachedAt,
+    isStale: isFromCache && isCacheStale,
+    isFromCache,
+    cacheLoaded,
   };
 };

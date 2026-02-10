@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
 import { useSessionSocketOptional } from "@/context/SessionSocketContext";
+import { useSocketCache } from "./use-socket-cache";
+import { useNetworkStatus } from "./use-network-status";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -156,6 +158,26 @@ interface SessionPollsState {
   latestQuizGiveaway: QuizGiveawayResult | null;
 }
 
+// Cache shape for polls — defined at module level so the serialize/deserialize
+// functions below maintain stable references (avoids re-creating useCallback on every render)
+interface PollsCacheData {
+  polls: [string, Poll][];
+  userVotes: [string, string][];
+}
+
+const serializePolls = (data: PollsCacheData): unknown => ({
+  polls: data.polls,
+  userVotes: data.userVotes,
+});
+
+const deserializePolls = (raw: unknown): PollsCacheData => {
+  const r = raw as PollsCacheData;
+  return {
+    polls: r.polls || [],
+    userVotes: r.userVotes || [],
+  };
+};
+
 export const useSessionPolls = (
   sessionId: string,
   eventId: string,
@@ -164,6 +186,22 @@ export const useSessionPolls = (
   // Try to get shared socket from SessionSocketProvider (if available)
   const sharedSocketContext = useSessionSocketOptional();
   const usingSharedSocket = sharedSocketContext !== null;
+
+  // --- Offline cache support ---
+  const { isOnline } = useNetworkStatus();
+
+  const {
+    cachedData: cachedPolls,
+    cacheLoaded,
+    cachedAt,
+    isStale: isCacheStale,
+    persistToCache,
+  } = useSocketCache<PollsCacheData>({
+    feature: "polls",
+    sessionId,
+    serialize: serializePolls,
+    deserialize: deserializePolls,
+  });
 
   const [ownSocket, setOwnSocket] = useState<Socket | null>(null);
   const [state, setState] = useState<SessionPollsState>({
@@ -196,6 +234,22 @@ export const useSessionPolls = (
   useEffect(() => {
     setState((prev) => ({ ...prev, pollsOpen: initialPollsOpen }));
   }, [initialPollsOpen]);
+
+  // Restore polls from cache on mount (before socket connects)
+  useEffect(() => {
+    if (
+      cachedPolls &&
+      cachedPolls.polls.length > 0 &&
+      state.polls.size === 0 &&
+      !state.isJoined
+    ) {
+      setState((prev) => ({
+        ...prev,
+        polls: new Map(cachedPolls.polls),
+        userVotes: new Map(cachedPolls.userVotes),
+      }));
+    }
+  }, [cachedPolls]);
 
   // Sync state with shared socket context if using it
   useEffect(() => {
@@ -330,6 +384,12 @@ export const useSessionPolls = (
           polls: newPolls,
           userVotes: newUserVotes,
         }));
+
+        // Persist to cache for offline access
+        persistToCache({
+          polls: Array.from(newPolls.entries()),
+          userVotes: Array.from(newUserVotes.entries()),
+        });
       }
     });
 
@@ -455,6 +515,12 @@ export const useSessionPolls = (
           polls: newPolls,
           userVotes: newUserVotes,
         }));
+
+        // Persist to cache for offline access
+        persistToCache({
+          polls: Array.from(newPolls.entries()),
+          userVotes: Array.from(newUserVotes.entries()),
+        });
       }
     };
 
@@ -918,6 +984,20 @@ export const useSessionPolls = (
     [state.userVotes]
   );
 
+  // Debounced persist on incremental changes (votes, new polls, closes)
+  useEffect(() => {
+    if (!state.isJoined || state.polls.size === 0) return;
+
+    const timer = setTimeout(() => {
+      persistToCache({
+        polls: Array.from(state.polls.entries()),
+        userVotes: Array.from(state.userVotes.entries()),
+      });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [state.polls, state.userVotes, state.isJoined, persistToCache]);
+
   // Computed values
   const pollsArray = Array.from(state.polls.values());
   const activePolls = pollsArray.filter((p) => p.isActive);
@@ -964,5 +1044,12 @@ export const useSessionPolls = (
     clearError,
     clearGiveaway,
     clearQuizGiveaway,
+
+    // Offline/cache state
+    isOnline,
+    cachedAt,
+    isStale: !state.isJoined && cachedPolls !== null && state.polls.size > 0 && isCacheStale,
+    isFromCache: !state.isJoined && cachedPolls !== null && state.polls.size > 0,
+    cacheLoaded,
   };
 };

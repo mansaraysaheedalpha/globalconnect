@@ -37,7 +37,9 @@ import {
   Filter,
   ShieldX,
   Lock,
+  WifiOff,
 } from "lucide-react";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import { format, formatDistanceToNow } from "date-fns";
 
 // Helper to get display name with proper fallbacks
@@ -267,6 +269,10 @@ export const SessionQA = ({
     moderateQuestion,
     answerQuestion,
     clearError,
+    isOnline,
+    cachedAt,
+    isStale,
+    isFromCache,
   } = useSessionQA(sessionId, eventId, initialQaOpen, sessionName);
 
   // Notify parent when Q&A open status changes via WebSocket
@@ -344,26 +350,6 @@ export const SessionQA = ({
     (a, b) => (b._count?.upvotes || 0) - (a._count?.upvotes || 0)
   );
 
-  // Loading state
-  if (!isConnected) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5" />
-            Q&A
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin mb-2" />
-            <p>Connecting to Q&A...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Access denied - user not registered for event
   if (accessDenied) {
     return (
@@ -387,7 +373,8 @@ export const SessionQA = ({
     );
   }
 
-  if (!isJoined) {
+  // Show spinner only when no cached data AND still connecting
+  if ((!isConnected || !isJoined) && questions.length === 0) {
     return (
       <Card className={className}>
         <CardHeader>
@@ -399,7 +386,7 @@ export const SessionQA = ({
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin mb-2" />
-            <p>Joining session...</p>
+            <p>{!isConnected ? "Connecting to Q&A..." : "Joining session..."}</p>
           </div>
         </CardContent>
       </Card>
@@ -438,6 +425,17 @@ export const SessionQA = ({
           </span>
         </div>
       </div>
+
+      {/* Stale/offline indicator */}
+      {(isFromCache || !isOnline) && (
+        <div className="px-4 flex-shrink-0">
+          <StaleDataIndicator
+            isStale={isStale}
+            isOffline={!isOnline}
+            lastFetched={cachedAt}
+          />
+        </div>
+      )}
 
       {/* Content area */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -509,7 +507,12 @@ export const SessionQA = ({
 
         {/* Ask question input - fixed at bottom */}
         <div className="p-4 pt-2 border-t flex-shrink-0">
-          {isQaClosed && !isOrganizer && !isSpeaker ? (
+          {!isOnline || (!isConnected && !isJoined) ? (
+            <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
+              <WifiOff className="h-4 w-4" />
+              <span className="text-sm">You&apos;re offline</span>
+            </div>
+          ) : isQaClosed && !isOrganizer && !isSpeaker ? (
             <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
               <Lock className="h-4 w-4" />
               <span className="text-sm">Waiting for host to open Q&A...</span>

@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import {
   Send,
   Loader2,
@@ -34,6 +35,7 @@ import {
   AlertCircle,
   ShieldX,
   Lock,
+  WifiOff,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -270,6 +272,10 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
     deleteMessage,
     reactToMessage,
     clearError,
+    isOnline,
+    cachedAt,
+    isStale,
+    isFromCache,
   } = useSessionChat(sessionId, eventId, initialChatOpen, sessionName);
 
   // Notify parent when chat open status changes via WebSocket
@@ -353,26 +359,6 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
     setInputValue("");
   };
 
-  // Loading state
-  if (!isConnected) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Session Chat
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin mb-2" />
-            <p>Connecting to chat...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Access denied - user not registered for event
   if (accessDenied) {
     return (
@@ -396,7 +382,8 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
     );
   }
 
-  if (!isJoined) {
+  // Show spinner only when no cached data AND still connecting
+  if ((!isConnected || !isJoined) && messages.length === 0) {
     return (
       <Card className={className}>
         <CardHeader>
@@ -408,7 +395,7 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin mb-2" />
-            <p>Joining session...</p>
+            <p>{!isConnected ? "Connecting to chat..." : "Joining session..."}</p>
           </div>
         </CardContent>
       </Card>
@@ -442,6 +429,17 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
           </span>
         </div>
       </div>
+
+      {/* Stale/offline indicator */}
+      {(isFromCache || !isOnline) && (
+        <div className="px-4 flex-shrink-0">
+          <StaleDataIndicator
+            isStale={isStale}
+            isOffline={!isOnline}
+            lastFetched={cachedAt}
+          />
+        </div>
+      )}
 
       {/* Content area - relative container for absolute positioning */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -512,7 +510,12 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
 
         {/* Input area */}
         <div className="p-4 pt-2 border-t flex-shrink-0">
-          {isChatClosed && !isOrganizer ? (
+          {!isOnline || (!isConnected && !isJoined) ? (
+            <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
+              <WifiOff className="h-4 w-4" />
+              <span className="text-sm">You&apos;re offline</span>
+            </div>
+          ) : isChatClosed && !isOrganizer ? (
             <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
               <Lock className="h-4 w-4" />
               <span className="text-sm">Waiting for host to open chat...</span>
