@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client";
 import { useOfflineQuery } from "@/hooks/use-offline-query";
 import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
@@ -53,10 +53,7 @@ import {
 import { format, isWithinInterval, isFuture } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
-import { SessionChat } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-chat";
-import { SessionQA } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-qa";
-import { SessionPolls } from "@/app/(platform)/dashboard/events/[eventId]/_components/session-polls";
-import { SlideViewer, DroppedContentNotification } from "@/components/features/presentation/slide-viewer";
+import dynamic from "next/dynamic";
 import { usePresentationControl, DroppedContent } from "@/hooks/use-presentation-control";
 import { useAuthStore } from "@/store/auth.store";
 import { useEventUpdates } from "@/hooks/use-event-updates";
@@ -64,26 +61,36 @@ import { toast } from "sonner";
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
 import { FloatingDMButton } from "@/components/features/dm";
-import { OfferGrid } from "@/components/features/offers";
-import { AdContainer } from "@/components/features/ads/ad-container";
-import { ProximityContainer } from "@/components/features/proximity";
-import { IncidentReportForm } from "@/components/features/incidents";
-import { VirtualSessionView, VirtualSession } from "@/components/features/virtual-session";
-import { BreakoutRoomList, RoomAssignmentNotice } from "@/components/features/breakout";
 import { AddToCalendarButton } from "@/components/features/calendar";
 import { SessionSocketProvider } from "@/context/SessionSocketContext";
 import { ReactionBar } from "@/components/features/reaction-bar";
 import { FloatingReactions } from "@/components/features/floating-reactions";
 import { useSessionReactions } from "@/hooks/use-session-reactions";
-import { RecommendationsPanel } from "@/components/features/recommendations";
-import { SuggestionsBell } from "@/components/features/suggestions";
-import { TeamPanel } from "@/components/features/gamification/team-panel";
 import { FloatingScoreWidget } from "@/components/features/gamification/gamification-container";
-import { GamificationHub } from "@/components/features/gamification/gamification-hub";
 import { AchievementToast } from "@/components/features/gamification/achievement-toast";
 import { SmartNudge } from "@/components/features/gamification/smart-nudge";
-import { SessionSummary } from "@/components/features/gamification/session-summary";
 import { useGamification } from "@/hooks/use-gamification";
+import { useEventPrefetch } from "@/hooks/use-event-prefetch";
+import type { VirtualSession } from "@/components/features/virtual-session";
+
+// Dynamic imports for heavy feature components (only loaded when rendered)
+const SessionChat = dynamic(() => import("@/app/(platform)/dashboard/events/[eventId]/_components/session-chat").then(m => ({ default: m.SessionChat })), { ssr: false });
+const SessionQA = dynamic(() => import("@/app/(platform)/dashboard/events/[eventId]/_components/session-qa").then(m => ({ default: m.SessionQA })), { ssr: false });
+const SessionPolls = dynamic(() => import("@/app/(platform)/dashboard/events/[eventId]/_components/session-polls").then(m => ({ default: m.SessionPolls })), { ssr: false });
+const SlideViewer = dynamic(() => import("@/components/features/presentation/slide-viewer").then(m => ({ default: m.SlideViewer })), { ssr: false });
+const DroppedContentNotification = dynamic(() => import("@/components/features/presentation/slide-viewer").then(m => ({ default: m.DroppedContentNotification })), { ssr: false });
+const VirtualSessionView = dynamic(() => import("@/components/features/virtual-session").then(m => ({ default: m.VirtualSessionView })), { ssr: false });
+const BreakoutRoomList = dynamic(() => import("@/components/features/breakout").then(m => ({ default: m.BreakoutRoomList })), { ssr: false });
+const RoomAssignmentNotice = dynamic(() => import("@/components/features/breakout").then(m => ({ default: m.RoomAssignmentNotice })), { ssr: false });
+const OfferGrid = dynamic(() => import("@/components/features/offers").then(m => ({ default: m.OfferGrid })), { ssr: false });
+const AdContainer = dynamic(() => import("@/components/features/ads/ad-container").then(m => ({ default: m.AdContainer })), { ssr: false });
+const ProximityContainer = dynamic(() => import("@/components/features/proximity").then(m => ({ default: m.ProximityContainer })), { ssr: false });
+const IncidentReportForm = dynamic(() => import("@/components/features/incidents").then(m => ({ default: m.IncidentReportForm })), { ssr: false });
+const RecommendationsPanel = dynamic(() => import("@/components/features/recommendations").then(m => ({ default: m.RecommendationsPanel })), { ssr: false });
+const SuggestionsBell = dynamic(() => import("@/components/features/suggestions").then(m => ({ default: m.SuggestionsBell })), { ssr: false });
+const TeamPanel = dynamic(() => import("@/components/features/gamification/team-panel").then(m => ({ default: m.TeamPanel })), { ssr: false });
+const GamificationHub = dynamic(() => import("@/components/features/gamification/gamification-hub").then(m => ({ default: m.GamificationHub })), { ssr: false });
+const SessionSummary = dynamic(() => import("@/components/features/gamification/session-summary").then(m => ({ default: m.SessionSummary })), { ssr: false });
 import {
   Collapsible,
   CollapsibleContent,
@@ -661,13 +668,13 @@ const SessionCard = ({
   const isEnded = session.status === "ENDED";
   const isUpcoming = session.status === "UPCOMING";
 
-  // Reactions hook for live sessions
+  // Reactions hook — only connect for LIVE sessions to avoid unnecessary WebSocket connections
   const {
     sendReaction,
     getPopularEmojis,
     floatingEmojis,
     isConnected: reactionsConnected,
-  } = useSessionReactions(session.id, eventId);
+  } = useSessionReactions(isLive ? session.id : "", isLive ? eventId : "");
 
   // Check if features are enabled (default to true for backwards compatibility)
   const chatEnabled = session.chatEnabled !== false;
@@ -692,8 +699,8 @@ const SessionCard = ({
   const [livePollsOpen, setLivePollsOpen] = React.useState(session.pollsOpen ?? false);
   const [liveReactionsOpen, setLiveReactionsOpen] = React.useState(session.reactionsOpen ?? false);
 
-  // Track presentation status via WebSocket (always connected for live sessions)
-  const { slideState } = usePresentationControl(session.id, eventId, false);
+  // Track presentation status via WebSocket — only for LIVE sessions to avoid wasted connections
+  const { slideState } = usePresentationControl(isLive ? session.id : "", isLive ? eventId : "", false);
   const livePresentationActive = slideState?.isActive ?? false;
 
   // Sync with props when they change (e.g., from refetch)
@@ -1000,9 +1007,29 @@ export default function AttendeeEventPage() {
     offlineKey: `event-details-${eventId}`,
   });
 
-  const { data: attendeesData } = useQuery(GET_EVENT_ATTENDEES_QUERY, {
-    variables: { eventId },
-    skip: !eventId,
+  // Lazy-load attendees — only fetched after main data loads (used by DM button)
+  const [fetchAttendees, { data: attendeesData }] = useLazyQuery(GET_EVENT_ATTENDEES_QUERY);
+
+  const eventLoaded = !!data?.event;
+  React.useEffect(() => {
+    if (eventLoaded && eventId) {
+      fetchAttendees({ variables: { eventId } });
+    }
+  }, [eventLoaded, eventId, fetchAttendees]);
+
+  // Prefetch event images into service worker cache for offline access
+  const attendeeAvatars = React.useMemo(() => {
+    if (!attendeesData?.eventAttendees) return [];
+    return attendeesData.eventAttendees
+      .map((reg: any) => reg.user?.imageUrl)
+      .filter(Boolean) as string[];
+  }, [attendeesData]);
+
+  useEventPrefetch({
+    eventId,
+    eventImageUrl: data?.event?.imageUrl,
+    attendeeImageUrls: attendeeAvatars,
+    enabled: eventLoaded,
   });
 
   // Listen for real-time event/session update notifications
@@ -1185,14 +1212,6 @@ export default function AttendeeEventPage() {
   const registration: Registration | null = data.myRegistrationForEvent;
   const event: Event = data.event;
 
-  // Debug: Log IDs to help track registration issues
-  console.log("[AttendeeEventPage] Debug info:", {
-    urlEventId: eventId,
-    eventIdFromQuery: event.id,
-    registrationId: registration?.id,
-    registrationStatus: registration?.status,
-    sessionIds: sessions.map(s => ({ id: s.id, title: s.title })),
-  });
 
   // Check if user is registered
   if (!registration) {

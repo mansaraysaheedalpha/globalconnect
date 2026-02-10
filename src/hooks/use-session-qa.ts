@@ -7,6 +7,11 @@ import { useAuthStore } from "@/store/auth.store";
 import { useSessionSocketOptional } from "@/context/SessionSocketContext";
 import { useSocketCache } from "./use-socket-cache";
 import { useNetworkStatus } from "./use-network-status";
+import {
+  queueSocketEvent,
+  getPendingSocketEvents,
+  removeSocketEvent,
+} from "@/lib/socket-event-queue";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -68,6 +73,7 @@ export interface Question {
 interface OptimisticQuestion extends Question {
   isOptimistic?: boolean;
   optimisticId?: string;
+  isPending?: boolean; // true = queued offline, waiting for reconnect
 }
 
 // Response types
@@ -421,16 +427,99 @@ export const useSessionQA = (
   }, [usingSharedSocket, socket, sessionId]);
 
   // Ask a new question with optimistic update
+  // Emit a single Q&A question via socket (used for both live sends and queue drain)
+  const emitQaQuestion = useCallback(
+    (
+      sock: Socket,
+      payload: { text: string; isAnonymous: boolean; idempotencyKey: string; sessionName?: string },
+      optimisticId: string
+    ): Promise<boolean> => {
+      return new Promise((resolve) => {
+        let callbackCalled = false;
+        const timeoutId = setTimeout(() => {
+          if (!callbackCalled) {
+            setIsSending(false);
+            setState((prev) => ({
+              ...prev,
+              questions: prev.questions.map((q) =>
+                q.id === optimisticId ? { ...q, isOptimistic: false, isPending: false } : q
+              ),
+            }));
+            resolve(true);
+          }
+        }, 5000);
+
+        sock.emit("qa.question.ask", payload, (response: QAResponse) => {
+          callbackCalled = true;
+          clearTimeout(timeoutId);
+          setIsSending(false);
+
+          if (response?.success) {
+            resolve(true);
+          } else {
+            const errorMsg =
+              typeof response?.error === "string"
+                ? response.error
+                : response?.error?.message || "Failed to ask question";
+            setState((prev) => ({
+              ...prev,
+              questions: prev.questions.filter((q) => q.id !== optimisticId),
+              error: errorMsg,
+            }));
+            resolve(false);
+          }
+        });
+      });
+    },
+    []
+  );
+
+  // Drain offline queue after socket joins
+  const drainQaPendingQueue = useCallback(
+    async (sock: Socket) => {
+      const pending = await getPendingSocketEvents("qa", sessionId);
+      if (pending.length === 0) return;
+
+      for (const queued of pending) {
+        setState((prev) => ({
+          ...prev,
+          questions: prev.questions.map((q) =>
+            q.id === queued.optimisticId ? { ...q, isPending: false } : q
+          ),
+        }));
+
+        const payload = queued.payload as {
+          text: string; isAnonymous: boolean; idempotencyKey: string; sessionName?: string;
+        };
+
+        await emitQaQuestion(sock, payload, queued.optimisticId);
+        await removeSocketEvent("qa", sessionId, queued.id);
+      }
+    },
+    [sessionId, emitQaQuestion]
+  );
+
+  // Drain offline queue when socket joins
+  const hasDrainedQaRef = useRef(false);
+  useEffect(() => {
+    if (state.isJoined && socket) {
+      if (!hasDrainedQaRef.current) {
+        hasDrainedQaRef.current = true;
+        drainQaPendingQueue(socket);
+      }
+    } else {
+      hasDrainedQaRef.current = false;
+    }
+  }, [state.isJoined, socket, drainQaPendingQueue]);
+
   const askQuestion = useCallback(
     async (text: string, isAnonymous: boolean = false): Promise<boolean> => {
-      if (!socket || !state.isJoined) {
-        return false;
-      }
-
       const trimmedText = text.trim();
       if (!trimmedText || trimmedText.length > 500) {
         return false;
       }
+
+      const isOffline = !socket || !state.isJoined;
 
       setIsSending(true);
 
@@ -458,6 +547,7 @@ export const useSessionQA = (
         _count: { upvotes: 0 },
         isOptimistic: true,
         optimisticId,
+        isPending: isOffline,
       };
 
       // Add optimistic question immediately
@@ -466,64 +556,31 @@ export const useSessionQA = (
         questions: [...prev.questions, optimisticQuestion],
       }));
 
-      return new Promise((resolve) => {
-        // Note: sessionId is NOT included - backend gets it from the joined session room
-        const payload: {
-          text: string;
-          isAnonymous: boolean;
-          idempotencyKey: string;
-          sessionName?: string;
-        } = {
-          text: trimmedText,
-          isAnonymous,
+      const payload: {
+        text: string; isAnonymous: boolean; idempotencyKey: string; sessionName?: string;
+      } = { text: trimmedText, isAnonymous, idempotencyKey };
+
+      if (sessionName) payload.sessionName = sessionName;
+
+      // Offline: queue for later
+      if (isOffline) {
+        setIsSending(false);
+        await queueSocketEvent("qa", sessionId, {
+          id: generateUUID(),
+          event: "qa.question.ask",
+          payload,
+          sessionId,
           idempotencyKey,
-        };
-
-        // Include session name for proper heatmap display
-        if (sessionName) {
-          payload.sessionName = sessionName;
-        }
-
-        // Add timeout in case backend doesn't call callback
-        let callbackCalled = false;
-        const timeoutId = setTimeout(() => {
-          if (!callbackCalled) {
-            setIsSending(false);
-            // Mark the optimistic question as "sent"
-            setState((prev) => ({
-              ...prev,
-              questions: prev.questions.map((q) =>
-                q.id === optimisticId ? { ...q, isOptimistic: false } : q
-              ),
-            }));
-            resolve(true);
-          }
-        }, 5000);
-
-        socket.emit("qa.question.ask", payload, (response: QAResponse) => {
-          callbackCalled = true;
-          clearTimeout(timeoutId);
-          setIsSending(false);
-
-          if (response?.success) {
-            resolve(true);
-          } else {
-            const errorMsg =
-              typeof response?.error === "string"
-                ? response.error
-                : response?.error?.message || "Failed to ask question";
-            // Remove optimistic question on failure
-            setState((prev) => ({
-              ...prev,
-              questions: prev.questions.filter((q) => q.id !== optimisticId),
-              error: errorMsg,
-            }));
-            resolve(false);
-          }
+          optimisticId,
+          createdAt: new Date().toISOString(),
         });
-      });
+        return true;
+      }
+
+      // Online: emit immediately
+      return emitQaQuestion(socket!, payload, optimisticId);
     },
-    [socket, state.isJoined, sessionId, sessionName, user]
+    [socket, state.isJoined, sessionId, sessionName, user, emitQaQuestion]
   );
 
   // Upvote a question (toggle) with optimistic update

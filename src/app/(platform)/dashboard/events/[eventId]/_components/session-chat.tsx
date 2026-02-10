@@ -36,6 +36,7 @@ import {
   ShieldX,
   Lock,
   WifiOff,
+  Clock,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -74,6 +75,7 @@ interface SessionChatProps {
 // Extended message type to handle optimistic messages
 interface ExtendedChatMessage extends ChatMessage {
   isOptimistic?: boolean;
+  isPending?: boolean;
 }
 
 // Message bubble component
@@ -99,6 +101,7 @@ const MessageBubble = ({
   const fullTime = format(timestamp, "MMM d, yyyy 'at' h:mm a");
 
   const isOptimistic = message.isOptimistic;
+  const isPending = message.isPending;
 
   return (
     <div
@@ -244,7 +247,12 @@ const MessageBubble = ({
 
       {/* Timestamp */}
       <span className="text-[10px] text-muted-foreground ml-1" title={fullTime}>
-        {isOptimistic ? (
+        {isPending ? (
+          <span className="flex items-center gap-1">
+            <Clock className="h-2 w-2" />
+            Queued
+          </span>
+        ) : isOptimistic ? (
           <span className="flex items-center gap-1">
             <Loader2 className="h-2 w-2 animate-spin" />
             Sending...
@@ -510,18 +518,19 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
 
         {/* Input area */}
         <div className="p-4 pt-2 border-t flex-shrink-0">
-          {!isOnline || (!isConnected && !isJoined) ? (
-            <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
-              <WifiOff className="h-4 w-4" />
-              <span className="text-sm">You&apos;re offline</span>
-            </div>
-          ) : isChatClosed && !isOrganizer ? (
+          {isChatClosed && !isOrganizer ? (
             <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
               <Lock className="h-4 w-4" />
               <span className="text-sm">Waiting for host to open chat...</span>
             </div>
           ) : (
             <>
+              {!isOnline && (
+                <div className="flex items-center gap-2 mb-2 px-2 py-1 text-xs text-amber-500 bg-amber-500/10 rounded">
+                  <WifiOff className="h-3 w-3" />
+                  <span>You&apos;re offline — messages will be sent when you reconnect</span>
+                </div>
+              )}
               {isChatClosed && isOrganizer && (
                 <div className="flex items-center gap-2 mb-2 px-2 py-1 text-xs text-amber-600 bg-amber-50 rounded">
                   <Lock className="h-3 w-3" />
@@ -539,6 +548,8 @@ export const SessionChat = ({ sessionId, eventId, sessionName, className, initia
                       ? "Edit your message..."
                       : replyingTo
                       ? `Reply to ${getDisplayName(replyingTo.author)}...`
+                      : !isOnline
+                      ? "Type a message (will send when online)..."
                       : "Type a message..."
                   }
                   disabled={isSending}

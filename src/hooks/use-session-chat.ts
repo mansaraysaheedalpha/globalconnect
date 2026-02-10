@@ -7,6 +7,12 @@ import { useAuthStore } from "@/store/auth.store";
 import { useSessionSocketOptional } from "@/context/SessionSocketContext";
 import { useSocketCache } from "./use-socket-cache";
 import { useNetworkStatus } from "./use-network-status";
+import {
+  queueSocketEvent,
+  getPendingSocketEvents,
+  removeSocketEvent,
+  QueuedSocketEvent,
+} from "@/lib/socket-event-queue";
 
 // Generate UUID v4 using built-in crypto API
 const generateUUID = (): string => {
@@ -60,6 +66,7 @@ interface SendMessageResponse {
 interface OptimisticMessage extends ChatMessage {
   isOptimistic?: boolean;
   optimisticId?: string;
+  isPending?: boolean; // true = queued offline, waiting for reconnect
 }
 
 interface SessionChatState {
@@ -454,17 +461,98 @@ export const useSessionChat = (
     };
   }, [usingSharedSocket, socket, sessionId]);
 
-  // Send a new message with optimistic update
+  // Emit a single chat message via socket (used for both live sends and queue drain)
+  const emitChatMessage = useCallback(
+    (
+      sock: Socket,
+      payload: { sessionId: string; text: string; idempotencyKey: string; replyingToMessageId?: string; sessionName?: string },
+      optimisticId: string
+    ): Promise<boolean> => {
+      return new Promise((resolve) => {
+        let callbackCalled = false;
+        const timeoutId = setTimeout(() => {
+          if (!callbackCalled) {
+            setIsSending(false);
+            setState((prev) => ({
+              ...prev,
+              messages: prev.messages.map((m) =>
+                m.id === optimisticId ? { ...m, isOptimistic: false, isPending: false } : m
+              ),
+            }));
+            resolve(true);
+          }
+        }, 5000);
+
+        sock.emit("chat.message.send", payload, (response: SendMessageResponse) => {
+          callbackCalled = true;
+          clearTimeout(timeoutId);
+          setIsSending(false);
+
+          if (response?.success) {
+            if (response.messageId) {
+              setState((prev) => ({
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === optimisticId
+                    ? { ...m, id: response.messageId!, optimisticId: undefined, isOptimistic: false, isPending: false }
+                    : m
+                ),
+              }));
+            }
+            resolve(true);
+          } else {
+            const errorMsg = typeof response?.error === "string"
+              ? response.error
+              : response?.error?.message || "Failed to send message";
+            setState((prev) => ({
+              ...prev,
+              messages: prev.messages.filter((m) => m.id !== optimisticId),
+              error: errorMsg,
+            }));
+            resolve(false);
+          }
+        });
+      });
+    },
+    []
+  );
+
+  // Drain offline queue after socket joins — replay pending messages
+  const drainPendingQueue = useCallback(
+    async (sock: Socket) => {
+      const pending = await getPendingSocketEvents("chat", sessionId);
+      if (pending.length === 0) return;
+
+      for (const queued of pending) {
+        // Mark the optimistic message as "sending" (no longer just pending)
+        setState((prev) => ({
+          ...prev,
+          messages: prev.messages.map((m) =>
+            m.id === queued.optimisticId ? { ...m, isPending: false } : m
+          ),
+        }));
+
+        const payload = queued.payload as {
+          sessionId: string; text: string; idempotencyKey: string;
+          replyingToMessageId?: string; sessionName?: string;
+        };
+
+        await emitChatMessage(sock, payload, queued.optimisticId);
+        await removeSocketEvent("chat", sessionId, queued.id);
+      }
+    },
+    [sessionId, emitChatMessage]
+  );
+
+  // Send a new message with optimistic update (works online and offline)
   const sendMessage = useCallback(
     async (text: string, replyingToMessageId?: string): Promise<boolean> => {
-      if (!socket || !state.isJoined) {
-        return false;
-      }
-
       const trimmedText = text.trim();
       if (!trimmedText || trimmedText.length > 1000) {
         return false;
       }
+
+      const isOffline = !socket || !state.isJoined;
 
       setIsSending(true);
 
@@ -499,6 +587,7 @@ export const useSessionChat = (
           : undefined,
         isOptimistic: true,
         optimisticId,
+        isPending: isOffline,
       };
 
       // Add optimistic message immediately
@@ -507,80 +596,48 @@ export const useSessionChat = (
         messages: [...prev.messages, optimisticMessage],
       }));
 
-      return new Promise((resolve) => {
-        const payload: {
-          sessionId: string;
-          text: string;
-          idempotencyKey: string;
-          replyingToMessageId?: string;
-          sessionName?: string;
-        } = {
+      const payload: {
+        sessionId: string; text: string; idempotencyKey: string;
+        replyingToMessageId?: string; sessionName?: string;
+      } = { sessionId, text: trimmedText, idempotencyKey };
+
+      if (replyingToMessageId) payload.replyingToMessageId = replyingToMessageId;
+      if (sessionName) payload.sessionName = sessionName;
+
+      // Offline: queue for later, return immediately
+      if (isOffline) {
+        setIsSending(false);
+        await queueSocketEvent("chat", sessionId, {
+          id: generateUUID(),
+          event: "chat.message.send",
+          payload,
           sessionId,
-          text: trimmedText,
           idempotencyKey,
-        };
-
-        if (replyingToMessageId) {
-          payload.replyingToMessageId = replyingToMessageId;
-        }
-
-        // Include session name for proper heatmap display
-        if (sessionName) {
-          payload.sessionName = sessionName;
-        }
-
-        // Add timeout in case backend doesn't call callback
-        let callbackCalled = false;
-        const timeoutId = setTimeout(() => {
-          if (!callbackCalled) {
-            setIsSending(false);
-            // Mark the optimistic message as "sent" (remove optimistic flag)
-            setState((prev) => ({
-              ...prev,
-              messages: prev.messages.map((m) =>
-                m.id === optimisticId ? { ...m, isOptimistic: false } : m
-              ),
-            }));
-            resolve(true);
-          }
-        }, 5000);
-
-        socket.emit("chat.message.send", payload, (response: SendMessageResponse) => {
-          callbackCalled = true;
-          clearTimeout(timeoutId);
-          setIsSending(false);
-
-          if (response?.success) {
-            // Update optimistic message with real ID from server
-            // This enables deduplication when the broadcast arrives
-            if (response.messageId) {
-              setState((prev) => ({
-                ...prev,
-                messages: prev.messages.map((m) =>
-                  m.id === optimisticId
-                    ? { ...m, id: response.messageId!, optimisticId: undefined, isOptimistic: false }
-                    : m
-                ),
-              }));
-            }
-            resolve(true);
-          } else {
-            const errorMsg = typeof response?.error === "string"
-              ? response.error
-              : response?.error?.message || "Failed to send message";
-            // Remove optimistic message on failure
-            setState((prev) => ({
-              ...prev,
-              messages: prev.messages.filter((m) => m.id !== optimisticId),
-              error: errorMsg,
-            }));
-            resolve(false);
-          }
+          optimisticId,
+          createdAt: new Date().toISOString(),
         });
-      });
+        return true;
+      }
+
+      // Online: emit immediately
+      return emitChatMessage(socket!, payload, optimisticId);
     },
-    [socket, state.isJoined, sessionId, sessionName, user]
+    [socket, state.isJoined, sessionId, sessionName, user, emitChatMessage]
   );
+
+  // Drain offline queue when socket joins (works for both own-socket and shared-socket)
+  const hasDrainedRef = useRef(false);
+  useEffect(() => {
+    if (state.isJoined && socket) {
+      if (!hasDrainedRef.current) {
+        hasDrainedRef.current = true;
+        drainPendingQueue(socket);
+      }
+    } else {
+      // Reset when disconnected so we drain again on next join
+      hasDrainedRef.current = false;
+    }
+  }, [state.isJoined, socket, drainPendingQueue]);
 
   // Edit a message (with optimistic update)
   const editMessage = useCallback(

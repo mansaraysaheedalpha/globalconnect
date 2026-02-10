@@ -7,7 +7,8 @@ import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Ticket, CalendarDays, MapPin, QrCode } from "lucide-react";
+import { Ticket, CalendarDays, MapPin } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { format } from "date-fns";
 
 type Registration = {
@@ -114,8 +115,12 @@ export default function TicketsPage() {
                       <Badge variant="secondary">Valid</Badge>
                     )}
                   </div>
-                  <div className="p-3 bg-white rounded-lg">
-                    <QrCode className="h-16 w-16 text-foreground" />
+                  <div className="p-2 bg-white rounded-lg">
+                    <QRCodeSVG
+                      value={registration.ticketCode}
+                      size={80}
+                      level="M"
+                    />
                   </div>
                 </div>
               </CardContent>

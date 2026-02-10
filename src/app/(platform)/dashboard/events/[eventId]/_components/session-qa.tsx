@@ -97,6 +97,7 @@ const QuestionCard = ({
   const fullTime = format(timestamp, "MMM d, yyyy 'at' h:mm a");
 
   const isOptimistic = (question as any).isOptimistic;
+  const isPending = (question as any).isPending;
   const canModerate = isOrganizer && question.status === "pending";
   const canAnswer = (isOrganizer || isSpeaker) && !question.answer && question.status === "approved";
 
@@ -151,7 +152,9 @@ const QuestionCard = ({
             </span>
           )}
           <span className="text-xs text-muted-foreground" title={fullTime}>
-            {isOptimistic ? "Submitting..." : timeAgo}
+            {isPending ? (
+              <span className="flex items-center gap-1"><Clock className="h-2 w-2" /> Queued</span>
+            ) : isOptimistic ? "Submitting..." : timeAgo}
           </span>
         </div>
         {(isOrganizer || isSpeaker) && getStatusBadge(question.status)}
@@ -507,24 +510,25 @@ export const SessionQA = ({
 
         {/* Ask question input - fixed at bottom */}
         <div className="p-4 pt-2 border-t flex-shrink-0">
-          {!isOnline || (!isConnected && !isJoined) ? (
-            <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
-              <WifiOff className="h-4 w-4" />
-              <span className="text-sm">You&apos;re offline</span>
-            </div>
-          ) : isQaClosed && !isOrganizer && !isSpeaker ? (
+          {isQaClosed && !isOrganizer && !isSpeaker ? (
             <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground bg-muted/50 rounded-lg">
               <Lock className="h-4 w-4" />
               <span className="text-sm">Waiting for host to open Q&A...</span>
             </div>
           ) : (
             <div className="space-y-2">
+              {!isOnline && (
+                <div className="flex items-center gap-2 px-2 py-1 text-xs text-amber-500 bg-amber-500/10 rounded">
+                  <WifiOff className="h-3 w-3" />
+                  <span>You&apos;re offline — questions will be sent when you reconnect</span>
+                </div>
+              )}
               <Textarea
                 ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask a question..."
+                placeholder={!isOnline ? "Ask a question (will send when online)..." : "Ask a question..."}
                 disabled={isSending}
                 maxLength={500}
                 className="resize-none min-h-[80px]"
