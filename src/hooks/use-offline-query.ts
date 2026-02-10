@@ -63,7 +63,7 @@ interface CachedQueryData<TData> {
 }
 
 export function useOfflineQuery<
-  TData = unknown,
+  TData = any,
   TVariables extends OperationVariables = OperationVariables,
 >(
   query: DocumentNode | TypedDocumentNode<TData, TVariables>,

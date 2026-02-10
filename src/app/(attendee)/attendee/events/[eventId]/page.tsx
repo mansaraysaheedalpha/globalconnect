@@ -5,6 +5,8 @@
 import * as React from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
 import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/registrations.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1052,11 +1054,10 @@ export default function AttendeeEventPage() {
   const [hasProcessedAutoJoin, setHasProcessedAutoJoin] = React.useState(false);
   const [gamificationHubOpen, setGamificationHubOpen] = React.useState(false);
 
-  const { data, loading, error } = useQuery(GET_ATTENDEE_EVENT_DETAILS_QUERY, {
+  const { data, loading, error, isStale, isOffline, lastFetched, refetch } = useOfflineQuery(GET_ATTENDEE_EVENT_DETAILS_QUERY, {
     variables: { eventId },
     skip: !eventId,
-    fetchPolicy: "network-only", // Always fetch fresh data to prevent stale event/session times
-    nextFetchPolicy: "cache-first", // Use cache for subsequent fetches in same session
+    offlineKey: `event-details-${eventId}`,
   });
 
   const { data: attendeesData } = useQuery(GET_EVENT_ATTENDEES_QUERY, {
@@ -1186,7 +1187,7 @@ export default function AttendeeEventPage() {
   }, [liveSessions, endedSessions, gamification.currentScore]);
   // --- End gamification hooks ---
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto animate-fade-in">
         {/* Back button skeleton */}
@@ -1302,6 +1303,14 @@ export default function AttendeeEventPage() {
           onStartChat={handleStartChat}
         />
       </div>
+
+      <StaleDataIndicator
+        isStale={isStale}
+        isOffline={isOffline}
+        lastFetched={lastFetched}
+        onRefresh={refetch}
+        className="mb-4"
+      />
 
       {/* Event Header */}
       <PremiumCard variant="elevated" padding="none" className="overflow-hidden mb-6">

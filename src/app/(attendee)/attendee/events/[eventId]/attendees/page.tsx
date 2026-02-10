@@ -3,7 +3,8 @@
 
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@apollo/client";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/registrations.graphql";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +40,10 @@ export default function AttendeesPage() {
   const eventId = params.eventId as string;
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data, loading, error } = useQuery(GET_EVENT_ATTENDEES_QUERY, {
+  const { data, loading, error, isStale, isOffline, lastFetched, refetch } = useOfflineQuery(GET_EVENT_ATTENDEES_QUERY, {
     variables: { eventId },
     skip: !eventId,
+    offlineKey: `event-attendees-${eventId}`,
   });
 
   // Handler for starting a DM conversation
@@ -90,6 +92,14 @@ export default function AttendeesPage() {
         </p>
       </div>
 
+      <StaleDataIndicator
+        isStale={isStale}
+        isOffline={isOffline}
+        lastFetched={lastFetched}
+        onRefresh={refetch}
+        className="mb-4"
+      />
+
       {/* Search Bar */}
       <div className="mb-6">
         <div className="relative">
@@ -105,7 +115,7 @@ export default function AttendeesPage() {
       </div>
 
       {/* Loading State */}
-      {loading && (
+      {loading && !data && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

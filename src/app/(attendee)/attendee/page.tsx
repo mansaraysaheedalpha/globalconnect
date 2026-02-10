@@ -1,8 +1,9 @@
 // src/app/(attendee)/attendee/page.tsx
 "use client";
 
-import { useQuery } from "@apollo/client";
 import { GET_MY_REGISTRATIONS_QUERY } from "@/graphql/attendee.graphql";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -189,9 +190,8 @@ const EventCard = ({ registration }: { registration: Registration }) => {
 };
 
 export default function AttendeeDashboard() {
-  const { data, loading, error } = useQuery(GET_MY_REGISTRATIONS_QUERY, {
-    fetchPolicy: "network-only", // Always fetch fresh data to prevent stale event dates
-    nextFetchPolicy: "cache-first", // Use cache for subsequent fetches in same session
+  const { data, loading, error, isStale, isOffline, lastFetched, refetch } = useOfflineQuery(GET_MY_REGISTRATIONS_QUERY, {
+    offlineKey: "my-registrations",
   });
 
   // Only show loading skeleton if we have no data at all (first load)
@@ -257,6 +257,14 @@ export default function AttendeeDashboard() {
           </Button>
         </Link>
       </div>
+
+      <StaleDataIndicator
+        isStale={isStale}
+        isOffline={isOffline}
+        lastFetched={lastFetched}
+        onRefresh={refetch}
+        className="mb-4"
+      />
 
       {registrations.length === 0 ? (
         <Card className="border-dashed">

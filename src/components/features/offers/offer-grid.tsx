@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery, useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
 import { GET_ACTIVE_OFFERS_QUERY, PURCHASE_OFFER_MUTATION } from "@/graphql/monetization.graphql";
 import { OfferCard, Offer } from "./offer-card";
 import { OfferModal } from "./offer-modal";
@@ -34,13 +35,13 @@ export const OfferGrid = ({
   const [purchasingOfferId, setPurchasingOfferId] = useState<string | null>(null);
 
   // Fetch active offers
-  const { data, loading, error, refetch } = useQuery(GET_ACTIVE_OFFERS_QUERY, {
+  const { data, loading, error, refetch } = useOfflineQuery(GET_ACTIVE_OFFERS_QUERY, {
     variables: {
       eventId,
       sessionId,
       placement,
     },
-    fetchPolicy: "cache-and-network",
+    offlineKey: `offers-${eventId}-${placement}`,
   });
 
   // Purchase offer mutation

@@ -1,8 +1,9 @@
 // src/app/(attendee)/attendee/tickets/page.tsx
 "use client";
 
-import { useQuery } from "@apollo/client";
 import { GET_MY_REGISTRATIONS_QUERY } from "@/graphql/attendee.graphql";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
+import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,9 +26,11 @@ type Registration = {
 };
 
 export default function TicketsPage() {
-  const { data, loading, error } = useQuery(GET_MY_REGISTRATIONS_QUERY);
+  const { data, loading, error, isStale, isOffline, lastFetched, refetch } = useOfflineQuery(GET_MY_REGISTRATIONS_QUERY, {
+    offlineKey: "my-tickets",
+  });
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <Skeleton className="h-10 w-48 mb-6" />
@@ -60,6 +63,14 @@ export default function TicketsPage() {
         <h1 className="text-2xl font-bold">My Tickets</h1>
         <p className="text-muted-foreground">Your event tickets and QR codes</p>
       </div>
+
+      <StaleDataIndicator
+        isStale={isStale}
+        isOffline={isOffline}
+        lastFetched={lastFetched}
+        onRefresh={refetch}
+        className="mb-4"
+      />
 
       {registrations.length === 0 ? (
         <Card className="border-dashed">

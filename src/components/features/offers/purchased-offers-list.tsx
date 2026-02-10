@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "@apollo/client";
+import { useOfflineQuery } from "@/hooks/use-offline-query";
 import { GET_MY_PURCHASED_OFFERS_QUERY } from "@/graphql/monetization.graphql";
 import {
   Card,
@@ -37,11 +37,11 @@ export const PurchasedOffersList = ({
   eventId,
   variant = "default",
 }: PurchasedOffersListProps) => {
-  const { data, loading, error, refetch } = useQuery(
+  const { data, loading, error, refetch } = useOfflineQuery(
     GET_MY_PURCHASED_OFFERS_QUERY,
     {
       variables: { eventId },
-      fetchPolicy: "cache-and-network",
+      offlineKey: `purchased-offers-${eventId}`,
     }
   );
 
@@ -102,7 +102,7 @@ export const PurchasedOffersList = ({
     }
   };
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
