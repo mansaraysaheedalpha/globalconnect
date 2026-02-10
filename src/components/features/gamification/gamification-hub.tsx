@@ -199,11 +199,15 @@ export const GamificationHub = ({
                       achievement={achievement}
                     />
                   ))}
-                {sortedProgress.filter((a) => !a.isUnlocked).length === 0 && (
+                {totalCount === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Achievements loading...
+                  </p>
+                ) : sortedProgress.filter((a) => !a.isUnlocked).length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     All achievements unlocked!
                   </p>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -238,23 +242,29 @@ export const GamificationHub = ({
 
           {/* Tab 2: Achievements */}
           <TabsContent value="achievements" className="mt-4">
-            <div className="space-y-6">
-              {Array.from(categories.entries()).map(([category, items]) => (
-                <div key={category}>
-                  <p className="text-sm font-semibold text-muted-foreground mb-2">
-                    {category}
-                  </p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {items.map((achievement) => (
-                      <AchievementBadgeCard
-                        key={achievement.key}
-                        achievement={achievement}
-                      />
-                    ))}
+            {categories.size === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Achievements loading...
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {Array.from(categories.entries()).map(([category, items]) => (
+                  <div key={category}>
+                    <p className="text-sm font-semibold text-muted-foreground mb-2">
+                      {category}
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {items.map((achievement) => (
+                        <AchievementBadgeCard
+                          key={achievement.key}
+                          achievement={achievement}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Tab 3: Leaderboard */}
