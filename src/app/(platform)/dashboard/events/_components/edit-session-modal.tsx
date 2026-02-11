@@ -400,6 +400,33 @@ export const EditSessionModal = ({
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="maxParticipants"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Participants (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Unlimited"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? parseInt(e.target.value) : undefined
+                          )
+                        }
+                        disabled={loading}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty for unlimited. When full, attendees are directed to the waitlist.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Green Room Settings */}
