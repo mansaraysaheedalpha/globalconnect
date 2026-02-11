@@ -4,6 +4,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { OfflineBanner } from "@/components/ui/offline-banner";
+import { InstallPromptBanner } from "@/components/ui/install-prompt-banner";
 import { onSyncEvent } from "@/lib/sync-manager";
 
 /**
@@ -61,6 +62,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   return (
     <>
       <OfflineBanner />
+      <InstallPromptBanner />
       {children}
     </>
   );

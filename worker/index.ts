@@ -225,3 +225,98 @@ self.addEventListener("sync", ((event: SyncEvent) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(processQueue());
 });
+
+// ---------------------------------------------------------------------------
+// Periodic Background Sync (P2.3)
+// Silently refreshes cached event data when the device is idle + online.
+// Chrome 80+ only; graceful no-op on unsupported browsers.
+// ---------------------------------------------------------------------------
+
+const PERIODIC_SYNC_TAG = "refresh-event-data";
+
+/**
+ * Fetch the user's registered events from the GraphQL API and
+ * store them in the events IndexedDB store for offline access.
+ */
+async function refreshEventData(): Promise<void> {
+  const apiUrl = (await readSyncMeta("bg_sync_api_url")) as string | null;
+  const authToken = (await readSyncMeta("bg_sync_auth_token")) as string | null;
+
+  if (!apiUrl || !authToken) return;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        query: `query PeriodicSyncRefresh {
+          myRegisteredEvents {
+            id
+            title
+            description
+            startDate
+            endDate
+            status
+            imageUrl
+            venue { id name address city }
+          }
+        }`,
+        operationName: "PeriodicSyncRefresh",
+      }),
+    });
+
+    if (!response.ok) return;
+
+    const json = await response.json();
+    const events = json.data?.myRegisteredEvents;
+    if (!events || !Array.isArray(events)) return;
+
+    // Store each event in the IndexedDB "events" store
+    const db = await openDB();
+    const tx = db.transaction("events", "readwrite");
+    const store = tx.objectStore("events");
+    for (const event of events) {
+      store.put(event);
+    }
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+
+    // Update sync timestamp
+    const metaDb = await openDB();
+    const metaTx = metaDb.transaction("syncMeta", "readwrite");
+    metaDb.transaction("syncMeta", "readwrite").objectStore("syncMeta").put({
+      id: "periodic_sync_last",
+      key: "periodic_sync_last",
+      value: Date.now(),
+      updatedAt: Date.now(),
+    });
+    await new Promise<void>((resolve) => {
+      metaTx.oncomplete = () => {
+        metaDb.close();
+        resolve();
+      };
+    });
+
+    console.log(`[SW PeriodicSync] Refreshed ${events.length} event(s)`);
+  } catch (err) {
+    console.warn("[SW PeriodicSync] Failed to refresh event data", err);
+  }
+}
+
+self.addEventListener("periodicsync", ((event: any) => {
+  if (event.tag === PERIODIC_SYNC_TAG) {
+    event.waitUntil(refreshEventData());
+  }
+}) as EventListener);

@@ -301,6 +301,19 @@ function CachePersistenceInitializer() {
       storeSyncMeta("bg_sync_auth_token", currentToken);
     }
 
+    // Register Periodic Background Sync (Chrome 80+) to silently refresh event data
+    if ("serviceWorker" in navigator && "periodicSync" in ServiceWorkerRegistration.prototype) {
+      navigator.serviceWorker.ready.then(async (reg) => {
+        try {
+          await (reg as any).periodicSync.register("refresh-event-data", {
+            minInterval: 12 * 60 * 60 * 1000, // 12 hours
+          });
+        } catch {
+          // Periodic sync not granted or not supported
+        }
+      });
+    }
+
     return () => {
       cancelled = true;
       cleanupPersist?.();

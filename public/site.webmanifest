@@ -1,4 +1,5 @@
 {
+  "id": "event-dynamics-pwa",
   "name": "Event Dynamics",
   "short_name": "Event Dynamics",
   "description": "Intelligent Event Orchestration Platform",
@@ -34,6 +35,29 @@
       "purpose": "maskable"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "My Tickets",
+      "short_name": "Tickets",
+      "description": "View your event tickets and QR codes",
+      "url": "/attendee/tickets",
+      "icons": [{ "src": "/favicon-96x96.png?v=2", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Events",
+      "short_name": "Events",
+      "description": "Browse your registered events",
+      "url": "/attendee",
+      "icons": [{ "src": "/favicon-96x96.png?v=2", "sizes": "96x96" }]
+    },
+    {
+      "name": "Explore Events",
+      "short_name": "Explore",
+      "description": "Discover upcoming public events",
+      "url": "/events",
+      "icons": [{ "src": "/favicon-96x96.png?v=2", "sizes": "96x96" }]
+    }
+  ],
   "theme_color": "#0f172a",
   "background_color": "#ffffff",
   "display": "standalone",
@@ -41,5 +65,6 @@
   "scope": "/",
   "orientation": "portrait-primary",
   "categories": ["business", "productivity"],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "handle_links": "preferred"
 }
