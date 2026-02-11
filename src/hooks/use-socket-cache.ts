@@ -23,6 +23,8 @@ interface UseSocketCacheOptions<T> {
   deserialize?: (raw: unknown) => T;
   /** Max age in ms before cached data is considered stale (default: 30 minutes) */
   staleAfter?: number;
+  /** Max items to persist (only applies when T is an array). Keeps latest N items. */
+  maxItems?: number;
 }
 
 interface UseSocketCacheResult<T> {
@@ -55,6 +57,7 @@ export function useSocketCache<T>(
     serialize,
     deserialize,
     staleAfter = 30 * 60 * 1000,
+    maxItems,
   } = options;
 
   const cacheKey = `socket_cache_${feature}_${sessionId}`;
@@ -93,7 +96,12 @@ export function useSocketCache<T>(
 
   const persistToCache = useCallback(
     (data: T) => {
-      const serialized = serialize ? serialize(data) : data;
+      // Enforce maxItems limit for array data before persisting (#10)
+      let toStore: T | unknown = data;
+      if (maxItems && Array.isArray(data) && data.length > maxItems) {
+        toStore = data.slice(-maxItems);
+      }
+      const serialized = serialize ? serialize(toStore as T) : toStore;
       const now = Date.now();
       storeItem("syncMeta", {
         id: cacheKey,
@@ -104,7 +112,7 @@ export function useSocketCache<T>(
       });
       setCachedAt(new Date(now));
     },
-    [cacheKey, serialize]
+    [cacheKey, serialize, maxItems]
   );
 
   const clearCache = useCallback(() => {

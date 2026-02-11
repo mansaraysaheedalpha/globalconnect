@@ -1,11 +1,12 @@
 // src/components/providers/offline-provider.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { OfflineBanner } from "@/components/ui/offline-banner";
 import { InstallPromptBanner } from "@/components/ui/install-prompt-banner";
 import { onSyncEvent } from "@/lib/sync-manager";
+import { getPendingMutationCount } from "@/lib/offline-storage";
 
 /**
  * OfflineProvider
@@ -17,6 +18,54 @@ import { onSyncEvent } from "@/lib/sync-manager";
  * Place inside the ApolloProvider (needs Apollo context for sync manager).
  */
 export function OfflineProvider({ children }: { children: React.ReactNode }) {
+  // Track pending mutation count in a ref so beforeunload can read it synchronously (#2)
+  const pendingCountRef = useRef(0);
+
+  useEffect(() => {
+    // Poll pending count every 5s so the ref stays reasonably fresh
+    const poll = () => {
+      getPendingMutationCount()
+        .then((count) => { pendingCountRef.current = count; })
+        .catch(() => {});
+    };
+    poll();
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Warn users about unsaved offline data before closing/navigating away (#2)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Synchronous check: pending GraphQL mutations (from polled ref)
+      if (pendingCountRef.current > 0) {
+        e.preventDefault();
+        return;
+      }
+
+      // Synchronous check: scan localStorage for socket queue entries
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith("socket_queue_")) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed?.events?.length > 0) {
+                e.preventDefault();
+                return;
+              }
+            }
+          }
+        }
+      } catch {
+        // Best effort
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
   useEffect(() => {
     // Subscribe to sync events for user-facing notifications
     const unsubscribe = onSyncEvent((event) => {

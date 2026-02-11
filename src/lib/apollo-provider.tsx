@@ -23,7 +23,9 @@ import { getCsrfHeaders } from "./csrf";
 import { restoreCache, setupCachePersistence, clearPersistedCache } from "./apollo-cache-persist";
 import { OfflineLink } from "./apollo-offline-link";
 import { initSyncManager } from "./sync-manager";
-import { storeSyncMeta } from "./offline-storage";
+import { storeSyncMeta, getSyncMeta, getAllItems, storeItems } from "./offline-storage";
+import { recordSuccessfulFetch, recordFailedFetch } from "./network-connectivity";
+import { gql } from "@apollo/client";
 
 // --- 1. Type-Safe Environment Variable with validation ---
 const getApiUrl = () => {
@@ -88,6 +90,18 @@ const getNewToken = async (): Promise<string> => {
 const httpLink = createHttpLink({
   uri: API_URL,
   credentials: "include", // Ensure cookies are sent
+  // Track fetch success/failure for lie-fi detection (network-connectivity.ts)
+  fetch: async (uri, options) => {
+    try {
+      const response = await fetch(uri, options);
+      if (response.ok) recordSuccessfulFetch();
+      else recordFailedFetch();
+      return response;
+    } catch (error) {
+      recordFailedFetch();
+      throw error;
+    }
+  },
 });
 
 const authLink = setContext(async (_, { headers }) => {
@@ -267,19 +281,87 @@ const client = new ApolloClient({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Periodic Sync helpers (Issue #7 — merge SW-refreshed data into Apollo cache)
+// ---------------------------------------------------------------------------
+
+const PERIODIC_SYNC_QUERY = gql`
+  query PeriodicSyncCache {
+    myRegisteredEvents {
+      id title description startDate endDate status imageUrl
+      venue { id name address city }
+    }
+  }
+`;
+
+const STALE_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+/** Merge event data that the SW stored in IndexedDB into Apollo cache. */
+async function mergePeriodicSyncData(apolloCache: InMemoryCache): Promise<void> {
+  try {
+    const lastSync = await getSyncMeta<number>("periodic_sync_last");
+    if (!lastSync) return;
+    if (Date.now() - lastSync > STALE_THRESHOLD_MS) return; // too old
+
+    const events = await getAllItems<{ id: string }>("events");
+    if (events.length === 0) return;
+
+    apolloCache.writeQuery({
+      query: PERIODIC_SYNC_QUERY,
+      data: { myRegisteredEvents: events },
+    });
+  } catch (e) {
+    console.warn("[Apollo] Failed to merge periodic sync data:", e);
+  }
+}
+
 /**
- * Cache Persistence Initializer
+ * Visibility-based refresh — fallback for browsers without Periodic Background Sync.
+ * When the app becomes visible and data is stale, fetch fresh events. (Issue #12)
+ */
+async function refreshOnVisibility(): Promise<void> {
+  if (document.visibilityState !== "visible" || !navigator.onLine) return;
+
+  const token = useAuthStore.getState().token;
+  if (!token) return;
+
+  const lastSync = await getSyncMeta<number>("periodic_sync_last").catch(() => null);
+  if (lastSync && Date.now() - lastSync < STALE_THRESHOLD_MS) return;
+
+  try {
+    const { data } = await client.query({
+      query: PERIODIC_SYNC_QUERY,
+      fetchPolicy: "network-only",
+    });
+
+    if (data?.myRegisteredEvents) {
+      await storeItems("events", data.myRegisteredEvents);
+      await storeSyncMeta("periodic_sync_last", Date.now());
+    }
+  } catch {
+    // Best effort — will retry on next visibility change
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cache Persistence Initializer
+// ---------------------------------------------------------------------------
+
+/**
  * Restores the cache from IndexedDB on mount and sets up auto-persistence.
+ * Also handles token storage for the SW, periodic sync registration, and
+ * visibility-based refresh.
  */
 function CachePersistenceInitializer() {
   useEffect(() => {
     let cancelled = false;
     let cleanupPersist: (() => void) | null = null;
 
-    // Restore cache from IndexedDB, then set up auto-persistence
+    // Restore cache, then set up auto-persistence + merge SW periodic sync data
     restoreCache(cache).then(() => {
       if (!cancelled) {
         cleanupPersist = setupCachePersistence(cache);
+        mergePeriodicSyncData(cache);
       }
     });
 
@@ -289,24 +371,27 @@ function CachePersistenceInitializer() {
     // Store API URL in IndexedDB for Background Sync (SW needs it)
     storeSyncMeta("bg_sync_api_url", API_URL);
 
-    // Keep auth token in IndexedDB so the SW can replay mutations
+    // Keep auth token AND EXPIRY in IndexedDB so the SW can check validity
     const unsubAuth = useAuthStore.subscribe((state) => {
       if (state.token) {
         storeSyncMeta("bg_sync_auth_token", state.token);
+        const expiry = state.getTokenExpiry?.() ?? 0;
+        storeSyncMeta("bg_sync_token_expiry", expiry);
       }
     });
-    // Store the current token immediately
-    const currentToken = useAuthStore.getState().token;
-    if (currentToken) {
-      storeSyncMeta("bg_sync_auth_token", currentToken);
+    // Store immediately
+    const authState = useAuthStore.getState();
+    if (authState.token) {
+      storeSyncMeta("bg_sync_auth_token", authState.token);
+      storeSyncMeta("bg_sync_token_expiry", authState.getTokenExpiry?.() ?? 0);
     }
 
-    // Register Periodic Background Sync (Chrome 80+) to silently refresh event data
+    // Register Periodic Background Sync (Chrome 80+)
     if ("serviceWorker" in navigator && "periodicSync" in ServiceWorkerRegistration.prototype) {
       navigator.serviceWorker.ready.then(async (reg) => {
         try {
           await (reg as any).periodicSync.register("refresh-event-data", {
-            minInterval: 12 * 60 * 60 * 1000, // 12 hours
+            minInterval: STALE_THRESHOLD_MS,
           });
         } catch {
           // Periodic sync not granted or not supported
@@ -314,11 +399,15 @@ function CachePersistenceInitializer() {
       });
     }
 
+    // Fallback: visibility-change-based refresh for Safari / Firefox (Issue #12)
+    document.addEventListener("visibilitychange", refreshOnVisibility);
+
     return () => {
       cancelled = true;
       cleanupPersist?.();
       cleanupSync();
       unsubAuth();
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
     };
   }, []);
 

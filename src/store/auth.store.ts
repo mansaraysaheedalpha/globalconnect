@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { jwtDecode } from "jwt-decode";
+import { performLogoutCleanup } from "@/lib/cleanup-utils";
 
 interface User {
   id: string;
@@ -110,6 +111,10 @@ export const useAuthStore = create<AuthState>()(
       setOnboardingToken: (token) => set({ onboardingToken: token }),
 
       logout: () => {
+        // Clear all offline caches/queues to prevent data leaking to the next user
+        performLogoutCleanup().catch((e) =>
+          console.error("[Auth] Logout cleanup failed:", e)
+        );
         set({ token: null, user: null, orgId: null, onboardingToken: null, isRefreshing: false, lastRefreshAttempt: null });
         clearAuthCookie();
       },

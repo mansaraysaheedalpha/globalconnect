@@ -19,6 +19,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { print } from "graphql";
 import { queueMutation } from "./offline-storage";
+import { isActuallyOnline } from "./network-connectivity";
 
 /**
  * Register a Background Sync tag so the service worker can replay
@@ -52,8 +53,8 @@ const QUEUEABLE_MUTATIONS = new Set([
 
 export class OfflineLink extends ApolloLink {
   request(operation: Operation, forward: NextLink): Observable<FetchResult> | null {
-    // If online, pass through normally
-    if (navigator.onLine) {
+    // If online (with lie-fi protection), pass through normally
+    if (isActuallyOnline()) {
       return forward(operation);
     }
 

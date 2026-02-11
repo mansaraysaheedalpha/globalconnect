@@ -12,6 +12,9 @@ export {}; // Make this a module so `declare global` works
 const DB_NAME = "event_dynamics_offline";
 const DB_VERSION = 2;
 const SYNC_TAG = "mutation-sync";
+const FETCH_TIMEOUT_MS = 30_000; // 30 seconds
+const STALE_LOCK_THRESHOLD_MS = 60_000; // 60 seconds
+const TOKEN_EXPIRY_BUFFER_MS = 60_000; // 60 seconds before actual expiry
 
 // ---------------------------------------------------------------------------
 // IndexedDB helpers (raw — no imports possible in SW context)
@@ -45,23 +48,47 @@ async function getPendingMutations(): Promise<QueuedMutation[]> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("mutationQueue", "readonly");
     const store = tx.objectStore("mutationQueue");
-    const index = store.index("status");
-    const request = index.getAll("pending");
+    const statusIndex = store.index("status");
+
+    const pending: QueuedMutation[] = [];
+    const results: IDBRequest[] = [];
+
+    // Get both "pending" and "in_flight" (for stale lock recovery)
+    results.push(statusIndex.getAll("pending"));
+    results.push(statusIndex.getAll("in_flight"));
 
     tx.oncomplete = () => {
-      const mutations: QueuedMutation[] = request.result || [];
-      mutations.sort(
+      for (const req of results) {
+        if (req.result) pending.push(...req.result);
+      }
+      // Filter: only process if canProcessMutation
+      const processable = pending.filter(canProcessMutation);
+      processable.sort(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
       db.close();
-      resolve(mutations);
+      resolve(processable);
     };
     tx.onerror = () => {
       db.close();
       reject(tx.error);
     };
   });
+}
+
+/**
+ * Deduplication guard — mirrors canProcessMutation() in offline-storage.ts.
+ * Returns true if status is "pending", or if "in_flight" with a stale lock.
+ */
+function canProcessMutation(mutation: QueuedMutation): boolean {
+  if (mutation.status === "pending") return true;
+  if (mutation.status === "in_flight") {
+    if (!mutation.lastAttemptAt) return true; // no timestamp = stale
+    const elapsed = Date.now() - new Date(mutation.lastAttemptAt).getTime();
+    return elapsed > STALE_LOCK_THRESHOLD_MS;
+  }
+  return false;
 }
 
 async function updateMutationInDB(mutation: QueuedMutation): Promise<void> {
@@ -116,6 +143,38 @@ async function readSyncMeta(key: string): Promise<unknown> {
 }
 
 // ---------------------------------------------------------------------------
+// Token validation (#9 — skip replay if token is expired)
+// ---------------------------------------------------------------------------
+
+async function isTokenValid(): Promise<boolean> {
+  try {
+    const expiry = (await readSyncMeta("bg_sync_token_expiry")) as number | null;
+    if (!expiry) return false; // no expiry stored = can't validate
+    // expiry is already in ms (auth.store.ts returns exp * 1000)
+    return Date.now() < expiry - TOKEN_EXPIRY_BUFFER_MS;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Fetch with timeout (#8 — prevent hung connections on 2G)
+// ---------------------------------------------------------------------------
+
+function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number = FETCH_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  return fetch(url, { ...options, signal: controller.signal }).finally(() =>
+    clearTimeout(timer)
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Mutation replay
 // ---------------------------------------------------------------------------
 
@@ -133,7 +192,7 @@ async function replayMutation(
       headers["Authorization"] = `Bearer ${authToken}`;
     }
 
-    const response = await fetch(apiUrl, {
+    const response = await fetchWithTimeout(apiUrl, {
       method: "POST",
       headers,
       credentials: "include", // Send httpOnly cookies (refresh token)
@@ -165,12 +224,23 @@ async function replayMutation(
     console.warn("[SW Sync] Server error", response.status, "for", mutation.operationName);
     return false;
   } catch (err) {
-    console.warn("[SW Sync] Network error replaying", mutation.operationName, err);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.warn("[SW Sync] Fetch timeout for", mutation.operationName);
+    } else {
+      console.warn("[SW Sync] Network error replaying", mutation.operationName, err);
+    }
     return false;
   }
 }
 
 async function processQueue(): Promise<void> {
+  // Check token validity before attempting any replays (#9)
+  const tokenValid = await isTokenValid().catch(() => false);
+  if (!tokenValid) {
+    console.warn("[SW Sync] Token expired or missing, deferring to main thread");
+    return;
+  }
+
   let mutations: QueuedMutation[];
   try {
     mutations = await getPendingMutations();
@@ -192,19 +262,25 @@ async function processQueue(): Promise<void> {
   console.log(`[SW Sync] Processing ${mutations.length} queued mutation(s)`);
 
   for (const mutation of mutations) {
+    // Mark as in_flight before processing (#3 — deduplication)
+    mutation.status = "in_flight";
+    mutation.lastAttemptAt = new Date().toISOString();
+    await updateMutationInDB(mutation);
+
     const success = await replayMutation(mutation, apiUrl, authToken);
 
     if (success) {
       await deleteMutationFromDB(mutation.id);
     } else {
       mutation.retryCount = (mutation.retryCount || 0) + 1;
-      mutation.lastAttemptAt = new Date().toISOString();
 
       if (mutation.retryCount >= mutation.maxRetries) {
         mutation.status = "failed";
         mutation.errorMessage = "Background sync: max retries exceeded";
+      } else {
+        // Reset to pending so main thread or next sync can retry
+        mutation.status = "pending";
       }
-      // Otherwise stays "pending" for the next sync or main thread
 
       await updateMutationInDB(mutation);
     }
@@ -239,13 +315,17 @@ const PERIODIC_SYNC_TAG = "refresh-event-data";
  * store them in the events IndexedDB store for offline access.
  */
 async function refreshEventData(): Promise<void> {
+  // Check token validity before fetching (#9)
+  const tokenValid = await isTokenValid().catch(() => false);
+  if (!tokenValid) return;
+
   const apiUrl = (await readSyncMeta("bg_sync_api_url")) as string | null;
   const authToken = (await readSyncMeta("bg_sync_auth_token")) as string | null;
 
   if (!apiUrl || !authToken) return;
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetchWithTimeout(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -315,7 +395,11 @@ async function refreshEventData(): Promise<void> {
 
     console.log(`[SW PeriodicSync] Refreshed ${events.length} event(s)`);
   } catch (err) {
-    console.warn("[SW PeriodicSync] Failed to refresh event data", err);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.warn("[SW PeriodicSync] Fetch timeout during refresh");
+    } else {
+      console.warn("[SW PeriodicSync] Failed to refresh event data", err);
+    }
   }
 }
 

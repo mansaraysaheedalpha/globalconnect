@@ -113,6 +113,7 @@ export const useSessionQA = (
   } = useSocketCache<Question[]>({
     feature: "qa",
     sessionId,
+    maxItems: 100,
   });
 
   const [ownSocket, setOwnSocket] = useState<Socket | null>(null);

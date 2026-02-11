@@ -14,6 +14,7 @@ import {
   updateMutationStatus,
   clearCompletedMutations,
   getPendingMutationCount,
+  canProcessMutation,
   type QueuedMutation,
 } from "./offline-storage";
 
@@ -71,8 +72,13 @@ export async function processMutationQueue(
     emit({ type: "sync_start", pendingCount: pending.length });
 
     for (const mutation of pending) {
+      // Deduplication: skip if already being processed by the SW
+      if (!canProcessMutation(mutation)) {
+        continue;
+      }
+
       try {
-        // Mark as in-flight
+        // Mark as in-flight (acts as a lock for the SW)
         await updateMutationStatus(mutation.id, "in_flight");
 
         // Parse the stored GraphQL document and variables

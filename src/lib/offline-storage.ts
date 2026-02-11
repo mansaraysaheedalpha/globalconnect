@@ -12,6 +12,49 @@
 const DB_NAME = "event_dynamics_offline";
 const DB_VERSION = 2;
 
+// ---------------------------------------------------------------------------
+// localStorage fallback keys (Safari private browsing, storage pressure)
+// ---------------------------------------------------------------------------
+const LS_PREFIX = "__idb_fb_";
+const LS_INDEX_PREFIX = `${LS_PREFIX}idx_`;
+
+function lsItemKey(storeName: string, id: string): string {
+  return `${LS_PREFIX}${storeName}_${id}`;
+}
+
+function lsIndexKey(storeName: string, indexName: string, value: unknown): string {
+  return `${LS_INDEX_PREFIX}${storeName}_${indexName}_${String(value)}`;
+}
+
+/** Read an index set from localStorage. Returns array of IDs. */
+function lsReadIndex(storeName: string, indexName: string, value: unknown): string[] {
+  try {
+    const raw = localStorage.getItem(lsIndexKey(storeName, indexName, value));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Add an ID to a localStorage index set. */
+function lsAddToIndex(storeName: string, indexName: string, value: unknown, id: string): void {
+  const ids = lsReadIndex(storeName, indexName, value);
+  if (!ids.includes(id)) {
+    ids.push(id);
+    localStorage.setItem(lsIndexKey(storeName, indexName, value), JSON.stringify(ids));
+  }
+}
+
+/** Remove an ID from a localStorage index set. */
+function lsRemoveFromIndex(storeName: string, indexName: string, value: unknown, id: string): void {
+  const ids = lsReadIndex(storeName, indexName, value).filter((i) => i !== id);
+  if (ids.length > 0) {
+    localStorage.setItem(lsIndexKey(storeName, indexName, value), JSON.stringify(ids));
+  } else {
+    localStorage.removeItem(lsIndexKey(storeName, indexName, value));
+  }
+}
+
 interface StorageConfig {
   storeName: string;
   keyPath?: string;
@@ -123,9 +166,21 @@ export async function storeItem<T extends { id: string }>(
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    // Fallback to localStorage
-    const key = `${storeName}_${item.id}`;
-    localStorage.setItem(key, JSON.stringify(item));
+    // Fallback to localStorage with index maintenance
+    localStorage.setItem(lsItemKey(storeName, item.id), JSON.stringify(item));
+
+    // Maintain indexes for mutationQueue
+    if (storeName === "mutationQueue") {
+      const m = item as unknown as QueuedMutation;
+      const statuses: MutationStatus[] = ["pending", "in_flight", "failed", "completed"];
+      for (const s of statuses) {
+        if (s === m.status) {
+          lsAddToIndex(storeName, "status", s, item.id);
+        } else {
+          lsRemoveFromIndex(storeName, "status", s, item.id);
+        }
+      }
+    }
   }
 }
 
@@ -152,8 +207,7 @@ export async function storeItems<T extends { id: string }>(
   } catch (error) {
     // Fallback to localStorage
     items.forEach((item) => {
-      const key = `${storeName}_${item.id}`;
-      localStorage.setItem(key, JSON.stringify(item));
+      localStorage.setItem(lsItemKey(storeName, item.id), JSON.stringify(item));
     });
   }
 }
@@ -177,9 +231,8 @@ export async function getItem<T>(
     });
   } catch (error) {
     // Fallback to localStorage
-    const key = `${storeName}_${id}`;
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
+    const raw = localStorage.getItem(lsItemKey(storeName, id));
+    return raw ? JSON.parse(raw) : null;
   }
 }
 
@@ -200,9 +253,19 @@ export async function getAllItems<T>(
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    // Fallback to localStorage - limited support
-    console.warn("[OfflineStorage] getAllItems fallback not fully supported");
-    return [];
+    // Fallback to localStorage — scan for items matching store prefix
+    const prefix = lsItemKey(storeName, "");
+    const items: T[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(prefix)) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) items.push(JSON.parse(raw));
+        } catch { /* skip malformed */ }
+      }
+    }
+    return items;
   }
 }
 
@@ -226,7 +289,16 @@ export async function getItemsByIndex<T>(
       request.onerror = () => reject(request.error);
     });
   } catch {
-    return [];
+    // Fallback to localStorage — read from index
+    const ids = lsReadIndex(storeName, indexName, value);
+    const items: T[] = [];
+    for (const id of ids) {
+      try {
+        const raw = localStorage.getItem(lsItemKey(storeName, id));
+        if (raw) items.push(JSON.parse(raw));
+      } catch { /* skip malformed */ }
+    }
+    return items;
   }
 }
 
@@ -248,9 +320,14 @@ export async function deleteItem(
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    // Fallback to localStorage
-    const key = `${storeName}_${id}`;
-    localStorage.removeItem(key);
+    // Fallback to localStorage with index cleanup
+    localStorage.removeItem(lsItemKey(storeName, id));
+    if (storeName === "mutationQueue") {
+      const statuses: MutationStatus[] = ["pending", "in_flight", "failed", "completed"];
+      for (const s of statuses) {
+        lsRemoveFromIndex(storeName, "status", s, id);
+      }
+    }
   }
 }
 
@@ -393,10 +470,28 @@ export async function queueMutation(
 }
 
 /**
- * Get all pending mutations ordered by creation time
+ * Check if a mutation can be processed (deduplication guard).
+ * Returns true if status is "pending", OR if status is "in_flight" but
+ * the last attempt was more than 60 seconds ago (stale lock from a crashed processor).
+ */
+export function canProcessMutation(mutation: QueuedMutation): boolean {
+  if (mutation.status === "pending") return true;
+  if (mutation.status === "in_flight") {
+    if (!mutation.lastAttemptAt) return true; // no timestamp = stale
+    const elapsed = Date.now() - new Date(mutation.lastAttemptAt).getTime();
+    return elapsed > 60_000; // stale lock threshold: 60 s
+  }
+  return false;
+}
+
+/**
+ * Get all processable mutations ordered by creation time.
+ * Includes both "pending" and stale "in_flight" mutations for recovery.
  */
 export async function getPendingMutations(): Promise<QueuedMutation[]> {
-  const all = await getItemsByIndex<QueuedMutation>("mutationQueue", "status", "pending");
+  const pending = await getItemsByIndex<QueuedMutation>("mutationQueue", "status", "pending");
+  const inFlight = await getItemsByIndex<QueuedMutation>("mutationQueue", "status", "in_flight");
+  const all = [...pending, ...inFlight];
   return all.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }
 

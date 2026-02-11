@@ -7,10 +7,29 @@ const withPWA = withPWAInit({
   reloadOnOnline: true,
   swcMinify: true,
   disable: process.env.NODE_ENV === "development",
+  fallbacks: {
+    document: "/_offline",
+  },
   workboxOptions: {
     disableDevLogs: true,
     // Runtime caching strategies for offline resilience
     runtimeCaching: [
+      // HTML pages: Network-first with 5s timeout for offline navigation (#5)
+      {
+        urlPattern: ({ request }) => request.mode === "navigate",
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "pages-cache",
+          networkTimeoutSeconds: 5,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 24 * 60 * 60, // 1 day
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
       // Images from S3/CDN: Cache-first with 30-day expiry (event banners, speaker photos)
       {
         urlPattern: /^https:\/\/(108782064634-globalconnect-uploads\.s3\.eu-north-1\.amazonaws\.com|s3\.eu-north-1\.amazonaws\.com|res\.cloudinary\.com|images\.unsplash\.com)\/.*/i,

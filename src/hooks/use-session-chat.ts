@@ -99,6 +99,7 @@ export const useSessionChat = (
   } = useSocketCache<ChatMessage[]>({
     feature: "chat",
     sessionId,
+    maxItems: 200,
   });
 
   const [ownSocket, setOwnSocket] = useState<Socket | null>(null);
