@@ -77,6 +77,7 @@ interface EventData {
   imageUrl?: string | null;
   eventType?: EventType;
   virtualSettings?: VirtualSettings | null;
+  maxAttendees?: number | null;
 }
 
 interface EditEventModalProps {
@@ -106,6 +107,7 @@ const formSchema = z
       .optional()
       .or(z.literal("")),
     maxConcurrentViewers: z.number().min(1).max(1000000).optional(),
+    maxAttendees: z.number().min(1).max(1000000).optional(),
   })
   .refine((data) => data.endDate >= data.startDate, {
     message: "End date cannot be before the start date.",
@@ -158,6 +160,7 @@ export const EditEventModal = ({
         streamingProvider: vs?.streamingProvider || "",
         streamingUrl: vs?.streamingUrl || "",
         maxConcurrentViewers: vs?.maxConcurrentViewers || undefined,
+        maxAttendees: event.maxAttendees || undefined,
       });
     }
   }, [event, form]);
@@ -198,6 +201,7 @@ export const EditEventModal = ({
           imageUrl: values.imageUrl || null,
           eventType: values.eventType,
           virtualSettings,
+          maxAttendees: values.maxAttendees || null,
         },
       },
     });
@@ -404,6 +408,32 @@ export const EditEventModal = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="maxAttendees"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Attendee Cap (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Unlimited"
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value ? parseInt(e.target.value) : undefined
+                        )
+                      }
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty for unlimited registrations
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

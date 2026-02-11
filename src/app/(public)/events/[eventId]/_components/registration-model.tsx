@@ -137,6 +137,12 @@ const isDuplicateRegistrationError = (error: Error): boolean => {
   );
 };
 
+// Helper to detect event capacity errors
+const isEventFullError = (error: Error): boolean => {
+  const message = error.message.toLowerCase();
+  return message.includes("maximum capacity") || message.includes("event is full");
+};
+
 export const RegistrationModal = ({
   isOpen,
   onClose,
@@ -242,7 +248,11 @@ export const RegistrationModal = ({
       try {
         await registerForEvent(newToken);
       } catch (regError: any) {
-        if (isDuplicateRegistrationError(regError)) {
+        if (isEventFullError(regError)) {
+          toast.error("Event is Full", {
+            description: "This event has reached its maximum capacity.",
+          });
+        } else if (isDuplicateRegistrationError(regError)) {
           toast.error("Already Registered", {
             description: "You are already registered for this event.",
           });
@@ -290,7 +300,11 @@ export const RegistrationModal = ({
       try {
         await registerForEvent(newToken);
       } catch (regError: any) {
-        if (isDuplicateRegistrationError(regError)) {
+        if (isEventFullError(regError)) {
+          toast.error("Event is Full", {
+            description: "This event has reached its maximum capacity.",
+          });
+        } else if (isDuplicateRegistrationError(regError)) {
           toast.error("Already Registered", {
             description: "You are already registered for this event.",
           });
@@ -307,7 +321,12 @@ export const RegistrationModal = ({
     try {
       await registerForEvent(token!);
     } catch (error: any) {
-      if (isDuplicateRegistrationError(error)) {
+      if (isEventFullError(error)) {
+        toast.error("Event is Full", {
+          description: "This event has reached its maximum capacity.",
+          icon: <AlertCircle className="h-4 w-4" />,
+        });
+      } else if (isDuplicateRegistrationError(error)) {
         toast.error("Already Registered", {
           description: "You are already registered for this event.",
           icon: <AlertCircle className="h-4 w-4" />,

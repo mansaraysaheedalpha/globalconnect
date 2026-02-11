@@ -8,6 +8,7 @@ export const CREATE_EVENT_MUTATION = gql`
       status
       startDate
       registrationsCount
+      maxAttendees
       imageUrl
       eventType
       virtualSettings {
@@ -32,6 +33,9 @@ export const GET_EVENT_BY_ID_QUERY = gql`
       isPublic
       imageUrl
       registrationsCount
+      maxAttendees
+      availableSpots
+      isSoldOut
       eventType
       virtualSettings {
         streamingProvider
@@ -69,6 +73,7 @@ export const UPDATE_EVENT_MUTATION = gql`
       endDate
       status
       isPublic
+      maxAttendees
       eventType
       virtualSettings {
         streamingProvider

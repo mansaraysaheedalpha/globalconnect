@@ -31,6 +31,10 @@ interface StickyRegistrationCardProps {
   onRegisterClick: () => void;
   ticketInfo?: TicketPriceInfo | null;
   isLoadingTickets?: boolean;
+  maxAttendees?: number | null;
+  registrationsCount?: number;
+  isSoldOut?: boolean;
+  availableSpots?: number | null;
 }
 
 // Helper function to format price
@@ -51,6 +55,10 @@ export const StickyRegistrationCard = ({
   onRegisterClick,
   ticketInfo,
   isLoadingTickets,
+  maxAttendees,
+  registrationsCount = 0,
+  isSoldOut = false,
+  availableSpots,
 }: StickyRegistrationCardProps) => {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState({
@@ -101,6 +109,15 @@ export const StickyRegistrationCard = ({
     hour: "numeric",
     minute: "2-digit",
   })}`;
+
+  const handleRegisterClick = () => {
+    if (isSoldOut) return;
+    if (ticketInfo && !ticketInfo.allFree) {
+      router.push(`/events/${eventId}/checkout`);
+    } else {
+      onRegisterClick();
+    }
+  };
 
   return (
     <aside className="sticky top-24">
@@ -178,27 +195,50 @@ export const StickyRegistrationCard = ({
             </div>
           )}
 
+          {/* Capacity Indicator */}
+          {maxAttendees != null && (
+            <div className="mb-4">
+              {isSoldOut ? (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
+                  <p className="text-sm font-medium text-destructive">Sold Out</p>
+                </div>
+              ) : availableSpots != null && availableSpots <= 20 ? (
+                <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 text-center">
+                  <p className="text-sm font-medium text-orange-600">
+                    Only {availableSpots} spot{availableSpots !== 1 ? "s" : ""} left!
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center text-sm text-muted-foreground">
+                  <Users className="h-4 w-4 inline mr-1" />
+                  {registrationsCount} / {maxAttendees} registered
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Register/Get Tickets Button */}
           <Button
             size="lg"
             className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-            onClick={() => {
-              if (ticketInfo && !ticketInfo.allFree) {
-                router.push(`/events/${eventId}/checkout`);
-              } else {
-                onRegisterClick();
-              }
-            }}
+            onClick={handleRegisterClick}
+            disabled={isSoldOut}
           >
             <Ticket className="h-5 w-5 mr-2" />
-            {ticketInfo && !ticketInfo.allFree ? 'Get Tickets' : 'Register Now'}
-            {ticketInfo && !ticketInfo.allFree && <ArrowRight className="h-5 w-5 ml-2" />}
+            {isSoldOut
+              ? "Sold Out"
+              : ticketInfo && !ticketInfo.allFree
+                ? "Get Tickets"
+                : "Register Now"}
+            {!isSoldOut && ticketInfo && !ticketInfo.allFree && <ArrowRight className="h-5 w-5 ml-2" />}
           </Button>
 
           {/* Registration type indicator */}
-          <p className="text-center text-sm text-muted-foreground mt-3">
-            {ticketInfo?.allFree !== false ? 'Free Registration' : 'Secure Checkout'}
-          </p>
+          {!isSoldOut && (
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              {ticketInfo?.allFree !== false ? 'Free Registration' : 'Secure Checkout'}
+            </p>
+          )}
 
           <Separator className="my-6" />
 
@@ -229,18 +269,15 @@ export const StickyRegistrationCard = ({
         <Button
           size="lg"
           className="w-full h-12 font-semibold"
-          onClick={() => {
-            if (ticketInfo && !ticketInfo.allFree) {
-              router.push(`/events/${eventId}/checkout`);
-            } else {
-              onRegisterClick();
-            }
-          }}
+          onClick={handleRegisterClick}
+          disabled={isSoldOut}
         >
           <Ticket className="h-5 w-5 mr-2" />
-          {ticketInfo && !ticketInfo.allFree
-            ? `Get Tickets - ${ticketInfo.hasMultipleTiers ? 'From ' : ''}${formatPrice(ticketInfo.minPrice, ticketInfo.currency)}`
-            : 'Register Now'
+          {isSoldOut
+            ? "Sold Out"
+            : ticketInfo && !ticketInfo.allFree
+              ? `Get Tickets - ${ticketInfo.hasMultipleTiers ? 'From ' : ''}${formatPrice(ticketInfo.minPrice, ticketInfo.currency)}`
+              : 'Register Now'
           }
         </Button>
       </div>

@@ -37,6 +37,7 @@ export const GET_PUBLIC_EVENTS_QUERY = gql`
         startDate
         endDate
         imageUrl
+        isSoldOut
         venue {
           id
           name
@@ -55,6 +56,10 @@ export const GET_PUBLIC_EVENT_DETAILS_QUERY = gql`
       startDate
       endDate
       imageUrl
+      maxAttendees
+      registrationsCount
+      isSoldOut
+      availableSpots
       venue {
         id
         name

@@ -169,6 +169,10 @@ export function EventDetailsView({ eventId }: { eventId: string }) {
                 onRegisterClick={() => setIsModalOpen(true)}
                 ticketInfo={ticketInfo}
                 isLoadingTickets={ticketLoading}
+                maxAttendees={event.maxAttendees}
+                registrationsCount={event.registrationsCount}
+                isSoldOut={event.isSoldOut}
+                availableSpots={event.availableSpots}
               />
             </div>
           </div>
