@@ -296,16 +296,20 @@ async function refreshEventData(): Promise<void> {
     // Update sync timestamp
     const metaDb = await openDB();
     const metaTx = metaDb.transaction("syncMeta", "readwrite");
-    metaDb.transaction("syncMeta", "readwrite").objectStore("syncMeta").put({
+    metaTx.objectStore("syncMeta").put({
       id: "periodic_sync_last",
       key: "periodic_sync_last",
       value: Date.now(),
       updatedAt: Date.now(),
     });
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
       metaTx.oncomplete = () => {
         metaDb.close();
         resolve();
+      };
+      metaTx.onerror = () => {
+        metaDb.close();
+        reject(metaTx.error);
       };
     });
 
