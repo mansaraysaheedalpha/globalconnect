@@ -44,7 +44,7 @@ interface JoinLeaveResponse {
   error?: string;
 }
 
-const SOCKET_TIMEOUT = 10000;
+const SOCKET_TIMEOUT = 30000;
 
 export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => {
   const { token, user } = useAuthStore();
