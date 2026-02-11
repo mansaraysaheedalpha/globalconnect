@@ -12,13 +12,15 @@ import {
   AlertCircle,
   Clock,
   Edit,
-  Package
+  Package,
+  BarChart3
 } from "lucide-react";
 import {
   GET_EVENT_MONETIZATION_QUERY,
   CREATE_OFFER_MUTATION,
   DELETE_OFFER_MUTATION,
-  UPDATE_OFFER_MUTATION
+  UPDATE_OFFER_MUTATION,
+  GET_MONETIZATION_ANALYTICS_QUERY
 } from "@/graphql/monetization.graphql";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
@@ -49,10 +51,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { OfferPerformance } from "../analytics/_components/offer-performance";
 
 interface Inventory {
   total: number | null;
@@ -105,12 +109,30 @@ export const Upsells = () => {
   const [editIsActive, setEditIsActive] = useState(true);
   const [editInventoryTotal, setEditInventoryTotal] = useState("");
 
+  // Date range for analytics (last 30 days)
+  const dateRange = {
+    from: format(addDays(new Date(), -30), "yyyy-MM-dd"),
+    to: format(new Date(), "yyyy-MM-dd"),
+  };
+
   const { data, loading, error, refetch } = useQuery(GET_EVENT_MONETIZATION_QUERY, {
     variables: { eventId },
     onError: (err) => {
       logger.error("Failed to load offers", err, { eventId });
     },
   });
+
+  const { data: analyticsData, loading: analyticsLoading } = useQuery(
+    GET_MONETIZATION_ANALYTICS_QUERY,
+    {
+      variables: {
+        eventId,
+        dateFrom: dateRange.from,
+        dateTo: dateRange.to,
+      },
+      fetchPolicy: "cache-and-network",
+    }
+  );
 
   const [createOffer, { loading: creating }] = useMutation(CREATE_OFFER_MUTATION, {
     onCompleted: () => {
@@ -249,6 +271,8 @@ export const Upsells = () => {
 
   const offers: Offer[] = data?.eventOffers || [];
 
+  const offerAnalytics = analyticsData?.monetizationAnalytics?.offers;
+
   return (
     <div className="space-y-6 pt-4">
       <div className="flex items-center justify-between">
@@ -370,6 +394,16 @@ export const Upsells = () => {
         </Dialog>
       </div>
 
+      <Tabs defaultValue="manage" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="manage">Manage Offers</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="manage" className="space-y-6">
       {offers.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -462,6 +496,25 @@ export const Upsells = () => {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          {analyticsLoading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </CardContent>
+            </Card>
+          ) : (
+            <OfferPerformance
+              eventId={eventId}
+              data={offerAnalytics}
+              dateRange={dateRange}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+
       {/* Edit Offer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
         setIsEditDialogOpen(open);
