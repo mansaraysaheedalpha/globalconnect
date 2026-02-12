@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useMutation, useQuery } from "@apollo/client";
 import { StreamPlayer } from "@/components/features/video/StreamPlayer";
 import { Badge } from "@/components/ui/badge";
@@ -446,8 +447,19 @@ export function VirtualSessionView({
   const hasJoinedRef = useRef(false);
   const sessionIdRef = useRef(session.id);
 
+  // State for capacity rejection
+  const [isSessionFull, setIsSessionFull] = useState(false);
+
   // Virtual attendance mutations
   const [joinSession] = useMutation(JOIN_VIRTUAL_SESSION_MUTATION, {
+    onCompleted: (data) => {
+      const result = data?.joinVirtualSession;
+      if (result && !result.success && result.message) {
+        setIsSessionFull(true);
+        toast.error("Session Unavailable", { description: result.message });
+        hasJoinedRef.current = false;
+      }
+    },
     onError: (err) => console.warn("Failed to record session join:", err),
   });
   const [leaveSession] = useMutation(LEAVE_VIRTUAL_SESSION_MUTATION, {
@@ -614,19 +626,34 @@ export function VirtualSessionView({
         <div className="flex-1 flex min-h-0 overflow-hidden">
           {/* Main content area */}
           <div className="flex-1 flex flex-col min-h-0 min-w-0 relative">
+            {/* Session Full */}
+            {isSessionFull && (
+              <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+                <div className="text-center text-white px-6 py-10 max-w-md">
+                  <div className="w-20 h-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
+                    <AlertTriangle className="h-10 w-10 text-red-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Session is Full</h3>
+                  <p className="text-white/60 text-sm">
+                    This session has reached its viewer limit. Please try again later or join the waitlist.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Video Area */}
-            {isUpcoming && session.lobbyEnabled && !lobbyDismissed && (
+            {!isSessionFull && isUpcoming && session.lobbyEnabled && !lobbyDismissed && (
               <LobbyView
                 session={session}
                 lobbyVideoUrl={lobbyVideoUrl}
                 onDismiss={() => setLobbyDismissed(true)}
               />
             )}
-            {isUpcoming && (!session.lobbyEnabled || lobbyDismissed) && (
+            {!isSessionFull && isUpcoming && (!session.lobbyEnabled || lobbyDismissed) && (
               <SessionNotStarted session={session} />
             )}
 
-            {isLive && isDailySession && (
+            {!isSessionFull && isLive && isDailySession && (
               <DailySessionView
                 session={session}
                 eventId={eventId}
@@ -635,7 +662,7 @@ export function VirtualSessionView({
               />
             )}
 
-            {isLive && !isDailySession && hasStream && (
+            {!isSessionFull && isLive && !isDailySession && hasStream && (
               <div className="flex-1 flex flex-col min-h-0">
                 <StreamPlayer
                   url={session.streamingUrl!}
@@ -648,7 +675,7 @@ export function VirtualSessionView({
               </div>
             )}
 
-            {isLive && !isDailySession && !hasStream && (
+            {!isSessionFull && isLive && !isDailySession && !hasStream && (
               <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] rounded-full bg-yellow-500/[0.03] blur-[100px]" />
