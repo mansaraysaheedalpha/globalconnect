@@ -4,10 +4,10 @@
 
 import * as React from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useQuery, useLazyQuery } from "@apollo/client";
+import { useQuery, useLazyQuery, useMutation } from "@apollo/client";
 import { useOfflineQuery } from "@/hooks/use-offline-query";
 import { StaleDataIndicator } from "@/components/ui/stale-data-indicator";
-import { GET_ATTENDEE_EVENT_DETAILS_QUERY } from "@/graphql/attendee.graphql";
+import { GET_ATTENDEE_EVENT_DETAILS_QUERY, RSVP_TO_SESSION_MUTATION, CANCEL_SESSION_RSVP_MUTATION } from "@/graphql/attendee.graphql";
 import { GET_EVENT_ATTENDEES_QUERY } from "@/graphql/registrations.graphql";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,6 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { usePresentationControl, DroppedContent } from "@/hooks/use-presentation-control";
 import { useAuthStore } from "@/store/auth.store";
-import { useEventUpdates } from "@/hooks/use-event-updates";
 import { toast } from "sonner";
 import { FloatingScheduleIndicator } from "@/components/features/agenda/live-agenda-container";
 import { AgendaSession } from "@/hooks/use-agenda-updates";
@@ -96,7 +95,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Sparkles, Users } from "lucide-react";
+import { ChevronDown, Sparkles, Users, UserPlus, UserMinus, CalendarCheck } from "lucide-react";
 
 type SessionType = "MAINSTAGE" | "BREAKOUT" | "WORKSHOP" | "NETWORKING" | "EXPO";
 type EventType = "IN_PERSON" | "VIRTUAL" | "HYBRID";
@@ -128,6 +127,12 @@ type Session = {
   isRecordable?: boolean;
   autoCaptions?: boolean;
   lobbyEnabled?: boolean;
+  maxParticipants?: number | null;
+  // Session RSVP fields
+  isRsvped?: boolean;
+  rsvpCount?: number;
+  rsvpAvailableSpots?: number | null;
+  isSessionFull?: boolean;
   speakers: { id: string; name: string; userId?: string | null }[];
 };
 
@@ -693,6 +698,42 @@ const SessionCard = ({
   // State for virtual session viewer
   const [showVirtualSession, setShowVirtualSession] = React.useState(false);
 
+  // Session RSVP state
+  const hasCapacity = session.maxParticipants != null || session.rsvpAvailableSpots != null;
+  const isRsvped = session.isRsvped ?? false;
+  const isFull = session.isSessionFull ?? false;
+  const rsvpCount = session.rsvpCount ?? 0;
+  const availableSpots = session.rsvpAvailableSpots;
+  const maxCap = session.maxParticipants;
+
+  const [rsvpToSession, { loading: rsvpLoading }] = useMutation(RSVP_TO_SESSION_MUTATION, {
+    onCompleted: (data: { rsvpToSession: { success: boolean; message?: string } }) => {
+      if (data.rsvpToSession.success) {
+        toast.success("RSVPed successfully!");
+      } else {
+        toast.error(data.rsvpToSession.message || "Failed to RSVP");
+      }
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to RSVP", { description: error.message });
+    },
+    refetchQueries: ["GetAttendeeEventDetails"],
+  });
+
+  const [cancelRsvp, { loading: cancelLoading }] = useMutation(CANCEL_SESSION_RSVP_MUTATION, {
+    onCompleted: (data: { cancelSessionRsvp: { success: boolean; message?: string } }) => {
+      if (data.cancelSessionRsvp.success) {
+        toast.success("RSVP cancelled");
+      } else {
+        toast.error(data.cancelSessionRsvp.message || "Failed to cancel");
+      }
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to cancel RSVP", { description: error.message });
+    },
+    refetchQueries: ["GetAttendeeEventDetails"],
+  });
+
   // Local state for live status tracking (updated via WebSocket events from child components)
   const [liveChatOpen, setLiveChatOpen] = React.useState(session.chatOpen ?? false);
   const [liveQaOpen, setLiveQaOpen] = React.useState(session.qaOpen ?? false);
@@ -869,7 +910,61 @@ const SessionCard = ({
                 size="sm"
               />
             )}
+
+            {/* Session RSVP Button */}
+            {hasCapacity && !isEnded && !isVirtualSession && (
+              <>
+                {isRsvped ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
+                    onClick={() => cancelRsvp({ variables: { input: { sessionId: session.id } } })}
+                    disabled={cancelLoading}
+                  >
+                    <UserMinus className="h-3.5 w-3.5" />
+                    {cancelLoading ? "Cancelling..." : "Cancel RSVP"}
+                  </Button>
+                ) : isFull ? (
+                  <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20 py-1">
+                    Session Full
+                  </Badge>
+                ) : (
+                  <Button
+                    variant="premium"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => rsvpToSession({ variables: { input: { sessionId: session.id } } })}
+                    disabled={rsvpLoading}
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    {rsvpLoading ? "RSVPing..." : "RSVP"}
+                  </Button>
+                )}
+              </>
+            )}
           </div>
+
+          {/* Capacity indicator */}
+          {hasCapacity && !isEnded && (
+            <div className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              {isRsvped && (
+                <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 text-[10px] px-1.5 py-0">
+                  Registered
+                </Badge>
+              )}
+              <span>
+                {rsvpCount}{maxCap ? ` / ${maxCap}` : ""} RSVPs
+                {availableSpots != null && availableSpots > 0 && (
+                  <> &middot; {availableSpots} spot{availableSpots !== 1 ? "s" : ""} left</>
+                )}
+                {isFull && !isRsvped && (
+                  <> &middot; <span className="text-orange-600 font-medium">Full</span></>
+                )}
+              </span>
+            </div>
+          )}
 
           {/* Interactive Features - only for in-person sessions */}
           {!isEnded && !isVirtualSession && hasInteractiveFeatures && (
@@ -1007,6 +1102,21 @@ export default function AttendeeEventPage() {
     offlineKey: `event-details-${eventId}`,
   });
 
+  // Cancel RSVP from My Schedule section
+  const [cancelRsvpForSchedule, { loading: cancellingScheduleRsvp }] = useMutation(CANCEL_SESSION_RSVP_MUTATION, {
+    onCompleted: (data: { cancelSessionRsvp: { success: boolean; message?: string } }) => {
+      if (data.cancelSessionRsvp.success) {
+        toast.success("RSVP cancelled");
+      } else {
+        toast.error(data.cancelSessionRsvp.message || "Failed to cancel");
+      }
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to cancel RSVP", { description: error.message });
+    },
+    refetchQueries: ["GetAttendeeEventDetails"],
+  });
+
   // Lazy-load attendees — only fetched after main data loads (used by DM button)
   const [fetchAttendees, { data: attendeesData }] = useLazyQuery(GET_EVENT_ATTENDEES_QUERY);
 
@@ -1030,12 +1140,6 @@ export default function AttendeeEventPage() {
     eventImageUrl: data?.event?.imageUrl,
     attendeeImageUrls: attendeeAvatars,
     enabled: eventLoaded,
-  });
-
-  // Listen for real-time event/session update notifications
-  useEventUpdates({
-    eventId,
-    autoRefetch: true,
   });
 
   const availableUsers = React.useMemo(() => {
@@ -1244,6 +1348,9 @@ export default function AttendeeEventPage() {
   }
 
   const upcomingSessions = sessions.filter((s) => s.status === "UPCOMING");
+  const myScheduleSessions = sessions
+    .filter((s) => s.isRsvped && s.status !== "ENDED")
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
   // Handler for ping action
   const handlePing = async (userId: string, message?: string) => {
@@ -1498,6 +1605,67 @@ export default function AttendeeEventPage() {
           streakExpiring={gamification.streak.active && gamification.streak.count >= 2}
           className="mb-4"
         />
+      )}
+
+      {/* My Schedule - RSVPed Sessions */}
+      {myScheduleSessions.length > 0 && (
+        <section className="mb-8">
+          <Collapsible defaultOpen={true} className="border border-indigo-500/15 rounded-2xl bg-gradient-to-r from-indigo-500/[0.04] via-blue-500/[0.04] to-indigo-500/[0.04] overflow-hidden">
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 sm:p-5 hover:bg-muted/20 transition-colors group">
+              <div className="flex items-center gap-2.5">
+                <CalendarCheck className="h-5 w-5 text-indigo-500" />
+                <span className="font-semibold text-sm sm:text-base">My Schedule</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-600 border-indigo-500/20 text-[10px] sm:text-xs">
+                  {myScheduleSessions.length} session{myScheduleSessions.length !== 1 ? "s" : ""}
+                </Badge>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3">
+                {myScheduleSessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl border border-border/50 bg-background/60 hover:bg-background/80 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm truncate">{session.title}</span>
+                        {session.status === "LIVE" && (
+                          <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-[10px] px-1.5 py-0">
+                            <span className="mr-1 h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                            Live
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(session.startTime), "h:mm a")} – {format(new Date(session.endTime), "h:mm a")}
+                        </span>
+                        {session.speakers.length > 0 && (
+                          <span className="truncate max-w-[150px]">{session.speakers.map((s) => s.name).join(", ")}</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1 text-xs h-7"
+                      onClick={() => cancelRsvpForSchedule({ variables: { input: { sessionId: session.id } } })}
+                      disabled={cancellingScheduleRsvp}
+                    >
+                      <UserMinus className="h-3 w-3" />
+                      Cancel
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </section>
       )}
 
       {/* Sessions */}

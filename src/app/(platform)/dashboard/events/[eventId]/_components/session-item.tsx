@@ -30,7 +30,7 @@ import { SessionChat } from "./session-chat";
 import { SessionQA } from "./session-qa";
 import { SessionPolls } from "./session-polls";
 import { BackchannelPanel } from "./backchannel-panel";
-import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, Smile, X, Radio, Play, Square, Video } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Clock as ClockIcon, Mic2 as MicrophoneIcon, MessageSquare, HelpCircle, BarChart3, Smile, X, Radio, Play, Square, Video, Users } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { TOGGLE_SESSION_CHAT_MUTATION, TOGGLE_SESSION_QA_MUTATION, TOGGLE_SESSION_POLLS_MUTATION, TOGGLE_SESSION_REACTIONS_MUTATION, END_SESSION_MUTATION } from "@/graphql/events.graphql";
 import { cn } from "@/lib/utils";
@@ -62,6 +62,10 @@ type Session = {
   isRecordable?: boolean;
   autoCaptions?: boolean;
   lobbyEnabled?: boolean;
+  maxParticipants?: number | null;
+  rsvpCount?: number;
+  rsvpAvailableSpots?: number | null;
+  isSessionFull?: boolean;
   speakers: Speaker[];
 };
 
@@ -416,6 +420,17 @@ export const SessionItem = ({
                     <MicrophoneIcon className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
                     <span className="truncate max-w-[200px]">
                       {session.speakers.map((s) => s.name).join(", ")}
+                    </span>
+                  </div>
+                )}
+                {session.rsvpCount != null && session.rsvpCount > 0 && (
+                  <div className="flex items-center">
+                    <Users className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                    <span>
+                      {session.rsvpCount}{session.maxParticipants ? ` / ${session.maxParticipants}` : ""} RSVPs
+                      {session.isSessionFull && (
+                        <Badge variant="outline" className="ml-1.5 bg-orange-500/10 text-orange-600 border-orange-500/20 text-[10px] px-1 py-0">Full</Badge>
+                      )}
                     </span>
                   </div>
                 )}

@@ -99,6 +99,11 @@ export const GET_ATTENDEE_EVENT_DETAILS_QUERY = gql`
       isRecordable
       autoCaptions
       lobbyEnabled
+      maxParticipants
+      isRsvped
+      rsvpCount
+      rsvpAvailableSpots
+      isSessionFull
       speakers {
         id
         name
@@ -179,6 +184,55 @@ export const GET_MY_VIRTUAL_ATTENDANCE_QUERY = gql`
       leftAt
       watchDurationSeconds
       deviceType
+    }
+  }
+`;
+
+// ==================== Session RSVP Mutations ====================
+
+// RSVP to a session (in-person capacity booking)
+export const RSVP_TO_SESSION_MUTATION = gql`
+  mutation RsvpToSession($input: RsvpToSessionInput!) {
+    rsvpToSession(input: $input) {
+      success
+      message
+      rsvp {
+        id
+        sessionId
+        userId
+        eventId
+        status
+        rsvpAt
+      }
+    }
+  }
+`;
+
+// Cancel session RSVP
+export const CANCEL_SESSION_RSVP_MUTATION = gql`
+  mutation CancelSessionRsvp($input: CancelSessionRsvpInput!) {
+    cancelSessionRsvp(input: $input) {
+      success
+      message
+    }
+  }
+`;
+
+// ==================== Session RSVP Queries ====================
+
+// Get user's personal schedule (RSVPed sessions) for an event
+export const GET_MY_SCHEDULE_QUERY = gql`
+  query GetMySchedule($eventId: ID!) {
+    mySchedule(eventId: $eventId) {
+      rsvpId
+      rsvpStatus
+      rsvpAt
+      sessionId
+      title
+      startTime
+      endTime
+      sessionType
+      speakers
     }
   }
 `;

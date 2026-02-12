@@ -42,6 +42,10 @@ type Session = {
   endTime: string;
   chatEnabled?: boolean;
   qaEnabled?: boolean;
+  maxParticipants?: number | null;
+  rsvpCount?: number;
+  rsvpAvailableSpots?: number | null;
+  isSessionFull?: boolean;
   speakers: Speaker[];
 };
 type Event = {

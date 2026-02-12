@@ -137,6 +137,9 @@ export const GET_SESSIONS_BY_EVENT_QUERY = gql`
       broadcastOnly
       streamingProvider
       maxParticipants
+      rsvpCount
+      rsvpAvailableSpots
+      isSessionFull
       greenRoomEnabled
       greenRoomOpensMinutesBefore
       greenRoomNotes
