@@ -226,6 +226,8 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
       setError(null);
       // Join the session room for receiving broadcasts
       newSocket.emit("session.join", { sessionId });
+      // Fetch existing teams for this session
+      newSocket.emit("teams.list");
     });
 
     newSocket.on("disconnect", () => {
@@ -234,6 +236,14 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
 
     newSocket.on("connect_error", (err) => {
       setError(err.message);
+    });
+
+    // Initial team list loaded from server
+    newSocket.on("teams.list.response", (response: { success: boolean; teams: Team[] }) => {
+      if (response.success && response.teams) {
+        setTeams(response.teams);
+        updateCurrentTeam(response.teams);
+      }
     });
 
     // Team created - add to list
@@ -267,6 +277,7 @@ export const useTeams = ({ sessionId, autoConnect = true }: UseTeamsOptions) => 
       newSocket.off("connect");
       newSocket.off("disconnect");
       newSocket.off("connect_error");
+      newSocket.off("teams.list.response");
       newSocket.off("team.created");
       newSocket.off("team.roster.updated");
       newSocket.off("team.create.response");
