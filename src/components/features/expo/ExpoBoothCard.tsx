@@ -3,7 +3,7 @@
 
 import { memo } from "react";
 import Image from "next/image";
-import { Users, Video, MessageSquare, Sparkles } from "lucide-react";
+import { Users, Video, MessageSquare, Sparkles, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +23,8 @@ export const ExpoBoothCard = memo(function ExpoBoothCard({
   const tierConfig = BOOTH_TIER_CONFIG[booth.tier];
   const hasOnlineStaff = booth.staffPresence.some((s) => s.status === "ONLINE");
   const visitorCount = booth._count.visits;
+  const queueCount = booth._count.queueEntries ?? 0;
+  const isAtCapacity = booth.maxVisitors != null && visitorCount >= booth.maxVisitors;
 
   return (
     <Card
@@ -68,13 +70,26 @@ export const ExpoBoothCard = memo(function ExpoBoothCard({
           {tierConfig.label}
         </Badge>
 
-        {/* Live indicator */}
-        {hasOnlineStaff && (
-          <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            Live
-          </div>
-        )}
+        {/* Status indicators - top right */}
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+          {hasOnlineStaff && (
+            <div className="flex items-center gap-1 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              Live
+            </div>
+          )}
+          {isAtCapacity && (
+            <div className="flex items-center gap-1 bg-amber-500 text-white text-xs px-2 py-1 rounded-full">
+              At Capacity
+            </div>
+          )}
+          {queueCount > 0 && (
+            <div className="flex items-center gap-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+              <Clock className="h-3 w-3" />
+              Queue: {queueCount}
+            </div>
+          )}
+        </div>
 
         {/* Logo overlay */}
         {booth.logoUrl && (
@@ -115,7 +130,10 @@ export const ExpoBoothCard = memo(function ExpoBoothCard({
             {/* Visitor count */}
             <div className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              <span>{visitorCount}</span>
+              <span>
+                {visitorCount}
+                {booth.maxVisitors != null && `/${booth.maxVisitors}`}
+              </span>
             </div>
 
             {/* Features */}

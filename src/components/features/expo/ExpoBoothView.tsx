@@ -10,6 +10,8 @@ import {
   ExternalLink,
   Loader2,
   Phone,
+  Clock,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,8 @@ import {
   ExpoBooth,
   BoothVideoSession,
   BoothCta,
+  BoothQueueInfo,
+  StaffAvailability,
   BOOTH_TIER_CONFIG,
 } from "./types";
 import { BoothChat } from "./BoothChat";
@@ -42,11 +46,14 @@ export interface ExpoBoothViewProps {
   booth: ExpoBooth;
   eventId: string;
   videoSession: BoothVideoSession | null;
+  queueInfo: BoothQueueInfo | null;
+  videoStaffAvailability: StaffAvailability | null;
   isOpen: boolean;
   onClose: () => void;
   onRequestVideo: () => Promise<void>;
   onCancelVideoRequest: () => Promise<void>;
   onEndVideoCall: () => Promise<void>;
+  onLeaveQueue: () => Promise<void>;
   onResourceDownload: (resourceId: string) => void;
   onCtaClick: (ctaId: string) => void;
   onLeadCapture: (formData: LeadFormData) => Promise<boolean>;
@@ -61,11 +68,14 @@ export function ExpoBoothView({
   booth,
   eventId,
   videoSession,
+  queueInfo,
+  videoStaffAvailability,
   isOpen,
   onClose,
   onRequestVideo,
   onCancelVideoRequest,
   onEndVideoCall,
+  onLeaveQueue,
   onResourceDownload,
   onCtaClick,
   onLeadCapture,
@@ -77,6 +87,7 @@ export function ExpoBoothView({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const tierConfig = BOOTH_TIER_CONFIG[booth.tier];
   const hasOnlineStaff = booth.staffPresence.some((s) => s.status === "ONLINE");
+  const hasAnyStaff = booth.staffPresence.some((s) => s.status !== "OFFLINE");
   const visitorCount = booth._count.visits;
 
   // Handle CTA click
@@ -169,13 +180,51 @@ export function ExpoBoothView({
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            <span>{visitorCount} visiting</span>
+            <span>
+              {visitorCount}{booth.maxVisitors != null ? `/${booth.maxVisitors}` : ""} visiting
+            </span>
           </div>
+          {(booth._count.queueEntries ?? 0) > 0 && (
+            <div className="flex items-center gap-1 text-amber-600">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{booth._count.queueEntries} in queue</span>
+            </div>
+          )}
           {booth.category && (
             <Badge variant="outline" className="text-xs">{booth.category}</Badge>
           )}
         </div>
       </div>
+
+      {/* Queue status panel - shown when user is queued */}
+      {queueInfo?.isQueued && (
+        <div className={cn("pb-3 flex-shrink-0", isMobileView ? "px-4" : "px-6")}>
+          <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-amber-800 dark:text-amber-200 text-sm">
+                    You&apos;re #{queueInfo.queuePosition} in line
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    {queueInfo.queueSize} {queueInfo.queueSize === 1 ? "person" : "people"} waiting
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onLeaveQueue()}
+                className="border-amber-400 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300"
+              >
+                <LogOut className="h-3.5 w-3.5 mr-1" />
+                Leave Queue
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Separator className="flex-shrink-0" />
 
@@ -254,14 +303,18 @@ export function ExpoBoothView({
                       Video Call with Staff
                     </h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {hasOnlineStaff
-                        ? "Staff members are available for a live video chat"
-                        : "No staff currently available. Try again later."}
+                      {videoStaffAvailability?.allBusy
+                        ? `All ${videoStaffAvailability.total} staff on calls. Your request is queued -- staff will respond when available.`
+                        : hasOnlineStaff
+                          ? `${booth.staffPresence.filter(s => s.status === "ONLINE").length} staff available for a live video chat`
+                          : hasAnyStaff
+                            ? "Staff are busy. Your request will be queued and staff will respond when available."
+                            : "No staff currently online. Try again later."}
                     </p>
                   </div>
                   <Button
                     onClick={onRequestVideo}
-                    disabled={!hasOnlineStaff || isRequestingVideo}
+                    disabled={!hasAnyStaff || isRequestingVideo}
                     size="lg"
                   >
                     {isRequestingVideo ? (
@@ -332,7 +385,7 @@ export function ExpoBoothView({
       </Tabs>
 
       {/* Mobile fixed bottom CTA bar */}
-      {isMobileView && (booth.chatEnabled || booth.videoEnabled) && (
+      {isMobileView && (booth.chatEnabled || booth.videoEnabled) && !queueInfo?.isQueued && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t safe-bottom z-10">
           <div className="flex gap-2">
             {booth.chatEnabled && activeTab !== "chat" && (
@@ -348,7 +401,7 @@ export function ExpoBoothView({
             {booth.videoEnabled && (
               <Button
                 onClick={onRequestVideo}
-                disabled={!hasOnlineStaff || isRequestingVideo}
+                disabled={!hasAnyStaff || isRequestingVideo}
                 className={cn("h-11", booth.chatEnabled && activeTab !== "chat" ? "flex-1" : "w-full")}
               >
                 {isRequestingVideo ? (
@@ -356,7 +409,7 @@ export function ExpoBoothView({
                 ) : (
                   <Video className="h-4 w-4 mr-2" />
                 )}
-                {isRequestingVideo ? "Requesting..." : hasOnlineStaff ? "Video Call" : "Staff Unavailable"}
+                {isRequestingVideo ? "Requesting..." : hasAnyStaff ? "Video Call" : "Staff Offline"}
               </Button>
             )}
           </div>

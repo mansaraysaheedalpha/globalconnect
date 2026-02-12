@@ -11,6 +11,8 @@ import {
   BoothVideoSession,
   BoothStaffPresence,
   BoothAnalytics,
+  BoothQueueInfo,
+  StaffAvailability,
 } from "@/components/features/expo/types";
 
 interface ExpoState {
@@ -18,6 +20,8 @@ interface ExpoState {
   currentBooth: ExpoBooth | null;
   currentVisit: BoothVisit | null;
   videoSession: BoothVideoSession | null;
+  queueInfo: BoothQueueInfo | null;
+  videoStaffAvailability: StaffAvailability | null;
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
@@ -77,6 +81,8 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     currentBooth: null,
     currentVisit: null,
     videoSession: null,
+    queueInfo: null,
+    videoStaffAvailability: null,
     isConnected: false,
     isLoading: false,
     error: null,
@@ -133,31 +139,88 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
       setState((prev) => ({ ...prev, error: error.message }));
     });
 
-    // Listen for visitor count updates
+    // Listen for visitor count updates (includes queue info)
     newSocket.on(
       "expo.booth.visitors.update",
-      (data: { boothId: string; visitorCount: number }) => {
+      (data: { boothId: string; visitorCount: number; queueCount?: number; maxVisitors?: number | null }) => {
         setState((prev) => {
           if (!prev.hall) return prev;
+
+          const updateBoothCounts = (b: ExpoBooth) =>
+            b.id === data.boothId
+              ? {
+                  ...b,
+                  _count: {
+                    ...b._count,
+                    visits: data.visitorCount,
+                    ...(data.queueCount !== undefined && { queueEntries: data.queueCount }),
+                  },
+                  ...(data.maxVisitors !== undefined && { maxVisitors: data.maxVisitors }),
+                }
+              : b;
 
           return {
             ...prev,
             hall: {
               ...prev.hall,
-              booths: prev.hall.booths.map((b) =>
-                b.id === data.boothId
-                  ? { ...b, _count: { ...b._count, visits: data.visitorCount } }
-                  : b
-              ),
+              booths: prev.hall.booths.map(updateBoothCounts),
             },
             currentBooth:
               prev.currentBooth?.id === data.boothId
-                ? {
-                    ...prev.currentBooth,
-                    _count: { ...prev.currentBooth._count, visits: data.visitorCount },
-                  }
+                ? updateBoothCounts(prev.currentBooth) as ExpoBooth
                 : prev.currentBooth,
           };
+        });
+      }
+    );
+
+    // Listen for queue admission - auto-enter booth when admitted
+    newSocket.on(
+      "expo.booth.queue.admitted",
+      (data: { boothId: string; userId: string }) => {
+        if (data.userId !== user?.id) return;
+
+        // Clear queue info and re-emit enter to actually enter the booth
+        setState((prev) => ({ ...prev, queueInfo: null }));
+        newSocket.emit("expo.booth.enter", {
+          boothId: data.boothId,
+          eventId: eventIdRef.current,
+        }, (response: SocketResponse & { booth?: ExpoBooth; visitId?: string }) => {
+          if (response?.success) {
+            setState((prev) => ({
+              ...prev,
+              currentBooth: response.booth || null,
+              currentVisit: response.visitId
+                ? {
+                    id: response.visitId,
+                    boothId: data.boothId,
+                    userId: user?.id || "",
+                    eventId: eventIdRef.current,
+                    enteredAt: new Date().toISOString(),
+                    exitedAt: null,
+                    status: "BROWSING",
+                    durationSeconds: 0,
+                    leadCaptured: false,
+                  }
+                : null,
+            }));
+          }
+        });
+      }
+    );
+
+    // Listen for queue size updates
+    newSocket.on(
+      "expo.booth.queue.update",
+      (data: { boothId: string; queueSize: number }) => {
+        setState((prev) => {
+          // Update queue info if we're queued for this booth
+          const updatedQueueInfo =
+            prev.queueInfo?.isQueued
+              ? { ...prev.queueInfo, queueSize: data.queueSize }
+              : prev.queueInfo;
+
+          return { ...prev, queueInfo: updatedQueueInfo };
         });
       }
     );
@@ -244,6 +307,8 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
       newSocket.off("expo.booth.video.accepted");
       newSocket.off("expo.booth.video.declined");
       newSocket.off("expo.booth.video.ended");
+      newSocket.off("expo.booth.queue.admitted");
+      newSocket.off("expo.booth.queue.update");
       newSocket.disconnect();
       socketRef.current = null;
     };
@@ -322,19 +387,39 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     }
   }, [emitWithCallback]);
 
-  // Enter a booth
+  // Enter a booth (may result in queuing if at capacity)
   const enterBooth = useCallback(
     async (boothId: string): Promise<ExpoBooth | null> => {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
         const response = await emitWithCallback<
-          SocketResponse & { visitId: string }
+          SocketResponse & {
+            visitId?: string;
+            queued?: boolean;
+            queuePosition?: number;
+            queueSize?: number;
+          }
         >("expo.booth.enter", {
           boothId,
           eventId: eventIdRef.current,
         });
 
+        if (response.queued) {
+          // User was queued instead of entering
+          setState((prev) => ({
+            ...prev,
+            queueInfo: {
+              isQueued: true,
+              queuePosition: response.queuePosition || 1,
+              queueSize: response.queueSize || 1,
+            },
+            isLoading: false,
+          }));
+          return response.booth || null;
+        }
+
+        // User entered successfully
         setState((prev) => ({
           ...prev,
           currentBooth: response.booth || null,
@@ -351,6 +436,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
                 leadCaptured: false,
               }
             : null,
+          queueInfo: null,
           isLoading: false,
         }));
 
@@ -391,6 +477,24 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     }
   }, [emitWithCallback, state.currentBooth]);
 
+  // Leave the queue for a booth
+  const leaveQueue = useCallback(
+    async (boothId: string): Promise<boolean> => {
+      try {
+        await emitWithCallback("expo.booth.queue.leave", { boothId });
+        setState((prev) => ({ ...prev, queueInfo: null }));
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to leave queue";
+        console.error("[Expo] Leave queue error:", message);
+        setState((prev) => ({ ...prev, error: message }));
+        return false;
+      }
+    },
+    [emitWithCallback]
+  );
+
   // Request video call with staff
   const requestVideoCall = useCallback(
     async (boothId: string, message?: string): Promise<BoothVideoSession | null> => {
@@ -398,7 +502,10 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
 
       try {
         const response = await emitWithCallback<
-          SocketResponse & { session: BoothVideoSession }
+          SocketResponse & {
+            session: BoothVideoSession;
+            staffAvailability?: StaffAvailability;
+          }
         >("expo.booth.video.request", {
           boothId,
           message,
@@ -407,6 +514,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
         setState((prev) => ({
           ...prev,
           videoSession: response.session,
+          videoStaffAvailability: response.staffAvailability || null,
           isLoading: false,
         }));
 
@@ -598,6 +706,8 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     currentBooth: state.currentBooth,
     currentVisit: state.currentVisit,
     videoSession: state.videoSession,
+    queueInfo: state.queueInfo,
+    videoStaffAvailability: state.videoStaffAvailability,
     isConnected: state.isConnected,
     isLoading: state.isLoading,
     error: state.error,
@@ -613,6 +723,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
     leaveHall,
     enterBooth,
     leaveBooth,
+    leaveQueue,
     requestVideoCall,
     cancelVideoRequest,
     endVideoCall,

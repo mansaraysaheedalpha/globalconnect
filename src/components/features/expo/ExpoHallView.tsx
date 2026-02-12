@@ -43,6 +43,8 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
     booths,
     currentBooth,
     videoSession,
+    queueInfo,
+    videoStaffAvailability,
     isConnected,
     isLoading,
     error,
@@ -50,6 +52,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
     enterHall,
     enterBooth,
     leaveBooth,
+    leaveQueue,
     requestVideoCall,
     cancelVideoRequest,
     endVideoCall,
@@ -85,6 +88,13 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
     }
     setSelectedBooth(null);
   }, [currentBooth, leaveBooth]);
+
+  // Handle leave queue
+  const handleLeaveQueue = useCallback(async () => {
+    if (selectedBooth) {
+      await leaveQueue(selectedBooth.id);
+    }
+  }, [selectedBooth, leaveQueue]);
 
   // Handle video request
   const handleRequestVideo = useCallback(async () => {
@@ -298,11 +308,14 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
           booth={selectedBooth}
           eventId={eventId}
           videoSession={null}
+          queueInfo={queueInfo}
+          videoStaffAvailability={videoStaffAvailability}
           isOpen={!!selectedBooth && !videoSession}
           onClose={handleBoothClose}
           onRequestVideo={handleRequestVideo}
           onCancelVideoRequest={handleCancelVideo}
           onEndVideoCall={handleEndVideo}
+          onLeaveQueue={handleLeaveQueue}
           onResourceDownload={handleResourceDownload}
           onCtaClick={handleCtaClick}
           onLeadCapture={handleLeadCapture}

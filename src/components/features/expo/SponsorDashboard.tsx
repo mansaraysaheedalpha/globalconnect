@@ -101,6 +101,8 @@ export function SponsorDashboard({
     pendingVideoRequests,
     activeVideoSession,
     currentVisitors,
+    queueCount,
+    staffPresenceList,
     myStatus,
     isConnected,
     isLoading,
@@ -337,6 +339,26 @@ export function SponsorDashboard({
           </div>
         )}
 
+        {/* Staff status strip */}
+        {staffPresenceList.length > 0 && (
+          <div className="px-4 pt-3 flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground mr-1">Team:</span>
+            {staffPresenceList.map((staff) => {
+              const cfg = STATUS_CONFIG[staff.status];
+              return (
+                <Badge
+                  key={staff.staffId}
+                  variant="outline"
+                  className="gap-1 text-xs py-0.5"
+                >
+                  {cfg.icon}
+                  <span className="truncate max-w-[80px]">{staff.staffName.split(' ')[0]}</span>
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+
         {/* Key metrics - 2x2 grid with large numbers */}
         <div className="grid grid-cols-2 gap-3 p-4">
           <div className="p-4 rounded-lg border bg-card">
@@ -345,6 +367,9 @@ export function SponsorDashboard({
               <span className="text-xs">Current Visitors</span>
             </div>
             <p className="text-2xl font-bold">{analyticsWithPgLeads?.currentVisitors ?? 0}</p>
+            {queueCount > 0 && (
+              <p className="text-xs text-amber-600">+{queueCount} in queue</p>
+            )}
           </div>
 
           <div className="p-4 rounded-lg border bg-card">
@@ -573,6 +598,29 @@ export function SponsorDashboard({
         </div>
       </div>
 
+      {/* Staff status strip */}
+      {staffPresenceList.length > 0 && (
+        <div className="mx-4 mt-3 flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground font-medium mr-1">Team:</span>
+          {staffPresenceList.map((staff) => {
+            const cfg = STATUS_CONFIG[staff.status];
+            return (
+              <Badge
+                key={staff.staffId}
+                variant="outline"
+                className="gap-1.5 text-xs"
+              >
+                {cfg.icon}
+                {staff.staffName}
+                {staff.status === "BUSY" && (
+                  <Phone className="h-2.5 w-2.5 text-red-500" />
+                )}
+              </Badge>
+            );
+          })}
+        </div>
+      )}
+
       {/* Error alert */}
       {error && (
         <Alert variant="destructive" className="m-4">
@@ -693,6 +741,9 @@ export function SponsorDashboard({
                   <p className="text-2xl font-bold mt-1">
                     {analyticsWithPgLeads?.currentVisitors ?? 0}
                   </p>
+                  {queueCount > 0 && (
+                    <p className="text-xs text-amber-600 mt-0.5">+{queueCount} in queue</p>
+                  )}
                 </CardContent>
               </Card>
 

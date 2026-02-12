@@ -9,6 +9,7 @@ import {
   BoothVideoSession,
   BoothAnalytics,
   StaffPresenceStatus,
+  BoothStaffPresence,
 } from "@/components/features/expo/types";
 
 interface VideoRequest {
@@ -32,6 +33,8 @@ interface ExpoStaffState {
   pendingVideoRequests: VideoRequest[];
   activeVideoSession: BoothVideoSession | null;
   currentVisitors: BoothVisitor[];
+  queueCount: number;
+  staffPresenceList: BoothStaffPresence[];
   myStatus: StaffPresenceStatus;
   isConnected: boolean;
   isLoading: boolean;
@@ -96,6 +99,8 @@ export const useExpoStaff = ({
     pendingVideoRequests: [],
     activeVideoSession: null,
     currentVisitors: [],
+    queueCount: 0,
+    staffPresenceList: [],
     myStatus: "OFFLINE",
     isConnected: false,
     isLoading: false,
@@ -276,6 +281,40 @@ export const useExpoStaff = ({
       }
     );
 
+    // Listen for queue size updates
+    newSocket.on(
+      "expo.booth.queue.update",
+      (data: { boothId: string; queueSize: number }) => {
+        if (data.boothId === boothIdRef.current) {
+          setState((prev) => ({ ...prev, queueCount: data.queueSize }));
+        }
+      }
+    );
+
+    // Listen for staff presence updates
+    newSocket.on(
+      "expo.booth.staff.available",
+      (data: { boothId: string; staff: BoothStaffPresence[] }) => {
+        if (data.boothId === boothIdRef.current) {
+          setState((prev) => ({ ...prev, staffPresenceList: data.staff }));
+        }
+      }
+    );
+
+    // Listen for pending video requests refresh (after a call ends)
+    newSocket.on(
+      "expo.booth.video.pending.refresh",
+      (data: { boothId: string; pendingRequests: VideoRequest[] }) => {
+        if (data.boothId === boothIdRef.current) {
+          playNotificationSound();
+          setState((prev) => ({
+            ...prev,
+            pendingVideoRequests: data.pendingRequests,
+          }));
+        }
+      }
+    );
+
     // Cleanup
     return () => {
       newSocket.off("connect");
@@ -286,6 +325,9 @@ export const useExpoStaff = ({
       newSocket.off("expo.booth.visitors.update");
       newSocket.off("expo.booth.video.ended");
       newSocket.off("expo.booth.chat.message");
+      newSocket.off("expo.booth.queue.update");
+      newSocket.off("expo.booth.staff.available");
+      newSocket.off("expo.booth.video.pending.refresh");
       newSocket.disconnect();
       socketRef.current = null;
     };
@@ -506,6 +548,8 @@ export const useExpoStaff = ({
     pendingVideoRequests: state.pendingVideoRequests,
     activeVideoSession: state.activeVideoSession,
     currentVisitors: state.currentVisitors,
+    queueCount: state.queueCount,
+    staffPresenceList: state.staffPresenceList,
     myStatus: state.myStatus,
     isConnected: state.isConnected,
     isLoading: state.isLoading,

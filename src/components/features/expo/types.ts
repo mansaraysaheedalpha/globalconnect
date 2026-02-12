@@ -73,6 +73,7 @@ export interface ExpoBooth {
   staffIds: string[];
   chatEnabled: boolean;
   videoEnabled: boolean;
+  maxVisitors: number | null;
   category: string | null;
   displayOrder: number;
   positionX?: number;
@@ -82,6 +83,7 @@ export interface ExpoBooth {
   staffPresence: BoothStaffPresence[];
   _count: {
     visits: number;
+    queueEntries?: number;
   };
 }
 
@@ -124,6 +126,19 @@ export interface BoothVideoSession {
   durationSeconds: number;
   videoRoomUrl: string | null;
   token?: string;
+}
+
+export interface BoothQueueInfo {
+  isQueued: boolean;
+  queuePosition: number;
+  queueSize: number;
+}
+
+export interface StaffAvailability {
+  total: number;
+  available: number;
+  busy: number;
+  allBusy: boolean;
 }
 
 export interface BoothAnalytics {
