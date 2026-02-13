@@ -17,7 +17,7 @@ import Link from "next/link";
 
 interface PageProps {
   params: Promise<{
-    id: string;
+    eventId: string;
   }>;
 }
 
@@ -34,7 +34,7 @@ interface ScheduleSession {
 }
 
 export default function MySchedulePage({ params }: PageProps) {
-  const { id: eventId } = use(params);
+  const { eventId } = use(params);
 
   const { data, loading, error, refetch } = useQuery(GET_MY_SCHEDULE_QUERY, {
     variables: { eventId },
