@@ -92,6 +92,7 @@ const IncidentReportForm = dynamic(() => import("@/components/features/incidents
 const RecommendationsPanel = dynamic(() => import("@/components/features/recommendations").then(m => ({ default: m.RecommendationsPanel })), { ssr: false });
 const SuggestionsBell = dynamic(() => import("@/components/features/suggestions").then(m => ({ default: m.SuggestionsBell })), { ssr: false });
 const TeamPanel = dynamic(() => import("@/components/features/gamification/team-panel").then(m => ({ default: m.TeamPanel })), { ssr: false });
+const TeamChatPanel = dynamic(() => import("@/components/features/gamification/team-chat-panel").then(m => ({ default: m.TeamChatPanel })), { ssr: false });
 const GamificationHub = dynamic(() => import("@/components/features/gamification/gamification-hub").then(m => ({ default: m.GamificationHub })), { ssr: false });
 const SessionSummary = dynamic(() => import("@/components/features/gamification/session-summary").then(m => ({ default: m.SessionSummary })), { ssr: false });
 const ChallengeOverlay = dynamic(() => import("@/components/features/gamification/challenge-overlay").then(m => ({ default: m.ChallengeOverlay })), { ssr: false });
@@ -629,9 +630,15 @@ const AttendeeTeamsDialog = ({
   session: Session;
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [chatInfo, setChatInfo] = React.useState<{ teamId: string; teamName: string; creatorId: string } | null>(null);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) setChatInfo(null);
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <Button
         variant="outline"
         size="sm"
@@ -644,17 +651,36 @@ const AttendeeTeamsDialog = ({
       <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-lg sm:!w-full max-h-[85vh] p-0 gap-0 flex flex-col rounded-2xl overflow-hidden">
         <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 border-b bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-3">
+            {chatInfo && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setChatInfo(null)}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
             <div className="p-1.5 rounded-lg bg-primary/10">
               <Users className="h-4 w-4 text-primary" />
             </div>
-            <span className="font-medium text-sm sm:text-base">{session.title} - Teams</span>
+            <span className="font-medium text-sm sm:text-base">
+              {chatInfo ? `${chatInfo.teamName} - Chat` : `${session.title} - Teams`}
+            </span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setIsOpen(false)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => handleOpenChange(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex-1 min-h-0 overflow-auto p-4 sm:p-5">
-          <TeamPanel sessionId={session.id} />
+          {chatInfo ? (
+            <TeamChatPanel
+              sessionId={session.id}
+              teamId={chatInfo.teamId}
+              teamName={chatInfo.teamName}
+              creatorId={chatInfo.creatorId}
+            />
+          ) : (
+            <TeamPanel
+              sessionId={session.id}
+              onOpenChat={(teamId, teamName, creatorId) => setChatInfo({ teamId, teamName, creatorId })}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
