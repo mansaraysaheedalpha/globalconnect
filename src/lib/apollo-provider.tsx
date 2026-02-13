@@ -290,7 +290,7 @@ const client = new ApolloClient({
 const PERIODIC_SYNC_QUERY_STRING = `query PeriodicSyncRefresh {
   myRegistrations {
     id status
-    event { id name description startDate endDate status imageUrl venue { id name address city } }
+    event { id name description startDate endDate status imageUrl venue { id name address } }
   }
 }`;
 

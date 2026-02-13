@@ -1,4 +1,4 @@
-// src/app/_offline/page.tsx
+// src/app/offline/page.tsx
 "use client";
 
 import { WifiOff } from "lucide-react";

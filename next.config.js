@@ -8,7 +8,7 @@ const withPWA = withPWAInit({
   swcMinify: true,
   disable: process.env.NODE_ENV === "development",
   fallbacks: {
-    document: "/_offline",
+    document: "/offline",
   },
   workboxOptions: {
     disableDevLogs: true,
