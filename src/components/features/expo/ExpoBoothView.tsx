@@ -23,6 +23,16 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Sheet,
   SheetContent,
 } from "@/components/ui/sheet";
@@ -58,6 +68,7 @@ export interface ExpoBoothViewProps {
   onCtaClick: (ctaId: string) => void;
   onLeadCapture: (formData: LeadFormData) => Promise<boolean>;
   isRequestingVideo?: boolean;
+  isLeavingQueue?: boolean;
   /** Current user's display name for video calls */
   userName?: string;
   /** Function to get a presigned download URL for S3 resources */
@@ -80,10 +91,12 @@ export function ExpoBoothView({
   onCtaClick,
   onLeadCapture,
   isRequestingVideo = false,
+  isLeavingQueue = false,
   userName = "Attendee",
   getDownloadUrl,
 }: ExpoBoothViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const tierConfig = BOOTH_TIER_CONFIG[booth.tier];
   const hasOnlineStaff = booth.staffPresence.some((s) => s.status === "ONLINE");
@@ -215,11 +228,16 @@ export function ExpoBoothView({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onLeaveQueue()}
+                onClick={() => setShowLeaveConfirm(true)}
+                disabled={isLeavingQueue}
                 className="border-amber-400 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300"
               >
-                <LogOut className="h-3.5 w-3.5 mr-1" />
-                Leave Queue
+                {isLeavingQueue ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                ) : (
+                  <LogOut className="h-3.5 w-3.5 mr-1" />
+                )}
+                {isLeavingQueue ? "Leaving..." : "Leave Queue"}
               </Button>
             </div>
           </div>
@@ -421,24 +439,76 @@ export function ExpoBoothView({
   // Mobile: Use Sheet (bottom drawer)
   if (isMobile) {
     return (
-      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <SheetContent
-          side="bottom"
-          className="h-[95vh] max-h-[95vh] p-0 rounded-t-2xl"
-          showCloseButton={false}
-        >
-          <BoothContent isMobileView={true} />
-        </SheetContent>
-      </Sheet>
+      <>
+        <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+          <SheetContent
+            side="bottom"
+            className="h-[95vh] max-h-[95vh] p-0 rounded-t-2xl"
+            showCloseButton={false}
+          >
+            <BoothContent isMobileView={true} />
+          </SheetContent>
+        </Sheet>
+
+        {/* Leave Queue Confirmation Dialog */}
+        <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Leave the queue?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You&apos;re #{queueInfo?.queuePosition} in line. If you leave, you&apos;ll lose your place and have to join the queue again.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Stay in Queue</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  setShowLeaveConfirm(false);
+                  await onLeaveQueue();
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Leave Queue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
   // Desktop: Use Dialog
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] p-0 flex flex-col overflow-hidden">
-        <BoothContent isMobileView={false} />
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] p-0 flex flex-col overflow-hidden">
+          <BoothContent isMobileView={false} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Leave Queue Confirmation Dialog */}
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave the queue?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You&apos;re #{queueInfo?.queuePosition} in line. If you leave, you&apos;ll lose your place and have to join the queue again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay in Queue</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowLeaveConfirm(false);
+                await onLeaveQueue();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Leave Queue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

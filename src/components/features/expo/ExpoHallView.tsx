@@ -36,6 +36,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   const [selectedBooth, setSelectedBooth] = useState<ExpoBooth | null>(null);
   const [videoCallBooth, setVideoCallBooth] = useState<ExpoBooth | null>(null);
   const [isRequestingVideo, setIsRequestingVideo] = useState(false);
+  const [isLeavingQueue, setIsLeavingQueue] = useState(false);
   const { token } = useAuthStore();
 
   const {
@@ -92,7 +93,12 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
   // Handle leave queue
   const handleLeaveQueue = useCallback(async () => {
     if (selectedBooth) {
-      await leaveQueue(selectedBooth.id);
+      setIsLeavingQueue(true);
+      try {
+        await leaveQueue(selectedBooth.id);
+      } finally {
+        setIsLeavingQueue(false);
+      }
     }
   }, [selectedBooth, leaveQueue]);
 
@@ -320,6 +326,7 @@ export function ExpoHallView({ eventId, className }: ExpoHallViewProps) {
           onCtaClick={handleCtaClick}
           onLeadCapture={handleLeadCapture}
           isRequestingVideo={isRequestingVideo}
+          isLeavingQueue={isLeavingQueue}
           userName={user?.first_name && user?.last_name
             ? `${user.first_name} ${user.last_name}`
             : user?.email || "Attendee"}

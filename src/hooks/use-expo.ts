@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/auth.store";
+import { useToast } from "@/hooks/use-toast";
 import {
   ExpoHall,
   ExpoBooth,
@@ -89,6 +90,7 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
   });
 
   const { token, user } = useAuthStore();
+  const { toast } = useToast();
   const socketRef = useRef<Socket | null>(null);
   const eventIdRef = useRef(eventId);
 
@@ -182,30 +184,49 @@ export const useExpo = ({ eventId, autoConnect = true }: UseExpoOptions) => {
 
         // Clear queue info and re-emit enter to actually enter the booth
         setState((prev) => ({ ...prev, queueInfo: null }));
-        newSocket.emit("expo.booth.enter", {
-          boothId: data.boothId,
-          eventId: eventIdRef.current,
-        }, (response: SocketResponse & { booth?: ExpoBooth; visitId?: string }) => {
-          if (response?.success) {
-            setState((prev) => ({
-              ...prev,
-              currentBooth: response.booth || null,
-              currentVisit: response.visitId
-                ? {
-                    id: response.visitId,
-                    boothId: data.boothId,
-                    userId: user?.id || "",
-                    eventId: eventIdRef.current,
-                    enteredAt: new Date().toISOString(),
-                    exitedAt: null,
-                    status: "BROWSING",
-                    durationSeconds: 0,
-                    leadCaptured: false,
-                  }
-                : null,
-            }));
-          }
-        });
+
+        const attemptEntry = (retryCount = 0) => {
+          newSocket.emit("expo.booth.enter", {
+            boothId: data.boothId,
+            eventId: eventIdRef.current,
+          }, (response: SocketResponse & { booth?: ExpoBooth; visitId?: string }) => {
+            if (response?.success) {
+              setState((prev) => ({
+                ...prev,
+                currentBooth: response.booth || null,
+                currentVisit: response.visitId
+                  ? {
+                      id: response.visitId,
+                      boothId: data.boothId,
+                      userId: user?.id || "",
+                      eventId: eventIdRef.current,
+                      enteredAt: new Date().toISOString(),
+                      exitedAt: null,
+                      status: "BROWSING",
+                      durationSeconds: 0,
+                      leadCaptured: false,
+                    }
+                  : null,
+              }));
+              toast({
+                title: "You're in!",
+                description: "You've been admitted to the booth.",
+              });
+            } else if (retryCount < 2) {
+              // Retry up to 2 times
+              setTimeout(() => attemptEntry(retryCount + 1), 1000);
+            } else {
+              // Failed after retries
+              toast({
+                title: "Connection issue",
+                description: "Couldn't enter booth. Please try joining the queue again.",
+                variant: "destructive",
+              });
+            }
+          });
+        };
+
+        attemptEntry();
       }
     );
 
