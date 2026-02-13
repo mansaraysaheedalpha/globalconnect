@@ -124,12 +124,34 @@ export const useTeamChat = ({
       setIsConnected(true);
       setError(null);
       newSocket.emit("session.join", { sessionId });
-      // Load initial history
+      // Load initial history (response arrives via team.chat.history.response)
+      setIsLoadingHistory(true);
       newSocket.emit("team.chat.history", { teamId, limit: 50 });
     });
 
     newSocket.on("disconnect", () => setIsConnected(false));
     newSocket.on("connect_error", (err) => setError(err.message));
+
+    // History response (from @SubscribeMessage return via { event, data })
+    newSocket.on("team.chat.history.response", (data: any) => {
+      if (data?.success && data.messages) {
+        setMessages((prev) => {
+          // If this is a "load more" (older messages), prepend; otherwise replace
+          if (prev.length > 0 && data.messages.length > 0) {
+            const existingIds = new Set(prev.map((m: TeamChatMessage) => m.id));
+            const newMsgs = data.messages.filter((m: TeamChatMessage) => !existingIds.has(m.id));
+            if (newMsgs.length > 0 && new Date(newMsgs[0].createdAt) < new Date(prev[0].createdAt)) {
+              return [...newMsgs, ...prev];
+            }
+            if (newMsgs.length > 0) return [...prev, ...newMsgs];
+            return prev;
+          }
+          return data.messages;
+        });
+        setHasMore(data.hasMore || false);
+      }
+      setIsLoadingHistory(false);
+    });
 
     // New message broadcast
     newSocket.on("team.chat.message.new", (data: { message: TeamChatMessage }) => {
@@ -153,34 +175,13 @@ export const useTeamChat = ({
       newSocket.off("connect");
       newSocket.off("disconnect");
       newSocket.off("connect_error");
+      newSocket.off("team.chat.history.response");
       newSocket.off("team.chat.message.new");
       newSocket.off("team.chat.message.updated");
       newSocket.disconnect();
       socketRef.current = null;
     };
   }, [sessionId, teamId, token, autoConnect]);
-
-  // Load initial history via a one-shot emit+listen pattern
-  // (NestJS @SubscribeMessage returns data as acknowledgment)
-  useEffect(() => {
-    if (!socketRef.current?.connected || !teamId) return;
-
-    const handleHistory = (response: any) => {
-      if (response?.success && response.messages) {
-        setMessages(response.messages);
-        setHasMore(response.hasMore || false);
-      }
-      setIsLoadingHistory(false);
-    };
-
-    // NestJS SubscribeMessage returns the value as the callback ack,
-    // so we listen for the event name we emit with a callback
-    socketRef.current.emit(
-      "team.chat.history",
-      { teamId, limit: 50 },
-      handleHistory
-    );
-  }, [teamId, isConnected]);
 
   return {
     isConnected,
