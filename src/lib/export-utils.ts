@@ -86,6 +86,7 @@ export function downloadCSV(content: string, filename: string) {
  */
 export async function exportToExcel(data: ExportData): Promise<Blob> {
   try {
+    // @ts-expect-error — xlsx is an optional dependency; falls back to CSV export below
     const XLSX = await import("xlsx");
     const wb = XLSX.utils.book_new();
 
