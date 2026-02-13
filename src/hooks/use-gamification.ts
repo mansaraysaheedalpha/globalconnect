@@ -34,6 +34,13 @@ export enum PointReason {
   TEAM_CREATED = "TEAM_CREATED",
   TEAM_JOINED = "TEAM_JOINED",
   SESSION_JOINED = "SESSION_JOINED",
+  CHALLENGE_COMPLETED = "CHALLENGE_COMPLETED",
+  CHALLENGE_WON_FIRST = "CHALLENGE_WON_FIRST",
+  CHALLENGE_WON_SECOND = "CHALLENGE_WON_SECOND",
+  CHALLENGE_WON_THIRD = "CHALLENGE_WON_THIRD",
+  TRIVIA_CORRECT = "TRIVIA_CORRECT",
+  TRIVIA_SPEED_BONUS = "TRIVIA_SPEED_BONUS",
+  TEAM_SYNERGY_BONUS = "TEAM_SYNERGY_BONUS",
 }
 
 export const POINT_VALUES: Record<PointReason, number> = {
@@ -47,6 +54,13 @@ export const POINT_VALUES: Record<PointReason, number> = {
   [PointReason.TEAM_CREATED]: 5,
   [PointReason.TEAM_JOINED]: 3,
   [PointReason.SESSION_JOINED]: 2,
+  [PointReason.CHALLENGE_COMPLETED]: 10,
+  [PointReason.CHALLENGE_WON_FIRST]: 50,
+  [PointReason.CHALLENGE_WON_SECOND]: 30,
+  [PointReason.CHALLENGE_WON_THIRD]: 15,
+  [PointReason.TRIVIA_CORRECT]: 10,
+  [PointReason.TRIVIA_SPEED_BONUS]: 5,
+  [PointReason.TEAM_SYNERGY_BONUS]: 0,
 };
 
 export interface RecentPointEvent {
@@ -156,6 +170,13 @@ export const useGamification = ({
       TEAM_CREATED: "Team created",
       TEAM_JOINED: "Joined team",
       SESSION_JOINED: "Joined session",
+      CHALLENGE_COMPLETED: "Challenge completed",
+      CHALLENGE_WON_FIRST: "Challenge 1st place",
+      CHALLENGE_WON_SECOND: "Challenge 2nd place",
+      CHALLENGE_WON_THIRD: "Challenge 3rd place",
+      TRIVIA_CORRECT: "Trivia correct",
+      TRIVIA_SPEED_BONUS: "Trivia speed bonus",
+      TEAM_SYNERGY_BONUS: "Team synergy",
     };
     return labels[reason] || reason.replace(/_/g, " ").toLowerCase();
   }, []);
@@ -172,6 +193,13 @@ export const useGamification = ({
       TEAM_CREATED: "🚀",
       TEAM_JOINED: "🤜",
       SESSION_JOINED: "🧭",
+      CHALLENGE_COMPLETED: "⚔️",
+      CHALLENGE_WON_FIRST: "🥇",
+      CHALLENGE_WON_SECOND: "🥈",
+      CHALLENGE_WON_THIRD: "🥉",
+      TRIVIA_CORRECT: "🧩",
+      TRIVIA_SPEED_BONUS: "⚡",
+      TEAM_SYNERGY_BONUS: "🤝",
     };
     return emojis[reason] || "⭐";
   }, []);

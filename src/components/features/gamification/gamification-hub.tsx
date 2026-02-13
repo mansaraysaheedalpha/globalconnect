@@ -29,6 +29,7 @@ import {
   BarChart3,
   UserPlus,
   Compass,
+  Swords,
 } from "lucide-react";
 import {
   type LeaderboardEntry,
@@ -42,6 +43,8 @@ import {
   PointReason as PointReasonEnum,
 } from "@/hooks/use-gamification";
 import { AnimatedScoreCounter } from "./points-animation";
+import { ChallengeCard } from "./challenge-card";
+import type { Challenge } from "@/hooks/use-challenges";
 
 interface GamificationHubProps {
   open: boolean;
@@ -57,6 +60,7 @@ interface GamificationHubProps {
   currentUserId?: string;
   getReasonText: (reason: PointReason) => string;
   getReasonEmoji: (reason: PointReason) => string;
+  challenges?: Challenge[];
 }
 
 export const GamificationHub = ({
@@ -73,6 +77,7 @@ export const GamificationHub = ({
   currentUserId,
   getReasonText,
   getReasonEmoji,
+  challenges = [],
 }: GamificationHubProps) => {
   // Sort progress: closest-to-unlock first (highest % that aren't unlocked)
   const sortedProgress = [...achievementProgress].sort((a, b) => {
@@ -107,8 +112,14 @@ export const GamificationHub = ({
         </SheetHeader>
 
         <Tabs defaultValue="progress" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="progress">Progress</TabsTrigger>
+            <TabsTrigger value="challenges">
+              Challenges
+              {challenges.some((c) => c.status === "ACTIVE") && (
+                <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
+              )}
+            </TabsTrigger>
             <TabsTrigger value="achievements">Badges</TabsTrigger>
             <TabsTrigger value="leaderboard">Ranks</TabsTrigger>
           </TabsList>
@@ -276,7 +287,71 @@ export const GamificationHub = ({
             </div>
           </TabsContent>
 
-          {/* Tab 2: Achievements */}
+          {/* Tab 2: Challenges */}
+          <TabsContent value="challenges" className="mt-4 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Team challenges let you compete against other teams in real-time. Stay active to help your team win!
+            </p>
+
+            {/* Active challenges first */}
+            {challenges.filter((c) => c.status === "ACTIVE").length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Swords className="h-4 w-4 text-green-500" />
+                  Active Now
+                </p>
+                <div className="space-y-2">
+                  {challenges
+                    .filter((c) => c.status === "ACTIVE")
+                    .map((c) => (
+                      <ChallengeCard key={c.id} challenge={c} />
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pending challenges */}
+            {challenges.filter((c) => c.status === "PENDING").length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Swords className="h-4 w-4 text-yellow-500" />
+                  Upcoming
+                </p>
+                <div className="space-y-2">
+                  {challenges
+                    .filter((c) => c.status === "PENDING")
+                    .map((c) => (
+                      <ChallengeCard key={c.id} challenge={c} />
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Completed challenges */}
+            {challenges.filter((c) => c.status === "COMPLETED").length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-blue-500" />
+                  Completed
+                </p>
+                <div className="space-y-2">
+                  {challenges
+                    .filter((c) => c.status === "COMPLETED")
+                    .map((c) => (
+                      <ChallengeCard key={c.id} challenge={c} />
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {challenges.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No challenges yet. The organizer can start team challenges during live sessions!
+              </p>
+            )}
+          </TabsContent>
+
+          {/* Tab 3: Achievements */}
           <TabsContent value="achievements" className="mt-4 space-y-4">
             <p className="text-xs text-muted-foreground">
               Unlock badges by participating in the event. Each badge tracks a specific activity — check the description to see how to earn it!
@@ -511,6 +586,8 @@ const CategoryIcon = ({ category }: { category: string }) => {
       return <UserPlus className={iconClass} />;
     case "Event Explorer":
       return <Compass className={iconClass} />;
+    case "Competitor":
+      return <Swords className={iconClass} />;
     case "Milestones":
       return <Star className={iconClass} />;
     default:

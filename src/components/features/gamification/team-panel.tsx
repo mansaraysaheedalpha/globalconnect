@@ -15,14 +15,16 @@ import {
   Loader2,
   AlertCircle,
   UserPlus,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamPanelProps {
   sessionId: string;
+  onOpenChat?: (teamId: string, teamName: string, creatorId: string) => void;
 }
 
-export const TeamPanel = ({ sessionId }: TeamPanelProps) => {
+export const TeamPanel = ({ sessionId, onOpenChat }: TeamPanelProps) => {
   const {
     teams,
     currentTeam,
@@ -106,16 +108,29 @@ export const TeamPanel = ({ sessionId }: TeamPanelProps) => {
                 Your Team
               </Badge>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLeaveTeam}
-              disabled={isLoading}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 gap-1"
-            >
-              <LogOut className="h-4 w-4" />
-              Leave
-            </Button>
+            <div className="flex items-center gap-1">
+              {onOpenChat && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChat(currentTeam.id, currentTeam.name, currentTeam.creatorId)}
+                  className="gap-1"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Chat
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLeaveTeam}
+                disabled={isLoading}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 gap-1"
+              >
+                <LogOut className="h-4 w-4" />
+                Leave
+              </Button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {currentTeam.members.map((member) => (

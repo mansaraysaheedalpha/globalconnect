@@ -69,6 +69,10 @@ import { FloatingScoreWidget } from "@/components/features/gamification/gamifica
 import { AchievementToast } from "@/components/features/gamification/achievement-toast";
 import { SmartNudge } from "@/components/features/gamification/smart-nudge";
 import { useGamification } from "@/hooks/use-gamification";
+import { useChallenges } from "@/hooks/use-challenges";
+import { useTeamNotifications } from "@/hooks/use-team-notifications";
+import { useTrivia } from "@/hooks/use-trivia";
+import { useTeams } from "@/hooks/use-teams";
 import { useEventPrefetch } from "@/hooks/use-event-prefetch";
 import type { VirtualSession } from "@/components/features/virtual-session";
 
@@ -90,6 +94,9 @@ const SuggestionsBell = dynamic(() => import("@/components/features/suggestions"
 const TeamPanel = dynamic(() => import("@/components/features/gamification/team-panel").then(m => ({ default: m.TeamPanel })), { ssr: false });
 const GamificationHub = dynamic(() => import("@/components/features/gamification/gamification-hub").then(m => ({ default: m.GamificationHub })), { ssr: false });
 const SessionSummary = dynamic(() => import("@/components/features/gamification/session-summary").then(m => ({ default: m.SessionSummary })), { ssr: false });
+const ChallengeOverlay = dynamic(() => import("@/components/features/gamification/challenge-overlay").then(m => ({ default: m.ChallengeOverlay })), { ssr: false });
+const TeamNotificationToast = dynamic(() => import("@/components/features/gamification/team-notification-toast").then(m => ({ default: m.TeamNotificationToast })), { ssr: false });
+const TriviaGameView = dynamic(() => import("@/components/features/gamification/trivia-game-view").then(m => ({ default: m.TriviaGameView })), { ssr: false });
 import {
   Collapsible,
   CollapsibleContent,
@@ -1218,6 +1225,11 @@ export default function AttendeeEventPage() {
   );
   const activeGamificationSessionId = liveSessions[0]?.id || "";
   const gamification = useGamification({ sessionId: activeGamificationSessionId });
+  const challenges = useChallenges({ sessionId: activeGamificationSessionId });
+  const teamNotifications = useTeamNotifications({ sessionId: activeGamificationSessionId });
+  const trivia = useTrivia({ sessionId: activeGamificationSessionId });
+  const teamsHook = useTeams({ sessionId: activeGamificationSessionId });
+  const isTriviaCapt = !!(teamsHook.currentTeam && teamsHook.currentTeam.creatorId === user?.id);
 
   const [celebratingAchievement, setCelebratingAchievement] = React.useState<typeof gamification.achievements[number] | null>(null);
   const lastAchievementCountRef = React.useRef(0);
@@ -1775,6 +1787,30 @@ export default function AttendeeEventPage() {
             currentUserId={gamification.currentUserId}
             getReasonText={gamification.getReasonText}
             getReasonEmoji={gamification.getReasonEmoji}
+            challenges={challenges.challenges}
+          />
+          <ChallengeOverlay
+            activeChallenge={challenges.activeChallenge}
+            getTimeRemaining={challenges.getTimeRemaining}
+          />
+          <TeamNotificationToast
+            notification={teamNotifications.latestNotification}
+            onDismiss={teamNotifications.dismissLatest}
+          />
+          <TriviaGameView
+            activeGame={trivia.activeGame}
+            activeQuestion={trivia.activeQuestion}
+            lastRevealed={trivia.lastRevealed}
+            scores={trivia.scores}
+            completedGame={trivia.completedGame}
+            hasSubmitted={trivia.hasSubmitted}
+            questionStartTime={trivia.questionStartTime}
+            currentUserId={user?.id}
+            currentTeamId={teamsHook.currentTeam?.id}
+            currentTeamName={teamsHook.currentTeam?.name}
+            isCaptain={isTriviaCapt}
+            onSubmitAnswer={trivia.submitAnswer}
+            onDismissCompleted={trivia.clearCompletedGame}
           />
           <AchievementToast
             achievement={celebratingAchievement}

@@ -4,10 +4,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { X, Zap, MessageSquare, HelpCircle, BarChart3, Users, Flame } from "lucide-react";
+import { X, Zap, MessageSquare, HelpCircle, BarChart3, Users, Flame, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type NudgeType = "poll" | "qa" | "team" | "streak" | "chat";
+type NudgeType = "poll" | "qa" | "team" | "streak" | "chat" | "challenge";
 
 interface Nudge {
   id: string;
@@ -28,6 +28,8 @@ interface SmartNudgeProps {
   streakExpiring?: boolean;
   /** Whether chat is open but user hasn't sent a message recently */
   chatOpen?: boolean;
+  /** Whether a team challenge is currently active */
+  challengeActive?: boolean;
   /** Callback when user dismisses a nudge type */
   onDismiss?: (type: NudgeType) => void;
   className?: string;
@@ -46,6 +48,7 @@ export const SmartNudge = ({
   showTeamNudge = false,
   streakExpiring = false,
   chatOpen = false,
+  challengeActive = false,
   onDismiss,
   className,
 }: SmartNudgeProps) => {
@@ -87,7 +90,15 @@ export const SmartNudge = ({
     const now = Date.now();
     if (now - lastNudgeTimeRef.current < MIN_NUDGE_INTERVAL_MS) return;
 
-    if (streakExpiring && !dismissedTypesRef.current.has("streak")) {
+    if (challengeActive && !dismissedTypesRef.current.has("challenge")) {
+      showNudge({
+        id: `challenge-${now}`,
+        type: "challenge",
+        message: "A team challenge is live! Contribute to help your team win",
+        points: "Up to +50 pts",
+        icon: <Swords className="h-4 w-4 text-purple-500" />,
+      });
+    } else if (streakExpiring && !dismissedTypesRef.current.has("streak")) {
       showNudge({
         id: `streak-${now}`,
         type: "streak",
@@ -128,7 +139,7 @@ export const SmartNudge = ({
         icon: <MessageSquare className="h-4 w-4 text-indigo-500" />,
       });
     }
-  }, [pollsOpen, qaOpen, showTeamNudge, streakExpiring, chatOpen, activeNudge, showNudge]);
+  }, [pollsOpen, qaOpen, showTeamNudge, streakExpiring, chatOpen, challengeActive, activeNudge, showNudge]);
 
   // Cleanup on unmount
   useEffect(() => {
