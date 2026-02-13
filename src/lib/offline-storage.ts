@@ -526,6 +526,45 @@ export async function clearCompletedMutations(): Promise<void> {
 }
 
 /**
+ * Atomically claim a mutation for processing.
+ * Reads the mutation and sets it to "in_flight" in a single readwrite
+ * transaction, preventing race conditions between the main thread and
+ * the service worker (which can both call getPendingMutations() and
+ * see the same "pending" mutation before either marks it "in_flight").
+ *
+ * Returns the mutation if successfully claimed, null otherwise.
+ */
+export async function claimMutation(id: string): Promise<QueuedMutation | null> {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("mutationQueue", "readwrite");
+      const store = tx.objectStore("mutationQueue");
+      const getReq = store.get(id);
+
+      let claimed: QueuedMutation | null = null;
+
+      getReq.onsuccess = () => {
+        const mutation = getReq.result as QueuedMutation | undefined;
+        if (!mutation || !canProcessMutation(mutation)) {
+          return; // tx completes with claimed = null
+        }
+        // Claim atomically within the same transaction
+        mutation.status = "in_flight" as MutationStatus;
+        mutation.lastAttemptAt = new Date().toISOString();
+        claimed = { ...mutation };
+        store.put(mutation);
+      };
+
+      tx.oncomplete = () => resolve(claimed);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get count of pending mutations
  */
 export async function getPendingMutationCount(): Promise<number> {

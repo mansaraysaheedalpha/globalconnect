@@ -1,6 +1,7 @@
 // src/components/features/waitlist/waitlist-analytics.tsx
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@apollo/client";
@@ -74,6 +75,22 @@ export function WaitlistAnalytics({ eventId }: WaitlistAnalyticsProps) {
 
   const analytics: WaitlistAnalyticsData = data.eventWaitlistAnalytics;
 
+  // Memoize funnel percentage calculations to avoid recomputing on every render
+  const funnelMetrics = useMemo(() => {
+    const acceptedPct = analytics.totalOffersIssued > 0
+      ? (analytics.totalOffersAccepted / analytics.totalOffersIssued) * 100
+      : 0;
+    const declinedPct = analytics.totalOffersIssued > 0
+      ? (analytics.totalOffersDeclined / analytics.totalOffersIssued) * 100
+      : 0;
+    const expiredPct = analytics.totalOffersIssued > 0
+      ? (analytics.totalOffersExpired / analytics.totalOffersIssued) * 100
+      : 0;
+    const acceptanceRatePct = analytics.acceptanceRate * 100;
+
+    return { acceptedPct, declinedPct, expiredPct, acceptanceRatePct };
+  }, [analytics]);
+
   return (
     <div className="space-y-4">
       {/* Overview Stats Grid */}
@@ -129,7 +146,7 @@ export function WaitlistAnalytics({ eventId }: WaitlistAnalyticsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Acceptance Rate</p>
-                <p className="text-2xl font-bold">{(analytics.acceptanceRate * 100).toFixed(1)}%</p>
+                <p className="text-2xl font-bold">{funnelMetrics.acceptanceRatePct.toFixed(1)}%</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-green-500/10 flex items-center justify-center">
                 <CheckCircle className="h-6 w-6 text-green-500" />
@@ -158,7 +175,7 @@ export function WaitlistAnalytics({ eventId }: WaitlistAnalyticsProps) {
                 </span>
               </div>
               <Progress
-                value={analytics.totalOffersIssued > 0 ? (analytics.totalOffersAccepted / analytics.totalOffersIssued) * 100 : 0}
+                value={funnelMetrics.acceptedPct}
                 className="h-2"
               />
             </div>

@@ -1,7 +1,7 @@
 // src/components/features/waitlist/waitlist-management-table.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useMutation, useQuery } from "@apollo/client";
 import {
   GET_SESSION_WAITLIST_QUERY,
@@ -37,6 +38,9 @@ import {
   Trash2,
   Mail,
   AlertCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -55,6 +59,8 @@ const formatSafeDate = (dateString: string | null | undefined): string => {
     return 'Invalid date';
   }
 };
+
+const PAGE_SIZE = 25;
 
 interface WaitlistManagementTableProps {
   sessionId: string;
@@ -89,6 +95,19 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
   const [bulkOfferCount, setBulkOfferCount] = useState(5);
   const { token } = useAuthStore();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Search/filter state
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Socket connection status for reconnection indicator
+  const [socketConnected, setSocketConnected] = useState(true);
+
+  // Debounced refetch refs
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingChangesRef = useRef(0);
 
   const { data, loading, refetch } = useQuery(GET_SESSION_WAITLIST_QUERY, {
     variables: { sessionId },
@@ -142,7 +161,27 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
     },
   });
 
-  // WebSocket integration for real-time updates
+  // Debounced refetch: batches all WebSocket events within a 1-second window
+  const debouncedRefetch = useCallback(() => {
+    pendingChangesRef.current += 1;
+
+    if (debounceTimerRef.current === null) {
+      // First event in this batch window: set a 1-second timer
+      debounceTimerRef.current = setTimeout(() => {
+        const changeCount = pendingChangesRef.current;
+        pendingChangesRef.current = 0;
+        debounceTimerRef.current = null;
+
+        refetch();
+        toast.info(`Waitlist updated (${changeCount} change${changeCount !== 1 ? "s" : ""})`, {
+          duration: 3000,
+        });
+      }, 1000);
+    }
+    // If timer already running, just increment counter (done above)
+  }, [refetch]);
+
+  // WebSocket integration for real-time updates with error handling
   useEffect(() => {
     if (!token || !sessionId) return;
 
@@ -152,28 +191,53 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
 
     // Join organizer room for this session's waitlist updates
     const roomName = `session:${sessionId}:waitlist:organizer`;
-    socket.emit("join_room", roomName);
-    logger.info("[WaitlistManagement] Joined organizer room", { roomName });
 
-    // Listen for waitlist updates
+    // Error handling for join_room
+    socket.emit("join_room", roomName, (error: any) => {
+      if (error) {
+        logger.error("[WaitlistManagement] Failed to join room", error, { roomName });
+      } else {
+        logger.info("[WaitlistManagement] Joined organizer room", { roomName });
+      }
+    });
+
+    // Listen for waitlist updates (debounced)
     const handleWaitlistUpdate = (data: any) => {
       logger.info("[WaitlistManagement] Received waitlist update", data);
-      // Refetch data when waitlist changes
-      refetch();
-      toast.info("Waitlist updated", {
-        description: "The waitlist has been updated with new changes",
-        duration: 3000,
-      });
+      debouncedRefetch();
     };
 
-    // Listen for specific events
+    // Socket connection status handlers
+    const handleDisconnect = (reason: string) => {
+      logger.info("[WaitlistManagement] Socket disconnected", { reason });
+      setSocketConnected(false);
+    };
+
+    const handleConnect = () => {
+      logger.info("[WaitlistManagement] Socket reconnected, rejoining room");
+      setSocketConnected(true);
+      // Rejoin the room on reconnect
+      socket.emit("join_room", roomName, (error: any) => {
+        if (error) {
+          logger.error("[WaitlistManagement] Failed to rejoin room after reconnect", error, { roomName });
+        }
+      });
+      // Fresh refetch after reconnect
+      refetch();
+    };
+
+    // Listen for specific waitlist events
     socket.on("WAITLIST_UPDATED", handleWaitlistUpdate);
     socket.on("WAITLIST_POSITION_CHANGED", handleWaitlistUpdate);
     socket.on("WAITLIST_ENTRY_ADDED", handleWaitlistUpdate);
     socket.on("WAITLIST_ENTRY_REMOVED", handleWaitlistUpdate);
     socket.on("WAITLIST_OFFER_SENT", handleWaitlistUpdate);
 
-    // Cleanup on unmount
+    // Socket connection lifecycle events
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect", handleConnect);
+
+    // Cleanup on unmount: remove each specific handler to prevent stacking
     return () => {
       logger.info("[WaitlistManagement] Cleaning up WebSocket listeners", { sessionId });
       socket.off("WAITLIST_UPDATED", handleWaitlistUpdate);
@@ -181,9 +245,18 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
       socket.off("WAITLIST_ENTRY_ADDED", handleWaitlistUpdate);
       socket.off("WAITLIST_ENTRY_REMOVED", handleWaitlistUpdate);
       socket.off("WAITLIST_OFFER_SENT", handleWaitlistUpdate);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect", handleConnect);
       socket.emit("leave_room", roomName);
+
+      // Clear debounce timer
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+        pendingChangesRef.current = 0;
+      }
     };
-  }, [token, sessionId, refetch]);
+  }, [token, sessionId, refetch, debouncedRefetch]);
 
   if (loading) {
     return (
@@ -202,6 +275,39 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
   }
 
   const waitlist: WaitlistEntry[] = data?.sessionWaitlist || [];
+
+  // Filter entries by search query (name or email)
+  const filteredEntries = useMemo(() => {
+    if (!searchQuery.trim()) return waitlist;
+    const query = searchQuery.toLowerCase().trim();
+    return waitlist.filter((entry) => {
+      const firstName = (entry.user?.firstName || "").toLowerCase();
+      const lastName = (entry.user?.lastName || "").toLowerCase();
+      const email = (entry.user?.email || "").toLowerCase();
+      const fullName = `${firstName} ${lastName}`;
+      return (
+        firstName.includes(query) ||
+        lastName.includes(query) ||
+        fullName.includes(query) ||
+        email.includes(query)
+      );
+    });
+  }, [waitlist, searchQuery]);
+
+  // Pagination calculations
+  const totalEntries = filteredEntries.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / PAGE_SIZE));
+  // Clamp currentPage if data changed (e.g. from a refetch) and page is now out of range
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, totalEntries);
+  const paginatedEntries = filteredEntries.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search query changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   const handleRemove = (entry: WaitlistEntry) => {
     setSelectedEntry(entry);
@@ -233,11 +339,13 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
   };
 
   const handleBulkSendOffers = () => {
+    // M-FE3: Validate count is within reasonable bounds
+    const clampedCount = Math.max(1, Math.min(bulkOfferCount, 50));
     bulkSendOffers({
       variables: {
         input: {
           sessionId: sessionId,
-          count: bulkOfferCount,
+          count: clampedCount,
         },
       },
     });
@@ -246,19 +354,19 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
   const getStatusBadge = (status: WaitlistEntry["status"]) => {
     switch (status) {
       case "WAITING":
-        return <Badge variant="secondary">Waiting</Badge>;
+        return <Badge variant="secondary" role="status" aria-label="Status: Waiting">Waiting</Badge>;
       case "OFFERED":
-        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Offer Sent</Badge>;
+        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20" role="status" aria-label="Status: Offer Sent">Offer Sent</Badge>;
       case "ACCEPTED":
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Accepted</Badge>;
+        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20" role="status" aria-label="Status: Accepted">Accepted</Badge>;
       case "DECLINED":
-        return <Badge variant="outline" className="text-red-600">Declined</Badge>;
+        return <Badge variant="outline" className="text-red-600" role="status" aria-label="Status: Declined">Declined</Badge>;
       case "EXPIRED":
-        return <Badge variant="outline" className="text-muted-foreground">Expired</Badge>;
+        return <Badge variant="outline" className="text-muted-foreground" role="status" aria-label="Status: Expired">Expired</Badge>;
       case "LEFT":
-        return <Badge variant="outline" className="text-muted-foreground">Left</Badge>;
+        return <Badge variant="outline" className="text-muted-foreground" role="status" aria-label="Status: Left">Left</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" role="status">{status}</Badge>;
     }
   };
 
@@ -297,6 +405,14 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
           </div>
         </CardHeader>
         <CardContent>
+          {/* Reconnecting indicator */}
+          {!socketConnected && (
+            <div className="flex items-center gap-2 text-sm text-yellow-600 mb-3 px-1" role="status" aria-live="assertive">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <span>Reconnecting...</span>
+            </div>
+          )}
+
           {waitlist.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -306,98 +422,156 @@ export function WaitlistManagementTable({ sessionId, sessionTitle }: WaitlistMan
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Attendee</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {waitlist.map((entry) => {
-                    // Get user display info with fallbacks
-                    const firstName = entry.user?.firstName || "User";
-                    const lastName = entry.user?.lastName || entry.userId.slice(0, 8);
-                    const email = entry.user?.email || "";
-                    const imageUrl = entry.user?.imageUrl;
-                    const initials = `${firstName[0] || "U"}${lastName[0] || ""}`.toUpperCase();
+            <div className="space-y-3">
+              {/* Search filter */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Filter by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="pl-9"
+                  aria-label="Filter waitlist entries by name or email"
+                />
+              </div>
 
-                    return (
-                      <TableRow key={entry.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <span>{entry.position}</span>
-                            {entry.priorityTier !== "STANDARD" && (
-                              <Badge variant="outline" className="text-xs">
-                                {entry.priorityTier}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              {imageUrl && <AvatarImage src={imageUrl} alt={`${firstName} ${lastName}`} />}
-                              <AvatarFallback>{initials}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">
-                                {firstName} {lastName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {email || `ID: ${entry.userId.slice(0, 8)}...`}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {getStatusBadge(entry.status)}
-                            {entry.offerSentAt && (
-                              <p className="text-xs text-muted-foreground">
-                                Sent {formatSafeDate(entry.offerSentAt)}
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5" />
-                            {formatSafeDate(entry.joinedAt)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {entry.status === "WAITING" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleSendOffer(entry)}
-                                disabled={sendingOffer}
-                              >
-                                <Send className="h-3.5 w-3.5 mr-1.5" />
-                                Send Offer
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemove(entry)}
-                              disabled={removing}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+              <div className="rounded-md border" role="region" aria-label="Waitlist entries" aria-live="polite">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12" scope="col">#</TableHead>
+                      <TableHead scope="col">Attendee</TableHead>
+                      <TableHead scope="col">Status</TableHead>
+                      <TableHead scope="col">Joined</TableHead>
+                      <TableHead className="text-right" scope="col">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedEntries.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                          No entries match your search.
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                    ) : (
+                      paginatedEntries.map((entry) => {
+                        // Get user display info with fallbacks
+                        const firstName = entry.user?.firstName || "User";
+                        const lastName = entry.user?.lastName || entry.userId.slice(0, 8);
+                        const email = entry.user?.email || "";
+                        const imageUrl = entry.user?.imageUrl;
+                        const initials = `${firstName[0] || "U"}${lastName[0] || ""}`.toUpperCase();
+
+                        return (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <span>{entry.position}</span>
+                                {entry.priorityTier !== "STANDARD" && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {entry.priorityTier}
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                  {imageUrl && <AvatarImage src={imageUrl} alt={`${firstName} ${lastName}`} />}
+                                  <AvatarFallback>{initials}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">
+                                    {firstName} {lastName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {email || `ID: ${entry.userId.slice(0, 8)}...`}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {getStatusBadge(entry.status)}
+                                {entry.offerSentAt && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Sent {formatSafeDate(entry.offerSentAt)}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5" />
+                                {formatSafeDate(entry.joinedAt)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {entry.status === "WAITING" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleSendOffer(entry)}
+                                    disabled={sendingOffer}
+                                    aria-label={`Send offer to ${firstName} ${lastName}`}
+                                  >
+                                    <Send className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                                    Send Offer
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemove(entry)}
+                                  disabled={removing}
+                                  aria-label={`Remove ${firstName} ${lastName} from waitlist`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination controls */}
+              {totalEntries > 0 && (
+                <div className="flex items-center justify-between px-1 pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {startIndex + 1}-{endIndex} of {totalEntries}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={safePage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      aria-label="Go to previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                      Prev
+                    </Button>
+                    <span className="text-sm text-muted-foreground" aria-current="page">
+                      Page {safePage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={safePage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      aria-label="Go to next page"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

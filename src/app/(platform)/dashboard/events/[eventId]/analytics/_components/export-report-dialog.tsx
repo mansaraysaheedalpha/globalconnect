@@ -82,12 +82,6 @@ export function ExportReportDialog({ eventId, dateRange, trigger, analyticsData 
       description: "User journey from views to purchases with drop-off rates",
       enabled: false,
     },
-    {
-      id: "abtests",
-      label: "A/B Test Results",
-      description: "Active tests, variants, and statistical significance",
-      enabled: false,
-    },
   ]);
 
   const toggleSection = (id: string) => {

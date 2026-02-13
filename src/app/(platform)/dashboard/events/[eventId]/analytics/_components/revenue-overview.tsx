@@ -7,6 +7,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Bar, BarChart } from "recharts";
 import { DollarSign, TrendingUp, ShoppingBag, MousePointer } from "lucide-react";
 import { format } from "date-fns";
+import { formatCurrency, centsToDollars, formatPercent } from "@/lib/format-utils";
 
 interface RevenueData {
   total: number;
@@ -34,14 +35,14 @@ export function RevenueOverview({ data }: RevenueOverviewProps) {
     );
   }
 
-  const totalRevenue = data.total / 100;
-  const offerRevenue = data.fromOffers / 100;
-  const adRevenue = data.fromAds / 100;
+  const totalRevenue = centsToDollars(data.total);
+  const offerRevenue = centsToDollars(data.fromOffers);
+  const adRevenue = centsToDollars(data.fromAds);
 
   // Transform daily data for chart
   const chartData = data.byDay.map((day) => ({
     date: format(new Date(day.date), "MMM d"),
-    revenue: day.amount / 100,
+    revenue: centsToDollars(day.amount),
   }));
 
   // Revenue source breakdown
@@ -75,7 +76,7 @@ export function RevenueOverview({ data }: RevenueOverviewProps) {
         </CardHeader>
         <CardContent>
           <div className="text-4xl font-bold text-primary mb-2">
-            ${totalRevenue.toFixed(2)}
+            {formatCurrency(data.total)}
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <TrendingUp className="h-4 w-4 text-green-500" />

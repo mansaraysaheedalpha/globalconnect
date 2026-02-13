@@ -2,160 +2,144 @@
 /**
  * Sync Manager
  *
- * Handles replaying queued mutations when connectivity is restored.
- * Listens for online events and processes the mutation queue in FIFO order
- * with retry logic and idempotency protection.
+ * Replays queued offline mutations when the client comes back online.
+ * Uses claimMutation() for atomic claim to prevent races with the
+ * service worker's background sync handler.
+ *
+ * Provides an event bus so the UI (OfflineProvider) can show toasts
+ * for sync progress/failures.
  */
 
-import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
-import { gql } from "@apollo/client";
+import { ApolloClient, NormalizedCacheObject, gql } from "@apollo/client";
 import {
   getPendingMutations,
+  claimMutation,
   updateMutationStatus,
-  clearCompletedMutations,
-  getPendingMutationCount,
-  canProcessMutation,
-  type QueuedMutation,
+  deleteItem,
+  QueuedMutation,
 } from "./offline-storage";
+import { isActuallyOnline } from "./network-connectivity";
 
-type SyncListener = (event: SyncEvent) => void;
+// ---------------------------------------------------------------------------
+// Sync event bus
+// ---------------------------------------------------------------------------
 
-interface SyncEvent {
-  type: "sync_start" | "sync_complete" | "sync_error" | "mutation_replayed" | "mutation_failed";
+export interface SyncEvent {
+  type: "sync_start" | "sync_complete" | "mutation_failed";
   pendingCount?: number;
   completedCount?: number;
   failedCount?: number;
   mutation?: QueuedMutation;
-  error?: string;
 }
 
-let isSyncing = false;
-const listeners: Set<SyncListener> = new Set();
+type SyncEventListener = (event: SyncEvent) => void;
 
-function emit(event: SyncEvent) {
+const listeners = new Set<SyncEventListener>();
+
+function emit(event: SyncEvent): void {
   listeners.forEach((fn) => {
     try {
       fn(event);
     } catch {
-      // Don't let listener errors break the sync loop
+      // listener errors must not break the sync loop
     }
   });
 }
 
 /**
- * Subscribe to sync events (for UI updates, toasts, etc.)
- * Returns an unsubscribe function.
+ * Subscribe to sync events. Returns an unsubscribe function.
  */
-export function onSyncEvent(listener: SyncListener): () => void {
+export function onSyncEvent(listener: SyncEventListener): () => void {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
-/**
- * Process the mutation queue, replaying each pending mutation
- * in order against the Apollo Client.
- */
-export async function processMutationQueue(
-  client: ApolloClient<NormalizedCacheObject>
-): Promise<{ completed: number; failed: number }> {
-  if (isSyncing) return { completed: 0, failed: 0 };
-  if (!navigator.onLine) return { completed: 0, failed: 0 };
+// ---------------------------------------------------------------------------
+// Replay logic
+// ---------------------------------------------------------------------------
 
-  const pending = await getPendingMutations();
-  if (pending.length === 0) return { completed: 0, failed: 0 };
+let isSyncing = false;
+
+async function replayQueue(client: ApolloClient<NormalizedCacheObject>): Promise<void> {
+  if (isSyncing) return;
+  if (!isActuallyOnline()) return;
 
   isSyncing = true;
-  let completed = 0;
-  let failed = 0;
 
   try {
+    const pending = await getPendingMutations();
+    if (pending.length === 0) return;
+
     emit({ type: "sync_start", pendingCount: pending.length });
 
+    let completedCount = 0;
+    let failedCount = 0;
+
     for (const mutation of pending) {
-      // Deduplication: skip if already being processed by the SW
-      if (!canProcessMutation(mutation)) {
-        continue;
-      }
+      // Atomically claim — prevents the SW from processing the same mutation
+      const claimed = await claimMutation(mutation.id);
+      if (!claimed) continue; // already claimed by another processor
 
       try {
-        // Mark as in-flight (acts as a lock for the SW)
-        await updateMutationStatus(mutation.id, "in_flight");
-
-        // Parse the stored GraphQL document and variables
-        const document = gql(mutation.query);
-        const variables = JSON.parse(mutation.variables);
-
-        // Execute the mutation
         await client.mutate({
-          mutation: document,
-          variables,
+          mutation: gql(claimed.query),
+          variables: JSON.parse(claimed.variables),
           context: {
             headers: {
-              "X-Idempotency-Key": mutation.idempotencyKey,
+              "X-Idempotency-Key": claimed.idempotencyKey,
             },
           },
         });
 
-        // Mark as completed
-        await updateMutationStatus(mutation.id, "completed");
-        completed++;
-        emit({ type: "mutation_replayed", mutation });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        // Success — remove from queue
+        await deleteItem("mutationQueue", claimed.id);
+        completedCount++;
+      } catch (err) {
+        failedCount++;
+        claimed.retryCount = (claimed.retryCount || 0) + 1;
 
-        // Check if we've exceeded max retries
-        if (mutation.retryCount + 1 >= mutation.maxRetries) {
-          await updateMutationStatus(mutation.id, "failed", errorMessage);
-          failed++;
-          emit({ type: "mutation_failed", mutation, error: errorMessage });
+        if (claimed.retryCount >= claimed.maxRetries) {
+          await updateMutationStatus(claimed.id, "failed", String(err));
+          emit({ type: "mutation_failed", mutation: claimed });
         } else {
-          // Reset to pending for next sync cycle
-          await updateMutationStatus(mutation.id, "pending", errorMessage);
+          // Reset to pending for the next sync attempt
+          await updateMutationStatus(claimed.id, "pending");
         }
       }
     }
 
-    // Clean up completed mutations
-    await clearCompletedMutations();
-    emit({ type: "sync_complete", completedCount: completed, failedCount: failed });
+    emit({
+      type: "sync_complete",
+      completedCount,
+      failedCount,
+    });
   } finally {
     isSyncing = false;
   }
-
-  return { completed, failed };
 }
 
+// ---------------------------------------------------------------------------
+// Initialization
+// ---------------------------------------------------------------------------
+
 /**
- * Initialize the SyncManager: listen for online events and
- * automatically process the queue when connectivity returns.
- *
+ * Start listening for online events and replay the mutation queue.
  * Returns a cleanup function.
  */
 export function initSyncManager(
-  client: ApolloClient<NormalizedCacheObject>
+  client: ApolloClient<NormalizedCacheObject>,
 ): () => void {
-  const handleOnline = async () => {
-    // Small delay to let the connection stabilize
-    await new Promise((r) => setTimeout(r, 1500));
-    if (navigator.onLine) {
-      const count = await getPendingMutationCount();
-      if (count > 0) {
-        await processMutationQueue(client);
-      }
-    }
+  const handleOnline = () => {
+    replayQueue(client);
   };
 
   window.addEventListener("online", handleOnline);
 
-  // Also try to process on initialization if we're online
-  // (handles case where app was closed offline and reopened online)
-  if (navigator.onLine) {
-    getPendingMutationCount().then((count) => {
-      if (count > 0) {
-        processMutationQueue(client);
-      }
-    });
-  }
+  // Also attempt a replay immediately in case we're already online with
+  // mutations queued from a previous session
+  replayQueue(client);
 
   return () => {
     window.removeEventListener("online", handleOnline);

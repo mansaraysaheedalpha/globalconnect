@@ -285,14 +285,16 @@ const client = new ApolloClient({
 // Periodic Sync helpers (Issue #7 — merge SW-refreshed data into Apollo cache)
 // ---------------------------------------------------------------------------
 
-const PERIODIC_SYNC_QUERY = gql`
-  query PeriodicSyncCache {
-    myRegisteredEvents {
-      id title description startDate endDate status imageUrl
-      venue { id name address city }
-    }
+// Single source of truth for the periodic sync query — also stored in
+// IndexedDB (syncMeta) so the SW reads it instead of hardcoding its own copy.
+const PERIODIC_SYNC_QUERY_STRING = `query PeriodicSyncRefresh {
+  myRegisteredEvents {
+    id title description startDate endDate status imageUrl
+    venue { id name address city }
   }
-`;
+}`;
+
+const PERIODIC_SYNC_QUERY = gql(PERIODIC_SYNC_QUERY_STRING);
 
 const STALE_THRESHOLD_MS = 12 * 60 * 60 * 1000; // 12 hours
 
@@ -368,8 +370,10 @@ function CachePersistenceInitializer() {
     // Initialize the sync manager to replay mutations when online
     const cleanupSync = initSyncManager(client as ApolloClient<NormalizedCacheObject>);
 
-    // Store API URL in IndexedDB for Background Sync (SW needs it)
+    // Store API URL and periodic sync query in IndexedDB for Background Sync.
+    // The SW reads these instead of hardcoding its own copies (single source of truth).
     storeSyncMeta("bg_sync_api_url", API_URL);
+    storeSyncMeta("bg_sync_periodic_query", PERIODIC_SYNC_QUERY_STRING);
 
     // Keep auth token AND EXPIRY in IndexedDB so the SW can check validity
     const unsubAuth = useAuthStore.subscribe((state) => {

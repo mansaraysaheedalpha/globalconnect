@@ -8,6 +8,15 @@ import { Funnel, FunnelChart, LabelList, ResponsiveContainer } from "recharts";
 import { Eye, MousePointer, ShoppingCart, DollarSign, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
+// HF4: Configurable thresholds for funnel analysis recommendations
+const FUNNEL_THRESHOLDS = {
+  CTR_EXCELLENT: 2.0,
+  CTR_GOOD: 1.0,
+  DROPOFF_HIGH: 80,
+  DROPOFF_MODERATE: 50,
+  CONVERSION_SUCCESS: 5,
+} as const;
+
 interface ConversionFunnelProps {
   data?: {
     offers?: {
@@ -37,12 +46,9 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
 
   const { offers, ads } = data;
 
-  // Calculate funnel stages
+  // Calculate funnel stages (Views → Purchases only — no click tracking exists)
   const offerViews = offers.totalViews || 0;
   const offerPurchases = offers.totalPurchases || 0;
-
-  // Assume some clicked to view details (80% of views)
-  const offerClicks = Math.round(offerViews * 0.8);
 
   // Funnel data for offers
   const offerFunnelData = [
@@ -54,13 +60,6 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
       icon: Eye,
     },
     {
-      stage: "Clicks",
-      value: offerClicks,
-      fill: "hsl(var(--chart-2))",
-      percentage: offerViews > 0 ? (offerClicks / offerViews) * 100 : 0,
-      icon: MousePointer,
-    },
-    {
       stage: "Purchases",
       value: offerPurchases,
       fill: "hsl(var(--chart-3))",
@@ -69,9 +68,8 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
     },
   ];
 
-  // Calculate drop-off rates
-  const viewToClickDropoff = offerViews > 0 ? ((offerViews - offerClicks) / offerViews) * 100 : 0;
-  const clickToPurchaseDropoff = offerClicks > 0 ? ((offerClicks - offerPurchases) / offerClicks) * 100 : 0;
+  // Calculate drop-off rate
+  const viewToPurchaseDropoff = offerViews > 0 ? ((offerViews - offerPurchases) / offerViews) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -140,20 +138,14 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
           </div>
 
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t">
             <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Overall Conversion</p>
+              <p className="text-sm text-muted-foreground mb-1">View → Purchase Rate</p>
               <p className="text-2xl font-bold">{offers.conversionRate.toFixed(2)}%</p>
             </div>
             <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">View → Click Rate</p>
-              <p className="text-2xl font-bold">{(100 - viewToClickDropoff).toFixed(1)}%</p>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Click → Purchase Rate</p>
-              <p className="text-2xl font-bold">
-                {offerClicks > 0 ? ((offerPurchases / offerClicks) * 100).toFixed(1) : 0}%
-              </p>
+              <p className="text-sm text-muted-foreground mb-1">Drop-off Rate</p>
+              <p className="text-2xl font-bold">{viewToPurchaseDropoff.toFixed(1)}%</p>
             </div>
           </div>
         </CardContent>
@@ -220,11 +212,11 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
                   <p className="text-sm text-muted-foreground mb-1">Click-Through Rate</p>
                   <p className="text-2xl font-bold">{ads.averageCTR.toFixed(2)}%</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {ads.averageCTR >= 2.0
-                      ? "🎉 Excellent! Well above industry average (0.5-1.0%)"
-                      : ads.averageCTR >= 1.0
-                      ? "👍 Good performance, above industry average"
-                      : "💡 Room for improvement - consider optimizing ad creatives"}
+                    {ads.averageCTR >= FUNNEL_THRESHOLDS.CTR_EXCELLENT
+                      ? "Excellent! Well above industry average (0.5-1.0%)"
+                      : ads.averageCTR >= FUNNEL_THRESHOLDS.CTR_GOOD
+                      ? "Good performance, above industry average"
+                      : "Room for improvement - consider optimizing ad creatives"}
                   </p>
                 </div>
               </div>
@@ -241,11 +233,11 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {/* View to Click Optimization */}
-            {viewToClickDropoff > 30 && (
+            {/* View to Purchase Optimization */}
+            {viewToPurchaseDropoff > FUNNEL_THRESHOLDS.DROPOFF_HIGH && (
               <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2 text-yellow-900 dark:text-yellow-100">
-                  🎯 Improve View-to-Click Rate
+                  🎯 Improve View-to-Purchase Rate
                 </h4>
                 <ul className="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
                   <li>• Add more compelling offer images and descriptions</li>
@@ -255,8 +247,8 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
               </div>
             )}
 
-            {/* Click to Purchase Optimization */}
-            {clickToPurchaseDropoff > 50 && (
+            {/* Purchase Conversion Optimization */}
+            {viewToPurchaseDropoff > FUNNEL_THRESHOLDS.DROPOFF_MODERATE && viewToPurchaseDropoff <= FUNNEL_THRESHOLDS.DROPOFF_HIGH && (
               <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2 text-orange-900 dark:text-orange-100">
                   💳 Improve Purchase Conversion
@@ -271,7 +263,7 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
             )}
 
             {/* Ad CTR Optimization */}
-            {ads && ads.averageCTR < 1.0 && (
+            {ads && ads.averageCTR < FUNNEL_THRESHOLDS.CTR_GOOD && (
               <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2 text-blue-900 dark:text-blue-100">
                   📢 Improve Ad Click-Through Rate
@@ -286,7 +278,7 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
             )}
 
             {/* Success Message */}
-            {offers.conversionRate >= 5 && (!ads || ads.averageCTR >= 2.0) && (
+            {offers.conversionRate >= FUNNEL_THRESHOLDS.CONVERSION_SUCCESS && (!ads || ads.averageCTR >= FUNNEL_THRESHOLDS.CTR_EXCELLENT) && (
               <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2 text-green-900 dark:text-green-100">
                   ✅ Excellent Performance!

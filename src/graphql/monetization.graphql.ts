@@ -9,6 +9,11 @@ export const GET_EVENT_MONETIZATION_QUERY = gql`
       mediaUrl
       clickUrl
       isArchived
+      isActive
+      startsAt
+      endsAt
+      placements
+      frequencyCap
     }
     eventOffers(eventId: $eventId) {
       id
@@ -104,6 +109,18 @@ export const CREATE_AD_MUTATION = gql`
     createAd(adIn: $adIn) {
       id
       name
+    }
+  }
+`;
+
+export const UPDATE_AD_MUTATION = gql`
+  mutation UpdateAd($id: String!, $adIn: AdUpdateInput!) {
+    updateAd(id: $id, adIn: $adIn) {
+      id
+      name
+      mediaUrl
+      clickUrl
+      contentType
     }
   }
 `;

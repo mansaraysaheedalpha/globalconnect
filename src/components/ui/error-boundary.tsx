@@ -568,3 +568,61 @@ export function QueryErrorHandler({
     />
   );
 }
+
+// ============================================
+// Chart Error Boundary
+// ============================================
+
+interface ChartErrorBoundaryProps {
+  children: ReactNode;
+  chartName?: string;
+  className?: string;
+}
+
+/**
+ * Specialized error boundary for Recharts components.
+ * Prevents a single chart crash from taking down the entire page.
+ * Shows a compact fallback with a retry button.
+ */
+export function ChartErrorBoundary({
+  children,
+  chartName,
+  className,
+}: ChartErrorBoundaryProps) {
+  const [key, setKey] = React.useState(0);
+
+  return (
+    <ErrorBoundary
+      key={key}
+      fallback={
+        <Card className={cn("border-dashed", className)}>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium mb-1">
+              Failed to load {chartName || "chart"}
+            </p>
+            <p className="text-xs text-muted-foreground mb-3">
+              An error occurred while rendering this component.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setKey((k) => k + 1)}
+              className="gap-1.5"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      }
+      onError={(error) => {
+        logger.error(`Chart rendering error (${chartName || "unknown"})`, error);
+      }}
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}

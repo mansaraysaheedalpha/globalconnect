@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "lucide-react";
-import { format, addDays, startOfMonth, endOfMonth, startOfYear, subDays } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, startOfYear, subDays, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface DateRange {
@@ -111,9 +111,17 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
                 <input
                   type="date"
                   value={value.from}
-                  onChange={(e) =>
-                    onChange({ ...value, from: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newFrom = e.target.value;
+                    const newTo = newFrom > value.to ? newFrom : value.to;
+                    // M-FE7: Use parseISO to avoid timezone offset issues with yyyy-MM-dd strings
+                    const daysDiff = differenceInDays(parseISO(newTo), parseISO(newFrom));
+                    if (daysDiff > 365) {
+                      onChange({ from: newFrom, to: format(addDays(parseISO(newFrom), 365), "yyyy-MM-dd") });
+                    } else {
+                      onChange({ from: newFrom, to: newTo });
+                    }
+                  }}
                   className="w-full px-2 py-1 text-sm border rounded"
                 />
               </div>
@@ -122,7 +130,14 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
                 <input
                   type="date"
                   value={value.to}
-                  onChange={(e) => onChange({ ...value, to: e.target.value })}
+                  min={value.from}
+                  max={format(addDays(parseISO(value.from), 365), "yyyy-MM-dd")}
+                  onChange={(e) => {
+                    const newTo = e.target.value;
+                    if (newTo < value.from) return;
+                    if (differenceInDays(parseISO(newTo), parseISO(value.from)) > 365) return;
+                    onChange({ ...value, to: newTo });
+                  }}
                   className="w-full px-2 py-1 text-sm border rounded"
                 />
               </div>

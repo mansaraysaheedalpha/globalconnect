@@ -22,8 +22,8 @@ interface WaitlistCapacityManagerProps {
 }
 
 interface SessionCapacity {
-  current: number;
-  maximum: number;
+  currentAttendance: number;
+  maximumCapacity: number;
   waitlistCount: number;
   isAvailable: boolean;
 }
@@ -101,9 +101,9 @@ export function WaitlistCapacityManager({ sessionId, sessionTitle }: WaitlistCap
       return;
     }
 
-    if (capacityValue < capacity.current) {
+    if (capacityValue < capacity.currentAttendance) {
       toast.error("Invalid capacity", {
-        description: `Capacity cannot be less than current attendance (${capacity.current})`,
+        description: `Capacity cannot be less than current attendance (${capacity.currentAttendance})`,
       });
       return;
     }
@@ -118,8 +118,8 @@ export function WaitlistCapacityManager({ sessionId, sessionTitle }: WaitlistCap
     });
   };
 
-  const occupancyPercentage = capacity.maximum > 0 ? (capacity.current / capacity.maximum) * 100 : 0;
-  const spotsAvailable = capacity.maximum - capacity.current;
+  const occupancyPercentage = capacity.maximumCapacity > 0 ? (capacity.currentAttendance / capacity.maximumCapacity) * 100 : 0;
+  const spotsAvailable = capacity.maximumCapacity - capacity.currentAttendance;
 
   return (
     <Card>
@@ -140,8 +140,8 @@ export function WaitlistCapacityManager({ sessionId, sessionTitle }: WaitlistCap
               <div className="flex flex-col p-4 rounded-lg border bg-card">
                 <span className="text-sm text-muted-foreground mb-1">Current Attendance</span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold">{capacity.current}</span>
-                  <span className="text-sm text-muted-foreground">/ {capacity.maximum}</span>
+                  <span className="text-3xl font-bold">{capacity.currentAttendance}</span>
+                  <span className="text-sm text-muted-foreground">/ {capacity.maximumCapacity}</span>
                 </div>
               </div>
 
@@ -193,7 +193,7 @@ export function WaitlistCapacityManager({ sessionId, sessionTitle }: WaitlistCap
                 variant="outline"
                 onClick={() => {
                   setIsEditing(true);
-                  setNewCapacity(capacity.maximum.toString());
+                  setNewCapacity(capacity.maximumCapacity.toString());
                 }}
                 className="w-full"
               >
@@ -207,13 +207,13 @@ export function WaitlistCapacityManager({ sessionId, sessionTitle }: WaitlistCap
                   <Input
                     id="capacity"
                     type="number"
-                    min={capacity.current}
+                    min={capacity.currentAttendance}
                     value={newCapacity}
                     onChange={(e) => setNewCapacity(e.target.value)}
-                    placeholder={`Minimum: ${capacity.current}`}
+                    placeholder={`Minimum: ${capacity.currentAttendance}`}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Must be at least {capacity.current} (current attendance)
+                    Must be at least {capacity.currentAttendance} (current attendance)
                   </p>
                 </div>
 

@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth.store';
+import { useApolloClient } from '@apollo/client';
+import { toast } from 'sonner';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error' | 'reconnecting';
 
@@ -66,6 +68,7 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
   const socketRef = useRef<Socket | null>(null);
 
   const { token } = useAuthStore();
+  const apolloClient = useApolloClient();
 
   // Initialize socket connection
   useEffect(() => {
@@ -189,6 +192,43 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
       }
     });
 
+    // Listen for event/session update notifications (organizer changed times, etc.)
+    newSocket.on('event.updated', (data: { eventId: string; eventName: string }) => {
+      if (data.eventId === eventId) {
+        toast.info('Event Updated', {
+          description: `${data.eventName} details have been updated.`,
+          action: {
+            label: 'Refresh',
+            onClick: () => apolloClient.refetchQueries({
+              include: ['GetMyRegistrations', 'GetAttendeeEventDetails'],
+            }),
+          },
+          duration: 10000,
+        });
+        apolloClient.refetchQueries({
+          include: ['GetMyRegistrations', 'GetAttendeeEventDetails'],
+        });
+      }
+    });
+
+    newSocket.on('session.updated', (data: { sessionId: string; sessionTitle: string; eventId: string }) => {
+      if (data.eventId === eventId) {
+        toast.info('Session Updated', {
+          description: `"${data.sessionTitle}" schedule has been updated.`,
+          action: {
+            label: 'Refresh',
+            onClick: () => apolloClient.refetchQueries({
+              include: ['GetAttendeeEventDetails'],
+            }),
+          },
+          duration: 10000,
+        });
+        apolloClient.refetchQueries({
+          include: ['GetAttendeeEventDetails'],
+        });
+      }
+    });
+
     setSocket(newSocket);
 
     // Cleanup on unmount
@@ -207,9 +247,11 @@ export const SessionSocketProvider: React.FC<SessionSocketProviderProps> = ({
       newSocket.off('qa.status.changed');
       newSocket.off('polls.status.changed');
       newSocket.off('reactions.status.changed');
+      newSocket.off('event.updated');
+      newSocket.off('session.updated');
       newSocket.disconnect();
     };
-  }, [sessionId, eventId, token]);
+  }, [sessionId, eventId, token, apolloClient]);
 
   const value: SessionSocketContextValue = {
     socket,

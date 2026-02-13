@@ -29,6 +29,7 @@ import { ScheduledReports } from "./_components/scheduled-reports";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { addDays, format } from "date-fns";
+import { formatCurrency, formatPercent } from "@/lib/format-utils";
 
 export default function MonetizationAnalyticsPage() {
   const params = useParams();
@@ -124,11 +125,11 @@ export default function MonetizationAnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${((analytics?.revenue?.total || 0) / 100).toFixed(2)}
+                  {formatCurrency(analytics?.revenue?.total || 0)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {analytics?.revenue?.fromOffers
-                    ? `$${(analytics.revenue.fromOffers / 100).toFixed(2)} from offers`
+                    ? `${formatCurrency(analytics.revenue.fromOffers)} from offers`
                     : "No offer revenue"
                   }
                 </p>
@@ -143,7 +144,7 @@ export default function MonetizationAnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {analytics?.offers?.conversionRate?.toFixed(2) || 0}%
+                  {formatPercent(analytics?.offers?.conversionRate || 0, 2)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {analytics?.offers?.totalPurchases || 0} purchases from {analytics?.offers?.totalViews || 0} views
@@ -162,7 +163,7 @@ export default function MonetizationAnalyticsPage() {
                   {(analytics?.ads?.totalImpressions || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {analytics?.ads?.averageCTR?.toFixed(2) || 0}% CTR
+                  {formatPercent(analytics?.ads?.averageCTR || 0, 2)} CTR
                 </p>
               </CardContent>
             </Card>
@@ -175,7 +176,7 @@ export default function MonetizationAnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {analytics?.waitlist?.acceptanceRate?.toFixed(1) || 0}%
+                  {formatPercent(analytics?.waitlist?.acceptanceRate || 0, 1)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {analytics?.waitlist?.offersIssued || 0} offers issued

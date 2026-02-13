@@ -1,13 +1,14 @@
 // src/app/(platform)/dashboard/events/[eventId]/monetization/ads.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import Image from "next/image";
 import {
   Plus,
   Trash2,
+  Pencil,
   ExternalLink,
   Image as ImageIcon,
   Loader2,
@@ -20,6 +21,7 @@ import {
 import {
   GET_EVENT_MONETIZATION_QUERY,
   CREATE_AD_MUTATION,
+  UPDATE_AD_MUTATION,
   DELETE_AD_MUTATION,
   GET_MONETIZATION_ANALYTICS_QUERY
 } from "@/graphql/monetization.graphql";
@@ -57,6 +59,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AdCampaignAnalytics } from "@/app/(platform)/dashboard/events/[eventId]/analytics/_components/ad-campaign-analytics";
 import { addDays, format } from "date-fns";
 
+// M-CQ5: Named constants for validation limits
+const AD_VALIDATION = {
+  NAME_MAX_LENGTH: 200,
+  URL_MAX_LENGTH: 2048,
+} as const;
+
 interface Ad {
   id: string;
   name: string;
@@ -87,6 +95,8 @@ export const Ads = () => {
   const [contentType, setContentType] = useState("BANNER");
   const [mediaUrl, setMediaUrl] = useState("");
   const [clickUrl, setClickUrl] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
 
   // Date range for analytics (last 30 days)
   const dateRange = {
@@ -149,15 +159,104 @@ export const Ads = () => {
     },
   });
 
+  // Edit ad state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingAd, setEditingAd] = useState<Ad | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editMediaUrl, setEditMediaUrl] = useState("");
+  const [editClickUrl, setEditClickUrl] = useState("");
+  const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({});
+
+  const [updateAd, { loading: updating }] = useMutation(UPDATE_AD_MUTATION, {
+    onCompleted: () => {
+      toast.success("Ad updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingAd(null);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update ad");
+    },
+  });
+
+  const handleEditClick = (ad: Ad) => {
+    setEditingAd(ad);
+    setEditName(ad.name);
+    setEditMediaUrl(ad.mediaUrl);
+    setEditClickUrl(ad.clickUrl);
+    setEditFormErrors({});
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: Record<string, string> = {};
+    if (!editName.trim()) errors.name = "Name is required";
+    else if (editName.length > AD_VALIDATION.NAME_MAX_LENGTH) errors.name = `Name must be under ${AD_VALIDATION.NAME_MAX_LENGTH} characters`;
+    const mediaErr = validateUrl(editMediaUrl, "Media URL");
+    if (mediaErr) errors.mediaUrl = mediaErr;
+    const clickErr = validateUrl(editClickUrl, "Click-through URL");
+    if (clickErr) errors.clickUrl = clickErr;
+    setEditFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    if (!editingAd) return;
+    updateAd({
+      variables: {
+        id: editingAd.id,
+        adIn: {
+          name: editName,
+          mediaUrl: editMediaUrl,
+          clickUrl: editClickUrl,
+        },
+      },
+    });
+  };
+
   const resetForm = () => {
     setName("");
     setContentType("BANNER");
     setMediaUrl("");
     setClickUrl("");
+    setStartsAt("");
+    setEndsAt("");
+  };
+
+  const [adFormErrors, setAdFormErrors] = useState<Record<string, string>>({});
+
+  const validateUrl = (url: string, fieldName: string): string | null => {
+    if (!url) return `${fieldName} is required`;
+    try {
+      const parsed = new URL(url);
+      if (!["http:", "https:"].includes(parsed.protocol)) return "URL must start with http:// or https://";
+      if (url.length > AD_VALIDATION.URL_MAX_LENGTH) return `URL must be under ${AD_VALIDATION.URL_MAX_LENGTH} characters`;
+      return null;
+    } catch {
+      return "Enter a valid URL (e.g. https://example.com/image.png)";
+    }
+  };
+
+  const validateAdForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!name.trim()) errors.name = "Name is required";
+    else if (name.length > AD_VALIDATION.NAME_MAX_LENGTH) errors.name = `Name must be under ${AD_VALIDATION.NAME_MAX_LENGTH} characters`;
+    const mediaErr = validateUrl(mediaUrl, "Media URL");
+    if (mediaErr) errors.mediaUrl = mediaErr;
+    const clickErr = validateUrl(clickUrl, "Click-through URL");
+    if (clickErr) errors.clickUrl = clickErr;
+    // M-FE5: Validate scheduling dates
+    if (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt)) {
+      errors.endsAt = "End date must be after start date";
+    }
+    return errors;
   };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors = validateAdForm();
+    setAdFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     createAd({
       variables: {
         adIn: {
@@ -166,6 +265,8 @@ export const Ads = () => {
           contentType,
           mediaUrl,
           clickUrl,
+          ...(startsAt && { startsAt: new Date(startsAt).toISOString() }),
+          ...(endsAt && { endsAt: new Date(endsAt).toISOString() }),
         },
       },
     });
@@ -207,17 +308,20 @@ export const Ads = () => {
   const ads: Ad[] = data?.eventAds || [];
   const adAnalytics = analyticsData?.monetizationAnalytics?.ads;
 
-  // Create a map of ad performance for quick lookup
-  const adPerformanceMap = new Map<string, { impressions: number; clicks: number; ctr: number }>();
-  if (adAnalytics?.allAdsPerformance) {
-    adAnalytics.allAdsPerformance.forEach((perf: AdPerformance) => {
-      adPerformanceMap.set(perf.adId, {
-        impressions: perf.impressions,
-        clicks: perf.clicks,
-        ctr: perf.ctr,
+  // Create a memoized map of ad performance for quick lookup
+  const adPerformanceMap = useMemo(() => {
+    const map = new Map<string, { impressions: number; clicks: number; ctr: number }>();
+    if (adAnalytics?.allAdsPerformance) {
+      adAnalytics.allAdsPerformance.forEach((perf: AdPerformance) => {
+        map.set(perf.adId, {
+          impressions: perf.impressions,
+          clicks: perf.clicks,
+          ctr: perf.ctr,
+        });
       });
-    });
-  }
+    }
+    return map;
+  }, [adAnalytics]);
 
   return (
     <div className="space-y-6 pt-4">
@@ -262,10 +366,12 @@ export const Ads = () => {
                   <Input
                     id="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => { setName(e.target.value); setAdFormErrors((p) => ({ ...p, name: "" })); }}
                     placeholder="e.g. Platinum Sponsor Logo"
+                    maxLength={200}
                     required
                   />
+                  {adFormErrors.name && <p className="text-xs text-destructive">{adFormErrors.name}</p>}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="type">Content Type</Label>
@@ -285,27 +391,51 @@ export const Ads = () => {
                   <Input
                     id="mediaUrl"
                     value={mediaUrl}
-                    onChange={(e) => setMediaUrl(e.target.value)}
+                    onChange={(e) => { setMediaUrl(e.target.value); setAdFormErrors((p) => ({ ...p, mediaUrl: "" })); }}
                     placeholder="https://..."
                     required
                   />
+                  {adFormErrors.mediaUrl && <p className="text-xs text-destructive">{adFormErrors.mediaUrl}</p>}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="clickUrl">Click-through URL</Label>
                   <Input
                     id="clickUrl"
                     value={clickUrl}
-                    onChange={(e) => setClickUrl(e.target.value)}
+                    onChange={(e) => { setClickUrl(e.target.value); setAdFormErrors((p) => ({ ...p, clickUrl: "" })); }}
                     placeholder="https://..."
                     required
                   />
+                  {adFormErrors.clickUrl && <p className="text-xs text-destructive">{adFormErrors.clickUrl}</p>}
+                </div>
+                {/* M-FE5: Ad scheduling date inputs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-2">
+                    <Label htmlFor="startsAt">Start Date (optional)</Label>
+                    <Input
+                      id="startsAt"
+                      type="datetime-local"
+                      value={startsAt}
+                      onChange={(e) => setStartsAt(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="endsAt">End Date (optional)</Label>
+                    <Input
+                      id="endsAt"
+                      type="datetime-local"
+                      value={endsAt}
+                      onChange={(e) => { setEndsAt(e.target.value); setAdFormErrors((p) => ({ ...p, endsAt: "" })); }}
+                    />
+                    {adFormErrors.endsAt && <p className="text-xs text-destructive">{adFormErrors.endsAt}</p>}
+                  </div>
                 </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={creating}>
+                <Button type="submit" disabled={creating || Object.values(adFormErrors).some(Boolean)}>
                   {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Ad
                 </Button>
@@ -341,12 +471,16 @@ export const Ads = () => {
                       src={ad.mediaUrl}
                       alt={ad.name}
                       className="object-cover w-full h-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        const sibling = e.currentTarget.nextElementSibling;
+                        if (sibling) sibling.classList.remove("hidden");
+                      }}
                     />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`flex items-center justify-center h-full ${ad.mediaUrl ? "hidden" : ""}`}>
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
                   <div className="absolute top-2 right-2 flex gap-2">
                     <Badge variant="secondary" className="bg-background/80 backdrop-blur">
                       {ad.contentType}
@@ -408,6 +542,14 @@ export const Ads = () => {
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditClick(ad)}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
                   <Button variant="outline" size="sm" asChild>
                     <a href={ad.clickUrl} target="_blank" rel="noopener noreferrer">
                       Test Link
@@ -419,6 +561,65 @@ export const Ads = () => {
           })}
         </div>
       )}
+          {/* Edit Ad Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <form onSubmit={handleEditSubmit}>
+                <DialogHeader>
+                  <DialogTitle>Edit Advertisement</DialogTitle>
+                  <DialogDescription>
+                    Update the details for this ad.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="editName">Internal Name</Label>
+                    <Input
+                      id="editName"
+                      value={editName}
+                      onChange={(e) => { setEditName(e.target.value); setEditFormErrors((p) => ({ ...p, name: "" })); }}
+                      placeholder="e.g. Platinum Sponsor Logo"
+                      maxLength={200}
+                      required
+                    />
+                    {editFormErrors.name && <p className="text-xs text-destructive">{editFormErrors.name}</p>}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="editMediaUrl">Media URL (Image/Video)</Label>
+                    <Input
+                      id="editMediaUrl"
+                      value={editMediaUrl}
+                      onChange={(e) => { setEditMediaUrl(e.target.value); setEditFormErrors((p) => ({ ...p, mediaUrl: "" })); }}
+                      placeholder="https://..."
+                      required
+                    />
+                    {editFormErrors.mediaUrl && <p className="text-xs text-destructive">{editFormErrors.mediaUrl}</p>}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="editClickUrl">Click-through URL</Label>
+                    <Input
+                      id="editClickUrl"
+                      value={editClickUrl}
+                      onChange={(e) => { setEditClickUrl(e.target.value); setEditFormErrors((p) => ({ ...p, clickUrl: "" })); }}
+                      placeholder="https://..."
+                      required
+                    />
+                    {editFormErrors.clickUrl && <p className="text-xs text-destructive">{editFormErrors.clickUrl}</p>}
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={updating || Object.values(editFormErrors).some(Boolean)}>
+                    {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
           <ConfirmDialog
             open={deleteConfirmOpen}
             onOpenChange={setDeleteConfirmOpen}

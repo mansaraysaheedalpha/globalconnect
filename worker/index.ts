@@ -10,7 +10,6 @@
 export {}; // Make this a module so `declare global` works
 
 const DB_NAME = "event_dynamics_offline";
-const DB_VERSION = 2;
 const SYNC_TAG = "mutation-sync";
 const FETCH_TIMEOUT_MS = 30_000; // 30 seconds
 const STALE_LOCK_THRESHOLD_MS = 60_000; // 60 seconds
@@ -20,12 +19,39 @@ const TOKEN_EXPIRY_BUFFER_MS = 60_000; // 60 seconds before actual expiry
 // IndexedDB helpers (raw — no imports possible in SW context)
 // ---------------------------------------------------------------------------
 
+/**
+ * Open the shared IndexedDB database WITHOUT specifying a version.
+ * This ensures the SW always opens whatever version the main app has
+ * created, even after a schema migration bumps the version number.
+ *
+ * If the DB doesn't exist yet (main app hasn't opened it), the
+ * versionchange event fires with version 1 and we create the
+ * minimum stores needed for background sync.
+ */
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    // Omitting the version opens the current version of the DB.
+    // This prevents the "version mismatch" error that occurs when
+    // the main app upgrades the DB version while an old SW is still running.
+    const request = indexedDB.open(DB_NAME);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
-    // Do NOT handle onupgradeneeded — the main app manages schema migrations.
+    // If the DB has never been created, handle the initial schema setup
+    // so background sync can work even before the main app opens.
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("mutationQueue")) {
+        const store = db.createObjectStore("mutationQueue", { keyPath: "id" });
+        store.createIndex("status", "status", { unique: false });
+        store.createIndex("createdAt", "createdAt", { unique: false });
+      }
+      if (!db.objectStoreNames.contains("syncMeta")) {
+        db.createObjectStore("syncMeta", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("events")) {
+        db.createObjectStore("events", { keyPath: "id" });
+      }
+    };
   });
 }
 
@@ -89,6 +115,42 @@ function canProcessMutation(mutation: QueuedMutation): boolean {
     return elapsed > STALE_LOCK_THRESHOLD_MS;
   }
   return false;
+}
+
+/**
+ * Atomically claim a mutation for processing — mirrors claimMutation()
+ * in offline-storage.ts. Reads + sets "in_flight" in a single readwrite
+ * transaction so the main thread and SW can't both claim the same mutation.
+ */
+async function claimMutationInDB(id: string): Promise<QueuedMutation | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("mutationQueue", "readwrite");
+    const store = tx.objectStore("mutationQueue");
+    const getReq = store.get(id);
+
+    let claimed: QueuedMutation | null = null;
+
+    getReq.onsuccess = () => {
+      const mutation = getReq.result as QueuedMutation | undefined;
+      if (!mutation || !canProcessMutation(mutation)) {
+        return; // tx completes with claimed = null
+      }
+      mutation.status = "in_flight";
+      mutation.lastAttemptAt = new Date().toISOString();
+      claimed = { ...mutation };
+      store.put(mutation);
+    };
+
+    tx.oncomplete = () => {
+      db.close();
+      resolve(claimed);
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
 }
 
 async function updateMutationInDB(mutation: QueuedMutation): Promise<void> {
@@ -262,27 +324,26 @@ async function processQueue(): Promise<void> {
   console.log(`[SW Sync] Processing ${mutations.length} queued mutation(s)`);
 
   for (const mutation of mutations) {
-    // Mark as in_flight before processing (#3 — deduplication)
-    mutation.status = "in_flight";
-    mutation.lastAttemptAt = new Date().toISOString();
-    await updateMutationInDB(mutation);
+    // Atomically claim — prevents race with the main thread's sync manager
+    const claimed = await claimMutationInDB(mutation.id);
+    if (!claimed) continue;
 
-    const success = await replayMutation(mutation, apiUrl, authToken);
+    const success = await replayMutation(claimed, apiUrl, authToken);
 
     if (success) {
-      await deleteMutationFromDB(mutation.id);
+      await deleteMutationFromDB(claimed.id);
     } else {
-      mutation.retryCount = (mutation.retryCount || 0) + 1;
+      claimed.retryCount = (claimed.retryCount || 0) + 1;
 
-      if (mutation.retryCount >= mutation.maxRetries) {
-        mutation.status = "failed";
-        mutation.errorMessage = "Background sync: max retries exceeded";
+      if (claimed.retryCount >= claimed.maxRetries) {
+        claimed.status = "failed";
+        claimed.errorMessage = "Background sync: max retries exceeded";
       } else {
         // Reset to pending so main thread or next sync can retry
-        mutation.status = "pending";
+        claimed.status = "pending";
       }
 
-      await updateMutationInDB(mutation);
+      await updateMutationInDB(claimed);
     }
   }
 }
@@ -310,6 +371,16 @@ self.addEventListener("activate", (event) => {
 
 const PERIODIC_SYNC_TAG = "refresh-event-data";
 
+// Fallback query — used only if the main thread hasn't stored the query in
+// syncMeta yet (first install before the app opens). The main thread stores
+// the authoritative copy via storeSyncMeta("bg_sync_periodic_query", ...).
+const DEFAULT_PERIODIC_SYNC_QUERY = `query PeriodicSyncRefresh {
+  myRegisteredEvents {
+    id title description startDate endDate status imageUrl
+    venue { id name address city }
+  }
+}`;
+
 /**
  * Fetch the user's registered events from the GraphQL API and
  * store them in the events IndexedDB store for offline access.
@@ -324,6 +395,11 @@ async function refreshEventData(): Promise<void> {
 
   if (!apiUrl || !authToken) return;
 
+  // Read the query from syncMeta (stored by the main thread) — single source of truth.
+  // Falls back to the hardcoded default for first-install edge case.
+  const query = ((await readSyncMeta("bg_sync_periodic_query")) as string | null)
+    || DEFAULT_PERIODIC_SYNC_QUERY;
+
   try {
     const response = await fetchWithTimeout(apiUrl, {
       method: "POST",
@@ -333,18 +409,7 @@ async function refreshEventData(): Promise<void> {
       },
       credentials: "include",
       body: JSON.stringify({
-        query: `query PeriodicSyncRefresh {
-          myRegisteredEvents {
-            id
-            title
-            description
-            startDate
-            endDate
-            status
-            imageUrl
-            venue { id name address city }
-          }
-        }`,
+        query,
         operationName: "PeriodicSyncRefresh",
       }),
     });

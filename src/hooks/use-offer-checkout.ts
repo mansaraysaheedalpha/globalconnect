@@ -49,6 +49,7 @@ export function useOfferCheckout(options?: UseOfferCheckoutOptions) {
 
       const checkoutUrl = result.data?.purchaseOffer?.stripeCheckoutUrl;
       const checkoutSessionId = result.data?.purchaseOffer?.checkoutSessionId;
+      const orderInfo = result.data?.purchaseOffer?.order;
 
       if (!checkoutUrl) {
         throw new Error("No checkout URL returned from server");
@@ -59,6 +60,23 @@ export function useOfferCheckout(options?: UseOfferCheckoutOptions) {
         quantity,
         checkoutSessionId,
       });
+
+      // F3: Preserve checkout state before redirect so we can restore on return
+      try {
+        sessionStorage.setItem(
+          "pendingCheckout",
+          JSON.stringify({
+            offerId,
+            quantity,
+            checkoutSessionId,
+            orderId: orderInfo?.id,
+            orderNumber: orderInfo?.orderNumber,
+            timestamp: Date.now(),
+          })
+        );
+      } catch {
+        // sessionStorage may be unavailable in some contexts
+      }
 
       // Call success callback if provided
       options?.onSuccess?.(checkoutUrl);
@@ -79,7 +97,7 @@ export function useOfferCheckout(options?: UseOfferCheckoutOptions) {
       options?.onError?.(
         error instanceof Error ? error : new Error(String(error))
       );
-
+    } finally {
       setLoading(false);
     }
   };

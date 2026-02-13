@@ -81,16 +81,77 @@ export function downloadCSV(content: string, filename: string) {
 
 /**
  * Export analytics data as Excel (XLSX)
- * Note: Requires a library like xlsx or exceljs
- * This is a placeholder that would use such a library
+ * Uses SheetJS (xlsx) for proper workbook generation.
+ * Falls back to CSV if xlsx is not available.
  */
 export async function exportToExcel(data: ExportData): Promise<Blob> {
-  // TODO: Implement using xlsx or exceljs library
-  // This would create a multi-sheet workbook with charts
+  try {
+    const XLSX = await import("xlsx");
+    const wb = XLSX.utils.book_new();
 
-  // For now, return CSV as fallback
-  const csv = exportToCSV(data);
-  return new Blob([csv], { type: "application/vnd.ms-excel" });
+    // Revenue sheet
+    if (data.sections.revenue) {
+      const revRows = [
+        ["Metric", "Value"],
+        ["Total Revenue", `$${data.sections.revenue.total.toFixed(2)}`],
+        ["Offers Revenue", `$${data.sections.revenue.fromOffers.toFixed(2)}`],
+        ["Ads Revenue", `$${data.sections.revenue.fromAds.toFixed(2)}`],
+        ["Conversion Rate", `${data.sections.revenue.conversionRate.toFixed(2)}%`],
+      ];
+      const revWs = XLSX.utils.aoa_to_sheet(revRows);
+      revWs["!cols"] = [{ wch: 20 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, revWs, "Revenue");
+    }
+
+    // Offers sheet
+    if (data.sections.offers) {
+      const offerRows = [
+        ["Offer Name", "Views", "Purchases", "Conversion Rate", "Revenue"],
+        ...data.sections.offers.topPerformers.map((o: OfferPerformance) => [
+          o.name, o.views, o.purchases, `${o.conversionRate.toFixed(2)}%`, `$${o.revenue.toFixed(2)}`,
+        ]),
+      ];
+      const offerWs = XLSX.utils.aoa_to_sheet(offerRows);
+      offerWs["!cols"] = [{ wch: 30 }, { wch: 10 }, { wch: 12 }, { wch: 16 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(wb, offerWs, "Offers");
+    }
+
+    // Ads sheet
+    if (data.sections.ads) {
+      const adRows = [
+        ["Ad Name", "Impressions", "Clicks", "CTR"],
+        ...data.sections.ads.topPerformers.map((a: AdPerformance) => [
+          a.name, a.impressions, a.clicks, `${a.ctr.toFixed(2)}%`,
+        ]),
+      ];
+      const adWs = XLSX.utils.aoa_to_sheet(adRows);
+      adWs["!cols"] = [{ wch: 30 }, { wch: 14 }, { wch: 10 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, adWs, "Ads");
+    }
+
+    // Waitlist sheet
+    if (data.sections.waitlist) {
+      const wlRows = [
+        ["Metric", "Value"],
+        ["Total Joins", data.sections.waitlist.totalJoins],
+        ["Offers Issued", data.sections.waitlist.offersIssued],
+        ["Acceptance Rate", `${data.sections.waitlist.acceptanceRate.toFixed(2)}%`],
+        ["Avg Wait Time", `${data.sections.waitlist.averageWaitTimeMinutes} min`],
+      ];
+      const wlWs = XLSX.utils.aoa_to_sheet(wlRows);
+      wlWs["!cols"] = [{ wch: 20 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, wlWs, "Waitlist");
+    }
+
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    return new Blob([wbout], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  } catch {
+    // Fallback to CSV if xlsx library is not available
+    const csv = exportToCSV(data);
+    return new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  }
 }
 
 /**
@@ -112,17 +173,22 @@ export function downloadExcel(blob: Blob, filename: string) {
 }
 
 /**
- * Export analytics data as PDF
- * Note: This would typically be done server-side
+ * Export analytics data as PDF via browser print dialog.
+ * Opens the HTML report in a new window and triggers print-to-PDF.
  */
 export async function exportToPDF(data: ExportData): Promise<Blob> {
-  // TODO: Implement using server-side PDF generation
-  // This would call a backend endpoint that uses libraries like:
-  // - Python: reportlab, weasyprint
-  // - Node.js: puppeteer, pdfkit
-
-  // For now, return a placeholder
   const html = generateHTMLReport(data);
+
+  // Open print window — the user can "Save as PDF" from the browser print dialog
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
+  }
+
+  // Return the HTML as a blob (used by the download flow as fallback)
   return new Blob([html], { type: "text/html" });
 }
 

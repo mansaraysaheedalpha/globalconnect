@@ -1,7 +1,7 @@
 // src/app/(platform)/dashboard/events/[eventId]/monetization/revenue-insights.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
 import { GET_MONETIZATION_ANALYTICS_QUERY } from "@/graphql/monetization.graphql";
@@ -23,8 +23,13 @@ import { ConversionFunnel } from "../analytics/_components/conversion-funnel";
 import { DateRangePicker } from "../analytics/_components/date-range-picker";
 import { ExportReportDialog } from "../analytics/_components/export-report-dialog";
 import { ScheduledReports } from "../analytics/_components/scheduled-reports";
+import { ChartErrorBoundary } from "@/components/ui/error-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { addDays, format } from "date-fns";
+import { formatCurrency, formatPercent } from "@/lib/format-utils";
+
+// M-CQ5: Named constant for auto-refresh interval
+const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 export const RevenueInsights = () => {
   const params = useParams();
@@ -46,13 +51,41 @@ export const RevenueInsights = () => {
 
   const analytics = data?.monetizationAnalytics;
 
+  // Memoize derived metric calculations to avoid recomputing on every render
+  const keyMetrics = useMemo(() => {
+    if (!analytics) return null;
+    return {
+      totalRevenue: formatCurrency(analytics.revenue?.total || 0),
+      offerRevenueDisplay: analytics.revenue?.fromOffers
+        ? `${formatCurrency(analytics.revenue.fromOffers)} from offers`
+        : "No offer revenue",
+      conversionRate: formatPercent(analytics.offers?.conversionRate || 0, 2),
+      totalPurchases: analytics.offers?.totalPurchases || 0,
+      totalViews: analytics.offers?.totalViews || 0,
+      totalImpressions: (analytics.ads?.totalImpressions || 0).toLocaleString(),
+      averageCTR: formatPercent(analytics.ads?.averageCTR || 0, 2),
+      acceptanceRate: formatPercent(analytics.waitlist?.acceptanceRate || 0, 1),
+      offersIssued: analytics.waitlist?.offersIssued || 0,
+    };
+  }, [analytics]);
+
+  // M-FE1: Track last updated timestamp
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
   // Auto-refresh every 5 minutes
   useEffect(() => {
     const interval = setInterval(() => {
-      refetch();
-    }, 5 * 60 * 1000);
+      refetch().then(() => setLastUpdated(new Date()));
+    }, AUTO_REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [refetch]);
+
+  // Update timestamp on manual refetch or initial load
+  useEffect(() => {
+    if (!loading && data) {
+      setLastUpdated(new Date());
+    }
+  }, [data, loading]);
 
   return (
     <div className="space-y-6 pt-4">
@@ -65,6 +98,9 @@ export const RevenueInsights = () => {
           </h2>
           <p className="text-muted-foreground">
             Track revenue, conversions, and performance across offers, ads, and waitlists.
+            <span className="ml-2 text-xs">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </span>
           </p>
         </div>
 
@@ -119,13 +155,10 @@ export const RevenueInsights = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${((analytics?.revenue?.total || 0) / 100).toFixed(2)}
+                  {keyMetrics?.totalRevenue}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {analytics?.revenue?.fromOffers
-                    ? `$${(analytics.revenue.fromOffers / 100).toFixed(2)} from offers`
-                    : "No offer revenue"
-                  }
+                  {keyMetrics?.offerRevenueDisplay}
                 </p>
               </CardContent>
             </Card>
@@ -137,10 +170,10 @@ export const RevenueInsights = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {analytics?.offers?.conversionRate?.toFixed(2) || 0}%
+                  {keyMetrics?.conversionRate}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {analytics?.offers?.totalPurchases || 0} purchases from {analytics?.offers?.totalViews || 0} views
+                  {keyMetrics?.totalPurchases} purchases from {keyMetrics?.totalViews} views
                 </p>
               </CardContent>
             </Card>
@@ -152,10 +185,10 @@ export const RevenueInsights = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {(analytics?.ads?.totalImpressions || 0).toLocaleString()}
+                  {keyMetrics?.totalImpressions}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {analytics?.ads?.averageCTR?.toFixed(2) || 0}% CTR
+                  {keyMetrics?.averageCTR} CTR
                 </p>
               </CardContent>
             </Card>
@@ -167,10 +200,10 @@ export const RevenueInsights = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {analytics?.waitlist?.acceptanceRate?.toFixed(1) || 0}%
+                  {keyMetrics?.acceptanceRate}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {analytics?.waitlist?.offersIssued || 0} offers issued
+                  {keyMetrics?.offersIssued} offers issued
                 </p>
               </CardContent>
             </Card>
@@ -188,31 +221,41 @@ export const RevenueInsights = () => {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <RevenueOverview data={analytics?.revenue} />
+              <ChartErrorBoundary chartName="Revenue Overview">
+                <RevenueOverview data={analytics?.revenue} />
+              </ChartErrorBoundary>
             </TabsContent>
 
             <TabsContent value="offers" className="space-y-6">
-              <OfferPerformance
-                eventId={eventId}
-                data={analytics?.offers}
-                dateRange={dateRange}
-              />
+              <ChartErrorBoundary chartName="Offer Performance">
+                <OfferPerformance
+                  eventId={eventId}
+                  data={analytics?.offers}
+                  dateRange={dateRange}
+                />
+              </ChartErrorBoundary>
             </TabsContent>
 
             <TabsContent value="ads" className="space-y-6">
-              <AdCampaignAnalytics
-                eventId={eventId}
-                data={analytics?.ads}
-                dateRange={dateRange}
-              />
+              <ChartErrorBoundary chartName="Ad Campaign Analytics">
+                <AdCampaignAnalytics
+                  eventId={eventId}
+                  data={analytics?.ads}
+                  dateRange={dateRange}
+                />
+              </ChartErrorBoundary>
             </TabsContent>
 
             <TabsContent value="waitlist" className="space-y-6">
-              <WaitlistMetrics data={analytics?.waitlist} />
+              <ChartErrorBoundary chartName="Waitlist Metrics">
+                <WaitlistMetrics data={analytics?.waitlist} />
+              </ChartErrorBoundary>
             </TabsContent>
 
             <TabsContent value="funnel" className="space-y-6">
-              <ConversionFunnel data={analytics} />
+              <ChartErrorBoundary chartName="Conversion Funnel">
+                <ConversionFunnel data={analytics} />
+              </ChartErrorBoundary>
             </TabsContent>
 
             <TabsContent value="reports" className="space-y-6">

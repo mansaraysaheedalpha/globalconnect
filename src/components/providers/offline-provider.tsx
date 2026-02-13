@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { OfflineBanner } from "@/components/ui/offline-banner";
 import { InstallPromptBanner } from "@/components/ui/install-prompt-banner";
 import { onSyncEvent } from "@/lib/sync-manager";
-import { getPendingMutationCount } from "@/lib/offline-storage";
+import { getPendingMutationCount, getAllItems } from "@/lib/offline-storage";
 
 /**
  * OfflineProvider
@@ -18,14 +18,30 @@ import { getPendingMutationCount } from "@/lib/offline-storage";
  * Place inside the ApolloProvider (needs Apollo context for sync manager).
  */
 export function OfflineProvider({ children }: { children: React.ReactNode }) {
-  // Track pending mutation count in a ref so beforeunload can read it synchronously (#2)
+  // Track pending counts in refs so beforeunload can read them synchronously.
+  // Both mutation queue (IndexedDB mutationQueue store) and socket event queue
+  // (IndexedDB syncMeta store with socket_queue_ keys) are polled asynchronously
+  // and their counts cached here for the synchronous beforeunload handler.
   const pendingCountRef = useRef(0);
+  const socketQueueCountRef = useRef(0);
 
   useEffect(() => {
-    // Poll pending count every 5s so the ref stays reasonably fresh
     const poll = () => {
       getPendingMutationCount()
         .then((count) => { pendingCountRef.current = count; })
+        .catch(() => {});
+
+      // Read socket queue entries from IndexedDB syncMeta store
+      getAllItems<{ id: string; events?: unknown[] }>("syncMeta")
+        .then((items) => {
+          let count = 0;
+          for (const item of items) {
+            if (item.id.startsWith("socket_queue_") && Array.isArray(item.events)) {
+              count += item.events.length;
+            }
+          }
+          socketQueueCountRef.current = count;
+        })
         .catch(() => {});
     };
     poll();
@@ -33,32 +49,12 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Warn users about unsaved offline data before closing/navigating away (#2)
+  // Warn users about unsaved offline data before closing/navigating away
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Synchronous check: pending GraphQL mutations (from polled ref)
-      if (pendingCountRef.current > 0) {
+      if (pendingCountRef.current > 0 || socketQueueCountRef.current > 0) {
         e.preventDefault();
         return;
-      }
-
-      // Synchronous check: scan localStorage for socket queue entries
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith("socket_queue_")) {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              if (parsed?.events?.length > 0) {
-                e.preventDefault();
-                return;
-              }
-            }
-          }
-        }
-      } catch {
-        // Best effort
       }
     };
 

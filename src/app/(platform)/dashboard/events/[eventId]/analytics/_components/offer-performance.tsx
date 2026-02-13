@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Eye, ShoppingCart, DollarSign, TrendingUp, Award } from "lucide-react";
+import { formatCurrency, formatPercent } from "@/lib/format-utils";
 
 interface OfferData {
   totalViews: number;
@@ -90,7 +91,7 @@ export function OfferPerformance({ eventId, data, dateRange }: OfferPerformanceP
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{conversionRate.toFixed(2)}%</div>
+            <div className="text-2xl font-bold">{formatPercent(conversionRate, 2)}</div>
             <div className="mt-2">
               <Progress value={conversionRate} max={10} className="h-2" />
             </div>
@@ -108,7 +109,7 @@ export function OfferPerformance({ eventId, data, dateRange }: OfferPerformanceP
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${((averageOrderValue || 0) / 100).toFixed(2)}
+              {formatCurrency(averageOrderValue || 0)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Per transaction
@@ -141,7 +142,7 @@ export function OfferPerformance({ eventId, data, dateRange }: OfferPerformanceP
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Purchases</span>
                 <span className="text-sm text-muted-foreground">
-                  {totalPurchases.toLocaleString()} ({viewToPurchaseRate.toFixed(1)}%)
+                  {totalPurchases.toLocaleString()} ({formatPercent(viewToPurchaseRate)})
                 </span>
               </div>
               <Progress value={viewToPurchaseRate} className="h-3" />
@@ -207,10 +208,10 @@ export function OfferPerformance({ eventId, data, dateRange }: OfferPerformanceP
                       <TableCell className="font-medium">{offer.title}</TableCell>
                       <TableCell className="text-right">{offer.conversions}</TableCell>
                       <TableCell className="text-right font-semibold">
-                        ${(offer.revenue / 100).toFixed(2)}
+                        {formatCurrency(offer.revenue)}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        ${(avgValue / 100).toFixed(2)}
+                        {formatCurrency(avgValue)}
                       </TableCell>
                     </TableRow>
                   );

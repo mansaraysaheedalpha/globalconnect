@@ -178,6 +178,19 @@ const deserializePolls = (raw: unknown): PollsCacheData => {
   };
 };
 
+const MAX_CACHED_POLLS = 50;
+
+/** Keep only the most recent N polls + their matching votes. */
+const trimPolls = (data: PollsCacheData): PollsCacheData => {
+  if (data.polls.length <= MAX_CACHED_POLLS) return data;
+  const trimmedPolls = data.polls.slice(-MAX_CACHED_POLLS);
+  const keptIds = new Set(trimmedPolls.map(([id]) => id));
+  return {
+    polls: trimmedPolls,
+    userVotes: data.userVotes.filter(([id]) => keptIds.has(id)),
+  };
+};
+
 export const useSessionPolls = (
   sessionId: string,
   eventId: string,
@@ -201,6 +214,7 @@ export const useSessionPolls = (
     sessionId,
     serialize: serializePolls,
     deserialize: deserializePolls,
+    trimBeforePersist: trimPolls,
   });
 
   const [ownSocket, setOwnSocket] = useState<Socket | null>(null);

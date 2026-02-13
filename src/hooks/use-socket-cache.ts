@@ -25,6 +25,9 @@ interface UseSocketCacheOptions<T> {
   staleAfter?: number;
   /** Max items to persist (only applies when T is an array). Keeps latest N items. */
   maxItems?: number;
+  /** Custom trim function for non-array data (e.g., objects with internal arrays).
+   *  Called before serialization. Use this when maxItems can't work (T is not an array). */
+  trimBeforePersist?: (data: T) => T;
 }
 
 interface UseSocketCacheResult<T> {
@@ -58,6 +61,7 @@ export function useSocketCache<T>(
     deserialize,
     staleAfter = 30 * 60 * 1000,
     maxItems,
+    trimBeforePersist,
   } = options;
 
   const cacheKey = `socket_cache_${feature}_${sessionId}`;
@@ -96,10 +100,11 @@ export function useSocketCache<T>(
 
   const persistToCache = useCallback(
     (data: T) => {
+      // Apply custom trim for non-array data shapes (e.g., polls object with internal arrays)
+      let toStore: T | unknown = trimBeforePersist ? trimBeforePersist(data) : data;
       // Enforce maxItems limit for array data before persisting (#10)
-      let toStore: T | unknown = data;
-      if (maxItems && Array.isArray(data) && data.length > maxItems) {
-        toStore = data.slice(-maxItems);
+      if (maxItems && Array.isArray(toStore) && toStore.length > maxItems) {
+        toStore = toStore.slice(-maxItems);
       }
       const serialized = serialize ? serialize(toStore as T) : toStore;
       const now = Date.now();
@@ -112,7 +117,7 @@ export function useSocketCache<T>(
       });
       setCachedAt(new Date(now));
     },
-    [cacheKey, serialize, maxItems]
+    [cacheKey, serialize, maxItems, trimBeforePersist]
   );
 
   const clearCache = useCallback(() => {

@@ -189,13 +189,46 @@ export const Upsells = () => {
     e.preventDefault();
     if (!editingOffer) return;
 
+    // HF1: Validate edit form before submission
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle || trimmedTitle.length < 2) {
+      toast.error("Offer title must be at least 2 characters");
+      return;
+    }
+
+    const parsedPrice = parseFloat(editPrice);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      toast.error("Price must be a positive number");
+      return;
+    }
+
+    if (editOriginalPrice) {
+      const parsedOriginal = parseFloat(editOriginalPrice);
+      if (isNaN(parsedOriginal) || parsedOriginal <= 0) {
+        toast.error("Original price must be a positive number");
+        return;
+      }
+      if (parsedOriginal <= parsedPrice) {
+        toast.error("Original price should be higher than the offer price");
+        return;
+      }
+    }
+
+    if (editInventoryTotal) {
+      const parsedInventory = parseInt(editInventoryTotal);
+      if (isNaN(parsedInventory) || parsedInventory < 1) {
+        toast.error("Stock limit must be at least 1");
+        return;
+      }
+    }
+
     updateOffer({
       variables: {
         id: editingOffer.id,
         offerIn: {
-          title: editTitle,
+          title: trimmedTitle,
           description: editDescription || null,
-          price: parseFloat(editPrice),
+          price: parsedPrice,
           originalPrice: editOriginalPrice ? parseFloat(editOriginalPrice) : null,
           imageUrl: editImageUrl || null,
           expiresAt: editExpiresAt || null,
@@ -217,8 +250,43 @@ export const Upsells = () => {
     setInventoryTotal("");
   };
 
+  const validatePriceField = (value: string): string | null => {
+    if (!value) return null;
+    if (!/^\d+(\.\d{1,2})?$/.test(value)) return "Enter a valid price (e.g. 19.99)";
+    const num = parseFloat(value);
+    if (num < 0) return "Price cannot be negative";
+    if (num > 999999.99) return "Price cannot exceed 999,999.99";
+    return null;
+  };
+
+  const validateCreateForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    const priceErr = validatePriceField(price);
+    if (!price) errors.price = "Price is required";
+    else if (priceErr) errors.price = priceErr;
+
+    if (originalPrice) {
+      const opErr = validatePriceField(originalPrice);
+      if (opErr) errors.originalPrice = opErr;
+      else if (parseFloat(originalPrice) < parseFloat(price))
+        errors.originalPrice = "Original price must be >= offer price";
+    }
+
+    if (inventoryTotal) {
+      const inv = parseInt(inventoryTotal);
+      if (isNaN(inv) || inv < 1) errors.inventoryTotal = "Stock limit must be at least 1";
+    }
+    return errors;
+  };
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors = validateCreateForm();
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     createOffer({
       variables: {
         offerIn: {
@@ -325,10 +393,11 @@ export const Upsells = () => {
                       type="number"
                       step="0.01"
                       value={price}
-                      onChange={(e) => setPrice(e.target.value)}
+                      onChange={(e) => { setPrice(e.target.value); setFormErrors((p) => ({ ...p, price: "" })); }}
                       placeholder="19.99"
                       required
                     />
+                    {formErrors.price && <p className="text-xs text-destructive">{formErrors.price}</p>}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="originalPrice">Original Price (Optional)</Label>
@@ -337,9 +406,10 @@ export const Upsells = () => {
                       type="number"
                       step="0.01"
                       value={originalPrice}
-                      onChange={(e) => setOriginalPrice(e.target.value)}
+                      onChange={(e) => { setOriginalPrice(e.target.value); setFormErrors((p) => ({ ...p, originalPrice: "" })); }}
                       placeholder="39.99"
                     />
+                    {formErrors.originalPrice && <p className="text-xs text-destructive">{formErrors.originalPrice}</p>}
                   </div>
                 </div>
                 <div className="grid gap-2">
@@ -364,10 +434,14 @@ export const Upsells = () => {
                       type="number"
                       min="1"
                       value={inventoryTotal}
-                      onChange={(e) => setInventoryTotal(e.target.value)}
+                      onChange={(e) => { setInventoryTotal(e.target.value); setFormErrors((p) => ({ ...p, inventoryTotal: "" })); }}
                       placeholder="Unlimited"
                     />
-                    <p className="text-xs text-muted-foreground">Leave empty for unlimited</p>
+                    {formErrors.inventoryTotal ? (
+                      <p className="text-xs text-destructive">{formErrors.inventoryTotal}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Leave empty for unlimited</p>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="expiresAt">Expires At (Optional)</Label>
@@ -384,7 +458,7 @@ export const Upsells = () => {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={creating}>
+                <Button type="submit" disabled={creating || Object.values(formErrors).some(Boolean)}>
                   {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Offer
                 </Button>

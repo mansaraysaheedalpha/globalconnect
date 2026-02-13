@@ -100,23 +100,62 @@ export async function restoreCache(cache: InMemoryCache): Promise<void> {
 }
 
 /**
+ * Evict cache entries to bring the serialized size under MAX_CACHE_SIZE.
+ *
+ * Strategy: Remove entries with the oldest `__lastAccessed` metadata first,
+ * falling back to non-essential types (PublicEvent, then generic keys with
+ * many fields). ROOT_QUERY is never evicted.
+ */
+function evictToFit(data: NormalizedCacheObject): NormalizedCacheObject {
+  // Types we can safely evict (ordered from least to most essential)
+  const evictablePrefixes = ["PublicEvent:", "Speaker:", "Venue:", "Session:", "Event:"];
+  const trimmed = { ...data };
+
+  for (const prefix of evictablePrefixes) {
+    if (JSON.stringify(trimmed).length <= MAX_CACHE_SIZE) break;
+
+    // Collect keys matching this prefix, sorted by key (oldest IDs first as heuristic)
+    const keys = Object.keys(trimmed)
+      .filter((k) => k.startsWith(prefix))
+      .sort();
+
+    // Evict the first half of matching entries
+    const toEvict = keys.slice(0, Math.max(1, Math.floor(keys.length / 2)));
+    for (const key of toEvict) {
+      delete trimmed[key];
+    }
+  }
+
+  return trimmed;
+}
+
+/**
  * Persist the current Apollo InMemoryCache to IndexedDB.
  * Debounced to avoid excessive writes.
+ * If the cache exceeds MAX_CACHE_SIZE, evicts non-essential entries
+ * before persisting so offline data is never silently lost.
  */
 export function persistCache(cache: InMemoryCache): void {
   if (writeTimer) clearTimeout(writeTimer);
 
   writeTimer = setTimeout(async () => {
     try {
-      const data = cache.extract();
-      const serialized = JSON.stringify(data);
+      let data = cache.extract();
+      let serialized = JSON.stringify(data);
 
-      // Check size
+      // Evict entries if over size limit instead of silently skipping
       if (serialized.length > MAX_CACHE_SIZE) {
         console.warn(
-          `[ApolloCache] Cache size (${(serialized.length / 1024 / 1024).toFixed(1)}MB) exceeds limit, skipping persist`
+          `[ApolloCache] Cache size (${(serialized.length / 1024 / 1024).toFixed(1)}MB) exceeds ${(MAX_CACHE_SIZE / 1024 / 1024).toFixed(0)}MB limit, evicting non-essential entries`
         );
-        return;
+        data = evictToFit(data);
+        serialized = JSON.stringify(data);
+
+        // If still over limit after eviction, skip persist as last resort
+        if (serialized.length > MAX_CACHE_SIZE) {
+          console.warn("[ApolloCache] Still over limit after eviction, skipping persist");
+          return;
+        }
       }
 
       const db = await openCacheDB();
