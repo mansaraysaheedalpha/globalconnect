@@ -375,9 +375,9 @@ const PERIODIC_SYNC_TAG = "refresh-event-data";
 // syncMeta yet (first install before the app opens). The main thread stores
 // the authoritative copy via storeSyncMeta("bg_sync_periodic_query", ...).
 const DEFAULT_PERIODIC_SYNC_QUERY = `query PeriodicSyncRefresh {
-  myRegisteredEvents {
-    id title description startDate endDate status imageUrl
-    venue { id name address city }
+  myRegistrations {
+    id status
+    event { id name description startDate endDate status imageUrl venue { id name address city } }
   }
 }`;
 
@@ -417,7 +417,7 @@ async function refreshEventData(): Promise<void> {
     if (!response.ok) return;
 
     const json = await response.json();
-    const events = json.data?.myRegisteredEvents;
+    const events = json.data?.myRegistrations;
     if (!events || !Array.isArray(events)) return;
 
     // Store each event in the IndexedDB "events" store

@@ -288,9 +288,9 @@ const client = new ApolloClient({
 // Single source of truth for the periodic sync query — also stored in
 // IndexedDB (syncMeta) so the SW reads it instead of hardcoding its own copy.
 const PERIODIC_SYNC_QUERY_STRING = `query PeriodicSyncRefresh {
-  myRegisteredEvents {
-    id title description startDate endDate status imageUrl
-    venue { id name address city }
+  myRegistrations {
+    id status
+    event { id name description startDate endDate status imageUrl venue { id name address city } }
   }
 }`;
 
@@ -310,7 +310,7 @@ async function mergePeriodicSyncData(apolloCache: InMemoryCache): Promise<void> 
 
     apolloCache.writeQuery({
       query: PERIODIC_SYNC_QUERY,
-      data: { myRegisteredEvents: events },
+      data: { myRegistrations: events },
     });
   } catch (e) {
     console.warn("[Apollo] Failed to merge periodic sync data:", e);
@@ -336,8 +336,8 @@ async function refreshOnVisibility(): Promise<void> {
       fetchPolicy: "network-only",
     });
 
-    if (data?.myRegisteredEvents) {
-      await storeItems("events", data.myRegisteredEvents);
+    if (data?.myRegistrations) {
+      await storeItems("events", data.myRegistrations);
       await storeSyncMeta("periodic_sync_last", Date.now());
     }
   } catch {
