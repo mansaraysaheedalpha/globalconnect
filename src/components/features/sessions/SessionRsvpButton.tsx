@@ -135,7 +135,7 @@ export function SessionRsvpButton({
           };
 
           try {
-            const existingData = cache.readQuery(myScheduleQuery);
+            const existingData = cache.readQuery<{ mySchedule: Array<Record<string, unknown>> }>(myScheduleQuery);
             if (existingData?.mySchedule) {
               // Add new RSVP to the schedule (will be fully populated on next fetch)
               cache.writeQuery({
@@ -201,8 +201,8 @@ export function SessionRsvpButton({
         cache.modify({
           id: cache.identify({ __typename: 'Session', id: sessionId }),
           fields: {
-            rsvpCount: (prev = 0) => Math.max(0, prev - 1),
-            rsvpAvailableSpots: (prev = 0) => prev + 1,
+            rsvpCount: (prev: number = 0) => Math.max(0, prev - 1),
+            rsvpAvailableSpots: (prev: number = 0) => prev + 1,
             isSessionFull: () => false, // Always false after cancellation (spot freed)
           },
         });
@@ -229,7 +229,7 @@ export function SessionRsvpButton({
           };
 
           try {
-            const existingData = cache.readQuery(myScheduleQuery);
+            const existingData = cache.readQuery<{ mySchedule: Array<Record<string, unknown>> }>(myScheduleQuery);
             if (existingData?.mySchedule) {
               // Remove cancelled session from schedule
               cache.writeQuery({
