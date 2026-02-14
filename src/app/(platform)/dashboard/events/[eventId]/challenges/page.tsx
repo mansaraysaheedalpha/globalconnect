@@ -164,6 +164,15 @@ export default function ChallengesPage() {
       toast.success("Trivia game completed!");
     });
 
+    socket.on("trivia.delete.response", (data: any) => {
+      if (data?.success) {
+        setTriviaGames((prev) => prev.filter((g) => g.id !== data.gameId));
+        toast.success(`Trivia game "${data.name}" deleted.`);
+      } else {
+        toast.error(data?.error || "Failed to delete trivia game.");
+      }
+    });
+
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
@@ -228,6 +237,11 @@ export default function ChallengesPage() {
 
   const handleEndTrivia = (gameId: string) => {
     socketRef.current?.emit("trivia.end", { gameId });
+  };
+
+  const handleDeleteTrivia = (gameId: string) => {
+    if (!socketRef.current?.connected) return;
+    socketRef.current.emit("trivia.delete", { gameId });
   };
 
   const getTimeRemaining = () => {
@@ -330,6 +344,7 @@ export default function ChallengesPage() {
               onStart={handleStartTrivia}
               onAdvance={handleAdvanceTrivia}
               onEnd={handleEndTrivia}
+              onDelete={handleDeleteTrivia}
             />
           </div>
         </div>

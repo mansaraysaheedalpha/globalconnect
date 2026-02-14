@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Clock,
   FileText,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ interface TriviaMonitorProps {
   onStart: (gameId: string) => void;
   onAdvance: (gameId: string) => void;
   onEnd: (gameId: string) => void;
+  onDelete?: (gameId: string) => void;
 }
 
 const STATUS_CONFIG = {
@@ -67,6 +69,7 @@ export const TriviaMonitor = ({
   onStart,
   onAdvance,
   onEnd,
+  onDelete,
 }: TriviaMonitorProps) => {
   return (
     <Card>
@@ -152,14 +155,27 @@ export const TriviaMonitor = ({
               {/* Organizer controls */}
               <div className="flex gap-2 pt-1">
                 {game.status === "DRAFT" && (
-                  <Button
-                    size="sm"
-                    className="h-7 text-xs gap-1"
-                    onClick={() => onStart(game.id)}
-                  >
-                    <Play className="h-3 w-3" />
-                    Start Game
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => onStart(game.id)}
+                    >
+                      <Play className="h-3 w-3" />
+                      Start Game
+                    </Button>
+                    {onDelete && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
+                        onClick={() => onDelete(game.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Delete
+                      </Button>
+                    )}
+                  </>
                 )}
                 {game.status === "ACTIVE" && (
                   <>
