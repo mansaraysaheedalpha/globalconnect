@@ -11,14 +11,16 @@ export const EventTabs = () => {
         router.push(value);
     };
 
+    const eventId = pathname.split("/")[3];
+
     return (
         <Tabs value={pathname} onValueChange={onSelect}>
             <TabsList className="grid grid-cols-2 md:grid-cols-4">
-                <TabsTrigger value={`/dashboard/events/${pathname.split("/")[3]}`}>
+                <TabsTrigger value={`/dashboard/events/${eventId}`}>
                     Dashboard
                 </TabsTrigger>
-                <TabsTrigger value={`/dashboard/events/${pathname.split("/")[3]}/leaderboard`}>
-                    Leaderboard
+                <TabsTrigger value={`/dashboard/events/${eventId}/leaderboard`}>
+                    Gamification
                 </TabsTrigger>
             </TabsList>
         </Tabs>

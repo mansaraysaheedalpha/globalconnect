@@ -3,11 +3,13 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useQuery } from "@apollo/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { GET_SESSIONS_BY_EVENT_QUERY } from "@/graphql/events.graphql";
 import { Leaderboard, TeamLeaderboard } from "./leaderboard";
-import { Radio, Clock, CheckCircle } from "lucide-react";
+import { Radio, Clock, CheckCircle, Swords } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -128,6 +130,24 @@ const LeaderboardPage = () => {
           {selectedSession && getStatusBadge(selectedSession.status)}
         </div>
       )}
+
+      {/* Challenges & Trivia link */}
+      <Card>
+        <CardContent className="flex items-center justify-between py-4">
+          <div className="flex items-center gap-3">
+            <Swords className="h-5 w-5 text-purple-500" />
+            <div>
+              <p className="font-medium text-sm">Challenges & Trivia</p>
+              <p className="text-xs text-muted-foreground">Create and manage team challenges and trivia games</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/events/${eventId}/challenges`}>
+              Manage
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {sessionId && (
         <>

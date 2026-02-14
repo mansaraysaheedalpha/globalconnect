@@ -252,9 +252,12 @@ export const useGamification = ({
     });
 
     // Leaderboard events
-    newSocket.on("leaderboard.data", (data: { topEntries: LeaderboardEntry[] }) => {
+    newSocket.on("leaderboard.data", (data: { topEntries: LeaderboardEntry[]; teamScores?: TeamLeaderboardEntry[] }) => {
       if (data?.topEntries) {
         setLeaderboard(data.topEntries);
+      }
+      if (data?.teamScores) {
+        setTeamLeaderboard(data.teamScores);
       }
       setIsLoadingLeaderboard(false);
     });
