@@ -327,32 +327,25 @@ export const SessionItem = ({
   const pollsEnabled = session.pollsEnabled !== false;
   const reactionsEnabled = session.reactionsEnabled !== false;
 
-  // Time-based session status for Daily sessions
-  // "Go Live" only shows when the scheduled start time has arrived and no room exists yet
+  // Time-based session status
   const isDailySession = session.streamingProvider === "daily";
+  const isVirtualSession = isDailySession || !!session.streamingUrl;
   const startTime = new Date(session.startTime);
   const endTime = new Date(session.endTime);
   const timeArrived = currentTime >= startTime;
   const timePassed = currentTime > endTime;
   const hasRoom = !!session.virtualRoomId;
 
-  console.log("[SessionItem] Session status check:", {
-    id: session.id,
-    title: session.title,
-    streamingProvider: session.streamingProvider,
-    isDailySession,
-    timeArrived,
-    timePassed,
-    hasRoom,
-    showGoLive: isDailySession && timeArrived && !timePassed && !hasRoom,
-  });
-
-  // For Daily sessions: use room existence to determine if organizer has "gone live"
-  // For non-Daily sessions: fall back to time-based status
+  // "Go Live" only for Daily sessions when time arrived but no room yet
   const showGoLive = isDailySession && timeArrived && !timePassed && !hasRoom;
-  const showLive = isDailySession
+  // Session is in its live time window
+  const isInLiveWindow = isDailySession
     ? (hasRoom && timeArrived && !timePassed)
     : (timeArrived && !timePassed);
+  // "Join Session" only for virtual sessions (Daily or has streaming URL)
+  const showJoinSession = isInLiveWindow && isVirtualSession;
+  // LIVE badge + End Session for all session types (organizer can end any session)
+  const showLive = isInLiveWindow;
   const showEnded = timePassed;
   const showScheduled = !timeArrived;
 
@@ -490,22 +483,16 @@ export const SessionItem = ({
                   <span className="h-2 w-2 rounded-full bg-white inline-block" />
                   LIVE
                 </Badge>
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
-                  onClick={() => {
-                    console.log("[SessionItem] Join Session clicked", {
-                      isDailySession,
-                      virtualRoomId: session.virtualRoomId,
-                      streamingProvider: session.streamingProvider,
-                      showVirtualSession,
-                    });
-                    setShowVirtualSession(true);
-                  }}
-                >
-                  <Video className="h-3.5 w-3.5" />
-                  Join Session
-                </Button>
+                {showJoinSession && (
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                    onClick={() => setShowVirtualSession(true)}
+                  >
+                    <Video className="h-3.5 w-3.5" />
+                    Join Session
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="destructive"
