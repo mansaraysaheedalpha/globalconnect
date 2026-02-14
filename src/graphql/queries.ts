@@ -32,9 +32,14 @@ export const GET_EVENTS_BY_ORGANIZATION_QUERY = gql`
         name
         status
         startDate
+        endDate
         registrationsCount
         imageUrl
         eventType
+        venue {
+          id
+          name
+        }
       }
     }
   }

@@ -33,15 +33,16 @@ import { format } from "date-fns";
 export default function DashboardPage() {
   const { user, orgId } = useAuthStore();
 
-  // Fetch events
+  // Fetch published events sorted by soonest first
   const { data: eventsData, loading: eventsLoading } = useQuery(
     GET_EVENTS_BY_ORGANIZATION_QUERY,
     {
       variables: {
-        limit: 5,
+        limit: 10,
         offset: 0,
         sortBy: "startDate",
-        sortDirection: "desc",
+        sortDirection: "asc",
+        status: "published",
       },
       skip: !orgId,
     }
@@ -56,8 +57,15 @@ export default function DashboardPage() {
   );
 
 
-  const events = eventsData?.eventsByOrganization?.events || [];
+  const allEvents = eventsData?.eventsByOrganization?.events || [];
   const totalEvents = eventsData?.eventsByOrganization?.totalCount || 0;
+
+  // Filter to only truly upcoming events (start date is in the future)
+  const now = new Date();
+  const events = allEvents.filter((event: any) => {
+    if (!event.startDate) return false;
+    return new Date(event.startDate) > now;
+  });
 
   // Extract dashboard data with fallbacks (shows 0 when API not ready)
   const dashboardStats = dashboardData?.organizationDashboardStats;
@@ -159,9 +167,9 @@ export default function DashboardPage() {
                   >
                     {/* Event Image */}
                     <div className="h-32 bg-gradient-to-br from-primary/20 to-primary/5 relative">
-                      {event.coverImage && (
+                      {event.imageUrl && (
                         <img
-                          src={event.coverImage}
+                          src={event.imageUrl}
                           alt={event.name}
                           className="w-full h-full object-cover"
                         />
