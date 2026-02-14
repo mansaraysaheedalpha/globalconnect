@@ -287,10 +287,11 @@ export const useGamification = ({
         streakCount: data.streakCount,
         timestamp: Date.now(),
       };
-      setRecentPointEvents((prev) => [...prev, event]);
+      // Keep last 30 events for the session (no auto-clear)
+      setRecentPointEvents((prev) => [...prev, event].slice(-30));
       setCurrentScore(data.newTotalScore || 0);
 
-      // Track cumulative activity count per reason (persists across auto-clears)
+      // Track cumulative activity count per reason
       activityCountsRef.current[data.reason] =
         (activityCountsRef.current[data.reason] || 0) + 1;
 
@@ -302,11 +303,6 @@ export const useGamification = ({
           active: data.streakCount > 0,
         });
       }
-
-      // Auto-clear point animation after 5 seconds
-      setTimeout(() => {
-        setRecentPointEvents((prev) => prev.filter((e) => e.id !== event.id));
-      }, 5000);
     });
 
     // Achievement unlocked event (private to user)

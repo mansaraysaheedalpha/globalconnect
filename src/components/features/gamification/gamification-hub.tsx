@@ -235,32 +235,43 @@ export const GamificationHub = ({
             </div>
 
             {/* Recent Activity */}
-            {recentPointEvents.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">Recent Activity</p>
+            <div>
+              <p className="text-sm font-medium mb-2">Recent Activity</p>
+              {recentPointEvents.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-3">
+                  No activity yet. Start engaging to see your point history here!
+                </p>
+              ) : (
                 <div className="space-y-1">
-                  {recentPointEvents.slice(-5).reverse().map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-center justify-between text-sm py-1"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span>{getReasonEmoji(event.reason)}</span>
-                        <span className="text-muted-foreground">
-                          {getReasonText(event.reason)}
+                  <AnimatePresence initial={false}>
+                    {recentPointEvents.slice(-8).reverse().map((event) => (
+                      <motion.div
+                        key={event.id}
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center justify-between text-sm py-1"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{getReasonEmoji(event.reason)}</span>
+                          <span className="text-muted-foreground">
+                            {getReasonText(event.reason)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground/60">
+                            {formatTimeAgo(event.timestamp)}
+                          </span>
                         </span>
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        +{event.points}
-                        {event.streakMultiplier && event.streakMultiplier > 1 && (
-                          <Flame className="h-2.5 w-2.5 ml-0.5 text-orange-500 inline" />
-                        )}
-                      </Badge>
-                    </div>
-                  ))}
+                        <Badge variant="secondary" className="text-xs">
+                          +{event.points}
+                          {event.streakMultiplier && event.streakMultiplier > 1 && (
+                            <Flame className="h-2.5 w-2.5 ml-0.5 text-orange-500 inline" />
+                          )}
+                        </Badge>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* How to Earn Points Guide */}
             <div>
@@ -593,6 +604,15 @@ const CategoryIcon = ({ category }: { category: string }) => {
     default:
       return <Trophy className={iconClass} />;
   }
+};
+
+const formatTimeAgo = (timestamp: number): string => {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 10) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  return `${Math.floor(minutes / 60)}h ago`;
 };
 
 const EARN_POINTS_GUIDE = [
