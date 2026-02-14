@@ -153,6 +153,13 @@ export const useTeamChat = ({
       setIsLoadingHistory(false);
     });
 
+    // Send response (for error feedback)
+    newSocket.on("team.chat.send.response", (data: any) => {
+      if (data && !data.success) {
+        setError(data.error || "Failed to send message");
+      }
+    });
+
     // New message broadcast
     newSocket.on("team.chat.message.new", (data: { message: TeamChatMessage }) => {
       if (!data?.message) return;
@@ -176,6 +183,7 @@ export const useTeamChat = ({
       newSocket.off("disconnect");
       newSocket.off("connect_error");
       newSocket.off("team.chat.history.response");
+      newSocket.off("team.chat.send.response");
       newSocket.off("team.chat.message.new");
       newSocket.off("team.chat.message.updated");
       newSocket.disconnect();
